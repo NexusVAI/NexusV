@@ -1131,3 +1131,41 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
 #compareModelSelector {
     display: none !important;
 }
+
+
+/* 2026-09-17 侧栏收起/展开动画：移植 cancri-code chrome-surface.css ——
+   宽度 520ms 收放、文字 blur(5px)+淡出，过渡期间右缘渐隐遮罩（js/ui/sidebar.js 挂 .is-sb-animating），
+   不再是文字瞬间消失。仅桌面端；移动端抽屉逻辑不动。 */
+@media (min-width: 769px) {
+  /* .sidebar.sidebar.sidebar：压过 claude-sidebar-icons.css 的 .is-rail-collapsing/expanding（0,2,0 !important） */
+  html body .sidebar.sidebar.sidebar {
+    --sb-dur: 520ms;
+    --sb-ease: cubic-bezier(.4, 0, .2, 1);
+    transition:
+      width var(--sb-dur) var(--sb-ease),
+      transform 240ms cubic-bezier(0.32, 0.72, 0, 1),
+      background 160ms ease,
+      box-shadow 180ms ease !important;
+  }
+  html body .sidebar.is-sb-animating {
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 28px), transparent);
+  }
+  html body .sidebar :is(.sidebar-label, .sidebar-footer-text, .claude-recent-header, #chatHistoryList,
+    #claudeOnboardingCard, .account-meta, .upgrade-btn, .account-arrow, .sidebar-search-wrap) {
+    filter: blur(0);
+    transition:
+      opacity var(--sb-dur) ease,
+      filter var(--sb-dur) ease,
+      transform var(--sb-dur) var(--sb-ease),
+      max-height var(--sb-dur) var(--sb-ease) !important;
+  }
+  html body .sidebar:is(.collapsed, [data-collapsed="true"]) :is(.sidebar-label, .sidebar-footer-text, .claude-recent-header,
+    #chatHistoryList, #claudeOnboardingCard, .account-meta, .upgrade-btn, .account-arrow, .sidebar-search-wrap) {
+    filter: blur(5px);
+  }
+  html body .sidebar .sidebar-label { white-space: nowrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html body .sidebar :is(.sidebar-label, .claude-recent-header, #chatHistoryList, .account-meta) { filter: none !important; }
+}
