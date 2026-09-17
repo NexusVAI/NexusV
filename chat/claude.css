@@ -145,9 +145,18 @@ html, html[data-theme="dark"], html[data-theme="light"], html[data-theme="black"
          - serif 是 Anthropic Serif → ui-serif → Georgia → Cambria → Times → serif。
        我们在 Claude 栈基础上补 CJK fallback（中文用户需要），位置放在 sans-serif
        generic 之前，确保中文字符命中系统中文字体而非 emoji。 */
-    --c-font: "Anthropic Sans", ui-sans-serif, system-ui,
-              "PingFang SC", "PingFang TC", "Hiragino Sans GB",
-              "Microsoft JhengHei", "Microsoft YaHei",
+    --c-font: "Anthropic Sans",
+              /* 2026-09-17 苹方提到 generic 之前。原因：ui-sans-serif / system-ui
+                 在中文字符上会直接命中系统 UI 字体（Windows = Microsoft YaHei UI），
+                 把后面显式列的 "PingFang SC" 整段遮蔽；而衬线栈里 ui-serif 不含中文，
+                 会一路落到 "PingFang SC" —— 同一个页面里 Ask 提问框标题（PingFang SC）
+                 和其余中文（YaHei UI）成了两套字体（CDP CSS.getPlatformFontsForNode
+                 实测：.ask-user-question = .PingFang SC / body = Microsoft YaHei UI）。
+                 PingFang 在前即全页统一；没装苹方的机器自动跳过这两项，
+                 仍由 ui-sans-serif / system-ui 接管，行为与改动前完全一致。 */
+              "PingFang SC", "PingFang TC",
+              ui-sans-serif, system-ui,
+              "Hiragino Sans GB", "Microsoft JhengHei", "Microsoft YaHei",
               "Noto Sans CJK SC", "Noto Sans CJK JP", "Noto Sans CJK KR",
               sans-serif,
               "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
