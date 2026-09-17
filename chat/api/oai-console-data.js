@@ -2764,6 +2764,25 @@
       "main.sm8f7[data-sidebar=collapsed] ._3DFLd,main.sm8f7[data-sidebar=collapsed] #cnc-theme-toggle{max-width:0;margin:0}" +
       "main.sm8f7[data-sidebar=collapsed] .CNbrA{justify-content:flex-start;padding-left:12px;padding-right:0}" +
       "}" +
+      // 移动端汉堡菜单：快照里原版的移动端顶栏被裁掉了，<768px 侧栏 left:100% + visibility:hidden 永远出不来。
+      // 按钮样式/动画同主站 css/mobile-menu.css（三线变叉），抽屉全屏淡入下移、条目沿用原版 _1qzLV>* 的错峰过渡。
+      ".cnc-mnav-btn{display:none}" +
+      "@media (max-width:767px){" +
+      ".cnc-mnav-btn{position:fixed;top:10px;right:10px;z-index:420;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;width:40px;height:40px;padding:0;border:0;border-radius:999px;background:var(--color-surface-tertiary,rgba(127,127,127,.12));cursor:pointer;-webkit-tap-highlight-color:transparent}" +
+      ".cnc-mnav-btn span{display:block;width:20px;height:1.5px;margin:0;background:var(--color-text,#fff);transition:all .3s cubic-bezier(.16,1,.3,1);transform-origin:center;transform:translateZ(0);backface-visibility:hidden}" +
+      ".cnc-mnav-btn.active span:nth-child(1){transform:translateY(6.5px) rotate(45deg)}" +
+      ".cnc-mnav-btn.active span:nth-child(2){opacity:0}" +
+      ".cnc-mnav-btn.active span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}" +
+      "main.sm8f7 aside._1qzLV{left:0!important;right:0!important;width:auto!important;max-width:none!important;padding:56px 12px 0!important;background:var(--color-surface,#0d0d0d)!important;opacity:0;visibility:hidden;transform:translateY(-12px);overflow-y:auto!important;" +
+      "transition:opacity .25s cubic-bezier(.16,1,.3,1),transform .25s cubic-bezier(.16,1,.3,1),visibility 0s .25s!important}" +
+      "main.sm8f7[data-mobile-menu=visible] aside._1qzLV{opacity:1;visibility:visible;transform:none;transition:opacity .25s cubic-bezier(.16,1,.3,1),transform .25s cubic-bezier(.16,1,.3,1),visibility 0s!important}" +
+      "main.sm8f7[data-mobile-menu=visible] aside._1qzLV>*{opacity:1;transform:none}" +
+      "main.sm8f7 aside._1qzLV .CO5li[data-sidebar-collapsible]{position:relative!important;left:0!important;top:0!important;width:100%!important;max-width:none!important;height:auto!important;min-height:100%}" +
+      "main.sm8f7 aside._1qzLV ._3eq3b{position:relative!important;left:0!important;width:auto!important;max-width:none!important;margin:0 -12px!important}" +
+      "main.sm8f7 aside._1qzLV .HPtRB{width:100%!important;height:44px}" +
+      "main.sm8f7 aside._1qzLV button.O3ygq.FzNxy{display:none!important}" +
+      "body.cnc-mnav-open{overflow:hidden}" +
+      "}" +
       ".cnc-theme-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;margin-left:4px;border:0;border-radius:8px;background:transparent;color:var(--color-text-secondary,inherit);cursor:pointer}" +
       ".cnc-theme-btn:hover{background:var(--color-background-primary-soft,rgba(127,127,127,.12));color:var(--color-text,inherit)}" +
       "section._3s6q5.y5pFn .OQedc:empty::before{content:'（更新内容待填写）';display:block;padding:12px 0;color:var(--color-text-secondary,#888);font-size:14px}" +
@@ -2832,6 +2851,44 @@
       applyTheme(cur === "dark" ? "light" : "dark");
     });
     applyTheme(resolveTheme());
+  }
+
+  function wireMobileMenu() {
+    var main = document.querySelector("main.sm8f7");
+    if (!main || document.getElementById("cnc-mnav-btn")) return;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "cnc-mnav-btn";
+    btn.className = "cnc-mnav-btn";
+    btn.setAttribute("aria-label", "打开导航");
+    btn.setAttribute("aria-expanded", "false");
+    btn.innerHTML = "<span></span><span></span><span></span>";
+    document.body.appendChild(btn);
+
+    function setOpen(open) {
+      main.setAttribute("data-mobile-menu", open ? "visible" : "hidden");
+      btn.classList.toggle("active", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      btn.setAttribute("aria-label", open ? "关闭导航" : "打开导航");
+      document.body.classList.toggle("cnc-mnav-open", open);
+    }
+    function isOpen() {
+      return main.getAttribute("data-mobile-menu") === "visible";
+    }
+    btn.addEventListener("click", function () { setOpen(!isOpen()); });
+    // 点了导航链接就收起（同页锚点不会触发跳转，也要关）
+    var aside = main.querySelector("aside._1qzLV");
+    if (aside) {
+      aside.addEventListener("click", function (e) {
+        if (e.target.closest && e.target.closest("a[href]") && isOpen()) setOpen(false);
+      });
+    }
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && isOpen()) setOpen(false);
+    });
+    window.addEventListener("resize", function () {
+      if (window.innerWidth >= 768 && isOpen()) setOpen(false);
+    });
   }
 
   function wireSidebarCollapse() {
@@ -2998,6 +3055,7 @@
     trimSidebar();
     wireStaticDismissers();
     wireSidebarCollapse();
+    wireMobileMenu();
     wireThemeToggle();
     clearUpdatesSection();
     patchFeaturedModels();
