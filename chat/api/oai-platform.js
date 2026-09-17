@@ -103,21 +103,44 @@
   });
 
   // ── Base URL 测速（模型页胶囊）─────────────────────────────────
-  // no-cors 只拿不透明响应，测的是浏览器到端点的往返耗时（含 TLS），不读内容
+  // no-cors 只拿不透明响应，测的是浏览器到端点的往返耗时，不读内容。
+  // 第一次请求要付 DNS + TCP + TLS 握手（实测国内 TLS 可达 1–3s），并非冷启动：
+  // 先发一次不计时的预热把连接建好，再在复用的 keep-alive 连接上测 3 次取最小值。
+  // 防刷：一次点击固定 4 个请求，结束后按钮冷却 5s；真正的限流应在服务端做。
+  var PING_SAMPLES = 3;
+  var PING_COOLDOWN_MS = 5000;
   function initPingDelegation() {
+    function once(url) {
+      return fetch(url + (url.indexOf("?") === -1 ? "?" : "&") + "_=" + Date.now(), {
+        mode: "no-cors",
+        cache: "no-store",
+      });
+    }
+    function timed(url) {
+      var t0 = performance.now();
+      return once(url).then(function () { return performance.now() - t0; });
+    }
     document.addEventListener("click", function (e) {
       var el = e.target.closest ? e.target.closest("[data-cancri-ping]") : null;
       if (!el || el.getAttribute("data-busy") === "1") return;
       el.setAttribute("data-busy", "1");
       el.textContent = "测速中…";
       var url = el.getAttribute("data-cancri-ping");
-      var t0 = performance.now();
-      fetch(url + (url.indexOf("?") === -1 ? "?" : "&") + "_=" + Date.now(), { mode: "no-cors", cache: "no-store" })
-        .then(function () { el.textContent = Math.round(performance.now() - t0) + " ms"; })
+      var best = Infinity;
+      var chain = once(url);
+      for (var i = 0; i < PING_SAMPLES; i++) {
+        chain = chain.then(function () {
+          return timed(url).then(function (ms) { if (ms < best) best = ms; });
+        });
+      }
+      chain
+        .then(function () { el.textContent = Math.round(best) + " ms"; })
         .catch(function () { el.textContent = "连接失败"; })
         .then(function () {
-          el.removeAttribute("data-busy");
-          setTimeout(function () { if (el.getAttribute("data-busy") !== "1") el.textContent = "测速"; }, 4000);
+          setTimeout(function () {
+            el.removeAttribute("data-busy");
+            el.textContent = "测速";
+          }, PING_COOLDOWN_MS);
         });
     });
   }
