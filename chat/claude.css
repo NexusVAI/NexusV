@@ -1862,7 +1862,10 @@ html[data-theme="black"] .claude-suggest:hover {
 /* ───────────────────────────────────────────────────────────
    7. POPOVERS（账号 / 附件菜单）
    ─────────────────────────────────────────────────────────── */
-.popover, .popover.account-popover, .popover.plus-popover {
+/* 2026-09-17：.claude-user-menu（官方 user-menu 1:1 版）在 §7.5 自带完整面板规则
+   （p=0 由内层 scroll 承担 / 1px ring 阴影 / 12px 圆角），此处排除它，
+   否则这条高特异度的 !important 会压掉 §7.5 的 padding 与 box-shadow。 */
+.popover:not(.claude-user-menu), .popover.account-popover:not(.claude-user-menu), .popover.plus-popover {
     background: var(--c-bg-elev-2) !important;
     border: 1px solid var(--c-line-strong) !important;
     border-radius: 12px !important;
@@ -1911,36 +1914,48 @@ html[data-theme="black"] .claude-suggest:hover {
 }
 
 /* ───────────────────────────────────────────────────────────
-   7.5. CLAUDE USER MENU（左下角 #accountPopover 1:1 复刻 01_43_26）
-   - w-[17rem]=272 / min-w 128 / max-w 320
-   - rounded-card=10 / bg-surface-3 / shadow-panel
-   - 内层 p-1=4 / overflow-y-auto
-   - header px-2.5=10 py-1=4 text-footnote=12 text-muted truncate
-   - item h-control=32 px-2.5=10 gap-xs=4 text-body=14 rounded=6
-     hover/aria-highlighted → bg-fill-ghost-hover
-   - icon size-icon=20 (svg 18)
-   - separator mx-2.5=10 my-1=4 h-px bg-border
-   保留 .popover.account-popover 兜底，新增 .claude-user-menu 覆盖。 */
+   7.5. CLAUDE USER MENU（左下角 #accountPopover 1:1 移植官方 user-menu）
+   2026-09-17 用 claude.ai 保存页 [data-cds="Menu"] 的**计算样式**重标定
+   （comfortable 密度，非目测近似）。旧版注释里的 rounded-card=10 / gap-xs=4 /
+   icon svg 18 是错的；真值如下：
+   - w-[17rem]=272 / min-w 128 / max-w 320 / rounded-card=12 / p-1=4（在内层 scroll）
+   - shadow-panel = 1px ring + 0 8px 24px rgba(0,0,0,.12) + 0 2px 6px rgba(0,0,0,.08)
+   - header px-2.5=10 py-1=4 text-footnote=13/17 wght500 text-muted truncate
+   - item h-control=32（py 6 + leading 20）px-2.5=10 gap-xs=8 rounded=8 text-body=14/20
+     hover / data-highlighted → bg-fill-ghost-hover（= alpha-1 = 文字色 5%）
+   - icon size-icon=20（Anthropicons 20px / wght 433.3，与真站同一字体）
+   - separator mx-2.5=10 my-1=4 h-px bg-border（= alpha-2 = --c-line）
+   我们的 token 与真站同源（--c-bg-elev-2=gray-0 / --c-text=gray-900 /
+   --c-text-dim=gray-400 / --c-line=alpha-2），所以直接复用即自动跟随深浅主题。 */
 .claude-user-menu {
     width: 272px !important;
     min-width: 128px !important;
     max-width: 320px !important;
-    border-radius: 10px !important;
-    background: var(--c-bg-elev) !important;
-    border: 1px solid var(--c-line) !important;
-    box-shadow: 0 0 0 1px var(--c-line), 0 8px 24px rgba(0, 0, 0, 0.14) !important;
-    padding: 4px !important;
+    display: flex !important;
+    flex-direction: column;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 12px !important;
+    background: var(--c-bg-elev-2) !important;
+    box-shadow:
+        0 0 0 1px var(--c-line),
+        0 8px 24px rgba(0, 0, 0, 0.12),
+        0 2px 6px rgba(0, 0, 0, 0.08) !important;
     color: var(--c-text) !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
 }
 .claude-user-menu-scroll {
     min-height: 0;
+    max-height: inherit;
     overflow-y: auto;
     border-radius: inherit;
-    padding: 0;
+    padding: 4px;
 }
 .claude-user-menu-header {
     padding: 4px 10px;
-    font-size: 12px;
+    font-size: 13px;
+    line-height: 17px;
     font-weight: 500;
     color: var(--c-text-dim);
     white-space: nowrap;
@@ -1950,12 +1965,12 @@ html[data-theme="black"] .claude-suggest:hover {
 .claude-user-menu-item {
     display: flex !important;
     align-items: center;
-    gap: 4px;
-    height: 32px;
-    padding: 0 10px;
-    border-radius: 6px;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 8px;
     color: var(--c-text) !important;
     font-size: 14px;
+    line-height: 20px;
     font-weight: 400;
     cursor: pointer;
     user-select: none;
@@ -1963,7 +1978,10 @@ html[data-theme="black"] .claude-suggest:hover {
 }
 .claude-user-menu-item:hover,
 .claude-user-menu-item[data-highlighted] {
+    /* 真站 = --cds-fill-ghost-hover = hsl(from 文字色 /5%)；深色下 --c-hover 与
+       popover 底色同为 #30302e（hover 不可见），故这里按真站口径取文字色 5%。 */
     background: var(--c-hover) !important;
+    background: color-mix(in srgb, var(--c-text) 5%, transparent) !important;
     color: var(--c-text) !important;
 }
 .claude-user-menu-icon {
@@ -1973,11 +1991,20 @@ html[data-theme="black"] .claude-suggest:hover {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--c-text-soft);
+    color: inherit;
+}
+.claude-user-menu-icon.claude-anthropicon,
+.claude-user-menu-icon .claude-anthropicon {
+    font-size: 20px;
+    font-weight: 433.3;
+    /* !important 必需：styles/claude-sidebar-icons.css 的
+       html[data-theme="light"] .claude-anthropicon{color:#121212} 特异度 (0,2,1) 更高，
+       会把图标钉死在 #121212（真站是 text-primary = 行文字色，清空对话那行要跟着变红）。 */
+    color: inherit !important;
 }
 .claude-user-menu-icon svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
 }
 .claude-user-menu-label {
     min-width: 0;
@@ -1985,6 +2012,33 @@ html[data-theme="black"] .claude-suggest:hover {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+/* 右侧说明文字（真站快捷键槽位）：ml-md=16 · text-footnote=13/17 · text-muted */
+.claude-user-menu-shortcut {
+    flex: 0 0 auto;
+    margin-left: 16px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 13px;
+    line-height: 17px;
+    color: var(--c-text-dim);
+}
+/* 二级说明行（真站 Get API keys 的 "on Claude Platform"）：13/17 muted */
+.claude-user-menu-footnote {
+    display: block;
+    font-size: 13px;
+    line-height: 17px;
+    color: var(--c-text-dim);
+}
+/* 行尾箭头（真站 Learn more 的 chevron）：16px / wght 533.3 / text-muted / -mr-1
+   !important 必需：styles/claude-sidebar-icons.css 的 .claude-anthropicon{font-size:20px;
+   font-weight:433.3} 后加载且同特异度，否则箭头被撑成 20px。 */
+.claude-user-menu-chevron {
+    flex: 0 0 auto;
+    margin-right: -4px;
+    font-size: 16px !important;
+    font-weight: 533.3 !important;
+    color: var(--c-text-dim) !important;
 }
 .claude-user-menu-sep {
     height: 1px;
@@ -8772,14 +8826,16 @@ html[data-theme="black"] .claude-device-badge {
         transform: translateY(0) !important;
         pointer-events: auto !important;
     }
-    .account-popover .popover-inner {
+    .account-popover .popover-inner,
+    .account-popover .claude-user-menu-scroll {
         border-radius: 20px 20px 0 0 !important;
         padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
         max-height: min(72dvh, 520px) !important;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
     }
-    .account-popover .popover-inner::before {
+    .account-popover .popover-inner::before,
+    .account-popover .claude-user-menu-scroll::before {
         content: "";
         display: block;
         width: 36px;
@@ -8793,6 +8849,18 @@ html[data-theme="black"] .claude-device-badge {
         height: 48px !important;
         font-size: 15px !important;
         border-radius: 12px !important;
+    }
+    .account-popover .claude-user-menu-item {
+        min-height: 48px !important;
+        font-size: 15px !important;
+        border-radius: 12px !important;
+    }
+    .account-popover .claude-user-menu-header {
+        padding: 4px 12px;
+        font-size: 13px;
+    }
+    .account-popover .claude-user-menu-sep {
+        margin: 4px 12px;
     }
 }
 
@@ -10368,11 +10436,13 @@ html[data-theme="light"] .model-current svg {
     .model-dropdown {
         border-radius: 14px !important; /* 12×1.2 */
     }
-    .claude-user-menu {
-        border-radius: 12px !important; /* 10×1.2 */
-    }
     .popover {
         border-radius: 17px !important; /* 14×1.2 */
+    }
+    /* 2026-09-17：官方 user-menu rounded-card=12 → ×1.2=14。必须排在 .popover 之后，
+       否则同为 !important 同特异度时被 .popover 的 17px 压掉。 */
+    .claude-user-menu {
+        border-radius: 14px !important; /* 12×1.2 */
     }
     .modal-content {
         border-radius: 22px !important; /* 18×1.2 */
