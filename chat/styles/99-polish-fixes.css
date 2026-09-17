@@ -1165,6 +1165,36 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
     filter: blur(5px);
   }
   html body .sidebar .sidebar-label { white-space: nowrap; }
+  /* 对话列表（最近 / 聊天记录 / 引导卡）：原规则一收起就 max-height:0 + display:none，
+     列表瞬间消失、没有动画。收起过渡期间（.is-sb-animating，540ms）保持原高度，
+     与文字一起 blur+淡出，动画结束后再交还原规则折叠。 */
+  html body .sidebar.sidebar.collapsed.is-sb-animating :is(.claude-recent-header, .recent-wrap, #chatHistoryList,
+    #claudeOnboardingCard, .claude-onboarding-card) {
+    max-height: 100vh !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    filter: blur(5px);
+    transition: opacity var(--sb-dur) ease, filter var(--sb-dur) ease !important;
+  }
+  html body .sidebar.sidebar.collapsed.is-sb-animating .claude-recent-header {
+    display: flex !important;
+    padding: 0 8px 4px 10px !important;
+  }
+  html body .sidebar.sidebar.collapsed.is-sb-animating :is(.recent-wrap, #chatHistoryList) {
+    padding: 0 4px !important;
+  }
+  /* 展开：列表从 display:none / max-height:0 回来，普通 transition 没有起点，
+     用 @starting-style 给出 blur+透明的起始帧；并压过 is-rail-expanding 的 140ms。 */
+  html body .sidebar.sidebar.is-sb-animating:not(.collapsed) :is(.claude-recent-header, .recent-wrap, #chatHistoryList,
+    #claudeOnboardingCard, .claude-onboarding-card) {
+    opacity: 1 !important;
+    filter: blur(0);
+    transition: opacity var(--sb-dur) ease, filter var(--sb-dur) ease !important;
+    @starting-style {
+      opacity: 0 !important;
+      filter: blur(5px);
+    }
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   html body .sidebar :is(.sidebar-label, .claude-recent-header, #chatHistoryList, .account-meta) { filter: none !important; }
