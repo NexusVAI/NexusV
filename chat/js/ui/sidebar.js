@@ -38,6 +38,14 @@ export function initSidebarWorkbench() {
   const syncSoon = () => requestAnimationFrame(() => syncSidebarState(sidebar));
   syncSidebarState(sidebar);
 
+  // 收放过渡期间挂右缘遮罩（styles/99-polish-fixes.css），静止时摘掉以免淡掉 rail 上的图标
+  let sbAnimTimer = 0;
+  document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+    if (isMobileViewport()) return;
+    clearTimeout(sbAnimTimer);
+    sidebar.classList.add('is-sb-animating');
+    sbAnimTimer = setTimeout(() => sidebar.classList.remove('is-sb-animating'), 540);
+  });
   document.getElementById('sidebarToggle')?.addEventListener('click', syncSoon);
   document.getElementById('mobileMenuBtn')?.addEventListener('click', syncSoon);
   document.getElementById('scrim')?.addEventListener('click', syncSoon);
