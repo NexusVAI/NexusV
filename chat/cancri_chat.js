@@ -16283,7 +16283,9 @@
 		label.textContent = thinking ? "思考中" : `思考 ${seconds} 秒`;
 	}
 	function stripReasoningSeparator(text) {
-		return String(text || "").replace(/^(\s*[\r\n]\s*)*---(\s*[\r\n]\s*)*/, "").trim();
+		const value = String(text || "");
+		const match = value.match(/^(?:[ \t]*\r?\n)+[ \t]*---[ \t]*(?:\r?\n)+/);
+		return match ? value.slice(match[0].length) : value;
 	}
 	function createReasoningBlock() {
 		const thinkBlock = document.createElement("div");
@@ -16425,22 +16427,25 @@
 		if (messageActions) messageActions.hidden = false;
 		let newCommitted = parts.committedReasoningLength;
 		if (fullReasoning.length > parts.committedReasoningLength) {
-			const delta = stripReasoningSeparator(fullReasoning.slice(parts.committedReasoningLength));
+			const rawDelta = fullReasoning.slice(parts.committedReasoningLength);
 			newCommitted = fullReasoning.length;
-			if (delta) if (!parts.currentReasoningBlock) {
-				const block = createReasoningBlock();
-				const event = {
-					type: "reasoning",
-					text: delta
-				};
-				block.segmentText = delta;
-				block._timelineEvent = event;
-				timelineContainer.appendChild(block.thinkBlock);
-				timeline.push(event);
-				parts.currentReasoningBlock = block;
-			} else {
+			if (!parts.currentReasoningBlock) {
+				const delta = stripReasoningSeparator(rawDelta);
+				if (delta) {
+					const block = createReasoningBlock();
+					const event = {
+						type: "reasoning",
+						text: delta
+					};
+					block.segmentText = delta;
+					block._timelineEvent = event;
+					timelineContainer.appendChild(block.thinkBlock);
+					timeline.push(event);
+					parts.currentReasoningBlock = block;
+				}
+			} else if (rawDelta) {
 				const block = parts.currentReasoningBlock;
-				block.segmentText = `${block.segmentText}\n\n${delta}`.trim();
+				block.segmentText += rawDelta;
 				if (block._timelineEvent) block._timelineEvent.text = block.segmentText;
 			}
 		}

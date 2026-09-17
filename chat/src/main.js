@@ -12445,9 +12445,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
 
   function stripReasoningSeparator(text) {
-    return String(text || "")
-      .replace(/^(\s*[\r\n]\s*)*---(\s*[\r\n]\s*)*/, "")
-      .trim();
+    const value = String(text || "");
+    const match = value.match(/^(?:[ \t]*\r?\n)+[ \t]*---[ \t]*(?:\r?\n)+/);
+    return match ? value.slice(match[0].length) : value;
   }
 
   function createReasoningBlock() {
@@ -12636,12 +12636,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     // currentReasoningBlock 会被清空，下一次 reasoning 会新建块，从而按时间线交错。
     let newCommitted = parts.committedReasoningLength;
     if (fullReasoning.length > parts.committedReasoningLength) {
-      const delta = stripReasoningSeparator(
-        fullReasoning.slice(parts.committedReasoningLength),
-      );
+      const rawDelta = fullReasoning.slice(parts.committedReasoningLength);
       newCommitted = fullReasoning.length;
-      if (delta) {
-        if (!parts.currentReasoningBlock) {
+      if (!parts.currentReasoningBlock) {
+        const delta = stripReasoningSeparator(rawDelta);
+        if (delta) {
           const block = createReasoningBlock();
           const event = { type: "reasoning", text: delta };
           block.segmentText = delta;
@@ -12649,12 +12648,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           timelineContainer.appendChild(block.thinkBlock);
           timeline.push(event);
           parts.currentReasoningBlock = block;
-        } else {
-          const block = parts.currentReasoningBlock;
-          block.segmentText = `${block.segmentText}\n\n${delta}`.trim();
-          if (block._timelineEvent) {
-            block._timelineEvent.text = block.segmentText;
-          }
+        }
+      } else if (rawDelta) {
+        const block = parts.currentReasoningBlock;
+        block.segmentText += rawDelta;
+        if (block._timelineEvent) {
+          block._timelineEvent.text = block.segmentText;
         }
       }
     }
