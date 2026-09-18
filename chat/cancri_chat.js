@@ -16769,6 +16769,11 @@
 		const truncateAt = Math.min(messageIndex, conversationHistory.length);
 		conversationHistory.length = truncateAt;
 		updateContextMeter();
+		const discardedGen = getVisibleLiveGeneration();
+		if (discardedGen) {
+			discardedGen.discarded = true;
+			discardedGen.discardedHistory = snapshotMessages(conversationHistory);
+		}
 		if (homeInput) {
 			homeInput.value = recoveredText;
 			autoResizeComposerInput();
@@ -18490,12 +18495,35 @@
 		scheduleGenSave(gen);
 		if (isGenVisible(gen) && !document.getElementById(gen.assistantMessageId)) scheduleVisibleRerender(gen);
 	}
+	async function discardGeneration(gen) {
+		const history = Array.isArray(gen.discardedHistory) ? gen.discardedHistory : null;
+		try {
+			if (gen._creating) try {
+				await gen._creating;
+			} catch (_) {}
+			if (gen.chatId && history) if (history.length) {
+				const saved = await updateChatHistoryRow(gen.chatId, history);
+				if (saved) upsertCachedChatSummary(saved);
+			} else await deleteChatHistory(gen.chatId);
+		} catch (error) {
+			console.error("撤回后保存对话失败:", error);
+		}
+		updateChatShareButtonVisibility();
+		unregisterGeneration(gen);
+		refreshSidebarSpinners();
+		renderChatHistoryList();
+		postCrossTabMessage("history-changed");
+	}
 	async function commitGeneration(gen, assistantMessage) {
 		gen.status = "done";
 		clearGenSaveTimer(gen);
 		if (gen._rerenderTimer) {
 			clearTimeout(gen._rerenderTimer);
 			gen._rerenderTimer = null;
+		}
+		if (gen.discarded) {
+			await discardGeneration(gen);
+			return;
 		}
 		const finalMessages = gen.baseMessages.slice();
 		if (gen.userMessage) finalMessages.push(gen.userMessage);

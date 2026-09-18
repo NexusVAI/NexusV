@@ -13033,6 +13033,23 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     const truncateAt = Math.min(messageIndex, conversationHistory.length);
     conversationHistory.length = truncateAt;
     updateContextMeter();
+
+    // 2026-09-18：光 abort 是不够的。上面那句 abort 的注释（「让 finally 不要
+    // 把 assistant 内容推进已截断的历史」）在后台生成重构之后就不成立了 ——
+    // commitGeneration 的 finalMessages 是从 gen.baseMessages / gen.userMessage
+    // 重新拼出来的，跟这里刚截断的 conversationHistory 毫无关系。结果被撤回的
+    // 那一轮会连同「已停止生成。」一起被写回内存 **并落库**，观感就是「撤回
+    // 成功了，一秒后又弹回来，刷新以后它还在」。
+    // 这里显式把这一轮标记为丢弃，并把截断后的真实历史交给它，
+    // 由 commitGeneration 转交 discardGeneration 收尾。
+    //
+    // 时序安全：undoUserMessage 是同步函数，而 abort 只能经由微任务链才走到
+    // sendMessage 的 catch → commitGeneration，所以这个标记一定先落地。
+    const discardedGen = getVisibleLiveGeneration();
+    if (discardedGen) {
+      discardedGen.discarded = true;
+      discardedGen.discardedHistory = snapshotMessages(conversationHistory);
+    }
   
     // Repopulate composer + restore busy/disabled state to match new content.
     if (homeInput) {
@@ -15598,10 +15615,48 @@ import loginIslandHtml from "../claude-login-island.html?raw";
 
   // 一轮对话结束：把最终消息存到「这轮归属的对话」（而不是当前全局对话），
   // 只有当这轮对话仍是用户正在看的对话时才同步全局状态 / DOM。
+  // 「撤回输入」丢弃的一轮：只把截断后的真实历史落库，绝不复活这一轮。
+  // 刻意不做的三件事：不发完成通知（用户是自己取消的）、不升级智能标题、
+  // 不 clearPendingAttachments（撤回后用户可能已经重新挂了附件，清掉是毁用户的活）。
+  async function discardGeneration(gen) {
+    const history = Array.isArray(gen.discardedHistory)
+      ? gen.discardedHistory
+      : null;
+    try {
+      // 惰性建行可能还在飞行中，先等它拿到 id，否则下面既更新不了也删不掉。
+      if (gen._creating) {
+        try { await gen._creating; } catch (_) {}
+      }
+      if (gen.chatId && history) {
+        if (history.length) {
+          const saved = await updateChatHistoryRow(gen.chatId, history);
+          if (saved) upsertCachedChatSummary(saved);
+        } else {
+          // 撤回掉了唯一一条消息 ⇒ 这一行已经空了。删掉它，别在侧栏留一条
+          // 打开即空的死对话（旧行为下它刷新后还会带着撤回的内容复活）。
+          await deleteChatHistory(gen.chatId);
+        }
+      }
+    } catch (error) {
+      console.error("撤回后保存对话失败:", error);
+    }
+    updateChatShareButtonVisibility();
+    unregisterGeneration(gen);
+    refreshSidebarSpinners();
+    renderChatHistoryList();
+    postCrossTabMessage("history-changed");
+  }
+
   async function commitGeneration(gen, assistantMessage) {
     gen.status = "done";
     clearGenSaveTimer(gen);
     if (gen._rerenderTimer) { clearTimeout(gen._rerenderTimer); gen._rerenderTimer = null; }
+
+    // 被「撤回输入」丢弃的一轮绝不能按 gen.baseMessages 重建（见 undoUserMessage）。
+    if (gen.discarded) {
+      await discardGeneration(gen);
+      return;
+    }
 
     const finalMessages = gen.baseMessages.slice();
     if (gen.userMessage) finalMessages.push(gen.userMessage);
