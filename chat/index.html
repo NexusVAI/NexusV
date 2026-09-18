@@ -143,7 +143,7 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=20260918-settings-claude"
+            href="./claude.css?v=20260918-composer-layout"
         />
 <style>
             /* 登录层显隐。背景/字体/布局由 claude-login.css 提供，这里禁止再写 bg。 */
@@ -1145,6 +1145,30 @@
                                 </div>
                             </div>
                             <div class="composer-chin" id="composerChin">
+                                <div class="composer-chin-left" id="composerChinLeft">
+                                    <div class="claude-suggest-row" role="list">
+                                        <button class="claude-suggest" type="button" data-prompt-template="帮我写一段 ">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                                            <span>写</span>
+                                        </button>
+                                        <button class="claude-suggest" type="button" data-prompt-template="教我学习 ">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                                            <span>学习</span>
+                                        </button>
+                                        <button class="claude-suggest" type="button" data-prompt-template="帮我写代码 ">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                                            <span>代码</span>
+                                        </button>
+                                        <button class="claude-suggest" type="button" data-prompt-template="给我一个生活建议：">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>
+                                            <span>生活提示</span>
+                                        </button>
+                                        <button class="claude-suggest" type="button" data-prompt-template="帮我处理今天的 Gmail：">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+                                            <span>来自 Gmail</span>
+                                        </button>
+                                    </div>
+                                </div>
                                 <div class="composer-chin-right" id="composerChinRight">
                                     <div class="model-selector claude-model-selector-inline" id="modelSelector">
                                         <button class="model-current" id="modelCurrentBtn" type="button">
@@ -1212,28 +1236,6 @@
                         <!-- Claude-style suggestion pills（功能提示 chip）。
                              点击会向 #homeInput 注入对应 prompt 模板（cancri_chat.js
                              里通过 data-prompt-template 监听）。 -->
-                        <div class="claude-suggest-row" role="list">
-                            <button class="claude-suggest" type="button" data-prompt-template="帮我写一段 ">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
-                                <span>写</span>
-                            </button>
-                            <button class="claude-suggest" type="button" data-prompt-template="教我学习 ">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                                <span>学习</span>
-                            </button>
-                            <button class="claude-suggest" type="button" data-prompt-template="帮我写代码 ">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                                <span>代码</span>
-                            </button>
-                            <button class="claude-suggest" type="button" data-prompt-template="给我一个生活建议：">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>
-                                <span>生活提示</span>
-                            </button>
-                            <button class="claude-suggest" type="button" data-prompt-template="帮我处理今天的 Gmail：">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
-                                <span>来自 Gmail</span>
-                            </button>
-                        </div>
                         <!-- 2026-05-22 真 Claude 对齐：首页 5 chip 下面不再堆装饰。
                              原 #tokenExpiryNote（开站纪念日）与 .model-icons-scroll（20+ 品牌横滚）已删除，
                              跟随真 Claude 首页“5 chip 后直接结束”的净面。 -->
