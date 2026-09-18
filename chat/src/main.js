@@ -5356,6 +5356,65 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     })();
     return authSessionInflight;
   }
+
+  // 2026-09-18：修「退出浏览器再进来就弹一条『登录已失效，请重新登录。』」。
+  // 场景：整个浏览器关掉后 cancri_supabase_auth 仍留在 localStorage，但里面的
+  // access_token 已过期（或 refresh_token 刚被另一个标签页轮换过）。冷启动第一批
+  // 业务请求（renderChatHistoryList / fetchUserMemories）会赶在 SDK 完成刷新之前
+  // 带着旧 JWT 打到网关 → 401 invalid_session → toast。此时 refresh_token 通常
+  // 还是有效的，强制刷一次就能恢复，用户根本不该看到那条错误。
+  // 这里只做「强制刷新」这一件事；是否重试由调用方决定。
+  async function forceRefreshAuthSession() {
+    authSessionPromise = null;
+    authSessionInflight = null;
+    try {
+      const client = getSupabaseClient();
+      const { data, error } = await client.auth.refreshSession();
+      if (error) throw error;
+      const session = data?.session || null;
+      if (session?.access_token) {
+        if (session.user) updateAccountInfo(session.user);
+        authSessionPromise = Promise.resolve(session);
+        authInitialized = true;
+        hideAuthOverlay();
+        return session;
+      }
+    } catch (error) {
+      console.warn("刷新登录会话失败:", error);
+    }
+    return null;
+  }
+
+  // 仅在 !response.ok 时调用：克隆后读文本，绝不消费调用方要用的 body
+  // （SSE 流式响应永远是 ok=true，因此不会被这里碰到）。
+  async function isInvalidSessionResponse(response) {
+    if (!response || response.ok) return false;
+    if (response.status !== 401 && response.status !== 403) return false;
+    try {
+      const text = await response.clone().text();
+      return /invalid_session/.test(text);
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  // 带一次「刷新 token 后重发」的通用外壳。send(session) 必须是可重入的
+  // （每次调用自己重新构造 body），因为第二次要换成新的 access_token。
+  async function fetchWithSessionRetry(send) {
+    const session = await ensureAuthSession();
+    const response = await send(session);
+    if (!(await isInvalidSessionResponse(response))) return response;
+    const refreshed = await forceRefreshAuthSession();
+    if (!refreshed) {
+      // refresh_token 也废了 —— 这才是真的掉线，给登录浮层而不是只丢一条 toast。
+      showAuthOverlay();
+      return response;
+    }
+    const retried = await send(refreshed);
+    if (await isInvalidSessionResponse(retried)) showAuthOverlay();
+    return retried;
+  }
+
   
   // =====================================================================
   // Login Turnstile (Supabase Auth captcha).
@@ -5524,6 +5583,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       } else if (event === "SIGNED_OUT") {
         authSessionPromise = null;
         authInitialized = false;
+        // 其它窗口别再拿着已作废的会话继续发请求 —— 立刻让它们也弹登录。
+        postCrossTabMessage("signed-out");
         state.userMemories = [];
         state.userMemoryEnabled = true;
         renderMemoriesInSettings();
@@ -5585,8 +5646,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     return { ...body, __auth_token: session.access_token };
   }
   
-  async function proxyFetch(url, options = {}) {
-    const session = await ensureAuthSession();
+  // options.body 原样保留（字符串/对象都可重复读），所以这里能安全地为
+  // 「刷新 token 后重发」重新构造一次 body。
+  function withAuthTokenBody(options, session) {
     let body;
     if (typeof options.body === "string") {
       try { body = JSON.parse(options.body || "{}"); } catch (_e) { body = {}; }
@@ -5596,26 +5658,24 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       body = {};
     }
     body.__auth_token = session.access_token;
-    // 走 gatewayFetch：中继故障时自动切直连（对非中继 URL 是透明直通）。
-    return gatewayFetch(url, { ...options, body: JSON.stringify(body) });
+    return { ...options, body: JSON.stringify(body) };
   }
-  
+
+  async function proxyFetch(url, options = {}) {
+    // 走 gatewayFetch：中继故障时自动切直连（对非中继 URL 是透明直通）。
+    return fetchWithSessionRetry((session) =>
+      gatewayFetch(url, withAuthTokenBody(options, session)),
+    );
+  }
+
   async function proxyFetchWithTimeout(url, options = {}, timeoutMs, label) {
-    const session = await ensureAuthSession();
-    let body;
-    if (typeof options.body === "string") {
-      try { body = JSON.parse(options.body || "{}"); } catch (_e) { body = {}; }
-    } else if (options.body && typeof options.body === "object") {
-      body = { ...options.body };
-    } else {
-      body = {};
-    }
-    body.__auth_token = session.access_token;
-    return fetchWithTimeout(
-      url,
-      { ...options, body: JSON.stringify(body) },
-      timeoutMs,
-      label,
+    return fetchWithSessionRetry((session) =>
+      fetchWithTimeout(
+        url,
+        withAuthTokenBody(options, session),
+        timeoutMs,
+        label,
+      ),
     );
   }
   
@@ -5878,6 +5938,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         dispatchChatTitleUpdated(newTitle, chatId);
       }
       renderChatHistoryList();
+      postCrossTabMessage("history-changed");
       showToast("已重命名");
     } catch (err) {
       console.error("重命名失败:", err);
@@ -6043,12 +6104,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           wrap.appendChild(a);
           wrap.appendChild(actionsWrap);
           li.appendChild(wrap);
-          if (isStreamingItem) {
-            const spinner = document.createElement("span");
-            spinner.className = "recent-item-spinner";
-            spinner.setAttribute("aria-hidden", "true");
-            inner.appendChild(spinner);
-          }
+          if (isStreamingItem) inner.appendChild(createRecentItemSpinner());
           listContainer.appendChild(li);
           return;
         }
@@ -6089,12 +6145,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
         item.appendChild(modelIcon);
         item.appendChild(titleSpan);
-        if (isStreamingItem) {
-          const spinner = document.createElement("span");
-          spinner.className = "recent-item-spinner";
-          spinner.setAttribute("aria-hidden", "true");
-          item.appendChild(spinner);
-        }
+        if (isStreamingItem) item.appendChild(createRecentItemSpinner());
         item.appendChild(actionsBtn);
         item.addEventListener("click", () => loadChat(chat.id));
         listContainer.appendChild(item);
@@ -6131,8 +6182,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
   
   // 加载特定聊天记录
-  async function loadChat(chatId, { silent = false } = {}) {
+  async function loadChat(chatId, { silent = false, skipSkeleton = false } = {}) {
     exitSharedConversationMode();
+    // 切走之前先给「还没落库的进行中对话」建行，保证它在侧栏留得下痕迹。
+    parkChatlessGeneration();
     // 2026-06-17：回到一个正在后台生成的对话——用内存实时快照立即渲染并重新接管显示，
     // 不必等服务端（增量保存最多落后 ~1.5s）。
     const liveGen = getGenerationByChatId(chatId);
@@ -6144,7 +6197,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       homeView.classList.add("chatting");
       chatMessages.classList.add("active");
       if (contextMeter) contextMeter.classList.remove("hidden");
-      renderMessages();
+      // 用 ForLiveGeneration 版本：重绘后把 assistantMessageId 接回这条新节点，
+      // 否则切回来只能看到 600ms 一跳的快照重绘（用户报的「文字消失/不流式」）。
+      renderMessagesForLiveGeneration();
       updateContextMeter();
       setComposerBusy(true);
       state.activeRequestController = liveGen.controller;
@@ -6162,7 +6217,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     homeView.classList.add("chatting");
     chatMessages.classList.add("active");
     if (contextMeter) contextMeter.classList.remove("hidden");
-    renderChatMessagesSkeleton();
+    // skipSkeleton：跨标签「对话已更新」触发的静默重载走这里 —— 当前内容仍然
+    // 是对的，闪一下骨架屏只会让人以为出了问题。
+    if (!skipSkeleton) renderChatMessagesSkeleton();
     try {
       const chat = await loadChatHistory(chatId);
       if (chat && chat.messages) {
@@ -6176,6 +6233,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
 
         renderMessages();
         updateContextMeter();
+        // 切到另一个对话：后台生成继续跑，但别把它的 controller 留在
+        // state.activeRequestController 上当孤儿指针 —— 否则这个对话里的
+        // 「撤回输入 / 清空会话」会误杀另一个对话正在进行的生成。
+        // 真要停它请走 stopActiveGeneration()（侧栏转圈即停止按钮）。
+        if (state.activeRequestController) state.activeRequestController = null;
         setComposerBusy(false);
 
         scheduleChatScrollToBottom(true);
@@ -6206,6 +6268,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   // 新建聊天
   function newChat() {
     exitSharedConversationMode();
+    // 后台生成不中断，但先把它的服务端行建出来，否则侧栏不会出现这一项，
+    // 用户再也回不到那轮还在生成的对话。
+    parkChatlessGeneration();
     currentChatId = null;
     loadedChatModel = "";
     conversationHistory = [];
@@ -6214,6 +6279,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     homeCenter.style.display = "flex";
     chatMessages.classList.remove("active");
     homeView.classList.remove("chatting");
+    // 2026-09-18：旧版漏了这句 —— 「流式输出中点新对话」会把发送按钮永久卡在
+    // 停止态（state.isStreaming 仍是 true），输入框 readOnly 也解不开，
+    // 用户既发不出新消息也停不掉旧生成。
+    setComposerBusy(false);
     updateChatShareButtonVisibility();
     updateContextMeter();
     updateHomeHeroText();
@@ -6229,6 +6298,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     messageSink.innerHTML = "";
   
     let lastUserMessageIndex = -1;
+    // 末尾那条普通 assistant 消息的新 id：整页重绘后若本轮仍在流式输出，
+    // 要把这个节点的 id 换回 gen.assistantMessageId（见 adoptLiveGenerationNode）。
+    let tailAssistantId = null;
     conversationHistory.forEach((message, i) => {
       if (message.role === "user") {
         lastUserMessageIndex = i;
@@ -6310,6 +6382,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         }
   
         const id = createAssistantMessage(metadata);
+        if (i === conversationHistory.length - 1) tailAssistantId = id;
         const messageDiv = document.getElementById(id);
         const parts = messageDiv?._parts;
         const timeline = getAssistantMessageTimeline(conversationHistory, i, message);
@@ -6348,6 +6421,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       }
     });
   
+    // 必须在 updateChatNav 之前：把仍在流式的那条重新接回写入端的 id。
+    if (renderMessagesAdoptLiveGen) adoptLiveGenerationNode(tailAssistantId);
     updateChatNav();
     updateChatShareButtonVisibility();
     // 历史回放/切对话后按最后一条消息决定 ask_user 提问块显隐
@@ -7197,7 +7272,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       console.error("加载聊天记录列表失败:", error);
       const msg =
         error instanceof Error ? error.message : "加载聊天记录列表失败";
-      if (msg && msg !== "请先登录后再使用。") showToast(msg);
+      // 登录浮层已经在屏幕上时不再叠一条 toast：那是同一件事的第二次通知，
+      // 也是「退出浏览器再进来就报错」里用户唯一看到的那条噪音。
+      if (msg && msg !== "请先登录后再使用。" && !isAuthOverlayVisible()) {
+        showToast(msg);
+      }
       const cached = readCachedChatHistoryList();
       if (cached.length) {
         chatHistoryList = cached;
@@ -7260,6 +7339,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       }
   
       removeCachedChatSummary(chatId);
+      postCrossTabMessage("chat-deleted", { chatId });
       return { success: true, message: detail || "已删除" };
     } catch (error) {
       console.error("删除聊天记录失败:", error);
@@ -9218,6 +9298,237 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       return null;
     }
   }
+
+  // ── 多窗口 / 多标签会话 ─────────────────────────────────────────────
+  //
+  // 2026-09-18：此前这个前端完全没有跨标签机制（没有 storage 监听、没有
+  // BroadcastChannel、标签也没有身份），同时开两个窗口会出现四类问题：
+  //   1. A 窗口新建 / 改名 / 删除对话，B 窗口侧栏一直是旧的，点进去就 404；
+  //   2. 浏览器「复制标签页」会连 sessionStorage 一起克隆 → 两个标签恢复到
+  //      同一个 chatId，两边各自 PUT 整份 messages 数组，后写的覆盖先写的（真丢消息）；
+  //   3. 在一个窗口登出，另一个窗口还以为自己登录着，要等下一次请求才炸；
+  //   4. 输入框草稿只在内存里，关窗 / 刷新就没了。
+  // 这里补上四件最小必要的事：每标签唯一身份、跨标签广播、克隆标签不抢会话、
+  // 草稿按标签持久化。
+  // 刻意不做的事：不跨标签同步业务内存状态。会话内容的权威始终是服务端
+  // chat_history，广播只用来触发「重新拉取」，避免把两个标签的内存互相污染。
+
+  const TAB_ID_STORAGE_KEY = "cancri_tab_id_v1";
+  const OPEN_TABS_STORAGE_KEY = "cancri_open_tabs_v1";
+  const TAB_HEARTBEAT_MS = 5000;
+  const TAB_STALE_MS = 16000;
+  const CROSS_TAB_CHANNEL_NAME = "cancri_chat_sync_v1";
+  const CROSS_TAB_FALLBACK_KEY = "cancri_chat_sync_v1_msg";
+
+  let crossTabChannel = null;
+  let tabId = "";
+  // 「本标签是从另一个活标签复制出来的」。复制标签页会克隆 sessionStorage，
+  // 这种标签必须换一个身份，而且不能去恢复被克隆的那个 chatId。
+  let tabIsClonedSession = false;
+
+  function readOpenTabs() {
+    try {
+      const parsed = JSON.parse(
+        localStorage.getItem(OPEN_TABS_STORAGE_KEY) || "{}",
+      );
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function writeOpenTabs(tabs) {
+    try {
+      localStorage.setItem(OPEN_TABS_STORAGE_KEY, JSON.stringify(tabs));
+    } catch {
+      // localStorage 满 / 被禁：多标签协调降级失效，不影响主流程。
+    }
+  }
+
+  // 崩溃 / 强杀进程的标签不会执行 releaseTab，靠心跳过期回收。
+  function pruneOpenTabs(tabs) {
+    const now = Date.now();
+    for (const [id, seen] of Object.entries(tabs)) {
+      const at = Number(seen);
+      if (!Number.isFinite(at) || now - at > TAB_STALE_MS) delete tabs[id];
+    }
+    return tabs;
+  }
+
+  function newTabId() {
+    try {
+      if (crypto?.randomUUID) return crypto.randomUUID();
+    } catch (_) {}
+    return `tab_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  function initTabIdentity() {
+    let stored = "";
+    try {
+      stored = sessionStorage.getItem(TAB_ID_STORAGE_KEY) || "";
+    } catch (_) {}
+    const tabs = pruneOpenTabs(readOpenTabs());
+    // stored 身份还挂在一个「活着的」标签名下 ⇒ 这份 sessionStorage 是克隆来的。
+    if (stored && tabs[stored]) {
+      tabIsClonedSession = true;
+      stored = "";
+    }
+    tabId = stored || newTabId();
+    try {
+      sessionStorage.setItem(TAB_ID_STORAGE_KEY, tabId);
+    } catch (_) {}
+    tabs[tabId] = Date.now();
+    writeOpenTabs(tabs);
+  }
+
+  function heartbeatTab() {
+    const tabs = pruneOpenTabs(readOpenTabs());
+    tabs[tabId] = Date.now();
+    writeOpenTabs(tabs);
+  }
+
+  function releaseTab() {
+    const tabs = readOpenTabs();
+    delete tabs[tabId];
+    writeOpenTabs(tabs);
+  }
+
+  function postCrossTabMessage(type, payload = {}) {
+    if (!tabId) return;
+    const msg = { type, payload, from: tabId, at: Date.now() };
+    if (crossTabChannel) {
+      try {
+        crossTabChannel.postMessage(msg);
+        return;
+      } catch (_) {}
+    }
+    // 没有 BroadcastChannel（老 Safari）时退化成 storage 事件。
+    try {
+      localStorage.setItem(CROSS_TAB_FALLBACK_KEY, JSON.stringify(msg));
+    } catch (_) {}
+  }
+
+  let crossTabHistoryReloadTimer = null;
+  function scheduleCrossTabHistoryReload() {
+    if (crossTabHistoryReloadTimer) return;
+    // 合并抖动：对面一个标签连发多条（建行 + 改名 + 完成）只重拉一次列表。
+    crossTabHistoryReloadTimer = setTimeout(() => {
+      crossTabHistoryReloadTimer = null;
+      try {
+        renderChatHistoryList();
+      } catch (_) {}
+    }, 600);
+  }
+
+  function handleCrossTabMessage(msg) {
+    if (!msg || typeof msg !== "object" || !msg.type) return;
+    if (msg.from === tabId) return;
+    const payload = msg.payload || {};
+    if (msg.type === "history-changed") {
+      scheduleCrossTabHistoryReload();
+      return;
+    }
+    if (msg.type === "chat-updated") {
+      scheduleCrossTabHistoryReload();
+      // 正好在看这个对话、且本标签自己没在生成 ⇒ 静默重载，让另一个窗口刚
+      // 写完的回答直接出现，而不是一直停在旧内容上。skipSkeleton 避免闪骨架。
+      if (
+        payload.chatId &&
+        payload.chatId === currentChatId &&
+        !hasActiveGeneration() &&
+        !state.isStreaming
+      ) {
+        void loadChat(payload.chatId, { silent: true, skipSkeleton: true });
+      }
+      return;
+    }
+    if (msg.type === "chat-deleted") {
+      scheduleCrossTabHistoryReload();
+      if (payload.chatId && payload.chatId === currentChatId) {
+        newChat();
+        showToast("这个对话已在另一个窗口被删除");
+      }
+      return;
+    }
+    if (msg.type === "signed-out") {
+      if (!isAuthOverlayVisible()) {
+        stopActiveGeneration("已在另一个窗口退出登录。");
+        showAuthOverlay();
+      }
+    }
+  }
+
+  function initCrossTabSync() {
+    initTabIdentity();
+    if (typeof BroadcastChannel !== "undefined") {
+      try {
+        crossTabChannel = new BroadcastChannel(CROSS_TAB_CHANNEL_NAME);
+        crossTabChannel.onmessage = (event) =>
+          handleCrossTabMessage(event?.data);
+      } catch (_) {
+        crossTabChannel = null;
+      }
+    }
+    // fallback 通道始终挂着：BroadcastChannel 可用时这个监听不会被触发。
+    window.addEventListener("storage", (event) => {
+      if (event.key !== CROSS_TAB_FALLBACK_KEY || !event.newValue) return;
+      try {
+        handleCrossTabMessage(JSON.parse(event.newValue));
+      } catch (_) {}
+    });
+    setInterval(heartbeatTab, TAB_HEARTBEAT_MS);
+    window.addEventListener("pagehide", releaseTab);
+  }
+
+  // ── 输入框草稿（按标签，不跨标签）─────────────────────────────────
+  // 用 sessionStorage 而不是 localStorage：两个窗口各打一半的草稿不该互相覆盖。
+  const COMPOSER_DRAFT_STORAGE_KEY = "cancri_composer_draft_v1";
+  let composerDraftSaveTimer = null;
+
+  function persistComposerDraft() {
+    try {
+      const text = homeInput?.value || "";
+      if (text.trim()) {
+        sessionStorage.setItem(
+          COMPOSER_DRAFT_STORAGE_KEY,
+          JSON.stringify({ chatId: currentChatId || "", text }),
+        );
+      } else {
+        sessionStorage.removeItem(COMPOSER_DRAFT_STORAGE_KEY);
+      }
+    } catch (_) {}
+  }
+
+  function scheduleComposerDraftSave() {
+    if (composerDraftSaveTimer) clearTimeout(composerDraftSaveTimer);
+    composerDraftSaveTimer = setTimeout(() => {
+      composerDraftSaveTimer = null;
+      persistComposerDraft();
+    }, 400);
+  }
+
+  function clearComposerDraft() {
+    if (composerDraftSaveTimer) {
+      clearTimeout(composerDraftSaveTimer);
+      composerDraftSaveTimer = null;
+    }
+    try {
+      sessionStorage.removeItem(COMPOSER_DRAFT_STORAGE_KEY);
+    } catch (_) {}
+  }
+
+  function restoreComposerDraft() {
+    if (!homeInput || homeInput.value.trim()) return;
+    try {
+      const raw = sessionStorage.getItem(COMPOSER_DRAFT_STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (!saved || typeof saved.text !== "string" || !saved.text.trim()) return;
+      homeInput.value = saved.text;
+      autoResizeComposerInput();
+      updateComposerSendButton();
+    } catch (_) {}
+  }
   
   async function waitForAuthReady(timeoutMs = 10000) {
     try {
@@ -9249,6 +9560,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
   async function restoreSessionNav() {
     if (hasSharedConversationHash()) return false;
+    // 浏览器「复制标签页」把 sessionStorage 一起克隆了：照着恢复会让两个标签
+    // 同时编辑同一个 chat_history 行（双方各自 PUT 整份 messages，后写覆盖
+    // 先写 = 真丢消息）。新窗口本来就该是新会话 —— 丢掉克隆来的导航状态。
+    if (tabIsClonedSession) {
+      clearSessionNav();
+      return false;
+    }
     const saved = readSessionNav();
     if (!saved || saved.shared) return false;
   
@@ -13475,6 +13793,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     chatMessages.classList.remove("active");
     homeView.classList.remove("chatting");
     homeInput.value = "";
+    clearComposerDraft();
     autoResizeComposerInput();
     updateComposerSendButton();
     updateHomeHeroText();
@@ -14996,6 +15315,89 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     return null;
   }
 
+  // 当前屏幕上正在流式输出的那个生成（整页重绘后要把 DOM 重新接回它）。
+  function getVisibleLiveGeneration() {
+    for (const g of activeGenerations.values()) {
+      if (g.status === "streaming" && isGenVisible(g)) return g;
+    }
+    return null;
+  }
+
+  // 任意一个仍在跑的生成（不管用户当前看的是哪个对话），供「随处可停」用。
+  function getAnyLiveGeneration() {
+    for (const g of activeGenerations.values()) {
+      if (g.status === "streaming") return g;
+    }
+    return null;
+  }
+
+  // 2026-09-18：修「流式输出中切到别的对话、再切回来，文字就消失/不再流式」。
+  // 根因：renderMessages() 先 messageSink.innerHTML = ""，再给每条消息铸一个
+  // 新的 msg-* id；而 SSE 写入端始终调 updateAssistantMessage(gen.assistantMessageId)，
+  // 那个 id 指向的节点已被销毁 —— 该函数查不到节点就静默 return，实时流式从此
+  // 写进虚空，只剩 scheduleVisibleRerender 每 600ms 全量重绘兜底（观感就是
+  // 「变成非流式 / 文字一跳一跳甚至空白」）。
+  // 修法：重绘后把「本轮正在生成的那条」节点的 id 改回 gen.assistantMessageId，
+  // 写入端一行都不用改就重新命中新节点，真正的流式续上。
+  //
+  // ⚠️ 只有「明确按 genCurrentMessages(gen) 重建当前对话」的那两个调用点
+  // （loadChat 的 live 分支 / scheduleVisibleRerender）才允许接管 id ——
+  // 它们保证 conversationHistory 的末尾就是本轮那条部分回答。其它顺手重绘
+  // （例如 mermaid 开关）时 conversationHistory 里还没有本轮的 assistant 条目，
+  // 末尾是上一轮已完成的回答，把它的 id 抢走会让已完成的答案被流式内容覆写。
+  let renderMessagesAdoptLiveGen = false;
+  function renderMessagesForLiveGeneration() {
+    renderMessagesAdoptLiveGen = true;
+    try {
+      renderMessages();
+    } finally {
+      renderMessagesAdoptLiveGen = false;
+    }
+  }
+
+  function adoptLiveGenerationNode(tailAssistantId) {
+    if (!tailAssistantId) return;
+    const gen = getVisibleLiveGeneration();
+    if (!gen || !gen.assistantMessageId) return;
+    if (gen.assistantMessageId === tailAssistantId) return;
+    // 原节点还在（普通重绘没动到这一条）就不要乱改 id。
+    if (document.getElementById(gen.assistantMessageId)) return;
+    const node = document.getElementById(tailAssistantId);
+    if (!node) return;
+    node.id = gen.assistantMessageId;
+    // 重新挂上「生成中」的脉冲，别让一条还在写的回答看起来已经写完了。
+    if (PORT_SKIN) portSetStreaming(node, true);
+    else node.classList.add("is-generating");
+  }
+
+  // 离开一个「还没拿到服务端 id」的进行中对话之前，先把 chat_history 行建出来。
+  // 否则侧栏没有这一项，用户再也回不到那轮正在生成的对话（内容只在内存里）。
+  // 不是额外写库：这一行本来也会在首次增量保存 / commitGeneration 时创建，
+  // 这里只是把时机提前到「用户真的要走」的那一刻。
+  function parkChatlessGeneration() {
+    for (const g of activeGenerations.values()) {
+      if (g.status === "streaming" && !g.chatId) void ensureGenChatRow(g);
+    }
+  }
+
+  // 停止当前正在跑的生成 —— 不管用户此刻看的是哪个对话、还在不在聊天态。
+  // 旧行为：切走后 setComposerBusy(false) 把停止按钮收了，state.activeRequestController
+  // 又成了孤儿指针，于是「既停不掉、也发不了新消息（被 hasActiveGeneration 挡住）」。
+  function stopActiveGeneration(reason = "已停止生成。") {
+    const gen = getAnyLiveGeneration();
+    const controller = gen?.controller || state.activeRequestController;
+    if (!controller) return false;
+    try {
+      controller.abort(createAbortError(reason));
+    } catch (_e) {
+      return false;
+    }
+    if (state.activeRequestController === controller) {
+      state.activeRequestController = null;
+    }
+    return true;
+  }
+
   function clearGenSaveTimer(gen) {
     if (gen._saveTimer) { clearTimeout(gen._saveTimer); gen._saveTimer = null; }
   }
@@ -15105,6 +15507,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
             persistSessionNav();
           }
           renderChatHistoryList();
+          postCrossTabMessage("history-changed");
           if (isGenVisible(gen)) {
             dispatchChatTitleUpdated(gen.localTitle, gen.chatId);
           }
@@ -15176,7 +15579,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       if (document.getElementById(gen.assistantMessageId)) return;
       try {
         conversationHistory = genCurrentMessages(gen);
-        renderMessages();
+        // 重建后把 id 接回写入端：此后实时 chunk 直接落到新节点，
+        // 这个 600ms 兜底重绘也就不会再被触发了。
+        renderMessagesForLiveGeneration();
         scrollChatToBottom();
       } catch (_) {}
     }, VISIBLE_RERENDER_INTERVAL_MS);
@@ -15246,8 +15651,34 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         }),
       );
     } catch (_) {}
+    // 只在「一轮彻底结束」时广播 chat-updated —— 增量保存（每 10s）也广播的话，
+    // 另一个窗口会每 10s 重载一次同一个对话。
+    postCrossTabMessage("chat-updated", { chatId: gen.chatId });
     notifyGenerationComplete(gen, visible);
     maybeUpgradeSmartTitle(gen, finalMessages);
+  }
+
+  // 侧栏的「生成中」转圈同时就是停止按钮 —— 用户一旦切去别的对话，这是唯一
+  // 还能停掉那轮生成的入口（发送按钮此时已回到发送态）。
+  // 用 span[role=button] 而不是 <button>：搬运皮肤里这个节点嵌在 <a> 内部，
+  // 嵌套 <button> 是非法 HTML；span 还能原样复用既有的 .recent-item-spinner 样式。
+  function createRecentItemSpinner() {
+    const spinner = document.createElement("span");
+    spinner.className = "recent-item-spinner";
+    spinner.setAttribute("role", "button");
+    spinner.setAttribute("tabindex", "0");
+    spinner.title = "停止生成";
+    spinner.setAttribute("aria-label", "停止生成");
+    const stop = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showToast(stopActiveGeneration() ? "已停止生成" : "该回复已经结束了");
+    };
+    spinner.addEventListener("click", stop);
+    spinner.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") stop(e);
+    });
+    return spinner;
   }
 
   // 侧栏对话项转圈：进行中的对话加 .recent-item-streaming + spinner，结束后移除。
@@ -15259,9 +15690,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       item.classList.toggle("recent-item-streaming", active);
       let spinner = item.querySelector(".recent-item-spinner");
       if (active && !spinner) {
-        spinner = document.createElement("span");
-        spinner.className = "recent-item-spinner";
-        spinner.setAttribute("aria-hidden", "true");
+        spinner = createRecentItemSpinner();
         const titleSpan = item.querySelector(".recent-item-title");
         if (titleSpan && titleSpan.nextSibling) item.insertBefore(spinner, titleSpan.nextSibling);
         else if (titleSpan) item.appendChild(spinner);
@@ -15586,7 +16015,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     if ((!query && !attachmentsForSend.length) || state.isStreaming) return;
     // 同一时刻只允许一个进行中的生成（可能在后台运行的对话）。
     if (hasActiveGeneration()) {
-      showToast("上一条还在生成中，请稍候");
+      // 指一条明确的出路：切走之后发送按钮已回到发送态，用户唯一能停掉
+      // 那轮生成的地方就是侧栏那个转圈图标（createRecentItemSpinner）。
+      showToast("上一条还在生成中：可在左侧对话列表点击转圈图标停止");
       return;
     }
     // 在用户手势内尝试申请通知权限（首次发送时弹一次），用于「完成后台生成」通知。
@@ -16039,6 +16470,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     }
     const query = String(homeInput?.value || "").trim();
     if ((!query && !pendingAttachments.length) || state.isStreaming) return;
+    // 已经发出去了就不该再被当成草稿恢复。
+    clearComposerDraft();
 
     // hero 云朵：提交期间切 orbit（原登录页「登录中」表情的对应动作）。
     // 无论成败都复位；成功路径下 hero 随即被 .chatting 隐藏，
@@ -16614,6 +17047,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     autoResizeComposerInput();
     setComposerBusy(state.isStreaming);
     updateComposerSendButton();
+    scheduleComposerDraftSave();
   });
   
   if (webSearchToggle) {
@@ -17706,6 +18140,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   let heroMascot = mountHeroMascot(heroTitle?.querySelector(".hero-icon"), {
     homeView,
   });
+  // 必须早于任何可能触发 initSessionNavRestore 的路径（initAuthOverlay →
+  // hideAuthOverlay → initSessionNavRestore）：restoreSessionNav 要读
+  // tabIsClonedSession 才能判断这份 sessionStorage 是不是复制标签页克隆来的。
+  initCrossTabSync();
+  restoreComposerDraft();
   initChatShareButton();
   initAuthOverlay();
   setTimeout(() => {
@@ -17731,6 +18170,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   updateChatShareButtonVisibility();
   window.addEventListener("beforeunload", persistSessionNav);
   window.addEventListener("pagehide", persistSessionNav);
+  // 草稿：debounce 定时器可能还没到点就被关窗打断，这里补一次同步落盘。
+  window.addEventListener("beforeunload", persistComposerDraft);
+  window.addEventListener("pagehide", persistComposerDraft);
 
   // 2026-06-17：页面进入后台 / 即将卸载时，尽力把进行中的生成增量保存一次，
   // 收紧「整页刷新最多丢约 1.5s 已生成内容」的窗口。

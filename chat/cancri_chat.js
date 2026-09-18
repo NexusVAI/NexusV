@@ -11270,6 +11270,47 @@
 		})();
 		return authSessionInflight;
 	}
+	async function forceRefreshAuthSession() {
+		authSessionPromise = null;
+		authSessionInflight = null;
+		try {
+			const { data, error } = await getSupabaseClient().auth.refreshSession();
+			if (error) throw error;
+			const session = data?.session || null;
+			if (session?.access_token) {
+				if (session.user) updateAccountInfo(session.user);
+				authSessionPromise = Promise.resolve(session);
+				authInitialized = true;
+				hideAuthOverlay();
+				return session;
+			}
+		} catch (error) {
+			console.warn("刷新登录会话失败:", error);
+		}
+		return null;
+	}
+	async function isInvalidSessionResponse(response) {
+		if (!response || response.ok) return false;
+		if (response.status !== 401 && response.status !== 403) return false;
+		try {
+			const text = await response.clone().text();
+			return /invalid_session/.test(text);
+		} catch (_e) {
+			return false;
+		}
+	}
+	async function fetchWithSessionRetry(send) {
+		const response = await send(await ensureAuthSession());
+		if (!await isInvalidSessionResponse(response)) return response;
+		const refreshed = await forceRefreshAuthSession();
+		if (!refreshed) {
+			showAuthOverlay();
+			return response;
+		}
+		const retried = await send(refreshed);
+		if (await isInvalidSessionResponse(retried)) showAuthOverlay();
+		return retried;
+	}
 	function getLoginCaptchaToken() {
 		if (window.NexusLoginCaptcha && typeof window.NexusLoginCaptcha.getToken === "function") return window.NexusLoginCaptcha.getToken();
 		return Promise.reject(/* @__PURE__ */ new Error("人机验证模块未加载（缺少 cancri_login_captcha.js），请强制刷新页面后重试。"));
@@ -11392,6 +11433,7 @@
 			} else if (event === "SIGNED_OUT") {
 				authSessionPromise = null;
 				authInitialized = false;
+				postCrossTabMessage("signed-out");
 				state.userMemories = [];
 				state.userMemoryEnabled = true;
 				renderMemoriesInSettings();
@@ -11445,8 +11487,7 @@
 			__auth_token: session.access_token
 		};
 	}
-	async function proxyFetch(url, options = {}) {
-		const session = await ensureAuthSession();
+	function withAuthTokenBody(options, session) {
 		let body;
 		if (typeof options.body === "string") try {
 			body = JSON.parse(options.body || "{}");
@@ -11456,26 +11497,16 @@
 		else if (options.body && typeof options.body === "object") body = { ...options.body };
 		else body = {};
 		body.__auth_token = session.access_token;
-		return gatewayFetch(url, {
+		return {
 			...options,
 			body: JSON.stringify(body)
-		});
+		};
+	}
+	async function proxyFetch(url, options = {}) {
+		return fetchWithSessionRetry((session) => gatewayFetch(url, withAuthTokenBody(options, session)));
 	}
 	async function proxyFetchWithTimeout(url, options = {}, timeoutMs, label) {
-		const session = await ensureAuthSession();
-		let body;
-		if (typeof options.body === "string") try {
-			body = JSON.parse(options.body || "{}");
-		} catch (_e) {
-			body = {};
-		}
-		else if (options.body && typeof options.body === "object") body = { ...options.body };
-		else body = {};
-		body.__auth_token = session.access_token;
-		return fetchWithTimeout(url, {
-			...options,
-			body: JSON.stringify(body)
-		}, timeoutMs, label);
+		return fetchWithSessionRetry((session) => fetchWithTimeout(url, withAuthTokenBody(options, session), timeoutMs, label));
 	}
 	async function submitMediaDownloadForm(url) {
 		const session = await ensureAuthSession();
@@ -11670,6 +11701,7 @@
 			if (data) upsertCachedChatSummary(data);
 			if (currentChatId === chatId) dispatchChatTitleUpdated(newTitle, chatId);
 			renderChatHistoryList();
+			postCrossTabMessage("history-changed");
 			showToast("已重命名");
 		} catch (err) {
 			console.error("重命名失败:", err);
@@ -11816,12 +11848,7 @@
 					wrap.appendChild(a);
 					wrap.appendChild(actionsWrap);
 					li.appendChild(wrap);
-					if (isStreamingItem) {
-						const spinner = document.createElement("span");
-						spinner.className = "recent-item-spinner";
-						spinner.setAttribute("aria-hidden", "true");
-						inner.appendChild(spinner);
-					}
+					if (isStreamingItem) inner.appendChild(createRecentItemSpinner());
 					listContainer.appendChild(li);
 					return;
 				}
@@ -11854,12 +11881,7 @@
 				});
 				item.appendChild(modelIcon);
 				item.appendChild(titleSpan);
-				if (isStreamingItem) {
-					const spinner = document.createElement("span");
-					spinner.className = "recent-item-spinner";
-					spinner.setAttribute("aria-hidden", "true");
-					item.appendChild(spinner);
-				}
+				if (isStreamingItem) item.appendChild(createRecentItemSpinner());
 				item.appendChild(actionsBtn);
 				item.addEventListener("click", () => loadChat(chat.id));
 				listContainer.appendChild(item);
@@ -11893,8 +11915,9 @@
 			listContainer.innerHTML = "<div class=\"recent-placeholder\">加载失败</div>";
 		}
 	}
-	async function loadChat(chatId, { silent = false } = {}) {
+	async function loadChat(chatId, { silent = false, skipSkeleton = false } = {}) {
 		exitSharedConversationMode();
+		parkChatlessGeneration();
 		const liveGen = getGenerationByChatId(chatId);
 		if (liveGen) {
 			currentChatId = chatId;
@@ -11904,7 +11927,7 @@
 			homeView.classList.add("chatting");
 			chatMessages.classList.add("active");
 			if (contextMeter) contextMeter.classList.remove("hidden");
-			renderMessages();
+			renderMessagesForLiveGeneration();
 			updateContextMeter();
 			setComposerBusy(true);
 			state.activeRequestController = liveGen.controller;
@@ -11918,7 +11941,7 @@
 		homeView.classList.add("chatting");
 		chatMessages.classList.add("active");
 		if (contextMeter) contextMeter.classList.remove("hidden");
-		renderChatMessagesSkeleton();
+		if (!skipSkeleton) renderChatMessagesSkeleton();
 		try {
 			const chat = await loadChatHistory(chatId);
 			if (chat && chat.messages) {
@@ -11927,6 +11950,7 @@
 				conversationHistory = Array.isArray(chat.messages) ? chat.messages.map((message) => sanitizeHistoryMessage(message, loadedChatModel)) : [];
 				renderMessages();
 				updateContextMeter();
+				if (state.activeRequestController) state.activeRequestController = null;
 				setComposerBusy(false);
 				scheduleChatScrollToBottom(true);
 				if (!silent) showToast("已加载聊天记录");
@@ -11944,6 +11968,7 @@
 	}
 	function newChat() {
 		exitSharedConversationMode();
+		parkChatlessGeneration();
 		currentChatId = null;
 		loadedChatModel = "";
 		conversationHistory = [];
@@ -11952,6 +11977,7 @@
 		homeCenter.style.display = "flex";
 		chatMessages.classList.remove("active");
 		homeView.classList.remove("chatting");
+		setComposerBusy(false);
 		updateChatShareButtonVisibility();
 		updateContextMeter();
 		updateHomeHeroText();
@@ -11964,6 +11990,7 @@
 		if (!chatMessages) return;
 		messageSink.innerHTML = "";
 		let lastUserMessageIndex = -1;
+		let tailAssistantId = null;
 		conversationHistory.forEach((message, i) => {
 			if (message.role === "user") {
 				lastUserMessageIndex = i;
@@ -12012,6 +12039,7 @@
 					return;
 				}
 				const id = createAssistantMessage(metadata);
+				if (i === conversationHistory.length - 1) tailAssistantId = id;
 				const parts = document.getElementById(id)?._parts;
 				const timeline = getAssistantMessageTimeline(conversationHistory, i, message);
 				if (timeline.length && parts) timeline.forEach((event) => {
@@ -12040,6 +12068,7 @@
 				});
 			}
 		});
+		if (renderMessagesAdoptLiveGen) adoptLiveGenerationNode(tailAssistantId);
 		updateChatNav();
 		updateChatShareButtonVisibility();
 		syncAskUserFromHistory();
@@ -12694,7 +12723,7 @@
 		} catch (error) {
 			console.error("加载聊天记录列表失败:", error);
 			const msg = error instanceof Error ? error.message : "加载聊天记录列表失败";
-			if (msg && msg !== "请先登录后再使用。") showToast(msg);
+			if (msg && msg !== "请先登录后再使用。" && !isAuthOverlayVisible()) showToast(msg);
 			const cached = readCachedChatHistoryList();
 			if (cached.length) {
 				chatHistoryList = cached;
@@ -12746,6 +12775,7 @@
 				message: detail || "删除聊天记录失败"
 			};
 			removeCachedChatSummary(chatId);
+			postCrossTabMessage("chat-deleted", { chatId });
 			return {
 				success: true,
 				message: detail || "已删除"
@@ -14266,6 +14296,11 @@
 			console.warn("保存会话导航状态失败:", error);
 		}
 	}
+	function clearSessionNav() {
+		try {
+			sessionStorage.removeItem(SESSION_NAV_STORAGE_KEY);
+		} catch (_) {}
+	}
 	function readSessionNav() {
 		try {
 			const raw = sessionStorage.getItem(SESSION_NAV_STORAGE_KEY);
@@ -14275,6 +14310,183 @@
 		} catch (_) {
 			return null;
 		}
+	}
+	var TAB_ID_STORAGE_KEY = "cancri_tab_id_v1";
+	var OPEN_TABS_STORAGE_KEY = "cancri_open_tabs_v1";
+	var TAB_HEARTBEAT_MS = 5e3;
+	var TAB_STALE_MS = 16e3;
+	var CROSS_TAB_CHANNEL_NAME = "cancri_chat_sync_v1";
+	var CROSS_TAB_FALLBACK_KEY = "cancri_chat_sync_v1_msg";
+	var crossTabChannel = null;
+	var tabId = "";
+	var tabIsClonedSession = false;
+	function readOpenTabs() {
+		try {
+			const parsed = JSON.parse(localStorage.getItem(OPEN_TABS_STORAGE_KEY) || "{}");
+			return parsed && typeof parsed === "object" ? parsed : {};
+		} catch {
+			return {};
+		}
+	}
+	function writeOpenTabs(tabs) {
+		try {
+			localStorage.setItem(OPEN_TABS_STORAGE_KEY, JSON.stringify(tabs));
+		} catch {}
+	}
+	function pruneOpenTabs(tabs) {
+		const now = Date.now();
+		for (const [id, seen] of Object.entries(tabs)) {
+			const at = Number(seen);
+			if (!Number.isFinite(at) || now - at > TAB_STALE_MS) delete tabs[id];
+		}
+		return tabs;
+	}
+	function newTabId() {
+		try {
+			if (crypto?.randomUUID) return crypto.randomUUID();
+		} catch (_) {}
+		return `tab_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+	}
+	function initTabIdentity() {
+		let stored = "";
+		try {
+			stored = sessionStorage.getItem(TAB_ID_STORAGE_KEY) || "";
+		} catch (_) {}
+		const tabs = pruneOpenTabs(readOpenTabs());
+		if (stored && tabs[stored]) {
+			tabIsClonedSession = true;
+			stored = "";
+		}
+		tabId = stored || newTabId();
+		try {
+			sessionStorage.setItem(TAB_ID_STORAGE_KEY, tabId);
+		} catch (_) {}
+		tabs[tabId] = Date.now();
+		writeOpenTabs(tabs);
+	}
+	function heartbeatTab() {
+		const tabs = pruneOpenTabs(readOpenTabs());
+		tabs[tabId] = Date.now();
+		writeOpenTabs(tabs);
+	}
+	function releaseTab() {
+		const tabs = readOpenTabs();
+		delete tabs[tabId];
+		writeOpenTabs(tabs);
+	}
+	function postCrossTabMessage(type, payload = {}) {
+		if (!tabId) return;
+		const msg = {
+			type,
+			payload,
+			from: tabId,
+			at: Date.now()
+		};
+		if (crossTabChannel) try {
+			crossTabChannel.postMessage(msg);
+			return;
+		} catch (_) {}
+		try {
+			localStorage.setItem(CROSS_TAB_FALLBACK_KEY, JSON.stringify(msg));
+		} catch (_) {}
+	}
+	var crossTabHistoryReloadTimer = null;
+	function scheduleCrossTabHistoryReload() {
+		if (crossTabHistoryReloadTimer) return;
+		crossTabHistoryReloadTimer = setTimeout(() => {
+			crossTabHistoryReloadTimer = null;
+			try {
+				renderChatHistoryList();
+			} catch (_) {}
+		}, 600);
+	}
+	function handleCrossTabMessage(msg) {
+		if (!msg || typeof msg !== "object" || !msg.type) return;
+		if (msg.from === tabId) return;
+		const payload = msg.payload || {};
+		if (msg.type === "history-changed") {
+			scheduleCrossTabHistoryReload();
+			return;
+		}
+		if (msg.type === "chat-updated") {
+			scheduleCrossTabHistoryReload();
+			if (payload.chatId && payload.chatId === currentChatId && !hasActiveGeneration() && !state.isStreaming) loadChat(payload.chatId, {
+				silent: true,
+				skipSkeleton: true
+			});
+			return;
+		}
+		if (msg.type === "chat-deleted") {
+			scheduleCrossTabHistoryReload();
+			if (payload.chatId && payload.chatId === currentChatId) {
+				newChat();
+				showToast("这个对话已在另一个窗口被删除");
+			}
+			return;
+		}
+		if (msg.type === "signed-out") {
+			if (!isAuthOverlayVisible()) {
+				stopActiveGeneration("已在另一个窗口退出登录。");
+				showAuthOverlay();
+			}
+		}
+	}
+	function initCrossTabSync() {
+		initTabIdentity();
+		if (typeof BroadcastChannel !== "undefined") try {
+			crossTabChannel = new BroadcastChannel(CROSS_TAB_CHANNEL_NAME);
+			crossTabChannel.onmessage = (event) => handleCrossTabMessage(event?.data);
+		} catch (_) {
+			crossTabChannel = null;
+		}
+		window.addEventListener("storage", (event) => {
+			if (event.key !== CROSS_TAB_FALLBACK_KEY || !event.newValue) return;
+			try {
+				handleCrossTabMessage(JSON.parse(event.newValue));
+			} catch (_) {}
+		});
+		setInterval(heartbeatTab, TAB_HEARTBEAT_MS);
+		window.addEventListener("pagehide", releaseTab);
+	}
+	var COMPOSER_DRAFT_STORAGE_KEY = "cancri_composer_draft_v1";
+	var composerDraftSaveTimer = null;
+	function persistComposerDraft() {
+		try {
+			const text = homeInput?.value || "";
+			if (text.trim()) sessionStorage.setItem(COMPOSER_DRAFT_STORAGE_KEY, JSON.stringify({
+				chatId: currentChatId || "",
+				text
+			}));
+			else sessionStorage.removeItem(COMPOSER_DRAFT_STORAGE_KEY);
+		} catch (_) {}
+	}
+	function scheduleComposerDraftSave() {
+		if (composerDraftSaveTimer) clearTimeout(composerDraftSaveTimer);
+		composerDraftSaveTimer = setTimeout(() => {
+			composerDraftSaveTimer = null;
+			persistComposerDraft();
+		}, 400);
+	}
+	function clearComposerDraft() {
+		if (composerDraftSaveTimer) {
+			clearTimeout(composerDraftSaveTimer);
+			composerDraftSaveTimer = null;
+		}
+		try {
+			sessionStorage.removeItem(COMPOSER_DRAFT_STORAGE_KEY);
+		} catch (_) {}
+	}
+	function restoreComposerDraft() {
+		if (!homeInput || homeInput.value.trim()) return;
+		try {
+			const raw = sessionStorage.getItem(COMPOSER_DRAFT_STORAGE_KEY);
+			if (!raw) return;
+			const saved = JSON.parse(raw);
+			if (!saved || typeof saved.text !== "string" || !saved.text.trim()) return;
+			homeInput.value = saved.text;
+			autoResizeComposerInput();
+			updateComposerSendButton();
+		} catch (_) {}
 	}
 	async function waitForAuthReady(timeoutMs = 1e4) {
 		try {
@@ -14297,6 +14509,10 @@
 	}
 	async function restoreSessionNav() {
 		if (hasSharedConversationHash()) return false;
+		if (tabIsClonedSession) {
+			clearSessionNav();
+			return false;
+		}
 		const saved = readSessionNav();
 		if (!saved || saved.shared) return false;
 		if (saved.view === "claudeProjectDetail" && saved.projectId) {
@@ -17128,6 +17344,7 @@
 		chatMessages.classList.remove("active");
 		homeView.classList.remove("chatting");
 		homeInput.value = "";
+		clearComposerDraft();
 		autoResizeComposerInput();
 		updateComposerSendButton();
 		updateHomeHeroText();
@@ -18059,6 +18276,49 @@
 		for (const g of activeGenerations.values()) if (g.status === "streaming" && g.chatId === chatId) return g;
 		return null;
 	}
+	function getVisibleLiveGeneration() {
+		for (const g of activeGenerations.values()) if (g.status === "streaming" && isGenVisible(g)) return g;
+		return null;
+	}
+	function getAnyLiveGeneration() {
+		for (const g of activeGenerations.values()) if (g.status === "streaming") return g;
+		return null;
+	}
+	var renderMessagesAdoptLiveGen = false;
+	function renderMessagesForLiveGeneration() {
+		renderMessagesAdoptLiveGen = true;
+		try {
+			renderMessages();
+		} finally {
+			renderMessagesAdoptLiveGen = false;
+		}
+	}
+	function adoptLiveGenerationNode(tailAssistantId) {
+		if (!tailAssistantId) return;
+		const gen = getVisibleLiveGeneration();
+		if (!gen || !gen.assistantMessageId) return;
+		if (gen.assistantMessageId === tailAssistantId) return;
+		if (document.getElementById(gen.assistantMessageId)) return;
+		const node = document.getElementById(tailAssistantId);
+		if (!node) return;
+		node.id = gen.assistantMessageId;
+		if (PORT_SKIN) portSetStreaming(node, true);
+		else node.classList.add("is-generating");
+	}
+	function parkChatlessGeneration() {
+		for (const g of activeGenerations.values()) if (g.status === "streaming" && !g.chatId) ensureGenChatRow(g);
+	}
+	function stopActiveGeneration(reason = "已停止生成。") {
+		const controller = getAnyLiveGeneration()?.controller || state.activeRequestController;
+		if (!controller) return false;
+		try {
+			controller.abort(createAbortError(reason));
+		} catch (_e) {
+			return false;
+		}
+		if (state.activeRequestController === controller) state.activeRequestController = null;
+		return true;
+	}
 	function clearGenSaveTimer(gen) {
 		if (gen._saveTimer) {
 			clearTimeout(gen._saveTimer);
@@ -18164,6 +18424,7 @@
 						persistSessionNav();
 					}
 					renderChatHistoryList();
+					postCrossTabMessage("history-changed");
 					if (isGenVisible(gen)) dispatchChatTitleUpdated(gen.localTitle, gen.chatId);
 				}
 			} catch (error) {
@@ -18219,7 +18480,7 @@
 			if (document.getElementById(gen.assistantMessageId)) return;
 			try {
 				conversationHistory = genCurrentMessages(gen);
-				renderMessages();
+				renderMessagesForLiveGeneration();
 				scrollChatToBottom();
 			} catch (_) {}
 		}, VISIBLE_RERENDER_INTERVAL_MS);
@@ -18278,8 +18539,27 @@
 				chatId: gen.chatId
 			} }));
 		} catch (_) {}
+		postCrossTabMessage("chat-updated", { chatId: gen.chatId });
 		notifyGenerationComplete(gen, visible);
 		maybeUpgradeSmartTitle(gen, finalMessages);
+	}
+	function createRecentItemSpinner() {
+		const spinner = document.createElement("span");
+		spinner.className = "recent-item-spinner";
+		spinner.setAttribute("role", "button");
+		spinner.setAttribute("tabindex", "0");
+		spinner.title = "停止生成";
+		spinner.setAttribute("aria-label", "停止生成");
+		const stop = (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			showToast(stopActiveGeneration() ? "已停止生成" : "该回复已经结束了");
+		};
+		spinner.addEventListener("click", stop);
+		spinner.addEventListener("keydown", (e) => {
+			if (e.key === "Enter" || e.key === " ") stop(e);
+		});
+		return spinner;
 	}
 	function refreshSidebarSpinners() {
 		document.querySelectorAll(".recent-item[data-chat-id]").forEach((item) => {
@@ -18288,9 +18568,7 @@
 			item.classList.toggle("recent-item-streaming", active);
 			let spinner = item.querySelector(".recent-item-spinner");
 			if (active && !spinner) {
-				spinner = document.createElement("span");
-				spinner.className = "recent-item-spinner";
-				spinner.setAttribute("aria-hidden", "true");
+				spinner = createRecentItemSpinner();
 				const titleSpan = item.querySelector(".recent-item-title");
 				if (titleSpan && titleSpan.nextSibling) item.insertBefore(spinner, titleSpan.nextSibling);
 				else if (titleSpan) item.appendChild(spinner);
@@ -18553,7 +18831,7 @@
 		const webSearchEnabledForTurn = Boolean(state.webSearchEnabled);
 		if (!query && !attachmentsForSend.length || state.isStreaming) return;
 		if (hasActiveGeneration()) {
-			showToast("上一条还在生成中，请稍候");
+			showToast("上一条还在生成中：可在左侧对话列表点击转圈图标停止");
 			return;
 		}
 		ensureNotificationPermission();
@@ -18804,6 +19082,7 @@
 		}
 		const query = String(homeInput?.value || "").trim();
 		if (!query && !pendingAttachments.length || state.isStreaming) return;
+		clearComposerDraft();
 		heroMascot?.setBusy(true);
 		try {
 			await sendMessage(query);
@@ -19206,6 +19485,7 @@
 		autoResizeComposerInput();
 		setComposerBusy(state.isStreaming);
 		updateComposerSendButton();
+		scheduleComposerDraftSave();
 	});
 	if (webSearchToggle) webSearchToggle.addEventListener("click", () => {
 		if (state.isStreaming) return;
@@ -19948,6 +20228,8 @@
 	setInterval(updateTokenExpiryNote, 1e3);
 	setInterval(updateHomeHeroText, 60 * 1e3);
 	var heroMascot = mountHeroMascot(heroTitle?.querySelector(".hero-icon"), { homeView });
+	initCrossTabSync();
+	restoreComposerDraft();
 	initChatShareButton();
 	initAuthOverlay();
 	setTimeout(() => {
@@ -19967,6 +20249,8 @@
 	updateChatShareButtonVisibility();
 	window.addEventListener("beforeunload", persistSessionNav);
 	window.addEventListener("pagehide", persistSessionNav);
+	window.addEventListener("beforeunload", persistComposerDraft);
+	window.addEventListener("pagehide", persistComposerDraft);
 	function flushActiveGenerationsBestEffort() {
 		for (const gen of activeGenerations.values()) if (gen.status === "streaming") try {
 			flushGenSave(gen);

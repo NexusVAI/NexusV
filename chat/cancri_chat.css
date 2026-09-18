@@ -752,6 +752,25 @@ svg {
     /* 生成中略微高亮标题，配合转圈更醒目 */
     color: var(--text);
 }
+/* 2026-09-18：这个转圈同时就是「停止生成」按钮（span[role=button]）。
+   用户一旦切去别的对话，发送按钮已回到发送态，这里是唯一还能停掉生成的入口。
+   hover/focus 时把转圈换成实心方块，把「可点 = 停止」说清楚。 */
+.recent-item-spinner[role="button"] {
+    cursor: pointer;
+    box-sizing: border-box;
+}
+.recent-item-spinner[role="button"]:hover,
+.recent-item-spinner[role="button"]:focus-visible {
+    opacity: 1;
+    animation: none;
+    border-radius: 3px;
+    border-color: transparent;
+    background: var(--accent, currentColor);
+}
+.recent-item-spinner[role="button"]:focus-visible {
+    outline: 2px solid var(--accent, currentColor);
+    outline-offset: 2px;
+}
 @keyframes recent-item-spin {
     to {
         transform: rotate(360deg);
