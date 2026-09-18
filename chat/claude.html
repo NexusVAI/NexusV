@@ -136,7 +136,7 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=20260917-md-desktop-port"
+            href="./claude.css?v=20260918-settings-claude"
         />
 <style>
             /* 登录层显隐。背景/字体/布局由 claude-login.css 提供，这里禁止再写 bg。 */
@@ -1075,59 +1075,6 @@
                                             </button>
                                         </div>
                                         <div class="composer-actions">
-                                            <div class="model-selector claude-model-selector-inline" id="modelSelector">
-                                                <button class="model-current" id="modelCurrentBtn" type="button">
-                                                    <span class="model-name" id="currentModelName">GPT 5.5</span>
-                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
-                                                </button>
-                                                <div class="model-dropdown" id="modelDropdown">
-                                                    <div class="model-search-panel">
-                                                        <div class="model-search-input-wrap">
-                                                            <svg class="model-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
-                                                            <input id="modelSearchInput" type="search" placeholder="搜索模型" autocomplete="off"/>
-                                                        </div>
-                                                        <div class="model-filter-row" id="modelFilterRow">
-                                                            <button class="model-filter-chip active" data-filter="all" type="button">文本</button>
-                                                            <button class="model-filter-chip" data-filter="code" type="button">代码</button>
-                                                            <button class="model-filter-chip" data-filter="image" type="button">图像</button>
-                                                        </div>
-                                                    </div>
-                                                    <div class="model-dropdown-content" id="modelDropdownContent"></div>
-                                                    <div class="model-dropdown-footer" id="modelDropdownFooter">
-                                                        <button class="model-see-more" id="modelSeeMoreBtn" type="button">See more</button>
-                                                    </div>
-                                                    <div class="model-hover-popover" id="modelHoverPopover" hidden>
-                                                        <button class="model-popover-pin" id="modelPopoverPinBtn" type="button" aria-label="固定模型">
-                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v8"></path><path d="m5 5 14 14"></path><path d="M19 7l-7 7"></path></svg>
-                                                        </button>
-                                                        <div class="model-popover-header">
-                                                            <img class="model-popover-icon" src="" alt=""/>
-                                                            <span class="model-popover-name"></span>
-                                                        </div>
-                                                        <div class="model-popover-badges"></div>
-                                                        <div class="model-popover-meta"></div>
-                                                    </div>
-                                                    <div class="claude-thinking-toggle">
-                                                        <div class="claude-thinking-meta">
-                                                            <span class="claude-thinking-title">适应性思考</span>
-                                                            <span class="claude-thinking-desc">思考更长以解决任务</span>
-                                                        </div>
-                                                        <label class="claude-switch">
-                                                            <input type="checkbox" id="claudeAdaptiveThinking"/>
-                                                            <span class="claude-switch-track"></span>
-                                                        </label>
-                                                    </div>
-                                                    <div class="model-dropdown-footer">
-                                                        <button class="model-page-btn" id="modelPagePrev" aria-label="上一页">
-                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"></path></svg>
-                                                        </button>
-                                                        <span class="model-page-info" id="modelPageInfo">1 / 3</span>
-                                                        <button class="model-page-btn" id="modelPageNext" aria-label="下一页">
-                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"></path></svg>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
                                             <button
                                                 class="voice-btn"
                                                 id="voiceToastBtn"
@@ -1189,6 +1136,63 @@
                                                     ></rect>
                                                 </svg>
                                             </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="composer-chin" id="composerChin">
+                                <div class="composer-chin-right" id="composerChinRight">
+                                    <div class="model-selector claude-model-selector-inline" id="modelSelector">
+                                        <button class="model-current" id="modelCurrentBtn" type="button">
+                                            <span class="model-name" id="currentModelName">GPT 5.5</span>
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
+                                        </button>
+                                        <div class="model-dropdown" id="modelDropdown">
+                                            <div class="model-search-panel">
+                                                <div class="model-search-input-wrap">
+                                                    <svg class="model-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                                                    <input id="modelSearchInput" type="search" placeholder="搜索模型" autocomplete="off"/>
+                                                </div>
+                                                <div class="model-filter-row" id="modelFilterRow">
+                                                    <button class="model-filter-chip active" data-filter="all" type="button">文本</button>
+                                                    <button class="model-filter-chip" data-filter="code" type="button">代码</button>
+                                                    <button class="model-filter-chip" data-filter="image" type="button">图像</button>
+                                                </div>
+                                            </div>
+                                            <div class="model-dropdown-content" id="modelDropdownContent"></div>
+                                            <div class="model-dropdown-footer" id="modelDropdownFooter">
+                                                <button class="model-see-more" id="modelSeeMoreBtn" type="button">See more</button>
+                                            </div>
+                                            <div class="model-hover-popover" id="modelHoverPopover" hidden>
+                                                <button class="model-popover-pin" id="modelPopoverPinBtn" type="button" aria-label="固定模型">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v8"></path><path d="m5 5 14 14"></path><path d="M19 7l-7 7"></path></svg>
+                                                </button>
+                                                <div class="model-popover-header">
+                                                    <img class="model-popover-icon" src="" alt=""/>
+                                                    <span class="model-popover-name"></span>
+                                                </div>
+                                                <div class="model-popover-badges"></div>
+                                                <div class="model-popover-meta"></div>
+                                            </div>
+                                            <div class="claude-thinking-toggle">
+                                                <div class="claude-thinking-meta">
+                                                    <span class="claude-thinking-title">适应性思考</span>
+                                                    <span class="claude-thinking-desc">思考更长以解决任务</span>
+                                                </div>
+                                                <label class="claude-switch">
+                                                    <input type="checkbox" id="claudeAdaptiveThinking"/>
+                                                    <span class="claude-switch-track"></span>
+                                                </label>
+                                            </div>
+                                            <div class="model-dropdown-footer">
+                                                <button class="model-page-btn" id="modelPagePrev" aria-label="上一页">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"></path></svg>
+                                                </button>
+                                                <span class="model-page-info" id="modelPageInfo">1 / 3</span>
+                                                <button class="model-page-btn" id="modelPageNext" aria-label="下一页">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"></path></svg>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1490,14 +1494,14 @@
                                     <input type="search" id="claudeSettingsSearch" placeholder="搜索" aria-label="搜索设置" autocomplete="off" />
                                 </label>
                                 <ul class="claude-settings-nav-list" role="list">
-                                    <li class="claude-snav-li"><button class="claude-snav-item active" type="button" data-snav="overview"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.5"/><path d="M5 19a7 7 0 0 1 14 0"/></svg></span><span class="claude-snav-label">概述</span></button></li>
-                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="account"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/></svg></span><span class="claude-snav-label">账号</span></button></li>
-                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="privacy"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v6c0 4.4 3 8.5 7 9 4-.5 7-4.6 7-9V6l-7-3z"/></svg></span><span class="claude-snav-label">隐私</span></button></li>
-                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="billing"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg></span><span class="claude-snav-label">账单</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item active" type="button" data-snav="overview"><span class="claude-snav-icon claude-anthropicon" aria-hidden="true">&#xe0d6;</span><span class="claude-snav-label">概述</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="account"><span class="claude-snav-icon claude-anthropicon" aria-hidden="true">&#xe105;</span><span class="claude-snav-label">账号</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="privacy"><span class="claude-snav-icon claude-anthropicon" aria-hidden="true">&#xe0a3;</span><span class="claude-snav-label">隐私</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="billing"><span class="claude-snav-icon claude-anthropicon" aria-hidden="true">&#xe058;</span><span class="claude-snav-label">账单</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="usage"><span class="claude-snav-icon claude-anthropicon" aria-hidden="true">&#xe030;</span><span class="claude-snav-label">用量</span></button></li>
-                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="invite"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8"/><path d="M21 12V5a2 2 0 0 0-2-2h-6"/><circle cx="9" cy="7" r="2.5"/></svg></span><span class="claude-snav-label">邀请</span></button></li>
-                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="capability"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span><span class="claude-snav-label">能力</span></button></li>
-                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="password"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></svg></span><span class="claude-snav-label">Cancri 密码</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="invite"><span class="claude-snav-icon claude-anthropicon" aria-hidden="true">&#xe106;</span><span class="claude-snav-label">邀请</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="capability"><span class="claude-snav-icon claude-anthropicon" aria-hidden="true">&#xe100;</span><span class="claude-snav-label">能力</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="password"><span class="claude-snav-icon claude-anthropicon" aria-hidden="true">&#xe0a1;</span><span class="claude-snav-label">Cancri 密码</span></button></li>
                                 </ul>
                             </nav>
                             <div class="claude-settings-main">

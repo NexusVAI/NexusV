@@ -7540,15 +7540,17 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
     align-items: center !important;
     justify-content: center !important;
     padding: 16px !important;
-    /* 2026-06-21 对齐 Claude 01_41_23：bg-backdrop=#0006 + backdrop-blur-[2px] */
-    background: rgba(0, 0, 0, 0.375);
+    /* 2026-09-18 对齐 Claude 真站保存页（2026_9_18）：bg-backdrop=--cds-backdrop=#0006
+       （60% 黑，原 .375 太浅显得像纯色）+ backdrop-blur-[2px]。
+       !important 必需：#claudeSettingsView 基础规则有 background:var(--c-bg)!important。 */
+    background: rgba(0, 0, 0, 0.6) !important;
     -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
     overflow: hidden !important;
     animation: claude-settings-modal-fade 200ms ease-out;
 }
 html[data-theme="light"] #claudeSettingsView.active {
-    background: rgba(0, 0, 0, 0.375);
+    background: rgba(0, 0, 0, 0.6) !important;
 }
 @keyframes claude-settings-modal-fade {
     from { opacity: 0; }
@@ -7563,23 +7565,30 @@ html[data-theme="light"] #claudeSettingsView.active {
     pointer-events: none !important;
 }
 #claudeSettingsView.active .claude-settings-page {
-    /* 2026-06-21 对齐 Claude 01_41_23：w/h calc(100vw/100vh - 2rem)、max-w 960、
-       max-h 45rem(720)、rounded-card=10、bg-surface-2、shadow-panel-sm、
-       starting scale-[0.98] opacity-0 → scale-1 opacity-1 duration-base(.2s)。 */
-    width: min(960px, calc(100vw - 32px));
-    height: calc(100vh - 32px);
-    max-height: 720px;
+    /* 2026-09-18 对齐 Claude 真站保存页（2026_9_18）实测 class：
+       w calc(100vw-2rem) / max-w 1024px、h calc(100dvh-2rem) / max-h 50rem(800px)、
+       rounded-card≈9.4px、bg-surface-2、shadow-panel-sm(1px ring + shadow-sm)、
+       border 仅 dark(alpha-1)、starting scale-[0.98] opacity-0 → 1 duration-base(.2s)。 */
+    width: min(1024px, calc(100vw - 2rem));
+    max-width: 1024px;   /* 覆盖基础规则 .claude-settings-page{max-width:920px} */
+    height: calc(100vh - 2rem);
+    height: calc(100dvh - 2rem);
+    max-height: 800px;
     margin: 0 auto !important;
     padding: 0 !important;
     position: relative;
     background: var(--c-bg-elev);
-    border: 1px solid var(--c-line);
+    border: none;
     border-radius: 10px;
-    box-shadow: 0 0 0 1px var(--c-line), 0 12px 32px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 0 0 1px var(--c-line), 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.12);
     overflow: hidden;
     display: flex;
     flex-direction: column;
     animation: claude-settings-modal-pop 200ms cubic-bezier(0.32, 0.72, 0.4, 1);
+}
+/* 真站 dark:border-alpha-1 —— 仅深色主题给 5% 描边，浅色只靠 shadow ring。 */
+html:not([data-theme="light"]) #claudeSettingsView.active .claude-settings-page {
+    border: 1px solid color-mix(in srgb, var(--c-text) 5%, transparent);
 }
 #claudeSettingsView.active .claude-settings-close-btn {
     /* 对齐 Claude：h-control aspect-square w-control=32px，aria-label=Close */
@@ -7615,12 +7624,13 @@ html[data-theme="light"] #claudeSettingsView.active {
     overflow: hidden !important;
 }
 #claudeSettingsView.active .claude-settings-nav {
-    /* 2026-06-21 对齐 Claude：p-md=12、bg-surface-1(浅灰)、border-alpha-2、gap-sm=8 */
+    /* 2026-09-18 对齐真站保存页：nav w-48=192、bg-surface-1(=--c-bg)、
+       border-r alpha-2(=--c-line)、px-md/pt-md≈8、gap-sm≈8 */
     border-right: 1px solid var(--c-line);
-    padding: 12px !important;
+    padding: 8px !important;
     gap: 8px !important;
     overflow-y: auto;
-    background: color-mix(in srgb, var(--c-bg) 92%, var(--c-bg-elev));
+    background: var(--c-bg);
     position: static !important;
     flex: 0 0 192px !important;
     width: 192px !important;
@@ -7629,29 +7639,57 @@ html[data-theme="light"] #claudeSettingsView.active {
     min-height: 0;
     flex: 1 1 auto;
 }
-/* 2026-06-21 对齐 Claude 01_41_23：nav item h-control=32、px-sm=8、gap-sm=8、text-body=14；
-   search h-control=32、px-sm=8；active 项 bg-alpha-2(=text 8% mix) font-medium。 */
+/* 2026-09-18 对齐真站保存页：搜索框 h-control(comfortable≈30px)、px-sm≈6、rounded≈6；
+   nav item h-control≈30、px-sm≈6、gap-sm≈8、text-body≈13px；active=fill-ghost-selected
+   (alpha-2=--c-hover-strong) font-medium；hover=fill-ghost-hover(alpha-1=--c-hover)；
+   图标 1.25rem=20px wght433.3 恒 text-secondary(=--c-text-soft)。
+   真站 nav 无可见大标题（h2 sr-only），标题只保留 a11y。 */
+#claudeSettingsView.active .claude-settings-nav-title {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
 #claudeSettingsView.active .claude-settings-search {
-    height: 32px !important;
-    padding: 0 8px !important;
+    height: 30px !important;
+    padding: 0 6px !important;
     margin: 0 0 8px !important;
     border-radius: 6px !important;
 }
+#claudeSettingsView.active .claude-settings-search svg {
+    width: 20px;
+    height: 20px;
+}
 #claudeSettingsView.active .claude-snav-item {
-    height: 32px !important;
-    padding: 0 8px !important;
+    height: 30px !important;
+    padding: 0 6px !important;
     gap: 8px !important;
     border-radius: 6px !important;
-    font-size: 14px !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
 }
 #claudeSettingsView.active .claude-snav-item.active {
-    background: color-mix(in srgb, var(--c-text) 10%, transparent) !important;
+    background: var(--c-hover-strong) !important;
     color: var(--c-text) !important;
     font-weight: 500 !important;
 }
 #claudeSettingsView.active .claude-snav-item:not(.active):hover {
     background: var(--c-hover) !important;
     color: var(--c-text) !important;
+}
+#claudeSettingsView.active .claude-snav-icon,
+#claudeSettingsView.active .claude-snav-icon.claude-anthropicon {
+    font-size: 20px;
+    color: var(--c-text-soft);
+}
+#claudeSettingsView.active .claude-snav-item:hover .claude-snav-icon,
+#claudeSettingsView.active .claude-snav-item.active .claude-snav-icon {
+    color: var(--c-text-soft);
 }
 #claudeSettingsView.active .claude-settings-content {
     /* 2026-05-22 fix(mobile-settings-fix)：把 height:100% 换成 flex:1 1 auto + min-height:0。
@@ -7710,6 +7748,13 @@ html[data-theme="light"] #claudeSettingsView.active {
         background: transparent !important;
     }
     #claudeSettingsView.active .claude-settings-nav-title {
+        /* 桌面 sr-only 的反向恢复：移动端保留可见标题 */
+        position: static !important;
+        width: auto !important;
+        height: auto !important;
+        overflow: visible !important;
+        clip-path: none !important;
+        white-space: normal !important;
         padding: 16px 52px 8px 16px !important;
         font-size: 17px !important;
         font-weight: 600 !important;
@@ -10927,4 +10972,248 @@ html[data-theme="black"] :is(.message.assistant .answer-body, .duel-answer).md-c
 }
 .md-content .md-table-copy:hover {
     opacity: 1;
+}
+
+/* ───────────────────────────────────────────────────────────
+   §34. Claude 新 composer 移植（2026-09-18）
+   参考页：C:\Users\HP\Downloads\New session - Claude (2026_9_18 09：45：46).html
+   Playwright 实测（1440×900，light）：
+     box    640×104 / radius 14 / padding 8 / gap 8 /
+            shadow 0 4px 20px rgba(0,0,0,.035) + ring 1px rgba(11,11,11,.10)；
+            hover ring .20；focus-within shadow .075 + ring .20
+     输入行  16px/22px，padding 5px 0 5px 8px，min-h 54px（2 行），max-h 384px
+     按钮    32×32 / radius 8 / ghost，hover rgba(11,11,11,.05)，图标 20px
+     send    32×32 / radius 8 / 实心用品牌橙，disabled opacity .4
+     chin    与 box 等宽再左右各外扩 8px，padding 8 / 行高 32 / 字号 13 / 色 #52514e；
+             右侧模型按钮 24px 高 / radius 6 / padding 0 8px / 字号 13
+   令牌一一对应：--c-text / --c-text-soft / --c-text-dim / --c-line / --c-line-strong /
+   --c-hover / --c-bg-elev。dark / black 沿用原 elevation 阴影，只同步几何。
+   注：选择器带 #homeView / [data-workbench-composer] / 按钮 id 前缀，是为了压过
+   styles/99-polish-fixes.css 与 claude.css 旧移动端段的 34px/999px 等 !important 规则。
+   ─────────────────────────────────────────────────────────── */
+html[data-theme] {
+    /* 真站新 composer 实测 640px（旧注释里的 max-w-2xl 672px 属上一版 UI） */
+    --composer-max-w: 640px;
+    --composer-radius: 14px;
+}
+
+/* box 几何：高度内容驱动 = 8 + 54 + 2 + 32 + 8 = 104（真站无 border，描边由 ring 承担） */
+.composer,
+#homeView.chatting .composer {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding: 8px !important;
+    gap: 2px !important; /* 输入行 → 底行：真站 editor pb 34 = 32 + 2 */
+    border: 0 !important;
+    border-radius: 14px !important;
+}
+
+/* box 阴影三态：light = 真站实测值；dark / black 沿用原 elevation 数值 */
+.composer {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.18),
+        0 0 0 1px var(--c-line) !important;
+}
+.composer:hover {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.18),
+        0 0 0 1px var(--c-line-strong) !important;
+}
+.composer:focus-within {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.26),
+        0 0 0 1px var(--c-line-strong) !important;
+}
+html[data-theme="light"] .composer {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.035),
+        0 0 0 1px var(--c-line) !important;
+}
+html[data-theme="light"] .composer:hover {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.035),
+        0 0 0 1px var(--c-line-strong) !important;
+}
+html[data-theme="light"] .composer:focus-within {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.075),
+        0 0 0 1px var(--c-line-strong) !important;
+}
+html[data-theme="dark"] .composer,
+html[data-theme="black"] .composer {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.18),
+        0 0 0 1px var(--c-line) !important;
+}
+html[data-theme="dark"] .composer:hover,
+html[data-theme="black"] .composer:hover {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.18),
+        0 0 0 1px var(--c-line-strong) !important;
+}
+html[data-theme="dark"] .composer:focus-within,
+html[data-theme="black"] .composer:focus-within {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.26),
+        0 0 0 1px var(--c-line-strong) !important;
+}
+
+/* 输入行 */
+#homeView .composer .composer-input,
+.composer[data-workbench-composer] .composer-input {
+    font-size: 16px !important;
+    line-height: 22px !important;
+    font-weight: 430 !important;
+    padding: 5px 0 5px 8px !important;
+    min-height: 54px !important; /* 2 行 = 2×22 + 2×5 */
+    max-height: 384px !important;
+}
+#homeView.chatting .composer .composer-input {
+    min-height: 32px !important; /* 对话态 1 行（= 控件行高） */
+}
+
+/* 底部一行：左下 +，右下 语音 + 发送 */
+#homeView .composer .composer-bottom,
+.composer[data-workbench-composer] .composer-bottom {
+    min-height: 32px !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    gap: 0 !important;
+}
+#homeView .composer .composer-tools-row,
+.composer[data-workbench-composer] .composer-tools-row {
+    min-height: 32px !important;
+    gap: 8px !important;
+    padding-inline: 0 !important;
+    align-items: center !important;
+}
+#homeView .composer .composer-tools,
+#homeView .composer .composer-actions,
+.composer[data-workbench-composer] .composer-tools,
+.composer[data-workbench-composer] .composer-actions {
+    gap: 8px !important;
+    align-items: center !important;
+}
+/* 状态胶囊：空时零高度（工具行仍精确 32px），有内容时才撑开 */
+#homeView .composer .composer-status,
+.composer[data-workbench-composer] .composer-status {
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* 图标按钮：32×32 / radius 8 / ghost
+   高度对 .hidden 也生效（隐藏态旧规则是 34px，会把工具行撑到 34） */
+#homeView .composer .composer-actions .send-btn,
+#homeView .composer .composer-actions .voice-btn,
+.composer[data-workbench-composer] .composer-actions .send-btn,
+.composer[data-workbench-composer] .composer-actions .voice-btn {
+    height: 32px !important;
+}
+.composer[data-workbench-composer] .composer-tool-btn,
+.composer[data-workbench-composer] .composer-actions .voice-btn:not(.hidden),
+.composer[data-workbench-composer] .composer-actions .send-btn:not(.hidden),
+#homeView .composer .composer-tools .composer-tool-btn,
+#homeView .composer .composer-actions .voice-btn:not(.hidden),
+#homeView .composer .composer-actions .send-btn:not(.hidden) {
+    width: 32px !important;
+    height: 32px !important;
+    flex: 0 0 32px !important;
+    border-radius: 8px !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--c-text) !important;
+    box-shadow: none !important;
+}
+#homeView .composer .composer-tools .composer-tool-btn svg,
+.composer[data-workbench-composer] .composer-tools .composer-tool-btn svg {
+    width: 20px;
+    height: 20px;
+}
+#homeView .composer .composer-tool-btn:hover,
+#homeView .composer .composer-actions .voice-btn:not(.hidden):hover,
+.composer[data-workbench-composer] .composer-tool-btn:hover,
+.composer[data-workbench-composer] .composer-actions .voice-btn:not(.hidden):hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+/* 发送键：有内容才实心；空/禁用保持 ghost */
+#homeView .composer .composer-actions .send-btn:not(.hidden):disabled,
+.composer[data-workbench-composer] .composer-actions .send-btn:not(.hidden):disabled {
+    background: transparent !important;
+    color: var(--c-text-dim) !important;
+    border: 0 !important;
+    opacity: 0.4;
+}
+#homeView .composer .composer-actions .send-btn:not(.hidden):not(:disabled),
+.composer[data-workbench-composer] .composer-actions .send-btn:not(.hidden):not(:disabled) {
+    background: var(--c-accent) !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+}
+
+/* chin 行：模型选择器挂在输入框外右下（真站「Opus 5 Low / Auto」位置） */
+.composer-chin {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    /* 与 box 等宽再左右各外扩 8px；上边 -8px 抵消 padding，使行内容紧贴 box 底边
+       （真站 chin 是 -mt-2 + pt-2，行内容从 box 底边开始） */
+    margin: -8px -8px 0 !important;
+    padding: 8px !important;
+    min-height: 48px !important;
+    box-sizing: border-box;
+    font-size: 13px !important;
+    line-height: 20px !important;
+    color: var(--c-text-soft) !important;
+}
+.composer-chin-right {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    min-width: 0;
+}
+#composerChin #modelSelector,
+#composerChin .claude-model-selector-inline {
+    position: relative !important;
+    display: inline-flex !important;
+    width: auto !important;
+    min-width: 0;
+    margin: 0 !important;
+}
+#composerChin #modelSelector .model-current,
+#composerChin #modelCurrentBtn {
+    height: 24px !important;
+    min-height: 24px !important;
+    width: auto !important;
+    padding: 0 8px !important;
+    border-radius: 6px !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--c-text) !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    line-height: 20px !important;
+    gap: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+#composerChin #modelSelector .model-current:hover,
+#composerChin #modelCurrentBtn:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+#composerChin #modelSelector .model-name,
+#composerChin #currentModelName {
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    color: inherit !important;
+}
+#composerChin #modelSelector .model-current-icon {
+    display: none !important;
 }
