@@ -109,7 +109,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   //
   // 判定放在 gatewayFetch 这**唯一的基址解析入口**里，而不是逐个调用点改 URL：
   // 逐点改的话，下一个新增的媒体调用点必然漏改（这正是本仓多次漂移的形状）。
-  const RELAY_EXCLUDED_ENDPOINT_RE = /"endpoint"\s*:\s*"(?:image|video|media-download)"/;
+  const RELAY_EXCLUDED_ENDPOINT_RE = /"endpoint"\s*:\s*"(?:image|video|media-download|voice_transcribe)"/;
 
   function bodyWantsDirectGateway(body) {
     if (typeof body !== "string" || !body) return false;
@@ -3605,6 +3605,99 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   let voiceRecognition = null;
   let voiceListening = false;
   let voiceBaseText = "";
+
+  // ── 2026-09-19：服务端转写通道（MediaRecorder → voice_transcribe）────────
+  //
+  // 为什么需要它：iOS 上 WebKit 的 SpeechRecognition 是半残实现 ——
+  // onend 后麦克风不放、转写经常返回空/乱码，且 iOS 所有浏览器（含
+  // Chrome/微信）都是 WebKit 内核，「换浏览器」无解。业界做法
+  //（ChatGPT/Gemini 同形）是录音 → 服务端 ASR。
+  //
+  // 平台矩阵：
+  //   · iOS/iPadOS（含 iPad 桌面模式 MacIntel+触屏）→ 录音上传
+  //   · macOS Safari → 录音上传（同款 WebKit bug）
+  //   · 无 SpeechRecognition 的桌面浏览器（Firefox 等）→ 录音上传
+  //   · Chrome/Edge/Android → 保留 Web Speech（免费、实时、零服务器成本）
+  //   · 两个 API 都没有 → 按钮隐藏
+  const isAppleVoiceDevice =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isMacSafariBrowser =
+    !isAppleVoiceDevice &&
+    /Macintosh|Mac OS X/.test(navigator.userAgent) &&
+    /Safari/.test(navigator.userAgent) &&
+    !/Chrome|Chromium|CriOS|Edg|EdgiOS|FxiOS|Firefox|OPR|OPT/.test(
+      navigator.userAgent,
+    );
+  const voiceMediaRecorderOK =
+    typeof navigator !== "undefined" &&
+    !!navigator.mediaDevices?.getUserMedia &&
+    typeof MediaRecorder !== "undefined" &&
+    typeof MediaRecorder.isTypeSupported === "function";
+  const voiceUseRecorder =
+    voiceMediaRecorderOK &&
+    (isAppleVoiceDevice || isMacSafariBrowser || !SpeechRecognitionCtor);
+  const voiceInputSupported = voiceUseRecorder || !!SpeechRecognitionCtor;
+
+  // 录音路径状态。voiceListening 同时表示「Web Speech 识别中」与
+  //「录音中」，按钮 listening 态复用同一个标志。
+  let voiceRecording = false;
+  let voiceRecorder = null;
+  let voiceRecorderStream = null;
+  let voiceRecorderChunks = [];
+  let voiceRecordStopTimer = null;
+  let voiceTranscribing = false;
+  let voiceTranscribeAbort = null;
+  const VOICE_RECORD_MAX_MS = 60000;
+  const VOICE_MAX_AUDIO_BYTES = 5000000;
+
+  // 设置项 state.speech ∈ ["自动检测","普通话","English","粤语"]
+  function speechToAsrLang() {
+    switch (state.speech) {
+      case "普通话":
+        return "zh";
+      case "English":
+        return "en";
+      case "粤语":
+        return "yue";
+      default:
+        return "auto";
+    }
+  }
+
+  function speechToRecognitionLang() {
+    switch (state.speech) {
+      case "普通话":
+        return "zh-CN";
+      case "English":
+        return "en-US";
+      case "粤语":
+        return "yue-Hant-HK";
+      default:
+        return document.documentElement.lang || navigator.language || "zh-CN";
+    }
+  }
+
+  // iOS <18.4 只有 audio/mp4（AAC）；Chrome/Firefox 走 webm/opus。
+  const VOICE_MIME_CANDIDATES = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4",
+    "audio/ogg",
+    "audio/mpeg",
+  ];
+  function pickVoiceRecorderMime() {
+    if (!voiceMediaRecorderOK) return "";
+    return (
+      VOICE_MIME_CANDIDATES.find((t) => {
+        try {
+          return MediaRecorder.isTypeSupported(t);
+        } catch {
+          return false;
+        }
+      }) || ""
+    );
+  }
   // ===== /派生表与 helper 结束 =====
   
   let themeIndex = 0;
@@ -4144,17 +4237,21 @@ import loginIslandHtml from "../claude-login-island.html?raw";
 
   function updateVoiceButtonState() {
     if (!voiceInputBtn) return;
-    voiceInputBtn.classList.toggle("listening", voiceListening);
-    voiceInputBtn.setAttribute("aria-pressed", String(voiceListening));
+    const active = voiceListening || voiceRecording;
+    voiceInputBtn.classList.toggle("listening", active);
+    voiceInputBtn.classList.toggle("transcribing", voiceTranscribing);
+    voiceInputBtn.setAttribute("aria-pressed", String(active));
     voiceInputBtn.setAttribute(
       "aria-label",
-      voiceListening ? "停止语音输入" : "语音输入",
+      voiceTranscribing ? "语音识别中" : active ? "停止语音输入" : "语音输入",
     );
-    voiceInputBtn.title = !SpeechRecognitionCtor
+    voiceInputBtn.title = !voiceInputSupported
       ? "当前浏览器不支持语音输入"
-      : voiceListening
-        ? "停止语音输入"
-        : "语音输入";
+      : voiceTranscribing
+        ? "语音识别中…"
+        : active
+          ? "停止语音输入"
+          : "语音输入";
   }
   
   function ensureVoiceRecognition() {
@@ -4162,7 +4259,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     if (voiceRecognition) return voiceRecognition;
   
     voiceRecognition = new SpeechRecognitionCtor();
-    voiceRecognition.lang = "zh-CN";
+    voiceRecognition.lang = speechToRecognitionLang();
     voiceRecognition.continuous = false;
     voiceRecognition.interimResults = true;
     voiceRecognition.maxAlternatives = 1;
@@ -4198,9 +4295,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       if (event.error === "aborted") return;
       let msg = `语音输入失败：${event.error}`;
       if (event.error === "service-not-allowed") {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        msg = isIOS
-          ? "iOS Safari 暂不支持语音输入，请手动输入或换用 Chrome"
+        // 2026-09-19：旧文案让 iOS 用户「换用 Chrome」是误导 —— iOS 所有
+        // 浏览器都是 WebKit，换了也一样。Apple 系设备现已改走
+        // MediaRecorder 上传路径，正常不会进这个分支。
+        msg = isAppleVoiceDevice || isMacSafariBrowser
+          ? "当前设备暂不支持语音输入，请手动输入"
           : "当前浏览器不支持语音输入，请手动输入";
       } else if (event.error === "not-allowed") {
         msg = "麦克风权限被拒绝，请在设置中开启";
@@ -4220,6 +4319,17 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       showToast("正在发送消息，稍后再试语音输入");
       return;
     }
+    if (voiceTranscribing) return;
+  
+    // Apple 系与无 SpeechRecognition 的浏览器：录音 → 服务端转写。
+    if (voiceUseRecorder) {
+      if (voiceRecording) {
+        stopVoiceRecording();
+      } else {
+        void startVoiceRecording();
+      }
+      return;
+    }
   
     if (!SpeechRecognitionCtor) {
       showToast("当前浏览器不支持语音输入");
@@ -4237,6 +4347,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       return;
     }
   
+    recognition.lang = speechToRecognitionLang();
     try {
       recognition.start();
     } catch (error) {
@@ -4245,11 +4356,216 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
   
   function stopVoiceRecognition() {
-    if (!voiceRecognition || !voiceListening) return;
+    // 发送消息 / 清空会话时调用：Web Speech、录音、在途转写全停。
+    if (voiceRecognition && voiceListening) {
+      try {
+        voiceRecognition.stop();
+      } catch {
+        voiceListening = false;
+      }
+    }
+    if (voiceRecording) stopVoiceRecording();
+    if (voiceTranscribeAbort) {
+      voiceTranscribeAbort.abort();
+      voiceTranscribeAbort = null;
+    }
+    if (voiceTranscribing) {
+      voiceTranscribing = false;
+    }
+    updateVoiceButtonState();
+  }
+  
+  // ── MediaRecorder → voice_transcribe 服务端转写 ───────────────────────────
+  
+  async function startVoiceRecording() {
+    const mime = pickVoiceRecorderMime();
+    if (!mime) {
+      showToast("当前浏览器不支持语音输入");
+      return;
+    }
+    let stream;
     try {
-      voiceRecognition.stop();
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      const name = err && err.name ? err.name : "";
+      showToast(
+        name === "NotAllowedError" || name === "SecurityError"
+          ? "麦克风权限被拒绝，请在设置中开启"
+          : name === "NotFoundError" || name === "OverconstrainedError"
+            ? "没有找到可用的麦克风"
+            : "无法访问麦克风",
+      );
+      return;
+    }
+    let recorder;
+    try {
+      recorder = new MediaRecorder(stream, { mimeType: mime });
     } catch {
-      voiceListening = false;
+      stream.getTracks().forEach((t) => t.stop());
+      showToast("当前浏览器不支持语音输入");
+      return;
+    }
+    voiceRecorder = recorder;
+    voiceRecorderStream = stream;
+    voiceRecorderChunks = [];
+    voiceRecording = true;
+  
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size) voiceRecorderChunks.push(e.data);
+    };
+    recorder.onstop = () => {
+      void finishVoiceRecording();
+    };
+    recorder.onerror = () => {
+      cleanupVoiceRecording();
+      updateVoiceButtonState();
+      showToast("录音失败，请重试");
+    };
+  
+    try {
+      recorder.start();
+    } catch {
+      cleanupVoiceRecording();
+      showToast("无法开始录音");
+      return;
+    }
+    voiceRecordStopTimer = setTimeout(() => {
+      if (voiceRecording) {
+        showToast("已到 60 秒上限，自动停止");
+        stopVoiceRecording();
+      }
+    }, VOICE_RECORD_MAX_MS);
+    updateVoiceButtonState();
+    showToast("开始录音，再次点击结束");
+  }
+  
+  function stopVoiceRecording() {
+    if (!voiceRecorder || !voiceRecording) return;
+    voiceRecording = false;
+    updateVoiceButtonState();
+    try {
+      voiceRecorder.stop(); // → onstop → finishVoiceRecording
+    } catch {
+      void finishVoiceRecording();
+    }
+  }
+  
+  function cleanupVoiceRecording() {
+    voiceRecording = false;
+    if (voiceRecordStopTimer) {
+      clearTimeout(voiceRecordStopTimer);
+      voiceRecordStopTimer = null;
+    }
+    if (voiceRecorderStream) {
+      voiceRecorderStream.getTracks().forEach((t) => t.stop());
+      voiceRecorderStream = null;
+    }
+    voiceRecorder = null;
+    voiceRecorderChunks = [];
+  }
+  
+  async function finishVoiceRecording() {
+    const chunks = voiceRecorderChunks;
+    const mime = (voiceRecorder && voiceRecorder.mimeType) || "";
+    cleanupVoiceRecording();
+    updateVoiceButtonState();
+    if (!chunks.length) {
+      showToast("没有录到声音");
+      return;
+    }
+    const blob = new Blob(chunks, { type: mime || "audio/webm" });
+    if (!blob.size) {
+      showToast("没有录到声音");
+      return;
+    }
+    if (blob.size > VOICE_MAX_AUDIO_BYTES) {
+      showToast("录音过长，请控制在 60 秒以内");
+      return;
+    }
+    await transcribeVoiceBlob(blob);
+  }
+  
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const url = String(reader.result || "");
+        resolve(url.slice(url.indexOf(",") + 1));
+      };
+      reader.onerror = () => reject(reader.error || new Error("读取音频失败"));
+      reader.readAsDataURL(blob);
+    });
+  }
+  
+  function voiceTranscribeErrorMessage(j, status) {
+    const code = j && (j.code || j.error);
+    if (status === 401) return "请先登录后再使用语音输入";
+    if (code === "voice_transcribe_disabled") return "语音输入暂不可用，请稍后再试";
+    if (code === "voice_daily_limit_exceeded") {
+      return j.message || "今日语音输入次数已用完，明天再试";
+    }
+    if (code === "rate_limited") return "语音输入请求过于频繁，请稍后再试";
+    if (code === "audio_too_large") return "录音过长，请控制在 60 秒以内";
+    if (code === "unsupported_mime") return "当前浏览器的录音格式不受支持";
+    if (code === "quota_check_failed" || code === "service_unavailable" || status === 503) {
+      return "语音输入服务暂时不可用，请稍后再试";
+    }
+    return "语音识别失败，请重试";
+  }
+  
+  async function transcribeVoiceBlob(blob) {
+    voiceTranscribing = true;
+    updateVoiceButtonState();
+    voiceTranscribeAbort = new AbortController();
+    try {
+      const client = getSupabaseClient();
+      const { data } = await client.auth.getSession();
+      const token = data?.session?.access_token;
+      if (!token) {
+        showToast("请先登录后再使用语音输入");
+        return;
+      }
+      const baseUrl = gatewayBaseUrl();
+      if (!baseUrl) {
+        showToast("语音输入服务不可用");
+        return;
+      }
+      const audio = await blobToBase64(blob);
+      const resp = await gatewayFetch(`${baseUrl}/functions/v1/chat-gateway`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: window.__SUPABASE_ANON_KEY__ || "",
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          endpoint: "voice_transcribe",
+          audio,
+          mime: blob.type || "",
+          lang: speechToAsrLang(),
+        }),
+        signal: voiceTranscribeAbort.signal,
+      });
+      const j = await resp.json().catch(() => null);
+      if (!resp.ok) {
+        showToast(voiceTranscribeErrorMessage(j, resp.status));
+        return;
+      }
+      const text = String((j && j.text) || "").trim();
+      if (!text) {
+        showToast("没有识别到语音内容");
+        return;
+      }
+      const cur = homeInput.value;
+      homeInput.value = `${cur}${cur && !/\s$/.test(cur) ? " " : ""}${text}`;
+      homeInput.dispatchEvent(new Event("input", { bubbles: true }));
+      showToast("语音输入完成");
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+      showToast("语音识别网络异常，请检查网络后重试");
+    } finally {
+      voiceTranscribing = false;
+      voiceTranscribeAbort = null;
       updateVoiceButtonState();
     }
   }
@@ -11183,7 +11499,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     } else {
       sendChatBtn.classList.add("hidden");
       sendChatBtn.classList.remove("has-text");
-      voiceInputBtn.classList.remove("hidden");
+      // 2026-09-19：两个语音通道都不支持的浏览器直接藏按钮，
+      // 不留一个点了只会弹报错的死按钮。
+      voiceInputBtn.classList.toggle("hidden", !voiceInputSupported);
     }
   
     syncComposerHeightVar();

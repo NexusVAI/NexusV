@@ -7817,7 +7817,7 @@
 		if (resp.status < 400) return false;
 		return !(resp.headers.get("content-type") || "").includes("json");
 	}
-	var RELAY_EXCLUDED_ENDPOINT_RE = /"endpoint"\s*:\s*"(?:image|video|media-download)"/;
+	var RELAY_EXCLUDED_ENDPOINT_RE = /"endpoint"\s*:\s*"(?:image|video|media-download|voice_transcribe)"/;
 	function bodyWantsDirectGateway(body) {
 		if (typeof body !== "string" || !body) return false;
 		return RELAY_EXCLUDED_ENDPOINT_RE.test(body.slice(0, 512));
@@ -10039,6 +10039,53 @@
 	var voiceRecognition = null;
 	var voiceListening = false;
 	var voiceBaseText = "";
+	var isAppleVoiceDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+	var isMacSafariBrowser = !isAppleVoiceDevice && /Macintosh|Mac OS X/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/Chrome|Chromium|CriOS|Edg|EdgiOS|FxiOS|Firefox|OPR|OPT/.test(navigator.userAgent);
+	var voiceMediaRecorderOK = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined" && typeof MediaRecorder.isTypeSupported === "function";
+	var voiceUseRecorder = voiceMediaRecorderOK && (isAppleVoiceDevice || isMacSafariBrowser || !SpeechRecognitionCtor);
+	var voiceInputSupported = voiceUseRecorder || !!SpeechRecognitionCtor;
+	var voiceRecording = false;
+	var voiceRecorder = null;
+	var voiceRecorderStream = null;
+	var voiceRecorderChunks = [];
+	var voiceRecordStopTimer = null;
+	var voiceTranscribing = false;
+	var voiceTranscribeAbort = null;
+	var VOICE_RECORD_MAX_MS = 6e4;
+	var VOICE_MAX_AUDIO_BYTES = 5e6;
+	function speechToAsrLang() {
+		switch (state.speech) {
+			case "普通话": return "zh";
+			case "English": return "en";
+			case "粤语": return "yue";
+			default: return "auto";
+		}
+	}
+	function speechToRecognitionLang() {
+		switch (state.speech) {
+			case "普通话": return "zh-CN";
+			case "English": return "en-US";
+			case "粤语": return "yue-Hant-HK";
+			default: return document.documentElement.lang || navigator.language || "zh-CN";
+		}
+	}
+	var VOICE_MIME_CANDIDATES = [
+		"audio/webm;codecs=opus",
+		"audio/webm",
+		"audio/mp4",
+		"audio/ogg",
+		"audio/mpeg"
+	];
+	function pickVoiceRecorderMime() {
+		if (!voiceMediaRecorderOK) return "";
+		return VOICE_MIME_CANDIDATES.find((t) => {
+			try {
+				return MediaRecorder.isTypeSupported(t);
+			} catch {
+				return false;
+			}
+		}) || "";
+	}
 	var themeIndex = 0;
 	var contrastCycle = [
 		"系统",
@@ -10429,16 +10476,18 @@
 	}
 	function updateVoiceButtonState() {
 		if (!voiceInputBtn) return;
-		voiceInputBtn.classList.toggle("listening", voiceListening);
-		voiceInputBtn.setAttribute("aria-pressed", String(voiceListening));
-		voiceInputBtn.setAttribute("aria-label", voiceListening ? "停止语音输入" : "语音输入");
-		voiceInputBtn.title = !SpeechRecognitionCtor ? "当前浏览器不支持语音输入" : voiceListening ? "停止语音输入" : "语音输入";
+		const active = voiceListening || voiceRecording;
+		voiceInputBtn.classList.toggle("listening", active);
+		voiceInputBtn.classList.toggle("transcribing", voiceTranscribing);
+		voiceInputBtn.setAttribute("aria-pressed", String(active));
+		voiceInputBtn.setAttribute("aria-label", voiceTranscribing ? "语音识别中" : active ? "停止语音输入" : "语音输入");
+		voiceInputBtn.title = !voiceInputSupported ? "当前浏览器不支持语音输入" : voiceTranscribing ? "语音识别中…" : active ? "停止语音输入" : "语音输入";
 	}
 	function ensureVoiceRecognition() {
 		if (!SpeechRecognitionCtor) return null;
 		if (voiceRecognition) return voiceRecognition;
 		voiceRecognition = new SpeechRecognitionCtor();
-		voiceRecognition.lang = "zh-CN";
+		voiceRecognition.lang = speechToRecognitionLang();
 		voiceRecognition.continuous = false;
 		voiceRecognition.interimResults = true;
 		voiceRecognition.maxAlternatives = 1;
@@ -10465,7 +10514,7 @@
 			updateVoiceButtonState();
 			if (event.error === "aborted") return;
 			let msg = `语音输入失败：${event.error}`;
-			if (event.error === "service-not-allowed") msg = /iPad|iPhone|iPod/.test(navigator.userAgent) ? "iOS Safari 暂不支持语音输入，请手动输入或换用 Chrome" : "当前浏览器不支持语音输入，请手动输入";
+			if (event.error === "service-not-allowed") msg = isAppleVoiceDevice || isMacSafariBrowser ? "当前设备暂不支持语音输入，请手动输入" : "当前浏览器不支持语音输入，请手动输入";
 			else if (event.error === "not-allowed") msg = "麦克风权限被拒绝，请在设置中开启";
 			else if (event.error === "network") msg = "语音识别网络异常，请检查网络后重试";
 			showToast(msg);
@@ -10476,6 +10525,12 @@
 		if (!voiceInputBtn) return;
 		if (state.isStreaming) {
 			showToast("正在发送消息，稍后再试语音输入");
+			return;
+		}
+		if (voiceTranscribing) return;
+		if (voiceUseRecorder) {
+			if (voiceRecording) stopVoiceRecording();
+			else startVoiceRecording();
 			return;
 		}
 		if (!SpeechRecognitionCtor) {
@@ -10491,6 +10546,7 @@
 			recognition.stop();
 			return;
 		}
+		recognition.lang = speechToRecognitionLang();
 		try {
 			recognition.start();
 		} catch (error) {
@@ -10498,11 +10554,189 @@
 		}
 	}
 	function stopVoiceRecognition() {
-		if (!voiceRecognition || !voiceListening) return;
-		try {
+		if (voiceRecognition && voiceListening) try {
 			voiceRecognition.stop();
 		} catch {
 			voiceListening = false;
+		}
+		if (voiceRecording) stopVoiceRecording();
+		if (voiceTranscribeAbort) {
+			voiceTranscribeAbort.abort();
+			voiceTranscribeAbort = null;
+		}
+		if (voiceTranscribing) voiceTranscribing = false;
+		updateVoiceButtonState();
+	}
+	async function startVoiceRecording() {
+		const mime = pickVoiceRecorderMime();
+		if (!mime) {
+			showToast("当前浏览器不支持语音输入");
+			return;
+		}
+		let stream;
+		try {
+			stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+		} catch (err) {
+			const name = err && err.name ? err.name : "";
+			showToast(name === "NotAllowedError" || name === "SecurityError" ? "麦克风权限被拒绝，请在设置中开启" : name === "NotFoundError" || name === "OverconstrainedError" ? "没有找到可用的麦克风" : "无法访问麦克风");
+			return;
+		}
+		let recorder;
+		try {
+			recorder = new MediaRecorder(stream, { mimeType: mime });
+		} catch {
+			stream.getTracks().forEach((t) => t.stop());
+			showToast("当前浏览器不支持语音输入");
+			return;
+		}
+		voiceRecorder = recorder;
+		voiceRecorderStream = stream;
+		voiceRecorderChunks = [];
+		voiceRecording = true;
+		recorder.ondataavailable = (e) => {
+			if (e.data && e.data.size) voiceRecorderChunks.push(e.data);
+		};
+		recorder.onstop = () => {
+			finishVoiceRecording();
+		};
+		recorder.onerror = () => {
+			cleanupVoiceRecording();
+			updateVoiceButtonState();
+			showToast("录音失败，请重试");
+		};
+		try {
+			recorder.start();
+		} catch {
+			cleanupVoiceRecording();
+			showToast("无法开始录音");
+			return;
+		}
+		voiceRecordStopTimer = setTimeout(() => {
+			if (voiceRecording) {
+				showToast("已到 60 秒上限，自动停止");
+				stopVoiceRecording();
+			}
+		}, VOICE_RECORD_MAX_MS);
+		updateVoiceButtonState();
+		showToast("开始录音，再次点击结束");
+	}
+	function stopVoiceRecording() {
+		if (!voiceRecorder || !voiceRecording) return;
+		voiceRecording = false;
+		updateVoiceButtonState();
+		try {
+			voiceRecorder.stop();
+		} catch {
+			finishVoiceRecording();
+		}
+	}
+	function cleanupVoiceRecording() {
+		voiceRecording = false;
+		if (voiceRecordStopTimer) {
+			clearTimeout(voiceRecordStopTimer);
+			voiceRecordStopTimer = null;
+		}
+		if (voiceRecorderStream) {
+			voiceRecorderStream.getTracks().forEach((t) => t.stop());
+			voiceRecorderStream = null;
+		}
+		voiceRecorder = null;
+		voiceRecorderChunks = [];
+	}
+	async function finishVoiceRecording() {
+		const chunks = voiceRecorderChunks;
+		const mime = voiceRecorder && voiceRecorder.mimeType || "";
+		cleanupVoiceRecording();
+		updateVoiceButtonState();
+		if (!chunks.length) {
+			showToast("没有录到声音");
+			return;
+		}
+		const blob = new Blob(chunks, { type: mime || "audio/webm" });
+		if (!blob.size) {
+			showToast("没有录到声音");
+			return;
+		}
+		if (blob.size > VOICE_MAX_AUDIO_BYTES) {
+			showToast("录音过长，请控制在 60 秒以内");
+			return;
+		}
+		await transcribeVoiceBlob(blob);
+	}
+	function blobToBase64(blob) {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = () => {
+				const url = String(reader.result || "");
+				resolve(url.slice(url.indexOf(",") + 1));
+			};
+			reader.onerror = () => reject(reader.error || /* @__PURE__ */ new Error("读取音频失败"));
+			reader.readAsDataURL(blob);
+		});
+	}
+	function voiceTranscribeErrorMessage(j, status) {
+		const code = j && (j.code || j.error);
+		if (status === 401) return "请先登录后再使用语音输入";
+		if (code === "voice_transcribe_disabled") return "语音输入暂不可用，请稍后再试";
+		if (code === "voice_daily_limit_exceeded") return j.message || "今日语音输入次数已用完，明天再试";
+		if (code === "rate_limited") return "语音输入请求过于频繁，请稍后再试";
+		if (code === "audio_too_large") return "录音过长，请控制在 60 秒以内";
+		if (code === "unsupported_mime") return "当前浏览器的录音格式不受支持";
+		if (code === "quota_check_failed" || code === "service_unavailable" || status === 503) return "语音输入服务暂时不可用，请稍后再试";
+		return "语音识别失败，请重试";
+	}
+	async function transcribeVoiceBlob(blob) {
+		voiceTranscribing = true;
+		updateVoiceButtonState();
+		voiceTranscribeAbort = new AbortController();
+		try {
+			const { data } = await getSupabaseClient().auth.getSession();
+			const token = data?.session?.access_token;
+			if (!token) {
+				showToast("请先登录后再使用语音输入");
+				return;
+			}
+			const baseUrl = gatewayBaseUrl();
+			if (!baseUrl) {
+				showToast("语音输入服务不可用");
+				return;
+			}
+			const audio = await blobToBase64(blob);
+			const resp = await gatewayFetch(`${baseUrl}/functions/v1/chat-gateway`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					apikey: window.__SUPABASE_ANON_KEY__ || "",
+					authorization: `Bearer ${token}`
+				},
+				body: JSON.stringify({
+					endpoint: "voice_transcribe",
+					audio,
+					mime: blob.type || "",
+					lang: speechToAsrLang()
+				}),
+				signal: voiceTranscribeAbort.signal
+			});
+			const j = await resp.json().catch(() => null);
+			if (!resp.ok) {
+				showToast(voiceTranscribeErrorMessage(j, resp.status));
+				return;
+			}
+			const text = String(j && j.text || "").trim();
+			if (!text) {
+				showToast("没有识别到语音内容");
+				return;
+			}
+			const cur = homeInput.value;
+			homeInput.value = `${cur}${cur && !/\s$/.test(cur) ? " " : ""}${text}`;
+			homeInput.dispatchEvent(new Event("input", { bubbles: true }));
+			showToast("语音输入完成");
+		} catch (err) {
+			if (err && err.name === "AbortError") return;
+			showToast("语音识别网络异常，请检查网络后重试");
+		} finally {
+			voiceTranscribing = false;
+			voiceTranscribeAbort = null;
 			updateVoiceButtonState();
 		}
 	}
@@ -15616,7 +15850,7 @@
 		} else {
 			sendChatBtn.classList.add("hidden");
 			sendChatBtn.classList.remove("has-text");
-			voiceInputBtn.classList.remove("hidden");
+			voiceInputBtn.classList.toggle("hidden", !voiceInputSupported);
 		}
 		syncComposerHeightVar();
 	}
