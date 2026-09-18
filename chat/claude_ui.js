@@ -4758,3 +4758,177 @@
     document.addEventListener('click', hide, true);
     window.addEventListener('scroll', hide, true);
 })();
+
+/* ============================================================
+   Coachmark：模型按钮搬家引导（2026-09-18）
+   ------------------------------------------------------------
+   relocateModelSelector() 把 #modelSelector 从输入框内右下（voice 按钮
+   左侧）挪到了输入框下方 chin 行右侧。老用户会在原位置扑空，所以：
+     · 在原位置插一个虚线空占位框（.cancri-coachmark-slot）
+     · 占位框下方挂一张蓝色卡片，箭头朝上指回原位
+     · 新位置（chin 里的模型按钮）加一圈呼吸光晕
+   只有「关闭」和「知道了」两个按钮（单步，1 of 1），点任一个即永久关闭。
+   样式在 cancri_chat.css 末尾的 .cancri-coachmark* 段。
+   ============================================================ */
+(function () {
+    'use strict';
+
+    var SEEN_KEY = 'cancri_model_move_coachmark_v1';
+    var slot = null;
+    var card = null;
+    var target = null;
+    var reposition = null;
+
+    function seen() {
+        try {
+            return localStorage.getItem(SEEN_KEY) === '1';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function markSeen() {
+        try {
+            localStorage.setItem(SEEN_KEY, '1');
+        } catch (e) {
+            /* 隐私模式下写不进去就算了，下次再提示一遍也无害 */
+        }
+    }
+
+    function teardown() {
+        if (reposition) {
+            window.removeEventListener('resize', reposition);
+            window.removeEventListener('scroll', reposition, true);
+            reposition = null;
+        }
+        if (target) {
+            target.classList.remove('cancri-coachmark-target');
+            target = null;
+        }
+        if (slot && slot.parentNode) slot.parentNode.removeChild(slot);
+        slot = null;
+        if (card) {
+            var node = card;
+            card = null;
+            node.setAttribute('data-leaving', '');
+            setTimeout(function () {
+                if (node.parentNode) node.parentNode.removeChild(node);
+            }, 240);
+        }
+    }
+
+    function dismiss() {
+        markSeen();
+        teardown();
+    }
+
+    function place() {
+        if (!card || !slot) return;
+        var s = slot.getBoundingClientRect();
+        var w = card.offsetWidth || 320;
+        var h = card.offsetHeight || 200;
+        var margin = 12;
+        var gap = 14;
+
+        // 右对齐到占位框右边缘（卡片整体落在输入框下方的空白区）
+        var left = s.right - w + 8;
+        left = Math.max(margin, Math.min(left, window.innerWidth - w - margin));
+
+        var below = s.bottom + gap;
+        var flip = below + h > window.innerHeight - margin && s.top - gap - h > margin;
+        var top = flip ? s.top - gap - h : below;
+        card.setAttribute('data-side', flip ? 'top' : 'bottom');
+        card.style.left = left + 'px';
+        card.style.top = top + 'px';
+
+        var arrow = card.querySelector('.cancri-coachmark-arrow');
+        if (arrow) {
+            var ax = s.left + s.width / 2 - left - 14;
+            arrow.style.left = Math.max(16, Math.min(ax, w - 44)) + 'px';
+        }
+    }
+
+    function build() {
+        var composerActions = document.querySelector('#homeView .composer-actions') || document.querySelector('.composer-actions');
+        var modelSelector = document.getElementById('modelSelector');
+        var chinRight = document.getElementById('composerChinRight');
+        if (!composerActions || !modelSelector || !chinRight) return;
+        // 模型按钮没真的搬到 chin 里（比如项目页 composer）就不提示
+        if (!chinRight.contains(modelSelector)) return;
+        if (!composerActions.offsetParent) return;
+
+        slot = document.createElement('div');
+        slot.className = 'cancri-coachmark-slot';
+        slot.setAttribute('aria-hidden', 'true');
+        var voiceBtn = document.getElementById('voiceToastBtn');
+        if (voiceBtn && voiceBtn.parentNode === composerActions) {
+            composerActions.insertBefore(slot, voiceBtn);
+        } else {
+            composerActions.appendChild(slot);
+        }
+
+        card = document.createElement('div');
+        card.className = 'cancri-coachmark';
+        card.setAttribute('role', 'dialog');
+        card.setAttribute('aria-live', 'polite');
+        card.setAttribute('aria-labelledby', 'cancriCoachmarkTitle');
+        card.setAttribute('data-enter', '0');
+        card.setAttribute('data-side', 'bottom');
+        card.innerHTML =
+            '<svg class="cancri-coachmark-arrow" width="28" height="12" viewBox="0 0 28 12" aria-hidden="true">' +
+            '<path d="M0 0H28V2C23.5 2 22.8 2.2 21.6 3.3L15.6 8.6C14.7 9.4 13.3 9.4 12.4 8.6L6.4 3.3C5.2 2.2 4.5 2 0 2Z"></path>' +
+            '</svg>' +
+            '<div class="cancri-coachmark-body">' +
+            '<h2 class="cancri-coachmark-title" id="cancriCoachmarkTitle">咦？它去哪里了？</h2>' +
+            '<p class="cancri-coachmark-text">别慌，模型切换器没有不告而别 —— 它只是往下搬了一格家。' +
+            '把视线转移到下方，输入框外那一行的右边，就是它的新门牌号。</p>' +
+            '<p class="cancri-coachmark-text">它还在，能力一点没少：点一下就能继续切换、切换、切换，' +
+            'Opus、GPT、DeepSeek，想换谁换谁，随手挑一个最顺手的接着聊。</p>' +
+            '<p class="cancri-coachmark-text">用得愉快呀 ~</p>' +
+            '<div class="cancri-coachmark-footer">' +
+            '<span class="cancri-coachmark-step">1 of 1</span>' +
+            '<span class="cancri-coachmark-actions">' +
+            '<button type="button" class="cancri-coachmark-btn cancri-coachmark-btn-ghost" data-coachmark-close>关闭</button>' +
+            '<button type="button" class="cancri-coachmark-btn cancri-coachmark-btn-primary" data-coachmark-ok>知道了</button>' +
+            '</span></div></div>';
+        document.body.appendChild(card);
+
+        card.querySelector('[data-coachmark-close]').addEventListener('click', dismiss);
+        card.querySelector('[data-coachmark-ok]').addEventListener('click', dismiss);
+
+        target = modelSelector.querySelector('.model-current') || modelSelector;
+        target.classList.add('cancri-coachmark-target');
+
+        place();
+        requestAnimationFrame(function () {
+            if (card) card.setAttribute('data-enter', '1');
+        });
+
+        reposition = place;
+        window.addEventListener('resize', reposition);
+        window.addEventListener('scroll', reposition, true);
+
+        document.addEventListener('keydown', function onEsc(e) {
+            if (e.key !== 'Escape' || !card) return;
+            document.removeEventListener('keydown', onEsc);
+            dismiss();
+        });
+
+        // 用户自己点了新位置的模型按钮 —— 说明已经找到了，不用再教
+        modelSelector.addEventListener('click', dismiss, { once: true });
+    }
+
+    function boot() {
+        if (seen()) return;
+        var homeView = document.getElementById('homeView');
+        if (homeView && !homeView.classList.contains('active')) return;
+        // 等 relocateModelSelector() 跑完、composer 布局稳定后再量位置
+        setTimeout(build, 700);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+    } else {
+        boot();
+    }
+})();

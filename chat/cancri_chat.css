@@ -8084,3 +8084,202 @@ body[data-shared-conversation="true"] .input-icon {
         justify-content: center;
     }
 }
+
+/* ============================================================
+   Coachmark（模型按钮搬家引导）
+   2026-09-18：#modelSelector 从输入框内右下（voice 按钮左侧）
+   搬到输入框下方 chin 行右侧（见 claude_ui.js relocateModelSelector）。
+   老用户抬头找不到，所以在「原来的位置」放一个虚线占位框，
+   下方挂一张蓝色卡片告诉他新家在哪。样式规格对齐 Claude CoachMark：
+   accent = #2a78d6 / on-accent = #fff / step 文案 #f8f8f7bf。
+   ============================================================ */
+.cancri-coachmark-slot {
+    /* 原模型按钮的位置：虚线空框，宽度按老按钮的视觉宽度取 */
+    position: relative;
+    flex: 0 0 auto;
+    width: 92px;
+    height: 28px;
+    border-radius: 6px;
+    pointer-events: none;
+    background: transparent;
+}
+
+.cancri-coachmark-slot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 1.5px dashed #2a78d6;
+    animation: cancri-coachmark-slot-in 0.28s ease-out both;
+}
+
+@keyframes cancri-coachmark-slot-in {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.cancri-coachmark {
+    position: fixed;
+    z-index: 1200;
+    width: 320px;
+    max-width: calc(100vw - 32px);
+    padding: 16px;
+    border-radius: 12px;
+    background: #2a78d6;
+    color: #fff;
+    box-shadow: 0 12px 32px rgba(15, 42, 74, 0.28);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    cursor: default;
+    transition: opacity 0.22s ease-out, transform 0.22s ease-out;
+}
+
+.cancri-coachmark[data-enter='0'] {
+    opacity: 0;
+    transform: scale(0.97);
+}
+
+.cancri-coachmark[data-leaving] {
+    opacity: 0;
+    transform: scale(0.97);
+    pointer-events: none;
+}
+
+/* 箭头：默认朝上（卡片在虚线框下方），指回原来的位置 */
+.cancri-coachmark-arrow {
+    position: absolute;
+    top: -10px;
+    display: block;
+    transform: rotate(180deg);
+    fill: #2a78d6;
+    overflow: visible;
+}
+
+.cancri-coachmark[data-side='top'] .cancri-coachmark-arrow {
+    top: auto;
+    bottom: -10px;
+    transform: none;
+}
+
+.cancri-coachmark-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cancri-coachmark-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.cancri-coachmark-text {
+    margin: 0;
+    color: #fff;
+}
+
+.cancri-coachmark-text + .cancri-coachmark-text {
+    margin-top: 6px;
+}
+
+.cancri-coachmark-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.cancri-coachmark-step {
+    font-size: 12px;
+    color: #f8f8f7bf;
+}
+
+.cancri-coachmark-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.cancri-coachmark-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+
+.cancri-coachmark-btn-ghost {
+    background: transparent;
+    color: #fff;
+    font-weight: 400;
+}
+
+.cancri-coachmark-btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.cancri-coachmark-btn-primary {
+    background: #fff;
+    color: #141413;
+    font-weight: 500;
+}
+
+.cancri-coachmark-btn-primary:hover {
+    background: #f0efed;
+}
+
+.cancri-coachmark-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7);
+}
+
+/* 新家（chin 行里的模型按钮）跟着呼吸一下，视线自然落过去 */
+.cancri-coachmark-target {
+    border-radius: 8px;
+    animation: cancri-coachmark-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes cancri-coachmark-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(42, 120, 214, 0);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(42, 120, 214, 0.28);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cancri-coachmark,
+    .cancri-coachmark-slot::after,
+    .cancri-coachmark-target {
+        animation: none;
+        transition: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .cancri-coachmark {
+        width: calc(100vw - 32px);
+    }
+    .cancri-coachmark-slot {
+        display: none;
+    }
+}
