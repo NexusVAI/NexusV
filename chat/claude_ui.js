@@ -4829,41 +4829,55 @@
         teardown();
     }
 
-    // 锚点：桌面端指回「原来的位置」（虚线占位框）；
-    // 移动端虚线框被 CSS 隐藏（rect 全 0，量不到），改为直接指新家 —— chin 行
-    // 里的模型按钮，卡片落在输入框下方那片空白里，箭头朝上戳着它。
-    function anchorRect() {
-        if (slot && slot.getClientRects().length) {
-            return { rect: slot.getBoundingClientRect(), toNewHome: false };
-        }
-        if (modelBtn && modelBtn.getClientRects().length) {
-            return { rect: modelBtn.getBoundingClientRect(), toNewHome: true };
-        }
-        return null;
+    var MOBILE_MAX = 640;
+
+    function isMobile() {
+        return window.innerWidth <= MOBILE_MAX;
+    }
+
+    // 只认「量得到的」矩形：display:none / 尺寸为 0 的元素一律不当锚点，
+    // 否则会拿到 (0,0,0,0) 把卡片甩到屏幕左上角去（移动端就翻过这个车）。
+    function liveRect(el) {
+        if (!el || !el.getClientRects().length) return null;
+        var r = el.getBoundingClientRect();
+        if (!r.width || !r.height) return null;
+        return r;
     }
 
     function place() {
         if (!card) return;
-        var a = anchorRect();
-        if (!a) return;
-        var s = a.rect;
+        var chinRect = liveRect(document.getElementById('composerChin'));
+        var btnRect = liveRect(modelBtn);
+        var slotRect = isMobile() ? null : liveRect(slot);
+        // 桌面端箭头指回「原来的位置」（虚线占位框）；移动端没有虚线框，
+        // 直接指新家 —— chin 行右边的模型按钮。
+        var s = slotRect || btnRect || chinRect;
+        if (!s) return;
+
         var w = card.offsetWidth || 320;
         var h = card.offsetHeight || 200;
         var margin = 12;
-        var gap = a.toNewHome ? 12 : 14;
+        var gap = slotRect ? 14 : 12;
 
-        // 右对齐到锚点右边缘（卡片整体落在输入框下方的空白区）
+        // 右对齐到锚点右边缘
         var left = s.right - w + 8;
         left = Math.max(margin, Math.min(left, window.innerWidth - w - margin));
 
-        // 下方够高就永远放下方（移动端空白全在下面，往上翻会盖住输入框）
-        var below = s.bottom + gap;
-        var flip = below + h > window.innerHeight - margin && s.top - gap - h > margin;
-        var top = flip ? s.top - gap - h : Math.min(below, Math.max(margin, window.innerHeight - h - margin));
+        var top = s.bottom + gap;
+        // 硬约束：卡片整体必须落在 chin 行下方那片空白里，绝不压住 composer
+        if (chinRect) top = Math.max(top, chinRect.bottom + gap);
+
+        // 只有桌面端、且下方真的放不下时才往上翻；移动端空白全在下面，
+        // 往上翻等于盖住输入框 —— 永远不翻。
+        var flip = !isMobile() && top + h > window.innerHeight - margin && s.top - gap - h > margin;
+        if (flip) top = s.top - gap - h;
+        else if (chinRect) top = Math.max(chinRect.bottom + gap, Math.min(top, Math.max(chinRect.bottom + gap, window.innerHeight - h - margin)));
+
         card.setAttribute('data-side', flip ? 'top' : 'bottom');
         card.style.left = left + 'px';
         card.style.top = top + 'px';
 
+        // 箭头对准锚点水平中心（移动端即模型按钮，正好戳在 GPT 5.5 上）
         var arrow = card.querySelector('.cancri-coachmark-arrow');
         if (arrow) {
             var ax = s.left + s.width / 2 - left - 14;
@@ -4880,14 +4894,18 @@
         if (!chinRight.contains(modelSelector)) return;
         if (!composerActions.offsetParent) return;
 
-        slot = document.createElement('div');
-        slot.className = 'cancri-coachmark-slot';
-        slot.setAttribute('aria-hidden', 'true');
-        var voiceBtn = document.getElementById('voiceToastBtn');
-        if (voiceBtn && voiceBtn.parentNode === composerActions) {
-            composerActions.insertBefore(slot, voiceBtn);
-        } else {
-            composerActions.appendChild(slot);
+        // 虚线占位框只在桌面端插：手机上输入框里 + / 麦克风已经贴边，
+        // 塞不进去，也没必要 —— 卡片直接指新家。
+        if (!isMobile()) {
+            slot = document.createElement('div');
+            slot.className = 'cancri-coachmark-slot';
+            slot.setAttribute('aria-hidden', 'true');
+            var voiceBtn = document.getElementById('voiceToastBtn');
+            if (voiceBtn && voiceBtn.parentNode === composerActions) {
+                composerActions.insertBefore(slot, voiceBtn);
+            } else {
+                composerActions.appendChild(slot);
+            }
         }
 
         card = document.createElement('div');
