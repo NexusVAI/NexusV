@@ -2379,100 +2379,14 @@
             </div>
         </div>
 
-        <div class="modal small" id="tempChatModal" aria-hidden="true">
-            <div class="modal-header">
-                <div class="modal-title">临时聊天</div>
-                <button
-                    class="modal-close"
-                    data-close-modal="tempChatModal"
-                    aria-label="关闭临时聊天"
-                >
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path d="M18 6 6 18M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="temp-card">
-                    <div class="temp-item">
-                        <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                        >
-                            <circle
-                                cx="12"
-                                cy="12"
-                                r="8.5"
-                                stroke-dasharray="3 2"
-                            ></circle>
-                        </svg>
-                        <div>
-                            <h4>不包含在历史记录中</h4>
-                            <p>
-                                临时聊天不会出现在你的历史记录中。为了安全考虑，我们可能会保留对话记录最多30天。
-                            </p>
-                        </div>
-                    </div>
-                    <div class="temp-item">
-                        <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                        >
-                            <path d="M4 12h4l2-6 4 12 2-6h4"></path>
-                        </svg>
-                        <div>
-                            <h4>不会用于模型训练</h4>
-                            <p>临时聊天不会被用来改进我们的模型。</p>
-                        </div>
-                    </div>
-                    <div class="temp-item">
-                        <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                        >
-                            <rect
-                                x="6"
-                                y="4"
-                                width="12"
-                                height="16"
-                                rx="2"
-                            ></rect>
-                        </svg>
-                        <div>
-                            <h4>记忆关闭</h4>
-                            <p>
-                                使用临时聊天时，Cancri
-                                不会使用或更新记忆。系统仍然会遵循你的自定义指令。
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button class="primary-btn" id="continueTempChatBtn">
-                        继续
-                    </button>
-                </div>
-            </div>
-        </div>
+        <!-- 2026-09-18 移除「临时聊天」弹窗：站内没有任何入口能打开它（全仓搜
+             tempChatModal 只有这段死标记 + 一个死监听），但它的文案却向用户承诺
+             「不包含在历史记录中」「不会用于模型训练」，而代码里从来没有 tempChat
+             标志位，下一条消息照常 commitGeneration / saveChatHistory 落库。
+             这段文案在公开的 GitHub Pages 上是可读、可索引的虚假隐私声明，
+             删掉整段（含 continueTempChatBtn 的死监听）。
+             将来真要做临时聊天，请连同 session 级 tempChat 标志 + 跳过建行/更新
+             + 强制关闭该会话训练同意位一起实现，别再只放一个弹窗。 -->
 
         <div class="modal medium" id="projectModal" aria-hidden="true">
             <div class="modal-header" style="padding-bottom: 0">

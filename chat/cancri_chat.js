@@ -8014,7 +8014,6 @@
 	var settingsModal = document.getElementById("settingsModal");
 	var htmlPreviewModal = document.getElementById("htmlPreviewModal");
 	var htmlPreviewFrame = document.getElementById("htmlPreviewFrame");
-	var tempChatModal = document.getElementById("tempChatModal");
 	var projectModal = document.getElementById("projectModal");
 	var privacyPolicyModal = document.getElementById("privacyPolicyModal");
 	var appearanceValue = document.getElementById("appearanceValue");
@@ -8366,12 +8365,14 @@
             </div>
           </div>
           <div style="padding:14px 24px 20px 24px;display:flex;gap:10px;">
+            <button id="suspCaptchaCancel" type="button"
+              style="flex:0 0 auto;padding:10px 14px;border-radius:10px;border:1px solid var(--border,#3a3a37);background:transparent;color:inherit;font-size:14px;cursor:pointer;">稍后再说</button>
             <button id="suspCaptchaSubmit" type="button"
               style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--accent,#d97757);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">验证</button>
           </div>
           <div style="padding:0 24px 16px 24px;font-size:11px;opacity:.55;line-height:1.5;">
             连续答错 3 次或 5 分钟内未完成 → 账户将被永久封禁。
-            如已被误判，请到 <a href="./appeal.html" target="_blank" style="color:var(--accent,#d97757);">申诉页</a> 提交解封申请。
+            如已被误判，请到 <a href="./appeal.html" target="_blank" rel="noopener noreferrer" style="color:var(--accent,#d97757);">申诉页</a> 提交解封申请。
           </div>
         </div>`;
 			document.body.appendChild(modal);
@@ -8386,8 +8387,25 @@
 			let expiresTs = expiresAt ? new Date(expiresAt).getTime() : Date.now() + 300 * 1e3;
 			function cleanup() {
 				if (countdownTimer) clearInterval(countdownTimer);
+				document.removeEventListener("keydown", onKeydown, true);
 				modal.remove();
 			}
+			function abandon() {
+				cleanup();
+				resolve(false);
+			}
+			function onKeydown(event) {
+				if (event.key === "Escape") {
+					event.preventDefault();
+					event.stopPropagation();
+					abandon();
+				}
+			}
+			document.addEventListener("keydown", onKeydown, true);
+			modal.addEventListener("click", (event) => {
+				if (event.target === modal) abandon();
+			});
+			modal.querySelector("#suspCaptchaCancel")?.addEventListener("click", abandon);
 			function renderCountdown() {
 				const remainMs = expiresTs - Date.now();
 				if (remainMs <= 0) {
@@ -8402,11 +8420,10 @@
 			countdownTimer = setInterval(() => {
 				if (!renderCountdown()) {
 					clearInterval(countdownTimer);
-					errorEl.textContent = "已超时，账户已被自动封禁。";
+					errorEl.textContent = "本次校验已超时，请重新发起请求再试一次。";
 					submitBtn.disabled = true;
 					setTimeout(() => {
 						cleanup();
-						window.location.href = "./appeal.html?reason=captcha_timeout";
 						resolve(false);
 					}, 1500);
 				}
@@ -10421,19 +10438,26 @@
 	}
 	async function setChatDataUploadEnabled(enabled) {
 		const next = Boolean(enabled);
-		if (state.chatDataUploadEnabled === next) return;
+		const previous = Boolean(state.chatDataUploadEnabled);
+		if (previous === next) return true;
 		state.chatDataUploadEnabled = next;
 		persistUiPreferences();
-		syncChatDataUploadConsent(next);
+		if (await syncChatDataUploadConsent(next)) return true;
+		state.chatDataUploadEnabled = previous;
+		persistUiPreferences();
+		const toggle = document.getElementById("claudeDataUploadToggle");
+		if (toggle) toggle.checked = previous;
+		showToast("没能同步到服务器，开关已还原，请检查网络后重试");
+		return false;
 	}
 	async function syncChatDataUploadConsent(enabled) {
 		try {
 			const { data } = await getSupabaseClient().auth.getSession();
 			const token = data?.session?.access_token;
-			if (!token) return;
+			if (!token) return false;
 			const baseUrl = gatewayBaseUrl();
-			if (!baseUrl) return;
-			await gatewayFetch(`${baseUrl}/functions/v1/chat-gateway`, {
+			if (!baseUrl) return false;
+			const resp = await gatewayFetch(`${baseUrl}/functions/v1/chat-gateway`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -10446,8 +10470,10 @@
 					enabled
 				})
 			}, { idempotent: true });
+			return Boolean(resp?.ok);
 		} catch (e) {
 			console.warn("[data_consent] sync failed:", e);
+			return false;
 		}
 	}
 	async function fetchChatDataUploadConsent() {
@@ -11780,13 +11806,13 @@
 	function chatHistoryListHasRenderedItems(container) {
 		return Boolean(container?.querySelector(".recent-item, .recent-placeholder"));
 	}
-	async function renderChatHistoryList() {
+	async function renderChatHistoryList({ refresh = true } = {}) {
 		const listContainer = document.getElementById("chatHistoryList");
 		if (!listContainer) return;
 		const renderSeq = ++chatHistoryListRenderSeq;
 		try {
 			if (!chatHistoryListHasRenderedItems(listContainer)) renderChatHistorySkeleton(listContainer);
-			const chats = await loadChatHistoryList();
+			const chats = refresh ? await loadChatHistoryList() : Array.isArray(chatHistoryList) && chatHistoryList.length ? chatHistoryList : readCachedChatHistoryList();
 			if (renderSeq !== chatHistoryListRenderSeq) return;
 			listContainer.removeAttribute("aria-busy");
 			listContainer.innerHTML = "";
@@ -11915,7 +11941,10 @@
 			listContainer.innerHTML = "<div class=\"recent-placeholder\">加载失败</div>";
 		}
 	}
+	var loadChatSeq = 0;
 	async function loadChat(chatId, { silent = false, skipSkeleton = false } = {}) {
+		const seq = ++loadChatSeq;
+		const isStale = () => seq !== loadChatSeq;
 		exitSharedConversationMode();
 		parkChatlessGeneration();
 		const liveGen = getGenerationByChatId(chatId);
@@ -11944,6 +11973,7 @@
 		if (!skipSkeleton) renderChatMessagesSkeleton();
 		try {
 			const chat = await loadChatHistory(chatId);
+			if (isStale()) return;
 			if (chat && chat.messages) {
 				currentChatId = chatId;
 				loadedChatModel = String(chat.model || "").trim();
@@ -11962,6 +11992,7 @@
 			}
 		} catch (error) {
 			console.error("加载聊天记录失败:", error);
+			if (isStale()) return;
 			renderMessages();
 			if (!silent) showToast(error instanceof Error ? error.message : "加载失败");
 		}
@@ -12670,9 +12701,11 @@
 			currentChatId = data.id;
 			upsertCachedChatSummary(data);
 			persistSessionNav();
+			clearUnsavedNotice();
 			return data;
 		} catch (error) {
 			console.error("保存聊天记录失败:", error);
+			reportUnsavedChange("这个新对话没能保存到云端", () => saveChatHistory(messages));
 		}
 	}
 	async function updateChatHistory(chatId, messages) {
@@ -12690,9 +12723,11 @@
 			if (!response.ok) throw new Error("更新聊天记录失败");
 			const { data } = await response.json();
 			upsertCachedChatSummary(data);
+			clearUnsavedNotice();
 			return data;
 		} catch (error) {
 			console.error("更新聊天记录失败:", error);
+			reportUnsavedChange("这轮对话没能保存到云端", () => updateChatHistory(chatId, messages));
 		}
 	}
 	async function readProxyFailureMessage(response) {
@@ -13847,6 +13882,69 @@
 			delete toast.dataset.type;
 		}, 2200);
 	}
+	var unsavedNotice = null;
+	var unsavedRetry = null;
+	var unsavedRetrying = false;
+	function clearUnsavedNotice() {
+		unsavedRetry = null;
+		if (unsavedNotice) {
+			unsavedNotice.remove();
+			unsavedNotice = null;
+		}
+	}
+	async function runUnsavedRetry() {
+		if (unsavedRetrying || !unsavedRetry) return;
+		const retry = unsavedRetry;
+		const btn = unsavedNotice?.querySelector(".unsaved-notice-retry");
+		unsavedRetrying = true;
+		if (btn) {
+			btn.disabled = true;
+			btn.textContent = "重试中…";
+		}
+		try {
+			await retry();
+			clearUnsavedNotice();
+			showToast("已保存到云端");
+			renderChatHistoryList();
+			postCrossTabMessage("history-changed");
+		} catch (error) {
+			console.error("重试保存仍然失败:", error);
+			if (btn) {
+				btn.disabled = false;
+				btn.textContent = "重试";
+			}
+			showToast("还是没存上，请检查网络后再试");
+		} finally {
+			unsavedRetrying = false;
+		}
+	}
+	function reportUnsavedChange(reason, retryFn) {
+		unsavedRetry = typeof retryFn === "function" ? retryFn : null;
+		if (!unsavedNotice) {
+			unsavedNotice = document.createElement("div");
+			unsavedNotice.className = "unsaved-notice";
+			unsavedNotice.setAttribute("role", "status");
+			const text = document.createElement("span");
+			text.className = "unsaved-notice-text";
+			const retryBtn = document.createElement("button");
+			retryBtn.type = "button";
+			retryBtn.className = "unsaved-notice-retry";
+			retryBtn.textContent = "重试";
+			retryBtn.addEventListener("click", () => void runUnsavedRetry());
+			const closeBtn = document.createElement("button");
+			closeBtn.type = "button";
+			closeBtn.className = "unsaved-notice-close";
+			closeBtn.setAttribute("aria-label", "忽略");
+			closeBtn.textContent = "×";
+			closeBtn.addEventListener("click", clearUnsavedNotice);
+			unsavedNotice.append(text, retryBtn, closeBtn);
+			document.body.appendChild(unsavedNotice);
+		}
+		const textEl = unsavedNotice.querySelector(".unsaved-notice-text");
+		if (textEl) textEl.textContent = `${reason || "这次改动没保存到云端"} · 刷新后可能丢失`;
+		const retryBtn = unsavedNotice.querySelector(".unsaved-notice-retry");
+		if (retryBtn) retryBtn.hidden = !unsavedRetry;
+	}
 	function renderWatermark() {
 		if (!pageWatermarkGrid) return;
 		pageWatermarkGrid.innerHTML = Array.from({ length: 24 }, () => "<div class=\"page-watermark-item\">NexusV</div>").join("");
@@ -14000,13 +14098,15 @@
 		});
 		btnGroup.querySelector("[data-action=\"edit\"]")?.addEventListener("click", (event) => {
 			event.stopPropagation();
-			const originalText = messageDiv.dataset.userText || "";
-			if (!originalText) {
+			const idx = Number(messageDiv.dataset.messageIndex);
+			const fallbackText = messageDiv.dataset.userText || "";
+			if (!Number.isFinite(idx) && !fallbackText) {
 				showToast("没有可编辑的内容");
 				return;
 			}
-			if (homeInput) {
-				homeInput.value = originalText;
+			undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
+			if (homeInput && !homeInput.value && fallbackText) {
+				homeInput.value = fallbackText;
 				autoResizeComposerInput();
 				updateComposerSendButton();
 				homeInput.focus();
@@ -14126,13 +14226,15 @@
 		});
 		act("edit")?.addEventListener("click", (event) => {
 			event.stopPropagation();
-			const originalText = root.dataset.userText || "";
-			if (!originalText) {
+			const idx = Number(root.dataset.messageIndex);
+			const fallbackText = root.dataset.userText || "";
+			if (!Number.isFinite(idx) && !fallbackText) {
 				showToast("没有可编辑的内容");
 				return;
 			}
-			if (homeInput) {
-				homeInput.value = originalText;
+			undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
+			if (homeInput && !homeInput.value && fallbackText) {
+				homeInput.value = fallbackText;
 				autoResizeComposerInput();
 				updateComposerSendButton();
 				homeInput.focus();
@@ -16760,8 +16862,14 @@
 			state.activeRequestController = null;
 		}
 		let recoveredText = "";
+		let recoveredAttachments = [];
 		const histMsg = conversationHistory[messageIndex];
-		if (histMsg && histMsg.role === "user") recoveredText = Array.isArray(histMsg.content) ? extractUserMessageParts(histMsg.content).text : String(histMsg.content || "");
+		if (histMsg && histMsg.role === "user") if (Array.isArray(histMsg.content)) {
+			const parts = extractUserMessageParts(histMsg.content);
+			recoveredText = parts.text;
+			recoveredAttachments = Array.isArray(parts.attachments) ? parts.attachments : [];
+		} else recoveredText = String(histMsg.content || "");
+		const chatIdBeforeUndo = currentChatId;
 		if (!recoveredText) {
 			const domMatch = chatMessages?.querySelector(`.message.user[data-message-index="${messageIndex}"]`);
 			if (domMatch?.dataset?.userText) recoveredText = domMatch.dataset.userText;
@@ -16778,6 +16886,11 @@
 			homeInput.value = recoveredText;
 			autoResizeComposerInput();
 		}
+		if (recoveredAttachments.length) {
+			clearPendingAttachments();
+			pendingAttachments.push(...recoveredAttachments);
+			updateAttachmentPreview();
+		}
 		setComposerBusy(false);
 		renderMessages();
 		if (conversationHistory.length === 0) {
@@ -16786,6 +16899,22 @@
 			if (homeCenter) homeCenter.style.display = "flex";
 			currentChatId = null;
 			updateScrollToBottomButton();
+		}
+		if (!discardedGen && chatIdBeforeUndo) {
+			const truncated = snapshotMessages(conversationHistory);
+			(async () => {
+				try {
+					if (truncated.length) {
+						const saved = await updateChatHistoryRow(chatIdBeforeUndo, truncated);
+						if (saved) upsertCachedChatSummary(saved);
+					} else await deleteChatHistory(chatIdBeforeUndo);
+					renderChatHistoryList();
+					postCrossTabMessage("history-changed");
+				} catch (error) {
+					console.error("撤回后保存对话失败:", error);
+					reportUnsavedChange("撤回没能同步到云端", () => truncated.length ? updateChatHistoryRow(chatIdBeforeUndo, truncated) : deleteChatHistory(chatIdBeforeUndo));
+				}
+			})();
 		}
 		if (homeInput) homeInput.focus();
 	}
@@ -17143,7 +17272,7 @@
 			answerStreamState.ready = false;
 			parts.rawAnswerText = "";
 		}
-		if (hasAnswer || hasReasoning) renderMathInMessage(messageId);
+		if ((hasAnswer || hasReasoning) && !thinking) renderMathInMessage(messageId);
 		scrollChatToBottom();
 	}
 	function tagAssistantRetryUserIndex(messageId, userIndex) {
@@ -17414,6 +17543,9 @@
 			}
 		} catch (error) {
 			console.error("自动保存聊天记录失败:", error);
+			const chatIdForRetry = currentChatId;
+			const snapshot = snapshotMessages(conversationHistory);
+			reportUnsavedChange("对话没能保存到云端", () => chatIdForRetry ? updateChatHistory(chatIdForRetry, snapshot) : saveChatHistory(snapshot));
 		}
 	}
 	async function finalizeConversationTurn() {
@@ -17817,6 +17949,7 @@
 		}
 		return false;
 	}
+	var STREAM_TERMINATOR_OBSERVED = { seen: false };
 	async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true, turnId = "", modelId = currentModel, priorReasoning = "", requestKind = "direct_chat", webSearchEnabled = state.webSearchEnabled, queueSessionIdOverride = null, gen = null } = {}) {
 		let finalAnswer = "";
 		let reasoningText = "";
@@ -17967,7 +18100,13 @@
 		};
 		armStreamIdle();
 		let streamErrorFrame = null;
+		let sawStreamTerminator = false;
 		function applyDelta(parsed) {
+			const finishReason = parsed?.choices?.[0]?.finish_reason;
+			if (typeof finishReason === "string" && finishReason) {
+				sawStreamTerminator = true;
+				STREAM_TERMINATOR_OBSERVED.seen = true;
+			}
 			if (parsed && parsed.error && !streamErrorFrame) {
 				streamErrorFrame = parsed;
 				applyBackendModelBlock({
@@ -18051,7 +18190,12 @@
 				for (const line of lines) {
 					if (!line.startsWith("data: ")) continue;
 					const payload = line.slice(6).trim();
-					if (!payload || payload === "[DONE]") continue;
+					if (payload === "[DONE]") {
+						sawStreamTerminator = true;
+						STREAM_TERMINATOR_OBSERVED.seen = true;
+						continue;
+					}
+					if (!payload) continue;
 					try {
 						applyDelta(JSON.parse(payload));
 					} catch (parseError) {}
@@ -18086,6 +18230,14 @@
 			}
 		} finally {
 			clearStreamIdle();
+		}
+		if (!sawStreamTerminator && !streamErrorFrame && !toolCalls.length && Boolean(finalAnswer || reasoningText) && STREAM_TERMINATOR_OBSERVED.seen) {
+			finalAnswer += `${finalAnswer ? "\n\n" : ""}⚠️ 回复在生成过程中被中断（连接提前结束），以上内容可能不完整，请重试。`;
+			updateAssistantMessage(assistantMessageId, {
+				reasoning: composeReasoningText(priorReasoning, reasoningText),
+				answer: finalAnswer,
+				thinking: false
+			});
 		}
 		if (!finalAnswer && !reasoningText && toolCalls.length) finalAnswer = "";
 		finalAnswer = removeToolCallMarkers(finalAnswer);
@@ -18541,8 +18693,22 @@
 				if (savedChat && savedChat.id) gen.chatId = savedChat.id;
 			}
 			if (savedChat) upsertCachedChatSummary(savedChat);
+			clearUnsavedNotice();
 		} catch (error) {
 			console.error("保存对话失败:", error);
+			const chatIdForRetry = gen.chatId;
+			reportUnsavedChange("这轮回答没能保存到云端", async () => {
+				if (chatIdForRetry) {
+					const saved = await updateChatHistoryRow(chatIdForRetry, finalMessages);
+					if (saved) upsertCachedChatSummary(saved);
+					return;
+				}
+				const created = await createChatHistoryRow(finalMessages, gen.modelId, gen.localTitle || deriveLocalTitle(finalMessages));
+				if (created?.id) {
+					gen.chatId = created.id;
+					upsertCachedChatSummary(created);
+				}
+			});
 		}
 		const visible = isGenVisible(gen);
 		if (visible) {
@@ -18879,7 +19045,6 @@
 		if (turnModelMeta.imageOnly) {
 			if (!query && !attachmentsForSend.length) return;
 			await sendImageGenerationMessage(query, turnModelId, turnModelMetadata, attachmentsForSend);
-			if (webSearchEnabledForTurn) setWebSearchEnabled(false);
 			return;
 		}
 		if (turnModelMeta.videoOnly) {
@@ -18894,7 +19059,6 @@
 				}
 			}
 			await sendVideoGenerationMessage(query, turnModelId, turnModelMetadata, attachmentsForSend);
-			if (webSearchEnabledForTurn) setWebSearchEnabled(false);
 			return;
 		}
 		const effectiveQuery = query || (attachmentsForSend.some((a) => isImageAttachment(a)) ? "请根据以下图片识别内容回答。" : "请分析上传的内容。");
@@ -18932,7 +19096,6 @@
 			pushHistory(userHistoryMessage);
 			pushHistory(assistantErrorHistoryMessage(turnModelMetadata, turnModelId));
 			await finalizeConversationTurn();
-			if (webSearchEnabledForTurn) setWebSearchEnabled(false);
 			return;
 		}
 		setComposerBusy(true);
@@ -19100,7 +19263,6 @@
 			if (state.activeRequestController === controller) state.activeRequestController = null;
 			state.sendLocked = false;
 			setComposerBusy(false);
-			if (webSearchEnabledForTurn) setWebSearchEnabled(false);
 		}
 	}
 	async function handleHomeSubmit() {
@@ -19158,7 +19320,6 @@
 		[
 			settingsModal,
 			htmlPreviewModal,
-			tempChatModal,
 			projectModal,
 			privacyPolicyModal
 		].forEach((m) => {
@@ -19419,7 +19580,9 @@
 		if (sidebarSearchWrap) sidebarSearchWrap.hidden = !sidebarSearchWrap.hidden;
 		if (sidebarSearchWrap && !sidebarSearchWrap.hidden) chatHistorySearchInput?.focus();
 	});
-	if (chatHistorySearchInput) chatHistorySearchInput.addEventListener("input", renderChatHistoryList);
+	if (chatHistorySearchInput) chatHistorySearchInput.addEventListener("input", () => {
+		renderChatHistoryList({ refresh: false });
+	});
 	on("settingsBtn", "click", () => openModal("settingsModal"));
 	on("themeShortcutBtn", "click", () => openModal("settingsModal"));
 	on("projectBtn", "click", () => openModal("projectModal"));
@@ -19491,11 +19654,6 @@
 		closeModal();
 		await handleLogout();
 		showToast("已退出登录");
-	});
-	document.getElementById("continueTempChatBtn").addEventListener("click", () => {
-		closeModal();
-		homeInput.focus();
-		showToast("已进入临时聊天。");
 	});
 	document.getElementById("createProjectConfirmBtn").addEventListener("click", () => {
 		const value = projectNameInput.value.trim();

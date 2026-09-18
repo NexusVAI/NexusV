@@ -422,7 +422,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   const settingsModal = document.getElementById("settingsModal");
   const htmlPreviewModal = document.getElementById("htmlPreviewModal");
   const htmlPreviewFrame = document.getElementById("htmlPreviewFrame");
-  const tempChatModal = document.getElementById("tempChatModal");
+  // 2026-09-18：tempChatModal 已从 index.html / claude.html 删除（无入口的死弹窗，
+  // 且文案在向用户承诺代码从未实现的「不进历史记录 / 不用于训练」）。
   const projectModal = document.getElementById("projectModal");
   const privacyPolicyModal = document.getElementById("privacyPolicyModal"); // removed — now links to ../privacy.html
   const appearanceValue = document.getElementById("appearanceValue");
@@ -992,12 +993,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
             </div>
           </div>
           <div style="padding:14px 24px 20px 24px;display:flex;gap:10px;">
+            <button id="suspCaptchaCancel" type="button"
+              style="flex:0 0 auto;padding:10px 14px;border-radius:10px;border:1px solid var(--border,#3a3a37);background:transparent;color:inherit;font-size:14px;cursor:pointer;">稍后再说</button>
             <button id="suspCaptchaSubmit" type="button"
               style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--accent,#d97757);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">验证</button>
           </div>
           <div style="padding:0 24px 16px 24px;font-size:11px;opacity:.55;line-height:1.5;">
             连续答错 3 次或 5 分钟内未完成 → 账户将被永久封禁。
-            如已被误判，请到 <a href="./appeal.html" target="_blank" style="color:var(--accent,#d97757);">申诉页</a> 提交解封申请。
+            如已被误判，请到 <a href="./appeal.html" target="_blank" rel="noopener noreferrer" style="color:var(--accent,#d97757);">申诉页</a> 提交解封申请。
           </div>
         </div>`;
       document.body.appendChild(modal);
@@ -1015,8 +1018,30 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
       function cleanup() {
         if (countdownTimer) clearInterval(countdownTimer);
+        document.removeEventListener("keydown", onKeydown, true);
         modal.remove();
       }
+
+      // 2026-09-18：这个浮层过去**完全关不掉** —— 没有取消按钮、点遮罩没反应、
+      // 也没接 Escape（它是 document.body 上自建的节点，不走 state.modal 那套）。
+      // 用户如果不想现在做题，只能刷新页面。改成可主动放弃：resolve(false)，
+      // 由调用方把这次发送作为「未通过校验」处理，而不是把人困住。
+      function abandon() {
+        cleanup();
+        resolve(false);
+      }
+      function onKeydown(event) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          abandon();
+        }
+      }
+      document.addEventListener("keydown", onKeydown, true);
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) abandon();
+      });
+      modal.querySelector("#suspCaptchaCancel")?.addEventListener("click", abandon);
   
       function renderCountdown() {
         const remainMs = expiresTs - Date.now();
@@ -1034,11 +1059,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       countdownTimer = setInterval(() => {
         if (!renderCountdown()) {
           clearInterval(countdownTimer);
-          errorEl.textContent = "已超时，账户已被自动封禁。";
+          // 2026-09-18：原文案是「已超时，账户已被自动封禁。」—— 前端**并不知道**
+          // 服务端有没有真的封号（封禁判定只在网关，这里从未收到过 banned 标志）。
+          // 对一个只是等超时的用户直接宣布已被永久封禁，是最糟的一种误报。
+          // 改成陈述事实：本次校验已超时，让服务端在下一次请求时给出真实结论。
+          errorEl.textContent = "本次校验已超时，请重新发起请求再试一次。";
           submitBtn.disabled = true;
           setTimeout(() => {
             cleanup();
-            window.location.href = "./appeal.html?reason=captcha_timeout";
             resolve(false);
           }, 1500);
         }
@@ -4171,12 +4199,27 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
 
   // 2026-06-25：对话数据上传/模型改进训练同意开关。同步到后端 user_data_consent。
+  //
+  // 2026-09-18：原实现是 fire-and-forget —— 先翻本地 state + 落 localStorage，
+  // 然后不等结果地调 syncChatDataUploadConsent，而后者的失败只有 console.warn。
+  // 于是用户把「用于模型改进」关掉、界面显示已关、服务端其实还是开着。
+  // 隐私开关不能这样撒谎：同步失败就回滚状态、复位勾选框、明确告知。
   async function setChatDataUploadEnabled(enabled) {
     const next = Boolean(enabled);
-    if (state.chatDataUploadEnabled === next) return;
+    const previous = Boolean(state.chatDataUploadEnabled);
+    if (previous === next) return true;
     state.chatDataUploadEnabled = next;
     persistUiPreferences();
-    syncChatDataUploadConsent(next);
+    const ok = await syncChatDataUploadConsent(next);
+    if (ok) return true;
+    state.chatDataUploadEnabled = previous;
+    persistUiPreferences();
+    // 勾选框归 claude_ui.js 渲染（#claudeDataUploadToggle），这里按 id 复位，
+    // 免得界面继续显示一个服务端并不认的值。
+    const toggle = document.getElementById("claudeDataUploadToggle");
+    if (toggle) toggle.checked = previous;
+    showToast("没能同步到服务器，开关已还原，请检查网络后重试");
+    return false;
   }
 
   async function syncChatDataUploadConsent(enabled) {
@@ -4184,11 +4227,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       const client = getSupabaseClient();
       const { data } = await client.auth.getSession();
       const token = data?.session?.access_token;
-      if (!token) return;
+      // 没登录 / 没网关地址 ⇒ 这次改动根本没能到达服务端，必须按失败处理，
+      // 否则调用方会把「什么都没发生」当成「已保存」。
+      if (!token) return false;
       // 2026-08-29 审计：原本硬用 __SUPABASE_URL__，绕过中继。改走统一基地址。
       const baseUrl = gatewayBaseUrl();
-      if (!baseUrl) return;
-      await gatewayFetch(`${baseUrl}/functions/v1/chat-gateway`, {
+      if (!baseUrl) return false;
+      const resp = await gatewayFetch(`${baseUrl}/functions/v1/chat-gateway`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -4201,8 +4246,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           enabled,
         }),
       }, { idempotent: true });
+      // gatewayFetch 对非 2xx 不抛异常，所以必须显式看 ok —— 不看的话
+      // 一个 403/500 会被当成同步成功。
+      return Boolean(resp?.ok);
     } catch (e) {
       console.warn("[data_consent] sync failed:", e);
+      return false;
     }
   }
 
@@ -6003,8 +6052,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     );
   }
 
-  // 加载并显示聊天记录列表
-  async function renderChatHistoryList() {
+  // 加载并显示聊天记录列表。
+  // refresh:false = 只用已经在内存里的 chatHistoryList 重排/重筛，不打网络。
+  // 侧栏搜索框每敲一个键都调这个函数，而过滤本来就是在本地做的
+  // （matchesChatHistorySearch）—— 以前每次击键都要跑一趟 chat_history list
+  // 请求，又慢又白白顶着限速，列表还会闪。
+  async function renderChatHistoryList({ refresh = true } = {}) {
     const listContainer = document.getElementById("chatHistoryList");
     if (!listContainer) return;
     const renderSeq = ++chatHistoryListRenderSeq;
@@ -6013,7 +6066,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       if (!chatHistoryListHasRenderedItems(listContainer)) {
         renderChatHistorySkeleton(listContainer);
       }
-      const chats = await loadChatHistoryList();
+      const chats = refresh
+        ? await loadChatHistoryList()
+        : Array.isArray(chatHistoryList) && chatHistoryList.length
+          ? chatHistoryList
+          : readCachedChatHistoryList();
       if (renderSeq !== chatHistoryListRenderSeq) return;
       listContainer.removeAttribute("aria-busy");
       listContainer.innerHTML = "";
@@ -6182,7 +6239,15 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
   
   // 加载特定聊天记录
+  // 2026-09-18：切会话竞态。以前 loadChat 没有任何请求序号 —— 连点侧栏 A、B 两项，
+  // 如果 A 的响应后到，它会把 B 的骨架屏替换成 A 的消息（高亮却停在 B），
+  // 用户看到的是**另一个对话的内容**；失败分支更糟，它 renderMessages() 却不更新
+  // currentChatId，等于把「加载失败」盖在上一个对话的气泡上。
+  let loadChatSeq = 0;
+
   async function loadChat(chatId, { silent = false, skipSkeleton = false } = {}) {
+    const seq = ++loadChatSeq;
+    const isStale = () => seq !== loadChatSeq;
     exitSharedConversationMode();
     // 切走之前先给「还没落库的进行中对话」建行，保证它在侧栏留得下痕迹。
     parkChatlessGeneration();
@@ -6222,6 +6287,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     if (!skipSkeleton) renderChatMessagesSkeleton();
     try {
       const chat = await loadChatHistory(chatId);
+      // 期间用户又点了别的对话：这份响应已经过期，一个字都不要往界面上写。
+      if (isStale()) return;
       if (chat && chat.messages) {
         currentChatId = chatId;
         loadedChatModel = String(chat.model || "").trim();
@@ -6255,6 +6322,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       }
     } catch (error) {
       console.error("加载聊天记录失败:", error);
+      if (isStale()) return;
       // 失败兜底：清掉骨架，避免一直停在加载态。
       renderMessages();
       if (!silent) {
@@ -7197,9 +7265,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       currentChatId = data.id;
       upsertCachedChatSummary(data);
       persistSessionNav();
+      clearUnsavedNotice();
       return data;
     } catch (error) {
       console.error("保存聊天记录失败:", error);
+      reportUnsavedChange("这个新对话没能保存到云端", () =>
+        saveChatHistory(messages),
+      );
     }
   }
   
@@ -7221,9 +7293,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
       const { data } = await response.json();
       upsertCachedChatSummary(data);
+      clearUnsavedNotice();
       return data;
     } catch (error) {
       console.error("更新聊天记录失败:", error);
+      reportUnsavedChange("这轮对话没能保存到云端", () =>
+        updateChatHistory(chatId, messages),
+      );
     }
   }
   
@@ -8672,6 +8748,81 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       delete toast.dataset.type;
     }, 2200);
   }
+
+  // ── 保存失败必须可见（2026-09-18）────────────────────────────────────
+  // 旧行为：saveChatHistory / updateChatHistory / saveOrUpdateChatHistory /
+  // commitGeneration 的保存失败**全部**只有 console.error，而答案早就渲染在
+  // 屏幕上了。用户以为存好了，刷新或换设备才发现这一轮（花钱买的）不见了。
+  // 这里把失败变成一条常驻、可点重试的提示条：不会像 toast 那样 2.2s 消失，
+  // 重试成功才收起。刻意给了「忽略」，不做成不可关闭的模态。
+  let unsavedNotice = null;
+  let unsavedRetry = null;
+  let unsavedRetrying = false;
+
+  function clearUnsavedNotice() {
+    unsavedRetry = null;
+    if (unsavedNotice) {
+      unsavedNotice.remove();
+      unsavedNotice = null;
+    }
+  }
+
+  async function runUnsavedRetry() {
+    if (unsavedRetrying || !unsavedRetry) return;
+    const retry = unsavedRetry;
+    const btn = unsavedNotice?.querySelector(".unsaved-notice-retry");
+    unsavedRetrying = true;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "重试中…";
+    }
+    try {
+      await retry();
+      clearUnsavedNotice();
+      showToast("已保存到云端");
+      renderChatHistoryList();
+      postCrossTabMessage("history-changed");
+    } catch (error) {
+      console.error("重试保存仍然失败:", error);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "重试";
+      }
+      showToast("还是没存上，请检查网络后再试");
+    } finally {
+      unsavedRetrying = false;
+    }
+  }
+
+  function reportUnsavedChange(reason, retryFn) {
+    unsavedRetry = typeof retryFn === "function" ? retryFn : null;
+    if (!unsavedNotice) {
+      unsavedNotice = document.createElement("div");
+      unsavedNotice.className = "unsaved-notice";
+      unsavedNotice.setAttribute("role", "status");
+      const text = document.createElement("span");
+      text.className = "unsaved-notice-text";
+      const retryBtn = document.createElement("button");
+      retryBtn.type = "button";
+      retryBtn.className = "unsaved-notice-retry";
+      retryBtn.textContent = "重试";
+      retryBtn.addEventListener("click", () => void runUnsavedRetry());
+      const closeBtn = document.createElement("button");
+      closeBtn.type = "button";
+      closeBtn.className = "unsaved-notice-close";
+      closeBtn.setAttribute("aria-label", "忽略");
+      closeBtn.textContent = "×";
+      closeBtn.addEventListener("click", clearUnsavedNotice);
+      unsavedNotice.append(text, retryBtn, closeBtn);
+      document.body.appendChild(unsavedNotice);
+    }
+    const textEl = unsavedNotice.querySelector(".unsaved-notice-text");
+    if (textEl) {
+      textEl.textContent = `${reason || "这次改动没保存到云端"} · 刷新后可能丢失`;
+    }
+    const retryBtn = unsavedNotice.querySelector(".unsaved-notice-retry");
+    if (retryBtn) retryBtn.hidden = !unsavedRetry;
+  }
   
   function renderWatermark() {
     if (!pageWatermarkGrid) return;
@@ -8888,13 +9039,19 @@ import loginIslandHtml from "../claude-login-island.html?raw";
 
     btnGroup.querySelector('[data-action="edit"]')?.addEventListener("click", (event) => {
       event.stopPropagation();
-      const originalText = messageDiv.dataset.userText || "";
-      if (!originalText) {
+      // 2026-09-18：Edit 过去只把原文复制进输入框、**不截断历史**，发出去就变成
+      // 在原问答下面又追加一条一模一样的提问（"编辑"了个什么都没编辑）。
+      // 搬运皮肤上还没有撤回按钮，Edit 是用户手边唯一的改问入口，所以这里必须
+      // 走和 retry 相同的截断路径 —— undoUserMessage 会顺带把文字与附件都放回。
+      const idx = Number(messageDiv.dataset.messageIndex);
+      const fallbackText = messageDiv.dataset.userText || "";
+      if (!Number.isFinite(idx) && !fallbackText) {
         showToast("没有可编辑的内容");
         return;
       }
-      if (homeInput) {
-        homeInput.value = originalText;
+      undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
+      if (homeInput && !homeInput.value && fallbackText) {
+        homeInput.value = fallbackText;
         autoResizeComposerInput();
         updateComposerSendButton();
         homeInput.focus();
@@ -9038,13 +9195,16 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     });
     act("edit")?.addEventListener("click", (event) => {
       event.stopPropagation();
-      const originalText = root.dataset.userText || "";
-      if (!originalText) {
+      // 同 index 皮肤：Edit 必须真的截断这一轮，否则发送后是追加而不是编辑。
+      const idx = Number(root.dataset.messageIndex);
+      const fallbackText = root.dataset.userText || "";
+      if (!Number.isFinite(idx) && !fallbackText) {
         showToast("没有可编辑的内容");
         return;
       }
-      if (homeInput) {
-        homeInput.value = originalText;
+      undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
+      if (homeInput && !homeInput.value && fallbackText) {
+        homeInput.value = fallbackText;
         autoResizeComposerInput();
         updateComposerSendButton();
         homeInput.focus();
@@ -13013,12 +13173,24 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     // to the DOM dataset if the history push hadn't happened yet (mid-stream
     // undo).
     let recoveredText = "";
+    // 2026-09-18：撤回 / 重发 / 编辑一条「带图提问」时，旧实现只把文字放回输入框，
+    // 图片默默就没了 —— 用户得重新上传一遍（错误卡的「重试」路径本来是会还原的，
+    // 两条路径行为不一致）。这里连附件一起捞出来。
+    let recoveredAttachments = [];
     const histMsg = conversationHistory[messageIndex];
     if (histMsg && histMsg.role === "user") {
-      recoveredText = Array.isArray(histMsg.content)
-        ? extractUserMessageParts(histMsg.content).text
-        : String(histMsg.content || "");
+      if (Array.isArray(histMsg.content)) {
+        const parts = extractUserMessageParts(histMsg.content);
+        recoveredText = parts.text;
+        recoveredAttachments = Array.isArray(parts.attachments)
+          ? parts.attachments
+          : [];
+      } else {
+        recoveredText = String(histMsg.content || "");
+      }
     }
+    // 截断前先记下这一行的 id：下面清空历史时会把 currentChatId 置空。
+    const chatIdBeforeUndo = currentChatId;
     if (!recoveredText) {
       const domMatch = chatMessages?.querySelector(
         `.message.user[data-message-index="${messageIndex}"]`,
@@ -13056,6 +13228,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       homeInput.value = recoveredText;
       autoResizeComposerInput();
     }
+    if (recoveredAttachments.length) {
+      clearPendingAttachments();
+      pendingAttachments.push(...recoveredAttachments);
+      updateAttachmentPreview();
+    }
     setComposerBusy(false);
   
     // Re-render messages from the (now truncated) history.
@@ -13071,7 +13248,36 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       currentChatId = null;
       updateScrollToBottomButton();
     }
-  
+
+    // 2026-09-18：没有进行中的生成时（「安静撤回」——对着一条已完成的提问点
+    // 撤回/重发/编辑），旧实现只改内存，服务端那一行还留着被撤回的内容
+    // ⇒ 刷新以后撤回的那一轮又回来了。而且撤回掉唯一一条消息时它还把
+    // currentChatId 置空却不删行，下次发送会建**第二个**对话，侧栏留一条空壳。
+    // 有 gen 在跑时不要在这里写：交给 discardGeneration 统一收尾，
+    // 否则两边会同时 PUT 同一行。
+    if (!discardedGen && chatIdBeforeUndo) {
+      const truncated = snapshotMessages(conversationHistory);
+      void (async () => {
+        try {
+          if (truncated.length) {
+            const saved = await updateChatHistoryRow(chatIdBeforeUndo, truncated);
+            if (saved) upsertCachedChatSummary(saved);
+          } else {
+            await deleteChatHistory(chatIdBeforeUndo);
+          }
+          renderChatHistoryList();
+          postCrossTabMessage("history-changed");
+        } catch (error) {
+          console.error("撤回后保存对话失败:", error);
+          reportUnsavedChange("撤回没能同步到云端", () =>
+            truncated.length
+              ? updateChatHistoryRow(chatIdBeforeUndo, truncated)
+              : deleteChatHistory(chatIdBeforeUndo),
+          );
+        }
+      })();
+    }
+
     if (homeInput) homeInput.focus();
   }
   
@@ -13553,8 +13759,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       parts.rawAnswerText = "";
     }
 
-    // 渲染数学公式
-    if (hasAnswer || hasReasoning) {
+    // 2026-09-18 性能：这里原本**每个 SSE chunk 都无条件**跑一次。
+    // renderMathInMessage 会把这条消息里所有 .answer-body / .think-body /
+    // .duel-answer 全量扫一遍并跑 KaTeX + Mermaid + 表格绑定 —— 等于把
+    // syncStreamingMarkdownBlock 里那个「流式期间 800ms debounce」完全架空了
+    // （长公式 / 大表格的回答流式时明显掉帧，风扇起飞）。
+    // 流式期间（thinking=true）交给那个 debounce；流结束时再完整跑一次，
+    // 保证最终态一定渲染到位。
+    if ((hasAnswer || hasReasoning) && !thinking) {
       renderMathInMessage(messageId);
     }
 
@@ -13911,6 +14123,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       }
     } catch (error) {
       console.error("自动保存聊天记录失败:", error);
+      const chatIdForRetry = currentChatId;
+      const snapshot = snapshotMessages(conversationHistory);
+      reportUnsavedChange("对话没能保存到云端", () =>
+        chatIdForRetry
+          ? updateChatHistory(chatIdForRetry, snapshot)
+          : saveChatHistory(snapshot),
+      );
     }
   }
   
@@ -14636,6 +14855,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     return false;
   }
   
+  // 页面会话级校准：本页至少成功观察到过一次 SSE 正规终止符之后，
+  // 「缺终止符」才被当作「连接被掐断」的判据（见 looksInterrupted 处的说明）。
+  // 故意用对象而不是裸 let：它要跨 streamChatCompletionRound 的多次调用存活。
+  const STREAM_TERMINATOR_OBSERVED = { seen: false };
+
   async function streamChatCompletionRound(
     messages,
     assistantMessageId,
@@ -14906,8 +15130,18 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     // 处理方式与下方「重复输出检测」保持同一套形状：不丢已经收到的内容（钱已经花了），
     // 而是追加一条明确的中断提示 + 触发 applyBackendModelBlock，然后收尾退出循环。
     let streamErrorFrame = null;
+    // 2026-09-18：上游/中继在答到一半时断掉 TCP 时，不会有任何错误帧 ——
+    // 循环只是 done 了，半截 finalAnswer 被当成「正常答完」落库（而这次调用
+    // 已经计费），用户看到一句话断在中间、也没有重试入口。
+    // 这里记录是否见到过正规终止符（data: [DONE] 或带 finish_reason 的帧）。
+    let sawStreamTerminator = false;
 
     function applyDelta(parsed) {
+      const finishReason = parsed?.choices?.[0]?.finish_reason;
+      if (typeof finishReason === "string" && finishReason) {
+        sawStreamTerminator = true;
+        STREAM_TERMINATOR_OBSERVED.seen = true;
+      }
       if (parsed && parsed.error && !streamErrorFrame) {
         streamErrorFrame = parsed;
         const payload = {
@@ -15014,7 +15248,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           const payload = line.slice(6).trim();
-          if (!payload || payload === "[DONE]") continue;
+          if (payload === "[DONE]") {
+            sawStreamTerminator = true;
+            STREAM_TERMINATOR_OBSERVED.seen = true;
+            continue;
+          }
+          if (!payload) continue;
   
           try {
             applyDelta(JSON.parse(payload));
@@ -15061,6 +15300,29 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       clearStreamIdle();
     }
   
+    // 流在没有任何终止符、也没有错误帧的情况下就结束了 ⇒ 这是被掐断的半截回答。
+    // 不丢已经收到的内容（钱已经花了），追加一条明确提示，与错误帧路径同形状。
+    //
+    // 为什么要 STREAM_TERMINATOR_OBSERVED 这个门：万一某条上游链路**从来不发**
+    // 终止符，无条件判定会给每一个正常回答都挂上「被中断」——那比现在的静默截断
+    // 更糟。所以只有在本页面会话里至少见过一次正规终止符之后，才信任这个判据。
+    // [INFERRED] 网关确实会发 [DONE]（见上面读流处「后面只会是 [DONE]」那条注释），
+    // 所以正常情况下这个门在第一个回答就打开了。
+    const looksInterrupted =
+      !sawStreamTerminator &&
+      !streamErrorFrame &&
+      !toolCalls.length &&
+      Boolean(finalAnswer || reasoningText) &&
+      STREAM_TERMINATOR_OBSERVED.seen;
+    if (looksInterrupted) {
+      finalAnswer += `${finalAnswer ? "\n\n" : ""}⚠️ 回复在生成过程中被中断（连接提前结束），以上内容可能不完整，请重试。`;
+      updateAssistantMessage(assistantMessageId, {
+        reasoning: composeReasoningText(priorReasoning, reasoningText),
+        answer: finalAnswer,
+        thinking: false,
+      });
+    }
+
     if (!finalAnswer && !reasoningText && toolCalls.length) {
       finalAnswer = "";
     }
@@ -15674,8 +15936,28 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         if (savedChat && savedChat.id) gen.chatId = savedChat.id;
       }
       if (savedChat) upsertCachedChatSummary(savedChat);
+      clearUnsavedNotice();
     } catch (error) {
+      // 这一轮的答案已经在屏幕上了，用户以为存好了。必须让失败可见 + 可重试，
+      // 否则刷新之后这条（已计费的）回答就凭空消失。
       console.error("保存对话失败:", error);
+      const chatIdForRetry = gen.chatId;
+      reportUnsavedChange("这轮回答没能保存到云端", async () => {
+        if (chatIdForRetry) {
+          const saved = await updateChatHistoryRow(chatIdForRetry, finalMessages);
+          if (saved) upsertCachedChatSummary(saved);
+          return;
+        }
+        const created = await createChatHistoryRow(
+          finalMessages,
+          gen.modelId,
+          gen.localTitle || deriveLocalTitle(finalMessages),
+        );
+        if (created?.id) {
+          gen.chatId = created.id;
+          upsertCachedChatSummary(created);
+        }
+      });
     }
 
     const visible = isGenVisible(gen);
@@ -16105,7 +16387,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         turnModelMetadata,
         attachmentsForSend,
       );
-      if (webSearchEnabledForTurn) setWebSearchEnabled(false);
+      // 2026-09-18：这里原本会在每次发送后把联网搜索自动关掉。用户的体感是
+      // 「开了搜索、问一句、下一句就悄悄不搜了」，而答案照样一本正经 —— 静默
+      // 降级比多搜一次危险得多。改成会话内保持开启（与主流产品一致）。
+      // 开关状态一直由输入区那颗 pill 显示，所以它不是隐式行为。
+      // 若产品上确实要「一次性」语义，请改成发送后 **提示** 已关闭，而不是静默关。
       return;
     }
   
@@ -16145,7 +16431,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         turnModelMetadata,
         attachmentsForSend,
       );
-      if (webSearchEnabledForTurn) setWebSearchEnabled(false);
+      // 2026-09-18：这里原本会在每次发送后把联网搜索自动关掉。用户的体感是
+      // 「开了搜索、问一句、下一句就悄悄不搜了」，而答案照样一本正经 —— 静默
+      // 降级比多搜一次危险得多。改成会话内保持开启（与主流产品一致）。
+      // 开关状态一直由输入区那颗 pill 显示，所以它不是隐式行为。
+      // 若产品上确实要「一次性」语义，请改成发送后 **提示** 已关闭，而不是静默关。
       return;
     }
   
@@ -16214,7 +16504,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       pushHistory(userHistoryMessage);
       pushHistory(assistantErrorHistoryMessage(turnModelMetadata, turnModelId));
       await finalizeConversationTurn();
-      if (webSearchEnabledForTurn) setWebSearchEnabled(false);
+      // 2026-09-18：这里原本会在每次发送后把联网搜索自动关掉。用户的体感是
+      // 「开了搜索、问一句、下一句就悄悄不搜了」，而答案照样一本正经 —— 静默
+      // 降级比多搜一次危险得多。改成会话内保持开启（与主流产品一致）。
+      // 开关状态一直由输入区那颗 pill 显示，所以它不是隐式行为。
+      // 若产品上确实要「一次性」语义，请改成发送后 **提示** 已关闭，而不是静默关。
       return;
     }
   
@@ -16505,7 +16799,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       }
       state.sendLocked = false;
       setComposerBusy(false);
-      if (webSearchEnabledForTurn) setWebSearchEnabled(false);
+      // 2026-09-18：这里原本会在每次发送后把联网搜索自动关掉。用户的体感是
+      // 「开了搜索、问一句、下一句就悄悄不搜了」，而答案照样一本正经 —— 静默
+      // 降级比多搜一次危险得多。改成会话内保持开启（与主流产品一致）。
+      // 开关状态一直由输入区那颗 pill 显示，所以它不是隐式行为。
+      // 若产品上确实要「一次性」语义，请改成发送后 **提示** 已关闭，而不是静默关。
     }
   }
   
@@ -16582,7 +16880,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     if (htmlPreviewModal?.classList.contains("open")) {
       closeHtmlPreviewModal();
     }
-    [settingsModal, htmlPreviewModal, tempChatModal, projectModal, privacyPolicyModal].forEach(
+    [settingsModal, htmlPreviewModal, projectModal, privacyPolicyModal].forEach(
       (m) => {
         if (!m) return;
         m.classList.remove("open");
@@ -16989,7 +17287,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
   
   if (chatHistorySearchInput) {
-    chatHistorySearchInput.addEventListener("input", renderChatHistoryList);
+    // 搜索纯本地过滤，不要每敲一个键就重拉一次列表。
+    // 注意：以前这里直接把 renderChatHistoryList 当监听器传进去，于是它会收到
+    // InputEvent 作为第一个参数 —— 现在函数签名带选项对象了，必须显式包一层，
+    // 否则 InputEvent 会被当成 options 解构（refresh 取不到 → 退回 true）。
+    chatHistorySearchInput.addEventListener("input", () => {
+      void renderChatHistoryList({ refresh: false });
+    });
   }
   
   on("settingsBtn", "click", () => openModal("settingsModal"));
@@ -17077,11 +17381,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     await handleLogout();
     showToast("已退出登录");
   });
-  document.getElementById("continueTempChatBtn").addEventListener("click", () => {
-    closeModal();
-    homeInput.focus();
-    showToast("已进入临时聊天。");
-  });
+  // 「临时聊天」的确认按钮连同弹窗一起删了。原实现只是 closeModal + focus + toast
+  // 「已进入临时聊天。」，没有任何 tempChat 标志位 —— 下一条消息照常落库、照常
+  // 计入训练同意，等于对用户撒谎。顺带说一句：这里原本是 document.getElementById(...)
+  // .addEventListener 直接链式调用、**没有 null 守卫**，所以删 HTML 必须同时删它，
+  // 否则整个启动流程会在这一行抛 TypeError 而白屏。
   
   document
     .getElementById("createProjectConfirmBtn")

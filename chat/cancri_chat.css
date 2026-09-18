@@ -5170,6 +5170,71 @@ html[data-theme="blue"] .img-loader-badge-shimmer {
     transform: translateY(0) scale(1);
 }
 
+/* 2026-09-18「未保存」常驻提示条。
+   与 .toast 的区别：不自动消失、可交互（重试 / 忽略）。
+   对话保存失败过去只有 console.error，答案却已经渲染在屏幕上 ——
+   用户以为存好了，刷新后这一轮（已计费的）回答凭空消失。
+   坐标比 toast 高一档，避免两者重叠。 */
+.unsaved-notice {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: min(560px, calc(100vw - 32px));
+    padding: 10px 12px 10px 16px;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, #d97706 45%, transparent);
+    background: var(--panel, var(--bg));
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+    box-shadow: var(--shadow-xl);
+}
+.unsaved-notice-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.unsaved-notice-retry,
+.unsaved-notice-close {
+    flex: 0 0 auto;
+    cursor: pointer;
+    border-radius: 8px;
+    border: 1px solid var(--border, currentColor);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+}
+.unsaved-notice-retry {
+    padding: 4px 10px;
+    font-weight: 600;
+}
+.unsaved-notice-retry:hover:not(:disabled) {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.unsaved-notice-retry:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+.unsaved-notice-close {
+    width: 24px;
+    height: 24px;
+    border-color: transparent;
+    font-size: 16px;
+    line-height: 1;
+}
+.unsaved-notice-close:hover {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+}
+@media (max-width: 640px) {
+    .unsaved-notice {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+    }
+}
+
 /* ── WATERMARK ───────────────────────────────────────────── */
 .page-watermark {
     position: fixed;
