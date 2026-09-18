@@ -414,21 +414,24 @@
         }
     }
 
-    // 0. 物理把 #modelSelector 从 .header-left 移动到 composer-actions 里，
-    //    放在 #voiceToastBtn 之前。这是 Claude 主页样子：模型按钮内嵌输入框右下。
+    // 0. 物理把 #modelSelector 移到 composer 语境里。
+    //    2026-09-18 起：首页/对话页对齐 Claude 新 composer —— 模型按钮不再内嵌输入框右下，
+    //    而是挂在输入框外下方的 chin 行右侧（#composerChinRight），与真站
+    //    「Opus 5 Low / Auto」同位置。项目详情页仍嵌在 .claude-project-composer-actions。
     //    cancri_chat.js 没有依赖 #modelSelector 的父级选择器，所以位置移动无副作用。
     //    modelDropdown 的位置是 inline style 动态计算，跟着按钮位置走。
     function relocateModelSelector() {
         const modelSelector = document.getElementById('modelSelector');
         const projectActions = document.querySelector('#claudeProjectDetailView.active .claude-project-composer-actions');
-        const composerActions = projectActions || document.querySelector('#homeView .composer-actions') || document.querySelector('.composer-actions');
+        const composerActions = projectActions || document.getElementById('composerChinRight') || document.querySelector('#homeView .composer-actions') || document.querySelector('.composer-actions');
         const voiceBtn = projectActions ? document.getElementById('claudeProjectVoiceBtn') : document.getElementById('voiceToastBtn');
         if (!modelSelector || !composerActions) return;
         if (composerActions.contains(modelSelector)) {
             modelSelector.classList.add('claude-model-selector-inline');
             return;
         }
-        if (voiceBtn) {
+        // chin 行只放模型按钮（无 voice 兄弟节点）；项目 composer 仍插到 voice 之前。
+        if (projectActions && voiceBtn) {
             composerActions.insertBefore(modelSelector, voiceBtn);
         } else {
             composerActions.appendChild(modelSelector);
