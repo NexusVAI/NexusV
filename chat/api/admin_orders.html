@@ -16,8 +16,9 @@
         <script src="./api-platform.js?v=20260607-account-fix"></script>
         <style>
             /* 2026-09-09 本页从「付费订单审核」改造为「卡密运营」。
-               收款切到 16688 发卡店后不再有人工审核环节，页面职责变成：
-               看库存 / 手动铸码上架 / 作废 / 看兑换流水 / 处理退款人工队列。
+               2026-09-18 收款从 16688 切到链动小铺（wzyp.cn，**没有任何 API**），
+               本页因此从「看着 cron 干活」变成「人在这里干活」：
+               铸码后必须把明文复制、粘贴到小铺对应商品的库存里，这条通道才成立。
                旧的 .status-pill / .dev-block / .ctx-pill 等审核期样式随之删除。 */
 
             .card-panel {
@@ -166,6 +167,55 @@
                 text-decoration: underline;
                 padding: 0;
             }
+
+            /* ── 2026-09-18 人工填卡 ───────────────────────────────────────
+               页头那段红字与铸码明文面板。刻意做得显眼：这两处讲的都是
+               「做错了系统不会告诉你」的事（粘错商品 / 明文只出现一次）。 */
+            .danger-note {
+                margin-top: 10px;
+                padding: 10px 12px;
+                font-size: 12.5px;
+                line-height: 1.7;
+                color: var(--text);
+                background: rgba(248, 113, 113, 0.08);
+                border: 1px solid rgba(248, 113, 113, 0.35);
+                border-radius: 10px;
+            }
+            .card-panel.mint-out {
+                border-color: rgba(74, 222, 128, 0.45);
+                background: rgba(74, 222, 128, 0.05);
+            }
+            .mint-target {
+                margin: 10px 0;
+                padding: 9px 12px;
+                font-size: 13px;
+                border-radius: 8px;
+                background: var(--bg);
+                border: 1px dashed var(--border);
+            }
+            .mint-target b {
+                font-size: 14px;
+            }
+            #mint-codes,
+            #bulk-codes {
+                width: 100%;
+                box-sizing: border-box;
+                padding: 10px 12px;
+                font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+                font-size: 12px;
+                line-height: 1.8;
+                letter-spacing: 0.02em;
+                color: var(--text);
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                resize: vertical;
+            }
+            a.btn-tiny {
+                display: inline-flex;
+                align-items: center;
+                text-decoration: none;
+            }
         </style>
     </head>
     <body class="admin-console">
@@ -200,9 +250,17 @@
                 <header>
                     <h1>卡密运营</h1>
                     <p>
-                        收款走 16688 发卡店：用户在店里买卡 → 回站内「账单 → 兑换码」粘贴 →
-                        由后端按卡号回查平台订单授权后自动到账。<strong>没有人工审核环节</strong>。
-                        库存由 5 分钟一轮的 cron 自动补货，下面的手动铸码只在需要临时加量时用。
+                        收款走<a href="https://wzyp.cn/shop/2ZSEX6O0" target="_blank" rel="noopener">链动小铺</a>：
+                        用户在店里买卡 → 回站内「账单 → 兑换码」粘贴 → 自动到账。<strong>没有人工审核环节</strong>。
+                    </p>
+                    <p class="danger-note">
+                        🔴 <strong>小铺没有任何 API，补货是纯人工的</strong>：下面「铸码」→ 弹出的明文<strong>整段复制</strong>
+                        → 粘到小铺对应商品的库存里。卡密明文<strong>只在铸码那一次出现</strong>，库里只存 sha256，
+                        关掉面板就再也拿不回来（丢了就把那批作废后重铸）。
+                        <br />
+                        🔴 <strong>粘错商品系统查不出来</strong>：没有平台回查这一层了，一张卡发什么货完全由我们库里
+                        那一行决定。把 Pro 卡粘进 ¥1 商品，就是 ¥1 卖出一张 Pro，全程无报错。
+                        卡号里的<strong>卡定位</strong>（如 <code>CANCRI-PRO-…</code>）就是给你粘贴前肉眼核对用的。
                     </p>
                 </header>
 
@@ -216,7 +274,7 @@
                         <div class="value" id="stat-redeemed">—</div>
                     </div>
                     <div class="stat-card">
-                        <div class="label">累计收款</div>
+                        <div class="label">收款估算</div>
                         <div class="value" id="stat-gross">—</div>
                     </div>
                     <div class="stat-card rejected">
@@ -244,28 +302,30 @@
                 <div class="card-panel">
                     <div class="card-panel-title">库存与卡种</div>
                     <div class="card-panel-hint">
-                        「平台库存」来自 16688 的可售数量，是买家真正能买到的数；「本地可兑」是我们库里
-                        state=uploaded 的行数。两者正常应当相等，长期不等说明补货链路有问题。
-                        低于水位的行会标红，cron 会在下一轮自动补。
+                        「本地可兑」= 库里 state=issued 的行数，也就是<strong>还没被兑掉</strong>的卡。
                         <br />
-                        ⚠️ 手动铸码只能<strong>铸到平台货架上</strong>。没在平台成交过的卡永远兑不掉（授权要回查平台订单），
-                        所以这里<strong>无法</strong>铸一张码直接送人——送额度请到「用户管理」页用「钱包 ±¥」。
+                        ⚠️ 它<strong>不等于</strong>小铺里的在售数量：已经被买走、但买家还没回来兑的卡仍然算在里面。
+                        小铺没有 API，真实货架数只能到小铺后台看。低于水位的行会标红，那是「该补货了」的提示，
+                        <strong>不会有 cron 替你补</strong>。
+                        <br />
+                        ⚠️ 铸出来的码<strong>必须粘到「小铺商品」那一列指向的那个商品</strong>，粘错了系统无法察觉。
+                        送额度不要用铸码——请到「用户管理」页用「钱包 ±¥」。
                     </div>
                     <div class="table-wrap" data-sensitive>
                         <table class="card-tbl">
                             <thead>
                                 <tr>
                                     <th>卡种</th>
-                                    <th>类型</th>
+                                    <th>卡定位</th>
+                                    <th>小铺商品</th>
                                     <th class="num">面额</th>
-                                    <th class="num">售价</th>
-                                    <th class="num">平台库存</th>
+                                    <th class="num">建议售价</th>
                                     <th class="num">本地可兑</th>
                                     <th class="num">已兑</th>
                                     <th class="num">已作废</th>
-                                    <th class="num">累计收款</th>
+                                    <th class="num">收款估算</th>
                                     <th class="num">水位</th>
-                                    <th>手动铸码</th>
+                                    <th>铸码</th>
                                 </tr>
                             </thead>
                             <tbody id="sku-rows">
@@ -273,7 +333,25 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="card-panel-hint" id="platform-note" style="margin-top: 10px; margin-bottom: 0"></div>
+                </div>
+
+                <!-- 铸码结果：卡密明文的唯一出口。默认隐藏，铸码成功后展开。 -->
+                <div class="card-panel mint-out" id="mint-panel" style="display: none">
+                    <div class="card-panel-title">
+                        新铸卡密 · 立即粘贴到小铺
+                        <button class="btn-tiny" id="mint-close" type="button" style="margin-left: auto">我已粘好，关闭</button>
+                    </div>
+                    <div class="card-panel-hint">
+                        🔴 <strong>这是这批卡密明文唯一一次出现</strong>。关掉本面板后，任何人（包括数据库）都拿不回它们
+                        ——库里只有 sha256。万一丢了：把这批用下面「作废卡密」逐张作废后重铸即可，不要试图找回。
+                    </div>
+                    <div class="mint-target" id="mint-target"></div>
+                    <textarea id="mint-codes" readonly spellcheck="false" rows="10"></textarea>
+                    <div class="switch-row" style="margin-top: 10px">
+                        <button class="btn-tiny approve" id="mint-copy" type="button">复制全部</button>
+                        <a class="btn-tiny" id="mint-open-shop" href="#" target="_blank" rel="noopener">打开该商品</a>
+                        <span class="card-panel-hint" id="mint-copy-note" style="margin: 0 0 0 8px"></span>
+                    </div>
                 </div>
 
                 <div class="card-panel">
@@ -288,7 +366,7 @@
                             type="text"
                             class="code"
                             id="void-code"
-                            placeholder="CANCRI-CARD-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
+                            placeholder="CANCRI-PRO-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
                             autocomplete="off"
                             spellcheck="false"
                         />
@@ -297,12 +375,37 @@
                     </div>
                 </div>
 
+                <div class="card-panel">
+                    <div class="card-panel-title">退款批量作废</div>
+                    <div class="card-panel-hint">
+                        小铺退款后用这里收回卡。到小铺后台把那笔订单<strong>发给买家的卡密</strong>复制过来，
+                        整段粘进去即可（换行、逗号、空格分隔都认，混进别的文字会自动跳过）。
+                        <br />
+                        未兑现的直接作废；<strong>已兑现的只会挂进下面的人工队列</strong>——钱已经进了用户账户，
+                        自动扣回会造成负余额，要不要追回由你判断。
+                        <br />
+                        ⚠️ 小铺没有 API，<strong>系统不会自己发现退款</strong>。这一步不做，退款的卡就还能继续兑。
+                    </div>
+                    <textarea
+                        id="bulk-codes"
+                        rows="5"
+                        placeholder="每行一张，或用逗号 / 空格分隔"
+                        autocomplete="off"
+                        spellcheck="false"
+                    ></textarea>
+                    <div class="void-form" style="margin-top: 10px">
+                        <input type="text" class="reason" id="bulk-reason" placeholder="原因（可选，默认 shop_refund）" maxlength="200" autocomplete="off" />
+                        <input type="text" class="reason" id="bulk-order" placeholder="小铺订单号（可选）" maxlength="100" autocomplete="off" />
+                        <button class="btn-tiny reject" id="bulk-btn" type="button">批量作废</button>
+                    </div>
+                </div>
+
                 <div class="card-panel" id="refund-panel" style="display: none">
                     <div class="card-panel-title">退款人工队列</div>
                     <div class="card-panel-hint">
-                        这些卡<strong>已经兑现</strong>（钱已进用户账户）但随后被平台退款。自动扣回会造成负余额、
-                        而且额度可能已经花掉了，所以只打标记交人工裁决：确认要追回就到「用户管理」页用
-                        「钱包 -¥」扣回对应金额。
+                        这些卡<strong>已经兑现</strong>（钱已进用户账户），随后被你在上面「退款批量作废」里标记为退款。
+                        自动扣回会造成负余额、而且额度可能已经花掉了，所以只打标记交人工裁决：
+                        确认要追回就到「用户管理」页用「钱包 -¥」扣回对应金额。
                     </div>
                     <div class="table-wrap" data-sensitive>
                         <table class="card-tbl">
@@ -311,9 +414,8 @@
                                     <th>标记时间</th>
                                     <th>卡种</th>
                                     <th class="num">到账</th>
-                                    <th class="num">实付</th>
                                     <th>用户</th>
-                                    <th>发卡单号</th>
+                                    <th>兑换时间</th>
                                     <th>原因</th>
                                 </tr>
                             </thead>
@@ -332,9 +434,8 @@
                                     <th>时间</th>
                                     <th>卡种</th>
                                     <th class="num">到账</th>
-                                    <th class="num">实付</th>
                                     <th>用户</th>
-                                    <th>发卡单号</th>
+                                    <th>批次</th>
                                 </tr>
                             </thead>
                             <tbody id="recent-rows"></tbody>
@@ -378,7 +479,7 @@
             crossorigin="anonymous"
         ></script>
         <script src="./admin-nav.js?v=20260830-unlock-fix"></script>
-        <script src="./admin-orders-app.js?v=20260909-cards"></script>
+        <script src="./admin-orders-app.js?v=20260918-linkshop"></script>
         <script src="../assets/p2m-loader.js" defer></script>
     </body>
 </html>
