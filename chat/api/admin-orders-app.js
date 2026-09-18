@@ -115,7 +115,8 @@
 
     // ⚠️ STATE 里**没有也不许有**卡密明文。明文从 doMint 的响应直接进 DOM，
     //    关闭面板即清空。存进 STATE 只会让它多活一会儿、并跟着别的渲染到处跑。
-    var STATE = { skus: [] };
+    //    activeMintBatch 只记批次号（不是明文），用它挡住「上一批没处理就再铸」。
+    var STATE = { skus: [], batches: [], activeMintBatch: null, mintBusy: false, refundRows: [] };
 
     // ── 渲染 ────────────────────────────────────────────────────────────────
 
@@ -154,7 +155,10 @@
                 var inStock = Number(s.in_stock) || 0;
                 var enabled = s.enabled !== false;
                 var low = enabled && inStock < Number(s.min_stock);
-                var canMint = enabled && !!s.code_token && !!s.shop_item_url;
+                // mintBusy / activeMintBatch 双闸：铸码请求在飞、或上一批明文还在面板上
+                // 没交代（上架/作废），都不许再铸 —— 否则两批明文前后脚弹出来，
+                // 粘到哪一批全靠记忆。
+                var canMint = enabled && !!s.code_token && !!s.shop_item_url && !STATE.mintBusy && !STATE.activeMintBatch;
                 var shopCell = s.shop_item_url
                     ? '<a href="' + esc(s.shop_item_url) + '" target="_blank" rel="noopener">' +
                       esc(s.shop_item_name || "商品") + "</a>"
@@ -228,18 +232,131 @@
         panel.style.display = "";
         tbody.innerHTML = rows
             .map(function (c) {
+                // ⚠️ 结论选项按卡种收窄：套餐卡没有「钱包扣回」—— 扣余额冒充不了
+                //    撤销套餐；钱包卡没有「套餐调整」。选错了会写出一条
+                //    「看起来处理了、实际什么都没做」的结案记录。
+                var isPlan = c.kind === "plan";
+                var opts =
+                    '<option value="">选择结论…</option>' +
+                    (isPlan
+                        ? '<option value="plan_adjusted">已人工调整套餐</option>'
+                        : '<option value="wallet_adjusted">已钱包扣回</option>') +
+                    '<option value="waived">放弃追回</option>' +
+                    '<option value="account_restricted">已限制账号</option>' +
+                    '<option value="external_refund_reversed">外部退款已冲正</option>';
                 return (
                     "<tr>" +
                     "<td>" + esc(fmtTime(c.refund_flagged_at)) + "</td>" +
-                    "<td>" + esc(c.sku) + "</td>" +
+                    "<td>" + esc(c.display_name || c.sku) + "</td>" +
+                    "<td>" + (isPlan ? "套餐卡" : "钱包卡") + "</td>" +
                     '<td class="num">' + fmtCny(c.face_cny) + "</td>" +
                     "<td>" + esc(c.email || c.user_id || "—") + "</td>" +
                     "<td>" + esc(fmtTime(c.redeemed_at)) + "</td>" +
                     "<td>" + esc(c.void_reason || "—") + "</td>" +
+                    '<td><div class="refund-resolve">' +
+                    '<select data-refund-resolution="' + esc(c.id) + '">' + opts + "</select>" +
+                    '<input type="text" data-refund-note="' + esc(c.id) +
+                    '" placeholder="备注（必填）" maxlength="1000" autocomplete="off" />' +
+                    '<button class="btn-tiny approve" type="button" data-refund-resolve="' + esc(c.id) +
+                    '">记录结案</button>' +
+                    "</div></td>" +
                     "</tr>"
                 );
             })
             .join("");
+        Array.prototype.forEach.call(
+            tbody.querySelectorAll("button[data-refund-resolve]"),
+            function (btn) {
+                btn.addEventListener("click", function () {
+                    doResolveRefund(btn);
+                });
+            },
+        );
+    }
+
+    function renderResolvedRefunds(rows) {
+        var panel = $("resolved-refund-panel");
+        var tbody = $("resolved-refund-rows");
+        if (!panel || !tbody) return;
+        rows = rows || [];
+        if (!rows.length) {
+            panel.style.display = "none";
+            tbody.innerHTML = "";
+            return;
+        }
+        panel.style.display = "";
+        tbody.innerHTML = rows
+            .map(function (c) {
+                return (
+                    "<tr>" +
+                    "<td>" + esc(fmtTime(c.resolved_at)) + "</td>" +
+                    "<td>" + esc(c.display_name || c.sku) + "</td>" +
+                    "<td>" + (c.kind === "plan" ? "套餐卡" : "钱包卡") + "</td>" +
+                    "<td>" + esc(c.email || c.user_id || "—") + "</td>" +
+                    "<td>" + esc(c.resolution || "—") + "</td>" +
+                    "<td>" + esc(c.resolution_note || "—") + "</td>" +
+                    "</tr>"
+                );
+            })
+            .join("");
+    }
+
+    function renderBatches() {
+        var tbody = $("batch-rows");
+        if (!tbody) return;
+        var rows = STATE.batches || [];
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="9" class="empty">还没有批次</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows
+            .map(function (b) {
+                var state = String(b.state || "");
+                var stateText =
+                    state === "published" ? "已确认上架" :
+                    state === "void" ? "已整批作废" :
+                    "待确认上架";
+                var actions = "";
+                if (state === "pending") {
+                    actions =
+                        '<button class="btn-tiny approve" type="button" data-batch-publish="' + esc(b.batch_no) + '">确认已上架</button>' +
+                        '<button class="btn-tiny reject" type="button" data-batch-void="' + esc(b.batch_no) + '" data-state="pending">整批作废</button>';
+                } else if (state === "published") {
+                    actions =
+                        '<button class="btn-tiny reject" type="button" data-batch-void="' + esc(b.batch_no) + '" data-state="published">停售未兑</button>';
+                }
+                return (
+                    "<tr>" +
+                    "<td>" + esc(fmtTime(b.created_at)) + "</td>" +
+                    "<td>" + esc(b.display_name || b.sku) +
+                    '<div class="sub mono">' + esc(b.code_token || "") + "</div></td>" +
+                    '<td class="mono">' + esc(b.batch_no) + "</td>" +
+                    "<td>" + stateText + "</td>" +
+                    '<td class="num">' + esc(b.code_count) + "</td>" +
+                    '<td class="num">' + (Number(b.issued) || 0) + "</td>" +
+                    '<td class="num">' + (Number(b.redeemed) || 0) + "</td>" +
+                    '<td class="num">' + (Number(b.voided) || 0) + "</td>" +
+                    "<td>" + actions + "</td>" +
+                    "</tr>"
+                );
+            })
+            .join("");
+        Array.prototype.forEach.call(
+            tbody.querySelectorAll("button[data-batch-publish]"),
+            function (btn) {
+                btn.addEventListener("click", function () {
+                    doBatchPublish(btn.getAttribute("data-batch-publish"));
+                });
+            },
+        );
+        Array.prototype.forEach.call(
+            tbody.querySelectorAll("button[data-batch-void]"),
+            function (btn) {
+                btn.addEventListener("click", function () {
+                    doBatchVoid(btn.getAttribute("data-batch-void"), btn.getAttribute("data-state"));
+                });
+            },
+        );
     }
 
     // ── 动作 ────────────────────────────────────────────────────────────────
@@ -248,10 +365,14 @@
         try {
             var r = await callGateway("admin_card_overview", {});
             STATE.skus = r.skus || [];
+            STATE.batches = r.batches || [];
+            STATE.refundRows = r.refund_queue || [];
             renderTotals(r.totals, r.redeem_enabled === true);
             renderSkus();
+            renderBatches();
             renderRecent(r.recent);
-            renderRefundQueue(r.refund_queue);
+            renderRefundQueue(STATE.refundRows);
+            renderResolvedRefunds(r.resolved_refunds || []);
         } catch (err) {
             showToast("❌ " + errText(err), "err");
             var tbody = $("sku-rows");
@@ -267,6 +388,10 @@
         var target = $("mint-target");
         var open = $("mint-open-shop");
         if (!panel || !box) return;
+        // 先记下「面板上是哪一批」再放明文：之后所有铸码入口都被这批锁住，
+        // 直到人明确说「已上架」或「整批作废」。
+        STATE.activeMintBatch = r.batch_no || null;
+        renderSkus();
         box.value = (r.codes || []).join("\n");
         if (target) {
             target.innerHTML =
@@ -287,14 +412,87 @@
         box.select();
     }
 
-    function closeMintResult() {
+    // ⛔ 明文面板没有「关闭」按钮 —— 能随便关就等于能随手丢。唯一的退出路径是
+    //    publishActiveMint / abandonActiveMint 成功后的这个 clear。
+    function clearMintResult() {
         var panel = $("mint-panel");
         var box = $("mint-codes");
         // 先清空再隐藏：隐藏的 textarea 里留着明文没有任何好处。
         if (box) box.value = "";
         var target = $("mint-target");
         if (target) target.innerHTML = "";
+        var open = $("mint-open-shop");
+        if (open) {
+            open.href = "#";
+            open.style.display = "none";
+        }
+        STATE.activeMintBatch = null;
         if (panel) panel.style.display = "none";
+        renderSkus();
+    }
+
+    async function publishActiveMint() {
+        var batchNo = STATE.activeMintBatch;
+        if (!batchNo) return;
+        var btn = $("mint-publish");
+        if (!window.confirm(
+            "确认这批卡密已经粘贴到小铺商品的库存里了？\n\n批次 " + batchNo + "\n\n" +
+            "⚠️ 「已上架」只是人工声明 —— 小铺没有 API，本站无法核验你真的粘了。" +
+            "没粘就点上架，这批卡在库里可兑、货架上却没有，买家会付款拿不到卡。"
+        )) return;
+        if (btn) btn.disabled = true;
+        try {
+            var r = await callGateway("admin_card_batch_publish", { batch_no: batchNo });
+            showToast("✅ " + (r.message || "已上架"), "ok");
+            clearMintResult();
+            await loadOverview();
+        } catch (err) {
+            showToast("❌ " + errText(err), "err");
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    async function abandonActiveMint() {
+        var batchNo = STATE.activeMintBatch;
+        if (!batchNo) return;
+        var btn = $("mint-abandon");
+        if (!window.confirm(
+            "放弃这批卡密并整批作废？\n\n批次 " + batchNo + "\n\n" +
+            "⚠️ 若已经粘进小铺，先从小铺库存删除；本站只作废未兑卡，" +
+            "留在小铺货架上的死卡本站够不着。"
+        )) return;
+        if (btn) btn.disabled = true;
+        try {
+            var r = await callGateway("admin_card_batch_void", {
+                batch_no: batchNo,
+                reason: "mint_abandoned",
+            });
+            showToast("✅ " + (r.message || "已整批作废"), "ok");
+            clearMintResult();
+            await loadOverview();
+        } catch (err) {
+            showToast("❌ " + errText(err), "err");
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    // 只从 textarea 当前值生成本地文件 —— 不过网络、不进 STATE/localStorage。
+    // 这是粘进小铺前的备份，不是第二个明文出口（提示里已写明上架后要删文件）。
+    function downloadMintCodes() {
+        var box = $("mint-codes");
+        if (!box || !box.value) return;
+        var name = String(STATE.activeMintBatch || "card-batch").replace(/[^0-9A-Za-z._-]+/g, "_");
+        var blob = new Blob([box.value], { type: "text/plain;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = name + ".txt";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
     }
 
     async function copyMintCodes() {
@@ -314,6 +512,13 @@
     }
 
     async function doMint(btn) {
+        // 防重入：上一批明文还摊在面板上、或上一个铸码请求还在飞，都不许再铸 ——
+        // 两批明文前后脚出现，往哪个商品粘哪一批就全靠记忆了。
+        var pendingBox = $("mint-codes");
+        if (STATE.mintBusy || STATE.activeMintBatch || (pendingBox && pendingBox.value)) {
+            showToast("❌ 上一批卡密还没交代：先「已粘贴，确认上架」或「放弃并整批作废」，再铸下一批", "err");
+            return;
+        }
         var sku = btn.getAttribute("data-mint");
         var row = null;
         STATE.skus.forEach(function (s) { if (s.sku === sku) row = s; });
@@ -331,6 +536,8 @@
             "铸完需要你手动把明文粘贴到小铺商品：\n  " + targetName + "\n\n" +
             "⚠️ 明文只显示这一次，粘错商品系统无法察觉。"
         )) return;
+        STATE.mintBusy = true;
+        renderSkus();
         btn.disabled = true;
         var label = btn.textContent;
         btn.textContent = "铸码中…";
@@ -342,6 +549,8 @@
         } catch (err) {
             showToast("❌ " + errText(err), "err");
         } finally {
+            STATE.mintBusy = false;
+            renderSkus();
             // ⚠️ 无论成败都要恢复按钮：loadOverview() 会重渲染整张表，
             //    但失败路径不走那里，按钮会永远停在「铸码中…」。
             btn.disabled = false;
@@ -401,7 +610,15 @@
             });
             // 有已兑现的卡被挂进队列时用 err 配色：那是需要人接着处理的，不是「做完了」。
             showToast((r.flagged > 0 ? "⚠️ " : "✅ ") + (r.message || "已处理"), r.flagged > 0 ? "err" : "ok");
-            codesEl.value = "";
+            // 🔴 unresolved>0（坏行 / 库里查不到的卡）时**不清空**：服务端不会
+            //    回传那批卡的身份，清掉输入就再也追不回是哪几张没处理。
+            if (Number(r.unresolved) === 0) {
+                codesEl.value = "";
+                var bulkReason = $("bulk-reason");
+                if (bulkReason) bulkReason.value = "";
+                var bulkOrder = $("bulk-order");
+                if (bulkOrder) bulkOrder.value = "";
+            }
             await loadOverview();
         } catch (err) {
             showToast("❌ " + errText(err), "err");
@@ -409,6 +626,83 @@
             btn.disabled = false;
         }
     }
+
+    async function doBatchPublish(batchNo) {
+        if (!batchNo) return;
+        if (!window.confirm(
+            "确认批次 " + batchNo + " 的卡密已经粘贴到小铺商品的库存里？\n\n" +
+            "⚠️ 「已上架」只是人工声明：小铺没有 API，系统无法从链动核验你真的粘了。" +
+            "没粘就标上架 = 库里可兑、货架无货，买家会付款拿不到卡。"
+        )) return;
+        try {
+            var r = await callGateway("admin_card_batch_publish", { batch_no: batchNo });
+            showToast("✅ " + (r.message || "已上架"), "ok");
+            await loadOverview();
+        } catch (err) {
+            showToast("❌ " + errText(err), "err");
+        }
+    }
+
+    async function doBatchVoid(batchNo, state) {
+        if (!batchNo) return;
+        var warn = state === "published"
+            ? "⚠️ 这批已标记上架：先从小铺库存删除这些卡密，否则买家会买到死卡。"
+            : "⚠️ 若这批已经粘进小铺，先从小铺库存删除；本站只作废未兑卡。";
+        if (!window.confirm(
+            "整批作废 " + batchNo + "？\n\n" + warn +
+            "\n已兑换的卡不会自动追回，需走退款人工队列。"
+        )) return;
+        try {
+            var r = await callGateway("admin_card_batch_void", {
+                batch_no: batchNo,
+                reason: "batch_abandoned",
+            });
+            showToast("✅ " + (r.message || "已整批作废"), "ok");
+            await loadOverview();
+        } catch (err) {
+            showToast("❌ " + errText(err), "err");
+        }
+    }
+
+    async function doResolveRefund(btn) {
+        var cardId = btn.getAttribute("data-refund-resolve");
+        var sel = document.querySelector('select[data-refund-resolution="' + cardId + '"]');
+        var noteEl = document.querySelector('input[data-refund-note="' + cardId + '"]');
+        var resolution = sel ? sel.value : "";
+        var note = noteEl ? noteEl.value.trim() : "";
+        if (!resolution || !note) {
+            showToast("❌ 请选择处理结论并填写备注", "err");
+            return;
+        }
+        if (!window.confirm(
+            "记录这条退款的人工处理结论？\n\n" +
+            "⚠️ 这一步只记录处理结论，不自动改钱包或套餐 —— " +
+            "扣款/调套餐必须先在对应页面做完，这里只是留档。"
+        )) return;
+        btn.disabled = true;
+        try {
+            var r = await callGateway("admin_card_refund_resolve", {
+                card_id: Number(cardId),
+                resolution: resolution,
+                note: note,
+            });
+            showToast("✅ " + (r.message || "已结案"), "ok");
+            await loadOverview();
+        } catch (err) {
+            showToast("❌ " + errText(err), "err");
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // 明文还摊在面板上时不许静默离开 —— 刷新/关页先弹浏览器确认。
+    window.addEventListener("beforeunload", function (ev) {
+        var box = $("mint-codes");
+        if (box && box.value) {
+            ev.preventDefault();
+            ev.returnValue = "";
+        }
+    });
 
     async function setRedeemEnabled(enabled) {
         if (!enabled && !window.confirm("确认关闭卡密兑换？用户会收到「暂时关闭，稍后再试」的提示（卡密不会失效）。")) return;
@@ -516,8 +810,12 @@
         if (bulkBtn) bulkBtn.addEventListener("click", doVoidBulk);
         var mintCopy = $("mint-copy");
         if (mintCopy) mintCopy.addEventListener("click", copyMintCodes);
-        var mintClose = $("mint-close");
-        if (mintClose) mintClose.addEventListener("click", closeMintResult);
+        var mintDownload = $("mint-download");
+        if (mintDownload) mintDownload.addEventListener("click", downloadMintCodes);
+        var mintPublish = $("mint-publish");
+        if (mintPublish) mintPublish.addEventListener("click", publishActiveMint);
+        var mintAbandon = $("mint-abandon");
+        if (mintAbandon) mintAbandon.addEventListener("click", abandonActiveMint);
         var legacyBtn = $("legacy-btn");
         if (legacyBtn) legacyBtn.addEventListener("click", loadLegacyOrders);
 

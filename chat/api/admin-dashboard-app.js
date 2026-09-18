@@ -110,8 +110,8 @@ function renderOpsAlerts(d) {
   let html = '<div style="display:grid;gap:10px;">';
   if (dup.length > 0) {
     html += `<div style="padding:10px 12px;border-radius:10px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);font-size:12.5px;">
-      <strong>重复待审 ${dup.length} 用户</strong> · 共 ${fmt(d.pending_submitted_total)} 条 submitted
-      <div style="margin-top:6px;color:var(--text-mute)">请去 <a href="./admin_orders.html">订单审核</a> 删除重复记录</div>
+      <strong>遗留重复待审 ${dup.length} 用户</strong> · 共 ${fmt(d.pending_submitted_total)} 条 submitted
+      <div style="margin-top:6px;color:var(--text-mute)">请去 <a href="./admin_users.html">用户管理</a> 打开对应用户，删除遗留重复订单</div>
     </div>`;
   }
   html += "</div>";
@@ -143,9 +143,11 @@ function renderDashboard(d, billingMode) {
   const errRate = calls.total_calls > 0 ? ((calls.error_calls / calls.total_calls) * 100).toFixed(1) : "0";
   $("m-err-rate").textContent = errRate + "%";
 
+  // 订单指标 = 爱发电/人工通道时代的遗留统计（2026-09-09 起在线下单已关闸），
+  // 仍在运行只为审计留档，统计逻辑保留不动。
   const orders = d.orders || {};
   $("m-orders-pending").textContent = fmt(orders.pending);
-  $("m-orders-24h").textContent = `24h 通过 ${fmt(orders.approved_24h)}`;
+  $("m-orders-24h").textContent = `24h 激活 ${fmt(orders.approved_24h)}`;
 
   const apps = d.apps || {};
   $("m-apps-pending").textContent = fmt(apps.pending);

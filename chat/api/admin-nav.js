@@ -18,7 +18,7 @@
   var NAV_ITEMS = [
     { key: "dashboard",    href: "./admin_dashboard.html",   label: "仪表盘" },
     { key: "users",        href: "./admin_users.html",       label: "用户" },
-    { key: "orders",       href: "./admin_orders.html",      label: "订单" },
+    { key: "orders",       href: "./admin_orders.html",      label: "卡密" },
     { key: "usage",        href: "./admin_usage.html",       label: "调用日志" },
     { key: "lines",        href: "./admin_lines.html",       label: "线路" },
     { key: "models",       href: "./admin_models.html",      label: "模型配置" },

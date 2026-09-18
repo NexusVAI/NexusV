@@ -777,7 +777,7 @@
     var path = location.pathname.split("/").pop() || "";
     var items = [
       { href: "./admin_dashboard.html", label: "仪表盘", icon: "📊", match: "admin_dashboard.html" },
-      { href: "./admin_orders.html", label: "订单", icon: "💳", match: "admin_orders.html" },
+      { href: "./admin_orders.html", label: "卡密", icon: "💳", match: "admin_orders.html" },
       { href: "./admin_users.html", label: "用户", icon: "👤", match: "admin_users.html" },
       { href: "./admin.html", label: "审核", icon: "✓", match: "admin.html" },
       { href: "./admin_usage.html", label: "日志", icon: "📋", match: "admin_usage.html" },

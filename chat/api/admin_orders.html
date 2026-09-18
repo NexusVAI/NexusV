@@ -13,7 +13,7 @@
         <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
         <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
         <link rel="stylesheet" href="./admin-console.css?v=20260706-sk" />
-        <script src="./api-platform.js?v=20260607-account-fix"></script>
+        <script src="./api-platform.js?v=20260918-card-batches"></script>
         <style>
             /* 2026-09-09 本页从「付费订单审核」改造为「卡密运营」。
                2026-09-18 收款从 16688 切到链动小铺（wzyp.cn，**没有任何 API**），
@@ -216,6 +216,31 @@
                 align-items: center;
                 text-decoration: none;
             }
+
+            /* 2026-09-18 批次闭环：退款队列的结案控件（select + 备注 + 按钮）。
+               沿用 mint-cell / void-form 的现有 token，不另立风格。 */
+            .refund-resolve {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .refund-resolve select,
+            .refund-resolve input {
+                padding: 4px 6px;
+                font-size: 11.5px;
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                color: var(--text);
+            }
+            .refund-resolve input {
+                width: 170px;
+            }
+            .batch-actions {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
         </style>
     </head>
     <body class="admin-console">
@@ -266,7 +291,7 @@
 
                 <div class="stats" id="stats">
                     <div class="stat-card">
-                        <div class="label">在售库存</div>
+                        <div class="label">本地可兑</div>
                         <div class="value" id="stat-stock">—</div>
                     </div>
                     <div class="stat-card approved">
@@ -335,22 +360,60 @@
                     </div>
                 </div>
 
-                <!-- 铸码结果：卡密明文的唯一出口。默认隐藏，铸码成功后展开。 -->
+                <!-- 铸码结果：卡密明文的唯一出口。默认隐藏，铸码成功后展开。
+                     ⛔ 刻意没有「关闭」按钮 —— 能随手关就等于能随手丢明文。
+                     唯一的退出是「已粘贴，确认上架」或「放弃并整批作废」。 -->
                 <div class="card-panel mint-out" id="mint-panel" style="display: none">
                     <div class="card-panel-title">
                         新铸卡密 · 立即粘贴到小铺
-                        <button class="btn-tiny" id="mint-close" type="button" style="margin-left: auto">我已粘好，关闭</button>
                     </div>
                     <div class="card-panel-hint">
-                        🔴 <strong>这是这批卡密明文唯一一次出现</strong>。关掉本面板后，任何人（包括数据库）都拿不回它们
-                        ——库里只有 sha256。万一丢了：把这批用下面「作废卡密」逐张作废后重铸即可，不要试图找回。
+                        🔴 <strong>这是这批卡密明文唯一一次出现</strong>。刷新或离开本页后，任何人（包括数据库）
+                        都拿不回它们——库里只有 sha256。即使丢了明文，仍可在下面「批次管理」按批次整批作废后重铸。
+                        <br />
+                        「下载 TXT」只是粘贴前的备份，<strong>上架确认后请立即删除下载文件</strong>。
                     </div>
                     <div class="mint-target" id="mint-target"></div>
                     <textarea id="mint-codes" readonly spellcheck="false" rows="10"></textarea>
                     <div class="switch-row" style="margin-top: 10px">
                         <button class="btn-tiny approve" id="mint-copy" type="button">复制全部</button>
+                        <button class="btn-tiny" id="mint-download" type="button">下载 TXT</button>
                         <a class="btn-tiny" id="mint-open-shop" href="#" target="_blank" rel="noopener">打开该商品</a>
+                        <button class="btn-tiny approve" id="mint-publish" type="button">已粘贴，确认上架</button>
+                        <button class="btn-tiny reject" id="mint-abandon" type="button">放弃并整批作废</button>
                         <span class="card-panel-hint" id="mint-copy-note" style="margin: 0 0 0 8px"></span>
+                    </div>
+                </div>
+
+                <!-- 批次管理：每次铸码登记一批，状态只是人工记录，不参与兑换授权。 -->
+                <div class="card-panel" id="batch-panel">
+                    <div class="card-panel-title">批次管理</div>
+                    <div class="card-panel-hint">
+                        每一次铸码都登记为一个批次。「待确认上架 / 已确认上架 / 已整批作废」<strong>只是人工记录</strong>，
+                        不参与兑换授权——兑换只看卡密本身在库里的状态。
+                        <br />
+                        「确认已上架」= 你声明这批明文已经粘进小铺库存（本站无法核验）；
+                        「整批作废」只作废<strong>未兑换</strong>的卡，已兑出的请到下面退款队列人工处理。
+                    </div>
+                    <div class="table-wrap" data-sensitive>
+                        <table class="card-tbl">
+                            <thead>
+                                <tr>
+                                    <th>创建时间</th>
+                                    <th>卡种 / 卡定位</th>
+                                    <th>批次号</th>
+                                    <th>人工状态</th>
+                                    <th class="num">总数</th>
+                                    <th class="num">未兑</th>
+                                    <th class="num">已兑</th>
+                                    <th class="num">已作废</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="batch-rows">
+                                <tr><td colspan="9" class="empty">加载中</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -403,9 +466,16 @@
                 <div class="card-panel" id="refund-panel" style="display: none">
                     <div class="card-panel-title">退款人工队列</div>
                     <div class="card-panel-hint">
-                        这些卡<strong>已经兑现</strong>（钱已进用户账户），随后被你在上面「退款批量作废」里标记为退款。
+                        这些卡<strong>已经兑现</strong>（钱/套餐已进用户账户），随后被你在上面「退款批量作废」里标记为退款。
                         自动扣回会造成负余额、而且额度可能已经花掉了，所以只打标记交人工裁决：
-                        确认要追回就到「用户管理」页用「钱包 -¥」扣回对应金额。
+                        每行先选结论、填备注，再「记录结案」。
+                        <br />
+                        · <strong>钱包卡</strong>：先到「用户管理」页做钱包调整（扣回金额），再回来记录结案；
+                        <br />
+                        · <strong>套餐卡</strong>：<strong>绝不能用钱包扣款冒充撤销套餐</strong>——需人工调整套餐 /
+                        限制账号 / 放弃追回，再记录结论；
+                        <br />
+                        ⚠️ 本页「记录结案」只写处理结论，<strong>不自动改任何资金</strong>。
                     </div>
                     <div class="table-wrap" data-sensitive>
                         <table class="card-tbl">
@@ -413,13 +483,37 @@
                                 <tr>
                                     <th>标记时间</th>
                                     <th>卡种</th>
+                                    <th>类型</th>
                                     <th class="num">到账</th>
                                     <th>用户</th>
                                     <th>兑换时间</th>
                                     <th>原因</th>
+                                    <th>处理</th>
                                 </tr>
                             </thead>
                             <tbody id="refund-rows"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-panel" id="resolved-refund-panel" style="display: none">
+                    <div class="card-panel-title">最近退款结案</div>
+                    <div class="card-panel-hint">
+                        人工处理结论留档。结论本身不改资金——它只是记录「这条退款人已经处理过、怎么处理的」。
+                    </div>
+                    <div class="table-wrap" data-sensitive>
+                        <table class="card-tbl">
+                            <thead>
+                                <tr>
+                                    <th>结案时间</th>
+                                    <th>卡种</th>
+                                    <th>类型</th>
+                                    <th>用户</th>
+                                    <th>结论</th>
+                                    <th>备注</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resolved-refund-rows"></tbody>
                         </table>
                     </div>
                 </div>
@@ -476,10 +570,11 @@
         <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
         <script
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+            integrity="sha384-L+IlvYRlq83Yqv9kTm92qOc1xXxFuPatpFkRtF+Ov87zhKKV6gcx9GvTURw6uviE"
             crossorigin="anonymous"
         ></script>
-        <script src="./admin-nav.js?v=20260830-unlock-fix"></script>
-        <script src="./admin-orders-app.js?v=20260918-linkshop"></script>
+        <script src="./admin-nav.js?v=20260918-card-batches"></script>
+        <script src="./admin-orders-app.js?v=20260918-card-batches"></script>
         <script src="../assets/p2m-loader.js" defer></script>
     </body>
 </html>

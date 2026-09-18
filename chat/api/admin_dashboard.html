@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
     <link rel="stylesheet" href="./admin-console.css?v=20260706-sk" />
-    <script src="./api-platform.js?v=20260607-account-fix"></script>
+    <script src="./api-platform.js?v=20260918-card-batches"></script>
     <style>
       /* 大盘 grid */
       .dash-grid {
@@ -265,9 +265,9 @@
             <div class="dash-card__sub" id="m-err-rate"></div>
           </div>
           <div class="dash-card warn">
-            <div class="dash-card__label">待审订单</div>
+            <div class="dash-card__label">遗留待审订单</div>
             <div class="dash-card__value" id="m-orders-pending"></div>
-            <div class="dash-card__sub" id="m-orders-24h">24h 通过</div>
+            <div class="dash-card__sub" id="m-orders-24h">24h 激活</div>
           </div>
           <div class="dash-card warn">
             <div class="dash-card__label">待审 API 申请</div>
@@ -308,7 +308,7 @@
         <!-- 2026-06-07：运营预-->
         <div class="dash-panel" id="ops-panel" style="margin-bottom: 12px; display: none;">
           <h3>🚨 运营预警</h3>
-          <div class="dash-panel__hint">重复待审订单</div>
+          <div class="dash-panel__hint">遗留重复待审订单</div>
           <div id="dash-ops-alerts"></div>
         </div>
 
@@ -346,8 +346,8 @@
               <div class="dash-nav-card__desc">搜索 · 封禁 · 钱包余额 · 调用日志</div>
             </a>
             <a class="dash-nav-card" href="./admin_orders.html">
-              <div class="dash-nav-card__title">订单审核 <span class="dash-nav-card__badge" id="nav-orders-badge" style="display:none">0</span></div>
-              <div class="dash-nav-card__desc">支付订单 · 钱包充值</div>
+              <div class="dash-nav-card__title">卡密运营 <span class="dash-nav-card__badge" id="nav-orders-badge" style="display:none">0</span></div>
+              <div class="dash-nav-card__desc">铸码 · 批次 · 退款队列</div>
             </a>
             <a class="dash-nav-card" href="./admin.html">
               <div class="dash-nav-card__title">API 申请 <span class="dash-nav-card__badge" id="nav-apps-badge" style="display:none">0</span></div>
@@ -375,8 +375,8 @@
     <script src="../cancri_config.js"></script>
     <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" integrity="sha384-L+IlvYRlq83Yqv9kTm92qOc1xXxFuPatpFkRtF+Ov87zhKKV6gcx9GvTURw6uviE" crossorigin="anonymous"></script>
-    <script src="./admin-nav.js?v=20260830-unlock-fix"></script>
-    <script src="./admin-dashboard-app.js?v=20260623-walletv3"></script>
+    <script src="./admin-nav.js?v=20260918-card-batches"></script>
+    <script src="./admin-dashboard-app.js?v=20260918-card-batches"></script>
   <script src="../assets/p2m-loader.js" defer></script>
 </body>
 </html>
