@@ -11217,3 +11217,102 @@ html[data-theme="black"] .composer:focus-within {
 #composerChin #modelSelector .model-current-icon {
     display: none !important;
 }
+
+/* ───────────────────────────────────────────────────────────
+   §35. 首页垂直节奏对齐 + chin 行左胶囊（2026-09-18 第二批）
+   参考页：C:\Users\HP\Downloads\New session - Claude (2026_9_18 09：45：46).html
+   实测（1440×900，light）：
+     容器    main 列 max-w-7xl + px-8(32)，padding-top 33vh（900 高 = 297.1px），
+             子项 gap-6 = 24px
+     hero    font-size clamp(1.5rem, 1.15rem + 1vw, 2rem)
+             （375→24、768→26.08、1024→28.64、1366+→32），line-height 1.2，
+             font-weight 360，letter-spacing normal，图标 0.72em，图文间距 0.45em
+     落点    hero 顶 356 = 48 + 297.1 + 12(hero mt-3)；
+             composer 顶 419 = 356 + 38.4 + 24
+   chin 行：左＝快捷胶囊（本仓自定义，真站此处是 Project/Output），右＝模型选择器。
+   ─────────────────────────────────────────────────────────── */
+
+/* 容器顶部留白：真站 pt-[33vh]（仅桌面，移动端保留既有 16~22vh 节奏）。
+   选择器写成 #homeView:not(.chatting) #homeCenter（2 id + 1 伪类），
+   压过 claude.css:1324 的 @media(min-width:768px) 20vh 那条。 */
+@media (min-width: 769px) {
+    #homeView:not(.chatting) #homeCenter {
+        padding-top: 33vh !important;
+    }
+}
+
+/* hero 字号/行高/字重与间距对齐真站。
+   真站是 clamp(1.5rem,1.15rem+1vw,2rem)@16px 根字号；我们根字号 15px，
+   rem 会缩水 → 按 1440 实测值换算成 px 钉死（375→24、768→26.08、1024→28.64、1366+→32）。 */
+.hero,
+#heroTitle {
+    font-size: clamp(24px, 18.4px + 1vw, 32px) !important;
+    line-height: 1.2 !important;
+    font-weight: 360 !important;
+    letter-spacing: normal !important;
+    color: var(--c-text) !important; /* 真站 hero = text-primary，非 text-soft */
+    margin: 12px 0 24px !important;
+    gap: 0.45em !important;
+}
+@media (min-width: 641px) {
+    .hero .hero-icon,
+    .hero-icon {
+        width: 0.72em !important;
+        height: 0.72em !important;
+    }
+    .hero .hero-icon-img {
+        width: 100% !important;
+        height: 100% !important;
+    }
+}
+
+/* chin 行：左侧快捷胶囊 + 右侧模型选择器（space-between） */
+.composer-chin {
+    justify-content: space-between !important;
+}
+.composer-chin-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: 0;
+    flex: 0 1 auto;
+}
+#composerChin .claude-suggest-row {
+    margin: 0 !important;
+    width: auto !important;
+    max-width: 100% !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+}
+#composerChin .claude-suggest {
+    height: 24px !important;
+    padding: 0 8px !important;
+    gap: 5px !important;
+    font-size: 12.5px !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+}
+#composerChin .claude-suggest svg {
+    width: 14px !important;
+    height: 14px !important;
+}
+/* 移动端：胶囊独占一行（可换行），模型选择器退到第二行右侧 */
+@media (max-width: 768px) {
+    .composer-chin {
+        flex-wrap: wrap !important;
+        row-gap: 2px !important;
+    }
+    .composer-chin-left {
+        order: 1;
+        flex: 1 1 100% !important;
+    }
+    .composer-chin-right {
+        order: 2;
+        margin-left: auto;
+    }
+    #composerChin .claude-suggest-row {
+        flex-wrap: wrap !important;
+        row-gap: 6px !important;
+    }
+}
