@@ -8275,11 +8275,25 @@ body[data-shared-conversation="true"] .input-icon {
     }
 }
 
+/* 移动端：输入框里塞不进虚线占位框（+ / 麦克风已经贴边），所以虚线框隐藏，
+   卡片直接落在 composer 下方那片空白里，箭头朝上指 chin 行的模型按钮。 */
 @media (max-width: 640px) {
     .cancri-coachmark {
-        width: calc(100vw - 32px);
+        width: calc(100vw - 24px);
+        padding: 14px;
+        border-radius: 14px;
     }
     .cancri-coachmark-slot {
         display: none;
+    }
+    .cancri-coachmark-title {
+        font-size: 16px;
+    }
+    .cancri-coachmark-footer {
+        margin-top: 12px;
+    }
+    .cancri-coachmark-btn {
+        height: 36px;
+        padding: 0 14px;
     }
 }

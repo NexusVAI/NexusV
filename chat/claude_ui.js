@@ -4777,6 +4777,7 @@
     var slot = null;
     var card = null;
     var target = null;
+    var modelBtn = null;
     var reposition = null;
 
     function seen() {
@@ -4798,13 +4799,19 @@
     function teardown() {
         if (reposition) {
             window.removeEventListener('resize', reposition);
+            window.removeEventListener('orientationchange', reposition);
             window.removeEventListener('scroll', reposition, true);
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', reposition);
+                window.visualViewport.removeEventListener('scroll', reposition);
+            }
             reposition = null;
         }
         if (target) {
             target.classList.remove('cancri-coachmark-target');
             target = null;
         }
+        modelBtn = null;
         if (slot && slot.parentNode) slot.parentNode.removeChild(slot);
         slot = null;
         if (card) {
@@ -4822,21 +4829,37 @@
         teardown();
     }
 
+    // 锚点：桌面端指回「原来的位置」（虚线占位框）；
+    // 移动端虚线框被 CSS 隐藏（rect 全 0，量不到），改为直接指新家 —— chin 行
+    // 里的模型按钮，卡片落在输入框下方那片空白里，箭头朝上戳着它。
+    function anchorRect() {
+        if (slot && slot.getClientRects().length) {
+            return { rect: slot.getBoundingClientRect(), toNewHome: false };
+        }
+        if (modelBtn && modelBtn.getClientRects().length) {
+            return { rect: modelBtn.getBoundingClientRect(), toNewHome: true };
+        }
+        return null;
+    }
+
     function place() {
-        if (!card || !slot) return;
-        var s = slot.getBoundingClientRect();
+        if (!card) return;
+        var a = anchorRect();
+        if (!a) return;
+        var s = a.rect;
         var w = card.offsetWidth || 320;
         var h = card.offsetHeight || 200;
         var margin = 12;
-        var gap = 14;
+        var gap = a.toNewHome ? 12 : 14;
 
-        // 右对齐到占位框右边缘（卡片整体落在输入框下方的空白区）
+        // 右对齐到锚点右边缘（卡片整体落在输入框下方的空白区）
         var left = s.right - w + 8;
         left = Math.max(margin, Math.min(left, window.innerWidth - w - margin));
 
+        // 下方够高就永远放下方（移动端空白全在下面，往上翻会盖住输入框）
         var below = s.bottom + gap;
         var flip = below + h > window.innerHeight - margin && s.top - gap - h > margin;
-        var top = flip ? s.top - gap - h : below;
+        var top = flip ? s.top - gap - h : Math.min(below, Math.max(margin, window.innerHeight - h - margin));
         card.setAttribute('data-side', flip ? 'top' : 'bottom');
         card.style.left = left + 'px';
         card.style.top = top + 'px';
@@ -4897,16 +4920,26 @@
         card.querySelector('[data-coachmark-ok]').addEventListener('click', dismiss);
 
         target = modelSelector.querySelector('.model-current') || modelSelector;
+        modelBtn = target;
         target.classList.add('cancri-coachmark-target');
 
         place();
+        // 卡片文字换行 / 字体到位后高度会变，移动端尤其明显 —— 再量一次
+        setTimeout(place, 60);
+        setTimeout(place, 300);
         requestAnimationFrame(function () {
             if (card) card.setAttribute('data-enter', '1');
         });
 
         reposition = place;
         window.addEventListener('resize', reposition);
+        window.addEventListener('orientationchange', reposition);
         window.addEventListener('scroll', reposition, true);
+        // 移动端地址栏收缩 / 软键盘弹起都只动 visualViewport，不触发 resize
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', reposition);
+            window.visualViewport.addEventListener('scroll', reposition);
+        }
 
         document.addEventListener('keydown', function onEsc(e) {
             if (e.key !== 'Escape' || !card) return;
