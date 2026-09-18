@@ -11232,12 +11232,23 @@ html[data-theme="black"] .composer:focus-within {
    chin 行：左＝快捷胶囊（本仓自定义，真站此处是 Project/Output），右＝模型选择器。
    ─────────────────────────────────────────────────────────── */
 
-/* 容器顶部留白：真站 pt-[33vh]（仅桌面，移动端保留既有 16~22vh 节奏）。
-   选择器写成 #homeView:not(.chatting) #homeCenter（2 id + 1 伪类），
-   压过 claude.css:1324 的 @media(min-width:768px) 20vh 那条。 */
-@media (min-width: 769px) {
+/* 容器顶部留白 = 真站公式逐字移植（2026-09-18 第三批，Playwright 逐点验证）。
+   真站 class 原文（见 snapshot 文件）的有效规则：
+     <768px       → pt 0（内容列 pt-4 + 10vh-24px 间隔块；我方沿用既有 clamp 节奏）
+     ≥768px       → max(pavh*0.28 + 9.1px, 192px)
+     ≥768px 且视口高≥900px → pavh*0.32 + 9.1px
+   pavh = --prerender-activation-viewport-height（真站 JS 在页面激活时冻结，
+   防移动端 URL 栏伸缩抖动）；我方不设该 var → fallback 100vh。
+   min-width:768px 对齐真站 md 断点；768 同时命中 mobile ≤768 块，
+   本段在其后且同特异性 → 768 归桌面公式（与真站一致，实测 768×600=192px）。 */
+@media (min-width: 768px) {
     #homeView:not(.chatting) #homeCenter {
-        padding-top: 33vh !important;
+        padding-top: max(calc(var(--prerender-activation-viewport-height, 100vh) * 0.28 + 9.1px), 192px) !important;
+    }
+}
+@media (min-width: 768px) and (min-height: 900px) {
+    #homeView:not(.chatting) #homeCenter {
+        padding-top: calc(var(--prerender-activation-viewport-height, 100vh) * 0.32 + 9.1px) !important;
     }
 }
 
@@ -11297,22 +11308,37 @@ html[data-theme="black"] .composer:focus-within {
     width: 14px !important;
     height: 14px !important;
 }
-/* 移动端：胶囊独占一行（可换行），模型选择器退到第二行右侧 */
+/* 移动端 chin：保持单行 —— 胶囊横向滑动，模型选择器钉最右。
+   旧方案 chin 换行 + 胶囊再换行 → 375px 下盒底垂 100px 胶囊块（贴死难看）。
+   chin-left 必须 min-width:0 + overflow:hidden（flex 子项默认不收缩，
+   没有它 suggest-row 会把 chin 撑出横向溢出）。 */
 @media (max-width: 768px) {
     .composer-chin {
-        flex-wrap: wrap !important;
-        row-gap: 2px !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
     }
     .composer-chin-left {
-        order: 1;
-        flex: 1 1 100% !important;
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
     }
     .composer-chin-right {
-        order: 2;
-        margin-left: auto;
+        flex: 0 0 auto !important;
+        margin-left: auto !important;
     }
     #composerChin .claude-suggest-row {
-        flex-wrap: wrap !important;
-        row-gap: 6px !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        scrollbar-width: none !important;
+        max-width: 100% !important;
+        padding-bottom: 2px !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    #composerChin .claude-suggest-row::-webkit-scrollbar {
+        display: none !important;
+    }
+    #composerChin .claude-suggest {
+        flex-shrink: 0 !important;
     }
 }
