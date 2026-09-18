@@ -11276,6 +11276,7 @@
 					updateAccountInfo(user);
 					hideAuthOverlay();
 					authSessionPromise = Promise.resolve(sessionData.session);
+					lastResolvedSession = sessionData.session;
 					authInitialized = true;
 					return sessionData.session;
 				}
@@ -11306,6 +11307,7 @@
 			if (session?.access_token) {
 				if (session.user) updateAccountInfo(session.user);
 				authSessionPromise = Promise.resolve(session);
+				lastResolvedSession = session;
 				authInitialized = true;
 				hideAuthOverlay();
 				return session;
@@ -11505,13 +11507,6 @@
 		};
 		if (captchaToken) headers["x-captcha-token"] = captchaToken;
 		return headers;
-	}
-	async function authBody(body) {
-		const session = await ensureAuthSession();
-		return {
-			...body,
-			__auth_token: session.access_token
-		};
 	}
 	function withAuthTokenBody(options, session) {
 		let body;
@@ -11945,6 +11940,7 @@
 	async function loadChat(chatId, { silent = false, skipSkeleton = false } = {}) {
 		const seq = ++loadChatSeq;
 		const isStale = () => seq !== loadChatSeq;
+		rememberChatScroll(currentChatId);
 		exitSharedConversationMode();
 		parkChatlessGeneration();
 		const liveGen = getGenerationByChatId(chatId);
@@ -11978,12 +11974,12 @@
 				currentChatId = chatId;
 				loadedChatModel = String(chat.model || "").trim();
 				conversationHistory = Array.isArray(chat.messages) ? chat.messages.map((message) => sanitizeHistoryMessage(message, loadedChatModel)) : [];
+				pendingChatScrollRestore = chatScrollPositions.has(chatId) ? chatScrollPositions.get(chatId) : null;
 				renderMessages();
 				updateContextMeter();
 				if (state.activeRequestController) state.activeRequestController = null;
 				setComposerBusy(false);
 				scheduleChatScrollToBottom(true);
-				if (!silent) showToast("已加载聊天记录");
 				persistSessionNav();
 				dispatchChatTitleUpdated(resolveChatTitleForDisplay(chatId, chat.title), chatId);
 			} else {
@@ -12103,7 +12099,18 @@
 		updateChatNav();
 		updateChatShareButtonVisibility();
 		syncAskUserFromHistory();
-		if (homeView?.classList.contains("chatting")) scheduleChatScrollToBottom(true);
+		if (homeView?.classList.contains("chatting")) if (pendingChatScrollRestore !== null) {
+			const top = pendingChatScrollRestore;
+			pendingChatScrollRestore = null;
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					if (!chatMessages) return;
+					const maxTop = Math.max(0, chatMessages.scrollHeight - chatMessages.clientHeight);
+					chatMessages.scrollTop = Math.min(top, maxTop);
+					updateScrollToBottomButton();
+				});
+			});
+		} else scheduleChatScrollToBottom(true);
 	}
 	var chatNavObserver = null;
 	var chatNavLastActiveIndex = null;
@@ -12421,12 +12428,14 @@
 		const img = document.createElement("img");
 		img.className = "generated-image-media";
 		img.alt = "generated image";
-		img.addEventListener("contextmenu", (e) => {
-			if (!prefersNativeContextMenu()) e.preventDefault();
-		});
+		img.style.cursor = "zoom-in";
 		img.addEventListener("click", (e) => {
-			e.preventDefault();
 			e.stopPropagation();
+			const src = img.currentSrc || img.getAttribute("src") || "";
+			if (!src) return;
+			e.preventDefault();
+			if (/^data:/i.test(src)) return;
+			window.open(src, "_blank", "noopener,noreferrer");
 		});
 		img.onerror = function() {
 			this.onerror = null;
@@ -15221,7 +15230,7 @@
 			const href = safeUrl(url);
 			if (href === "#") return alt;
 			const escHref = escapeHtml(href);
-			return keep(`<span class="markdown-image-wrap" data-image-src="${escHref}" style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escapeHtml(alt)}" style="max-width:100%;border-radius:8px;display:block;cursor:default"><button type="button" class="markdown-image-download" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`);
+			return keep(`<span class="markdown-image-wrap" data-image-src="${escHref}" style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escapeHtml(alt)}" loading="lazy" decoding="async" style="max-width:100%;height:auto;border-radius:8px;display:block;cursor:default;background:var(--panel,#f3f3f1);min-height:1.5em"><button type="button" class="markdown-image-download" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`);
 		}).replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, label, url) => {
 			const href = safeUrl(url);
 			if (href === "#") return label;
@@ -16099,6 +16108,17 @@
 		state.lastUpwardScrollAt = now;
 		if (state.upwardScrollIntentCount >= 2) state.autoScrollLocked = true;
 	}
+	var chatScrollPositions = /* @__PURE__ */ new Map();
+	var pendingChatScrollRestore = null;
+	function rememberChatScroll(chatId) {
+		if (!chatId || !chatMessages) return;
+		const top = chatMessages.scrollTop;
+		if (Math.max(0, chatMessages.scrollHeight - chatMessages.clientHeight) - top <= 120) {
+			chatScrollPositions.delete(chatId);
+			return;
+		}
+		chatScrollPositions.set(chatId, top);
+	}
 	function scrollChatToBottom(smooth = true, force = false) {
 		if (!chatMessages) return;
 		if (!force && state.autoScrollLocked) return;
@@ -16128,6 +16148,11 @@
 			requestAnimationFrame(run);
 		});
 	}
+	function isIosLikeDevice() {
+		const ua = navigator.userAgent || "";
+		if (/iPad|iPhone|iPod/.test(ua)) return true;
+		return /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+	}
 	function setComposerBusy(isBusy) {
 		state.isStreaming = isBusy;
 		if (isBusy) resetChatAutoScrollLock();
@@ -16140,7 +16165,7 @@
 			sendChatBtn.disabled = !homeInput.value.trim() && !pendingAttachments.length;
 			sendChatBtn.setAttribute("aria-label", "发送消息");
 		}
-		homeInput.readOnly = state.sharedConversation || isBusy;
+		homeInput.readOnly = state.sharedConversation || isBusy && isIosLikeDevice();
 		if (state.sharedConversation) {
 			homeInput.placeholder = "这是分享的只读对话";
 			sendChatBtn.disabled = true;
@@ -16212,7 +16237,7 @@
 		if (message.includes("诊断:") || message.includes("后端返回 HTTP")) return fallback;
 		const httpMatch = message.match(/\b(?:HTTP(?: error! status)?|status)\s*:?\s*(\d{3})/i);
 		if (httpMatch) return getFriendlyHttpStatusMessage(httpMatch[1]);
-		if (/^failed to fetch$/i.test(message || "")) return "网络请求失败，请检查 Edge Function 是否已部署、CORS 是否生效，或稍后重试。";
+		if (/^failed to fetch$/i.test(message || "")) return "网络连接中断，请检查网络后重试。";
 		return message || fallback;
 	}
 	function startAbortTimer(controller, timeoutMs, label = "请求") {
@@ -16268,6 +16293,7 @@
 		if (imageAttachments.length > 0 && noI2iModels.has(imageModel)) {
 			setImageGenerationBusy(false);
 			showToast(`${getModelDisplayName(imageModel)} 暂不支持图生图，请删除附件后重试。`);
+			if (state.activeRequestController === controller) state.activeRequestController = null;
 			return;
 		}
 		const referenceImages = imageAttachments.slice(0, MAX_IMAGE_REFERENCE_COUNT);
@@ -16330,8 +16356,10 @@
 			const taskId = data.task_id;
 			if (!taskId) throw new Error("未返回 task_id。");
 			setImageGenerationBusy(true, "任务已提交，正在生成图片...");
+			const imagePollDeadline = Date.now() + VIDEO_GENERATION_POLL_TIMEOUT_MS;
 			while (true) {
 				if (controller.signal.aborted) throw createAbortError("已停止生成。");
+				if (Date.now() > imagePollDeadline) throw new Error("图片生成等待超时，请稍后重新提交。");
 				const resultResponse = await proxyFetch(EDGE_FUNCTION_URL, {
 					method: "POST",
 					headers: await proxyHeaders(),
@@ -16360,7 +16388,7 @@
 					showToast("图片已生成。");
 					return imageUrl;
 				}
-				if (taskData.task_status === "FAILED") throw new Error("Image Generation Failed.");
+				if (taskData.task_status === "FAILED") throw new Error(KNOWN_ERROR_CODE_MESSAGES.image_generation_failed);
 				setImageGenerationBusy(true, `正在生成中... ${taskData.task_status || "PENDING"}`);
 				await sleep(5e3);
 				if (controller.signal.aborted) throw createAbortError("已停止生成。");
@@ -17949,6 +17977,8 @@
 		}
 		return false;
 	}
+	var SEND_DEDUPE_WINDOW_MS = 1500;
+	var lastSendAttemptAt = 0;
 	var STREAM_TERMINATOR_OBSERVED = { seen: false };
 	async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true, turnId = "", modelId = currentModel, priorReasoning = "", requestKind = "direct_chat", webSearchEnabled = state.webSearchEnabled, queueSessionIdOverride = null, gen = null } = {}) {
 		let finalAnswer = "";
@@ -18611,7 +18641,38 @@
 		for (let i = 0; i < json.length; i++) hash = (hash << 5) + hash + json.charCodeAt(i) | 0;
 		return `${json.length}:${hash}`;
 	}
-	async function flushGenSave(gen) {
+	var KEEPALIVE_BODY_LIMIT = 60 * 1024;
+	function sendGenSaveBeacon(chatId, messages) {
+		try {
+			const session = authSessionPromiseValue();
+			if (!session?.access_token) return false;
+			const body = JSON.stringify({
+				endpoint: "chat_history",
+				action: "update",
+				id: chatId,
+				messages,
+				__auth_token: session.access_token
+			});
+			if (body.length > KEEPALIVE_BODY_LIMIT) return false;
+			fetch(EDGE_FUNCTION_URL, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					apikey: SUPABASE_ANON_KEY
+				},
+				body,
+				keepalive: true
+			}).catch(() => {});
+			return true;
+		} catch (_e) {
+			return false;
+		}
+	}
+	var lastResolvedSession = null;
+	function authSessionPromiseValue() {
+		return lastResolvedSession;
+	}
+	async function flushGenSave(gen, { unloading = false } = {}) {
 		if (gen._saving) return;
 		gen._saving = true;
 		try {
@@ -18619,6 +18680,13 @@
 			if (chatId && gen.status === "streaming") {
 				const messages = genCurrentMessages(gen);
 				const fingerprint = fingerprintMessages(messages);
+				if (unloading) {
+					if (sendGenSaveBeacon(chatId, messages)) {
+						gen._savedFingerprint = fingerprint;
+						gen.lastSavedAt = Date.now();
+						return;
+					}
+				}
 				if (fingerprint === null || fingerprint !== gen._savedFingerprint) {
 					await updateChatHistoryRow(chatId, messages);
 					gen._savedFingerprint = fingerprint;
@@ -19028,6 +19096,9 @@
 			showToast("上一条还在生成中：可在左侧对话列表点击转圈图标停止");
 			return;
 		}
+		const sendAttemptAt = Date.now();
+		if (sendAttemptAt - lastSendAttemptAt < SEND_DEDUPE_WINDOW_MS) return;
+		lastSendAttemptAt = sendAttemptAt;
 		ensureNotificationPermission();
 		const turnModelId = currentModel;
 		const turnModelMetadata = createModelMetadata(turnModelId);
@@ -19180,10 +19251,15 @@
 						try {
 							toolCall._index = index;
 							const toolPromise = executeArticleToolCall(toolCall, turnId);
+							let toolTimeoutId = null;
 							const timeoutPromise = new Promise((_, reject) => {
-								setTimeout(() => reject(/* @__PURE__ */ new Error("工具调用超时（25秒），请稍后重试。")), TOOL_CALL_TIMEOUT_MS);
+								toolTimeoutId = setTimeout(() => reject(/* @__PURE__ */ new Error("工具调用超时（25秒），请稍后重试。")), TOOL_CALL_TIMEOUT_MS);
 							});
-							toolOutput = await Promise.race([toolPromise, timeoutPromise]);
+							try {
+								toolOutput = await Promise.race([toolPromise, timeoutPromise]);
+							} finally {
+								if (toolTimeoutId) clearTimeout(toolTimeoutId);
+							}
 							completeToolCallUI(uiBlock, toolOutput);
 						} catch (toolError) {
 							const toolErrorMessage = normalizeErrorMessage(toolError, "工具调用失败，请稍后重试。");
@@ -19230,7 +19306,6 @@
 					thinking: false
 				});
 				await commitGeneration(turnGen, assistantHistoryMessage("登录已过期，请重新登录后再试。", turnModelMetadata)).catch(() => {});
-				state.sendLocked = false;
 				setComposerBusy(false);
 				return;
 			}
@@ -19242,7 +19317,6 @@
 					thinking: false
 				});
 				await commitGeneration(turnGen, assistantHistoryMessage("登录会话异常，请刷新页面后重试。", turnModelMetadata)).catch(() => {});
-				state.sendLocked = false;
 				setComposerBusy(false);
 				return;
 			}
@@ -19261,7 +19335,6 @@
 		} finally {
 			clearTurnTimeout();
 			if (state.activeRequestController === controller) state.activeRequestController = null;
-			state.sendLocked = false;
 			setComposerBusy(false);
 		}
 	}
@@ -19305,15 +19378,41 @@
 		syncAccountSheetState();
 		updateScrimVisibility();
 	}
+	var MODAL_FOCUSABLE_SELECTOR = "a[href], button:not([disabled]), input:not([disabled]):not([type=\"hidden\"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])";
+	var modalReturnFocusEl = null;
+	function getModalFocusables(modal) {
+		return Array.from(modal.querySelectorAll(MODAL_FOCUSABLE_SELECTOR)).filter((el) => el.offsetParent !== null || el === document.activeElement);
+	}
+	function onModalKeydown(event) {
+		if (event.key !== "Tab" || !state.modal) return;
+		const focusables = getModalFocusables(state.modal);
+		if (!focusables.length) return;
+		const first = focusables[0];
+		const last = focusables[focusables.length - 1];
+		if (event.shiftKey && document.activeElement === first) {
+			event.preventDefault();
+			last.focus();
+		} else if (!event.shiftKey && document.activeElement === last) {
+			event.preventDefault();
+			first.focus();
+		}
+	}
 	function openModal(id) {
 		closePopover();
 		closeModal();
 		const modal = document.getElementById(id);
 		if (!modal) return;
+		modalReturnFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		state.modal = modal;
 		modal.classList.add("open");
 		modal.setAttribute("aria-hidden", "false");
 		updateScrimVisibility();
+		document.addEventListener("keydown", onModalKeydown, true);
+		requestAnimationFrame(() => {
+			if (state.modal !== modal) return;
+			const focusables = getModalFocusables(modal);
+			(focusables.find((el) => !el.classList.contains("modal-close")) || focusables[0])?.focus?.();
+		});
 	}
 	function closeModal() {
 		if (htmlPreviewModal?.classList.contains("open")) closeHtmlPreviewModal();
@@ -19332,8 +19431,14 @@
 			annModal.classList.remove("open");
 			annModal.setAttribute("aria-hidden", "true");
 		}
+		const hadModal = Boolean(state.modal);
 		state.modal = null;
 		updateScrimVisibility();
+		document.removeEventListener("keydown", onModalKeydown, true);
+		if (hadModal && modalReturnFocusEl?.isConnected) try {
+			modalReturnFocusEl.focus();
+		} catch (_) {}
+		modalReturnFocusEl = null;
 	}
 	/** 账户菜单底部抽屉断点（与 claude.css 侧栏 mobile drawer 一致） */
 	function isAccountSheetViewport() {
@@ -19587,10 +19692,10 @@
 	on("themeShortcutBtn", "click", () => openModal("settingsModal"));
 	on("projectBtn", "click", () => openModal("projectModal"));
 	on("createProjectFromPlus", "click", () => openModal("projectModal"));
-	on("privacyPolicyBtn", "click", () => window.open("../privacy.html", "_blank"));
+	on("privacyPolicyBtn", "click", () => window.open("../privacy.html", "_blank", "noopener,noreferrer"));
 	on("privacySettingsRow", "click", (e) => {
 		e.preventDefault();
-		window.open("../privacy.html", "_blank");
+		window.open("../privacy.html", "_blank", "noopener,noreferrer");
 	});
 	navRows.forEach((row) => {
 		row.addEventListener("click", () => {
@@ -19606,7 +19711,7 @@
 	});
 	document.getElementById("upgradeBtn").addEventListener("click", () => {
 		closePopover();
-		window.open("https://qm.qq.com/q/bxQU3rXRyo", "_blank");
+		window.open("https://qm.qq.com/q/bxQU3rXRyo", "_blank", "noopener,noreferrer");
 	});
 	var clearBtnEl = document.getElementById("clearBtn");
 	if (clearBtnEl) clearBtnEl.addEventListener("click", async () => {
@@ -19632,7 +19737,7 @@
 		homeInput?.focus();
 	});
 	document.getElementById("helpToastBtn").addEventListener("click", () => {
-		window.open("./api_docs_detail.html#intro", "_blank");
+		window.open("./api_docs_detail.html#intro", "_blank", "noopener,noreferrer");
 	});
 	document.getElementById("nicknameEditBtn").addEventListener("click", () => {
 		closePopover();
@@ -19656,16 +19761,12 @@
 		showToast("已退出登录");
 	});
 	document.getElementById("createProjectConfirmBtn").addEventListener("click", () => {
-		const value = projectNameInput.value.trim();
-		if (!value) {
+		if (!projectNameInput.value.trim()) {
 			showToast("请先输入项目名称。");
 			projectNameInput.focus();
 			return;
 		}
-		state.recentProjectName = value;
-		closeModal();
-		setActiveView("home");
-		showToast(`项目“${value}”已创建。`);
+		showToast("项目功能未就绪，请刷新页面后重试。");
 	});
 	homeInput.addEventListener("input", () => {
 		autoResizeComposerInput();
@@ -19884,20 +19985,6 @@
 	});
 	document.addEventListener("click", () => closeCustomContextMenu());
 	document.addEventListener("scroll", () => closeCustomContextMenu(), true);
-	document.addEventListener("keydown", (e) => {
-		if (e.key === "F12" || e.keyCode === 123) {
-			e.preventDefault();
-			return;
-		}
-		if (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C" || e.key === "i" || e.key === "j" || e.key === "c")) {
-			e.preventDefault();
-			return;
-		}
-		if (e.ctrlKey && (e.key === "U" || e.key === "u")) {
-			e.preventDefault();
-			return;
-		}
-	});
 	function initQueryFromUrl() {
 		const question = new URLSearchParams(window.location.search).get("q");
 		if (question) {
@@ -20439,7 +20526,7 @@
 	window.addEventListener("pagehide", persistComposerDraft);
 	function flushActiveGenerationsBestEffort() {
 		for (const gen of activeGenerations.values()) if (gen.status === "streaming") try {
-			flushGenSave(gen);
+			flushGenSave(gen, { unloading: true });
 		} catch (_) {}
 	}
 	document.addEventListener("visibilitychange", () => {
@@ -20500,9 +20587,6 @@
 		EDGE_FUNCTION_URL,
 		FETCH_TIMEOUT_MS,
 		CHAT_TURN_TIMEOUT_MS,
-		proxyHeaders,
-		proxyFetchWithTimeout,
-		authBody,
 		createChatTurnId,
 		parseBackendErrorPayload,
 		friendlyMessageFromBackend,

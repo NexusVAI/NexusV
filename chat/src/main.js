@@ -5385,6 +5385,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           updateAccountInfo(user);
           hideAuthOverlay();
           authSessionPromise = Promise.resolve(sessionData.session);
+          // 卸载期的 keepalive 保存不能 await，只能读这份已解析的快照。
+          lastResolvedSession = sessionData.session;
           authInitialized = true;
           return sessionData.session;
         }
@@ -5424,6 +5426,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       if (session?.access_token) {
         if (session.user) updateAccountInfo(session.user);
         authSessionPromise = Promise.resolve(session);
+        lastResolvedSession = session;
         authInitialized = true;
         hideAuthOverlay();
         return session;
@@ -6248,6 +6251,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   async function loadChat(chatId, { silent = false, skipSkeleton = false } = {}) {
     const seq = ++loadChatSeq;
     const isStale = () => seq !== loadChatSeq;
+    // 离开当前对话前记下阅读位置，回来时还原。
+    rememberChatScroll(currentChatId);
     exitSharedConversationMode();
     // 切走之前先给「还没落库的进行中对话」建行，保证它在侧栏留得下痕迹。
     parkChatlessGeneration();
@@ -6298,6 +6303,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
             )
           : [];
 
+        // 有记过位置就还原，没有就照旧落在底部（由 renderMessages 结尾处理）。
+        pendingChatScrollRestore = chatScrollPositions.has(chatId)
+          ? chatScrollPositions.get(chatId)
+          : null;
         renderMessages();
         updateContextMeter();
         // 切到另一个对话：后台生成继续跑，但别把它的 controller 留在
@@ -6309,7 +6318,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
 
         scheduleChatScrollToBottom(true);
 
-        if (!silent) showToast("已加载聊天记录");
+        // 点一下侧栏就弹一条「已加载聊天记录」属于噪音：内容已经出现在屏幕上，
+        // 本身就是最好的反馈。只保留失败时的提示。
         persistSessionNav();
         dispatchChatTitleUpdated(
           resolveChatTitleForDisplay(chatId, chat.title),
@@ -6496,7 +6506,25 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     // 历史回放/切对话后按最后一条消息决定 ask_user 提问块显隐
     syncAskUserFromHistory();
     if (homeView?.classList.contains("chatting")) {
-      scheduleChatScrollToBottom(true);
+      if (pendingChatScrollRestore !== null) {
+        const top = pendingChatScrollRestore;
+        pendingChatScrollRestore = null;
+        // 双 rAF：等布局真正稳定。刚 renderMessages 完 scrollHeight 还没长出来，
+        // 这时候写 scrollTop 会被夹成 0（表现为「还原失败，跳到最顶上」）。
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (!chatMessages) return;
+            const maxTop = Math.max(
+              0,
+              chatMessages.scrollHeight - chatMessages.clientHeight,
+            );
+            chatMessages.scrollTop = Math.min(top, maxTop);
+            updateScrollToBottomButton();
+          });
+        });
+      } else {
+        scheduleChatScrollToBottom(true);
+      }
     }
   }
   
@@ -6895,12 +6923,22 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     const img = document.createElement("img");
     img.className = "generated-image-media";
     img.alt = "generated image";
-    img.addEventListener("contextmenu", (e) => {
-      if (!prefersNativeContextMenu()) e.preventDefault();
-    });
+    // 2026-09-18：这两个监听以前把图片变成了一块「点不开的死砖」——
+    // click 被 preventDefault + stopPropagation 吃掉（且没有任何灯箱接管），
+    // 右键又被全局自定义菜单替换，于是用户对着一张自己花钱生成的图，
+    // 既点不开大图、也用不了「在新标签页打开 / 图片另存为」，
+    // 只剩角落里那个小下载按钮。
+    // 现在：右键放行交还系统菜单；左键在新标签页打开原图。
+    img.style.cursor = "zoom-in";
     img.addEventListener("click", (e) => {
-      e.preventDefault();
       e.stopPropagation();
+      const src = img.currentSrc || img.getAttribute("src") || "";
+      if (!src) return;
+      e.preventDefault();
+      // data: URI 用 window.open 会被部分浏览器拦成空白页，这种情况退回
+      // 「不拦截」，让浏览器/下载按钮自己处理。
+      if (/^data:/i.test(src)) return;
+      window.open(src, "_blank", "noopener,noreferrer");
     });
     img.onerror = function () {
       this.onerror = null;
@@ -10832,7 +10870,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         const escHref = escapeHtml(href);
         const escAlt = escapeHtml(alt);
         return keep(
-          `<span class="markdown-image-wrap" data-image-src="${escHref}" style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escAlt}" style="max-width:100%;border-radius:8px;display:block;cursor:default"><button type="button" class="markdown-image-download" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`,
+          `<span class="markdown-image-wrap" data-image-src="${escHref}" style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escAlt}" loading="lazy" decoding="async" style="max-width:100%;height:auto;border-radius:8px;display:block;cursor:default;background:var(--panel,#f3f3f1);min-height:1.5em"><button type="button" class="markdown-image-download" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`,
         );
       })
       .replace(
@@ -11884,6 +11922,24 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     }
   }
   
+  // 2026-09-18：切对话以前一律强制滚到底（renderMessages 结尾无条件
+  // scheduleChatScrollToBottom(true)）。打开一条很长的旧对话时，用户上次读到
+  // 哪儿直接丢了，每次都被甩到最新一条。这里按 chatId 记住滚动位置。
+  const chatScrollPositions = new Map();
+  let pendingChatScrollRestore = null;
+
+  function rememberChatScroll(chatId) {
+    if (!chatId || !chatMessages) return;
+    const top = chatMessages.scrollTop;
+    const maxTop = Math.max(0, chatMessages.scrollHeight - chatMessages.clientHeight);
+    // 已经在底部就别记了：下次进来仍然应该落在底部（新回复在那儿）。
+    if (maxTop - top <= 120) {
+      chatScrollPositions.delete(chatId);
+      return;
+    }
+    chatScrollPositions.set(chatId, top);
+  }
+
   function scrollChatToBottom(smooth = true, force = false) {
     if (!chatMessages) return;
     if (!force && state.autoScrollLocked) return;
@@ -11925,6 +11981,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     });
   }
   
+  // iPadOS 13+ 会把自己报成 Macintosh，所以补一条 touch 判据。
+  function isIosLikeDevice() {
+    const ua = navigator.userAgent || "";
+    if (/iPad|iPhone|iPod/.test(ua)) return true;
+    return /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+  }
+
   function setComposerBusy(isBusy) {
     state.isStreaming = isBusy;
     if (isBusy) resetChatAutoScrollLock();
@@ -11944,7 +12007,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     // （已知 WebKit 行为：disabled 会让元素脱离 hit-test，恢复后焦点状态
     // 偶发丢失）。改用 readOnly：禁止输入但保留 focus 能力，iOS 软键盘
     // 不会被卡住。视觉 dim 由 .is-busy class + CSS 处理。
-    homeInput.readOnly = state.sharedConversation || isBusy;
+    // 2026-09-18：上面那条 iOS 兼容说明依然成立，但把 readOnly 施加到**所有**
+    // 平台是过度用药 —— 桌面端用户在等一个长回答时连「先把下一个问题打出来」
+    // 都做不到，输入框是死的。改成只在 iOS/iPadOS 上沿用 readOnly；
+    // 其它平台生成期间允许打字（发送仍由 sendChatBtn / handleHomeSubmit 挡住）。
+    homeInput.readOnly =
+      state.sharedConversation || (isBusy && isIosLikeDevice());
     if (state.sharedConversation) {
       homeInput.placeholder = "这是分享的只读对话";
       sendChatBtn.disabled = true;
@@ -12097,7 +12165,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       return getFriendlyHttpStatusMessage(httpMatch[1]);
     }
     if (/^failed to fetch$/i.test(message || "")) {
-      return "网络请求失败，请检查 Edge Function 是否已部署、CORS 是否生效，或稍后重试。";
+      // 「Edge Function 是否已部署 / CORS 是否生效」是给我们自己看的运维黑话，
+      // 而这条 99% 的触发场景就是用户 wifi 抖了一下。
+      return "网络连接中断，请检查网络后重试。";
     }
     return message || fallback;
   }
@@ -12213,6 +12283,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     if (imageAttachments.length > 0 && noI2iModels.has(imageModel)) {
       setImageGenerationBusy(false);
       showToast(`${getModelDisplayName(imageModel)} 暂不支持图生图，请删除附件后重试。`);
+      // 2026-09-18：这里在 state.activeRequestController = controller 之后、
+      // try/finally 之前 early return —— 留下一个永远不会被清掉的孤儿 controller，
+      // 于是「停止」按钮到下一次发送为止都指着一个早已作废的请求。
+      if (state.activeRequestController === controller) {
+        state.activeRequestController = null;
+      }
       return;
     }
 
@@ -12362,9 +12438,16 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       }
   
       setImageGenerationBusy(true, "任务已提交，正在生成图片...");
-  
+      // 2026-09-18：这个轮询原本是**无限**的（视频那条路径早就有 15 分钟上限，
+      // 图片这条漏了）。上游任务卡在 PENDING 不动时，用户会永远停在
+      // 「正在生成中... PENDING」，只能自己点停止。对齐视频的同一预算。
+      const imagePollDeadline = Date.now() + VIDEO_GENERATION_POLL_TIMEOUT_MS;
+
       while (true) {
         if (controller.signal.aborted) throw createAbortError("已停止生成。");
+        if (Date.now() > imagePollDeadline) {
+          throw new Error("图片生成等待超时，请稍后重新提交。");
+        }
         const resultResponse = await proxyFetch(EDGE_FUNCTION_URL, {
           method: "POST",
           headers: await proxyHeaders(),
@@ -12408,7 +12491,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         }
   
         if (taskData.task_status === "FAILED") {
-          throw new Error("Image Generation Failed.");
+          // 原文是英文 "Image Generation Failed."，而 normalizeErrorMessage 对
+          // 不含裸 HTTP 状态串的文本是原样放行的 —— 于是这句英文会直接呈现给
+          // 中文用户。改用站内统一的中文失败文案。
+          throw new Error(KNOWN_ERROR_CODE_MESSAGES.image_generation_failed);
         }
   
         setImageGenerationBusy(
@@ -14855,6 +14941,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     return false;
   }
   
+  // 重复提交去抖窗口（见 sendMessage 里的说明）。
+  const SEND_DEDUPE_WINDOW_MS = 1500;
+  let lastSendAttemptAt = 0;
+
   // 页面会话级校准：本页至少成功观察到过一次 SSE 正规终止符之后，
   // 「缺终止符」才被当作「连接被掐断」的判据（见 looksInterrupted 处的说明）。
   // 故意用对象而不是裸 let：它要跨 streamChatCompletionRound 的多次调用存活。
@@ -15826,7 +15916,42 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     return `${json.length}:${hash}`;
   }
 
-  async function flushGenSave(gen) {
+  // 卸载期专用的保存：用 keepalive fetch，让请求在文档销毁后仍能发完。
+  // 返回是否已经把请求发出去了（false = 调用方继续走普通路径）。
+  // 注意不能用 navigator.sendBeacon：它发不了自定义 header，而网关要 apikey。
+  const KEEPALIVE_BODY_LIMIT = 60 * 1024;
+  function sendGenSaveBeacon(chatId, messages) {
+    try {
+      const session = authSessionPromiseValue();
+      if (!session?.access_token) return false;
+      const body = JSON.stringify({
+        endpoint: "chat_history",
+        action: "update",
+        id: chatId,
+        messages,
+        __auth_token: session.access_token,
+      });
+      if (body.length > KEEPALIVE_BODY_LIMIT) return false;
+      void fetch(EDGE_FUNCTION_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
+        body,
+        keepalive: true,
+      }).catch(() => {});
+      return true;
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  // 卸载路径上不能 await（await 一让出控制权页面就没了），所以只能读已经
+  // 解析好的 session。拿不到就返回 null，调用方退回普通保存。
+  let lastResolvedSession = null;
+  function authSessionPromiseValue() {
+    return lastResolvedSession;
+  }
+
+  async function flushGenSave(gen, { unloading = false } = {}) {
     if (gen._saving) return;
     gen._saving = true;
     try {
@@ -15834,6 +15959,18 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       if (chatId && gen.status === "streaming") {
         const messages = genCurrentMessages(gen);
         const fingerprint = fingerprintMessages(messages);
+        // 2026-09-18：页面正在卸载时，普通 fetch 会被浏览器直接掐断 ——
+        // 这正是「刷新后丢最后一段生成内容」的最后一环。keepalive 让请求
+        // 在文档销毁后仍能发完。它有 64KB 体积上限，超了就退回普通请求
+        // （超限的多半是带 base64 图的长对话，那种本来也救不回来）。
+        if (unloading) {
+          const saved = sendGenSaveBeacon(chatId, messages);
+          if (saved) {
+            gen._savedFingerprint = fingerprint;
+            gen.lastSavedAt = Date.now();
+            return;
+          }
+        }
         // ensureGenChatRow 刚创建的行已经写过同一批消息；上游 chunk 只带了
         // 工具状态之类不进 messages 的变化时也会得到相同指纹 —— 两种情况都跳过。
         if (fingerprint === null || fingerprint !== gen._savedFingerprint) {
@@ -16357,6 +16494,19 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       showToast("上一条还在生成中：可在左侧对话列表点击转圈图标停止");
       return;
     }
+    // 2026-09-18：state.sendLocked 以前只被置 false、从来没置过 true，
+    // 是一把没装上的锁。而这里确实存在真实的重复提交窗口：带附件时下面的
+    // buildUserContentForModel 是 await，setComposerBusy(true) 要等它之后才跑，
+    // 两次快速回车都能通过上面的 isStreaming / hasActiveGeneration 检查
+    // ⇒ 两次请求、两次计费。
+    //
+    // 这里刻意用**时间戳**而不是布尔锁：这个函数在到达 try/finally 之前还有
+    // 好几条 early return（模型不可用 / 图片线 / 视频线缺素材 / OCR 失败），
+    // 布尔锁只要漏解一条，输入框就永久卡死 —— 那比重复提交更糟。
+    // 时间戳不可能死锁，最坏情况只是挡住 1.5 秒内的第二次提交。
+    const sendAttemptAt = Date.now();
+    if (sendAttemptAt - lastSendAttemptAt < SEND_DEDUPE_WINDOW_MS) return;
+    lastSendAttemptAt = sendAttemptAt;
     // 在用户手势内尝试申请通知权限（首次发送时弹一次），用于「完成后台生成」通知。
     ensureNotificationPermission();
   
@@ -16640,13 +16790,21 @@ import loginIslandHtml from "../claude-login-island.html?raw";
             try {
               toolCall._index = index;
               const toolPromise = executeArticleToolCall(toolCall, turnId);
+              // 2026-09-18：这个定时器原本永不清除 —— 工具 200ms 就返回了，
+              // 25 秒后那个 reject 照样触发，变成一条没人接的 unhandledrejection
+              // （全局 handler 会把它打到控制台）。用 finally 清掉。
+              let toolTimeoutId = null;
               const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(
+                toolTimeoutId = setTimeout(
                   () => reject(new Error("工具调用超时（25秒），请稍后重试。")),
                   TOOL_CALL_TIMEOUT_MS,
                 );
               });
-              toolOutput = await Promise.race([toolPromise, timeoutPromise]);
+              try {
+                toolOutput = await Promise.race([toolPromise, timeoutPromise]);
+              } finally {
+                if (toolTimeoutId) clearTimeout(toolTimeoutId);
+              }
               completeToolCallUI(uiBlock, toolOutput);
             } catch (toolError) {
               const toolErrorMessage = normalizeErrorMessage(
@@ -16736,7 +16894,6 @@ import loginIslandHtml from "../claude-login-island.html?raw";
             turnModelMetadata,
           ),
         ).catch(() => {});
-        state.sendLocked = false;
         setComposerBusy(false);
         return;
       }
@@ -16755,7 +16912,6 @@ import loginIslandHtml from "../claude-login-island.html?raw";
             turnModelMetadata,
           ),
         ).catch(() => {});
-        state.sendLocked = false;
         setComposerBusy(false);
         return;
       }
@@ -16797,7 +16953,6 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       if (state.activeRequestController === controller) {
         state.activeRequestController = null;
       }
-      state.sendLocked = false;
       setComposerBusy(false);
       // 2026-09-18：这里原本会在每次发送后把联网搜索自动关掉。用户的体感是
       // 「开了搜索、问一句、下一句就悄悄不搜了」，而答案照样一本正经 —— 静默
@@ -16865,15 +17020,56 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     updateScrimVisibility();
   }
   
+  // 2026-09-18 键盘可达性：以前 openModal 只切 class 和 aria-hidden ——
+  // 焦点还留在弹窗背后的页面上，Tab 会一路走到被遮住的元素上（读屏用户完全
+  // 不知道自己在哪），关闭后焦点也不归位。这里补三件事：记住来源焦点、
+  // 打开时聚焦弹窗内第一个可聚焦控件、Tab 在弹窗内循环。
+  const MODAL_FOCUSABLE_SELECTOR =
+    'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), ' +
+    'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  let modalReturnFocusEl = null;
+
+  function getModalFocusables(modal) {
+    return Array.from(modal.querySelectorAll(MODAL_FOCUSABLE_SELECTOR)).filter(
+      (el) => el.offsetParent !== null || el === document.activeElement,
+    );
+  }
+
+  function onModalKeydown(event) {
+    if (event.key !== "Tab" || !state.modal) return;
+    const focusables = getModalFocusables(state.modal);
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
   function openModal(id) {
     closePopover();
     closeModal();
     const modal = document.getElementById(id);
     if (!modal) return;
+    modalReturnFocusEl =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     state.modal = modal;
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
     updateScrimVisibility();
+    document.addEventListener("keydown", onModalKeydown, true);
+    // rAF：等 .open 的过渡把元素真正显示出来，否则 offsetParent 还是 null，
+    // getModalFocusables 会筛掉全部候选。
+    requestAnimationFrame(() => {
+      if (state.modal !== modal) return;
+      const focusables = getModalFocusables(modal);
+      const target = focusables.find((el) => !el.classList.contains("modal-close"));
+      (target || focusables[0])?.focus?.();
+    });
   }
   
   function closeModal() {
@@ -16892,10 +17088,17 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       annModal.classList.remove("open");
       annModal.setAttribute("aria-hidden", "true");
     }
+    const hadModal = Boolean(state.modal);
     state.modal = null;
     updateScrimVisibility();
+    document.removeEventListener("keydown", onModalKeydown, true);
+    // 焦点归位：不归位的话键盘用户关闭弹窗后会被丢回文档开头。
+    if (hadModal && modalReturnFocusEl?.isConnected) {
+      try { modalReturnFocusEl.focus(); } catch (_) {}
+    }
+    modalReturnFocusEl = null;
   }
-  
+
   function isMobileViewport() {
     return window.innerWidth <= 640;
   }
@@ -17300,8 +17503,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   on("themeShortcutBtn", "click", () => openModal("settingsModal"));
   on("projectBtn", "click", () => openModal("projectModal"));
   on("createProjectFromPlus", "click", () => openModal("projectModal"));
-  on("privacyPolicyBtn", "click", () => window.open("../privacy.html", "_blank"));
-  on("privacySettingsRow", "click", (e) => { e.preventDefault(); window.open("../privacy.html", "_blank"); });
+  // 2026-09-18：这几处 window.open 漏了 noopener —— 新标签页能通过
+  // window.opener 反向操纵本页（tabnabbing）。Markdown 渲染那条路径本来就带，
+  // 站内 chrome 链接补齐。
+  on("privacyPolicyBtn", "click", () => window.open("../privacy.html", "_blank", "noopener,noreferrer"));
+  on("privacySettingsRow", "click", (e) => { e.preventDefault(); window.open("../privacy.html", "_blank", "noopener,noreferrer"); });
   
   navRows.forEach((row) => {
     row.addEventListener("click", () => {
@@ -17321,7 +17527,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
   document.getElementById("upgradeBtn").addEventListener("click", () => {
     closePopover();
-    window.open("https://qm.qq.com/q/bxQU3rXRyo", "_blank");
+    window.open("https://qm.qq.com/q/bxQU3rXRyo", "_blank", "noopener,noreferrer");
   });
   const clearBtnEl = document.getElementById("clearBtn");
   if (clearBtnEl)
@@ -17356,7 +17562,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
     // [arena 死分支已删除] leaderboardSegmentButtons 接线
   document.getElementById("helpToastBtn").addEventListener("click", () => {
-    window.open("./api_docs_detail.html#intro", "_blank");
+    window.open("./api_docs_detail.html#intro", "_blank", "noopener,noreferrer");
   });
   document.getElementById("nicknameEditBtn").addEventListener("click", () => {
     closePopover();
@@ -17396,10 +17602,18 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         projectNameInput.focus();
         return;
       }
-      state.recentProjectName = value;
-      closeModal();
-      setActiveView("home");
-      showToast(`项目“${value}”已创建。`);
+      // 2026-09-18：真正的建项目**不在这里**。claude_ui.js 的 bindProjectsPage
+      // 在**捕获阶段**给同一个 #createProjectConfirmBtn 绑了监听，名称非空时
+      // 会 stopImmediatePropagation() 并调它自己的 createProject()（写
+      // localStorage cancri_claude_projects_v1 + 跳转项目详情），本函数根本
+      // 不会执行到这里。（Grok 审计把这条报成「项目是假的」，是漏看了那个
+      // 捕获阶段拦截器 —— 实测两份 HTML 都有 #claudeProjectsView，
+      // bindProjectsPage 也确实在 init 列表里，所以拦截一定生效。）
+      //
+      // 唯一能走到这里的情况：claude_ui.js 那一步 init 抛异常没绑上。
+      // 那时候绝不能再谎报「已创建」——什么都没创建。给一条诚实的失败提示，
+      // 也不要在这里另起一套 createProject（两份真相是 §5 明令禁止的）。
+      showToast("项目功能未就绪，请刷新页面后重试。");
     });
   
   homeInput.addEventListener("input", () => {
@@ -17703,33 +17917,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   document.addEventListener("click", () => closeCustomContextMenu());
   document.addEventListener("scroll", () => closeCustomContextMenu(), true);
   
-  // 禁止打开开发者工具
-  document.addEventListener("keydown", (e) => {
-    // F12
-    if (e.key === "F12" || e.keyCode === 123) {
-      e.preventDefault();
-      return;
-    }
-    // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C
-    if (
-      e.ctrlKey &&
-      e.shiftKey &&
-      (e.key === "I" ||
-        e.key === "J" ||
-        e.key === "C" ||
-        e.key === "i" ||
-        e.key === "j" ||
-        e.key === "c")
-    ) {
-      e.preventDefault();
-      return;
-    }
-    // Ctrl+U (查看源代码)
-    if (e.ctrlKey && (e.key === "U" || e.key === "u")) {
-      e.preventDefault();
-      return;
-    }
-  });
+  // 2026-09-18 移除「禁止打开开发者工具」：它拦不住任何人（菜单栏、右键检查、
+  // 命令面板、--auto-open-devtools 都绕得过），拦住的只有把 F12 当快捷键的
+  // 读屏/辅助工具用户，以及想给我们报 bug 的人。安全边界在服务端，不在这里。
   
   // 接收从首页传来的问题参数
   function initQueryFromUrl() {
@@ -18538,7 +18728,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   function flushActiveGenerationsBestEffort() {
     for (const gen of activeGenerations.values()) {
       if (gen.status === "streaming") {
-        try { flushGenSave(gen); } catch (_) {}
+        try { flushGenSave(gen, { unloading: true }); } catch (_) {}
       }
     }
   }
@@ -18635,9 +18825,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     EDGE_FUNCTION_URL,
     FETCH_TIMEOUT_MS,
     CHAT_TURN_TIMEOUT_MS,
-    proxyHeaders,
-    proxyFetchWithTimeout,
-    authBody,
+    // 2026-09-18 收缩鉴权攻击面：proxyHeaders / proxyFetchWithTimeout / authBody
+    // 曾经挂在这里。它们会把当前 access_token 直接注进请求体，等于给任何拿到
+    // 脚本执行权的代码（未来某个 XSS、某个第三方 <script>、甚至控制台）
+    // 一个「一行调用就能带着用户身份打网关」的现成把手。
+    // 已核查：全站（chat/**.js + 两份 HTML）没有任何外部调用方 ——
+    // cancri_arena.js 里的同名函数是它自己那份实现，不走 window.CancriApp。
+    // 需要鉴权请求的新代码请写在 main.js 内部，不要再把它们导出去。
     createChatTurnId,
     parseBackendErrorPayload,
     friendlyMessageFromBackend,
