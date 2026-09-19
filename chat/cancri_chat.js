@@ -20576,7 +20576,8 @@
 				e.preventDefault();
 				e.stopPropagation();
 				closeModelDropdown();
-				window.open(upgradeLink.getAttribute("href") || MODEL_UPGRADE_HREF, "_blank", "noopener,noreferrer");
+				const upgradeHref = upgradeLink.getAttribute("href") || MODEL_UPGRADE_HREF;
+				window.open(upgradeHref, "_blank", "noopener,noreferrer");
 				return;
 			}
 			const option = e.target.closest(".model-option");
