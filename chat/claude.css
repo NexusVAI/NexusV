@@ -1049,7 +1049,9 @@ body.is-chatting #homeView.chatting {
 }
 
 body.is-chatting #homeView.chatting .chat-messages.active {
-    padding-top: 16px !important;
+    /* 2026-09-19：保存页 transcript-list pt-1 = 4px（原 16 是配合顶部 mask 余量，
+       实测对齐以 4 为准；mask 渐隐层保留不变） */
+    padding-top: 4px !important;
     overscroll-behavior-y: contain;
     -webkit-mask-image: linear-gradient(
         to bottom,
@@ -2075,16 +2077,28 @@ html[data-theme="black"] .claude-suggest:hover {
     position: relative;
 }
 .chat-messages .message {
-    /* Claude 消息间距：mt-6(24px) mb-1(4px) */
-    margin: 24px 0 4px !important;
+    /* 2026-09-19 保存页（八小时工作制 2026_9_18）实测：transcript 行零内边距，
+       用户行 mb-1(4) mt-[--msg-gap,1.5rem](24)，助手行无 margin。
+       行内容宽 = transcript(768) - px-4×2 = 736px。 */
+    margin: 4px 0 4px !important;
+    padding: 0 !important;
     border: 0 !important;
     background: transparent !important;
+    /* 保存页行宽 = feed 全宽（cancri_chat.css:3345 的 max-width:760px 解除） */
+    max-width: none !important;
 }
 .chat-messages .message.user-message,
 .chat-messages .message.user,
 .chat-messages .message[data-role="user"] {
     display: flex !important;
     justify-content: flex-end !important;
+    /* flex 容器内兄弟 margin 不折叠：asst.mb(4) + user.mt(20) = 24 = --msg-gap */
+    margin-top: 20px !important;
+}
+.chat-messages .message.assistant-message,
+.chat-messages .message.assistant,
+.chat-messages .message[data-role="assistant"] {
+    margin-top: 4px !important;
 }
 /* 2026-05-15 fix(C5)：群友图 2 反馈"白色浅色有的东西没变"。根因：
    cancri_chat.css:3037 给 .message.user .message-content 写死了
@@ -2097,17 +2111,17 @@ html[data-theme="black"] .claude-suggest:hover {
 .chat-messages .message.user-message .message-content,
 .chat-messages .message.user .message-content,
 .chat-messages .message[data-role="user"] .message-content {
-    /* 2026-06-21 对齐 Claude 11:33:04 user bubble：
-       bg-bg-300 rounded-xl(12px) pl-2.5 py-2.5 !px-4(=10px 16px) max-w-[85%]
-       font-large(16px/430/1.4) text-text-100 */
+    /* 2026-09-19 对齐保存页实测（八小时工作制 2026_9_18，1440×900 / 375×812）：
+       bg rgba(11,11,11,.05)(=gray-40) rounded-card(12px) px-lg py-md(12px 16px)
+       max-w-[85%] font-sans 15px/20px 400 text-primary */
     background: var(--c-bg-elev-3) !important;
     color: var(--c-text) !important;
     border-radius: 12px !important;
-    padding: 10px 16px !important;
+    padding: 12px 16px !important;
     max-width: 85%;
-    font-size: 16px !important;
-    font-weight: 430 !important;
-    line-height: 1.4 !important;
+    font-size: 15px !important;
+    font-weight: 400 !important;
+    line-height: calc(20 / 15) !important;
     border: 0 !important;
     box-shadow: none !important;
 }
@@ -2138,9 +2152,8 @@ html[data-theme="light"] .chat-messages .message.user .message-content,
 .chat-messages .message.assistant-message .message-content,
 .chat-messages .message.assistant .message-content,
 .chat-messages .message[data-role="assistant"] .message-content {
-    /* 2026-06-21 对齐 Claude 11:33:04 assistant message：
-       font-claude-response-body = serif / 1rem(16px) / 400 / line-height 1.5
-       容器 leading-[1.65rem] = 26.4px（但 response-body 段落自身 lh 1.5 覆盖）
+    /* 2026-09-19 对齐保存页实测：font-claude-response serif / 15px / 400 /
+       line-height 22px（段落实测值，非容器 leading-[1.65rem]）
        standard-markdown gap-3 = 12px（段落间距）
        无 border / 无 shadow / 无 padding / 无 radius（裸文本） */
     background: transparent !important;
@@ -2149,9 +2162,9 @@ html[data-theme="light"] .chat-messages .message.user .message-content,
     border-radius: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
-    font-size: 16px !important;
+    font-size: 15px !important;
     font-weight: 400 !important;
-    line-height: 1.5 !important;
+    line-height: calc(22 / 15) !important;
     gap: 12px !important;
 }
 
@@ -2249,15 +2262,20 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     flex: 1 1 auto !important;
     min-height: 0 !important;
     overflow-y: auto !important;
-    padding: 16px 24px 8px !important;
+    /* 2026-09-19 对齐保存页：transcript-list pt-1(4) px-4(16)，移动端 px-5(20) 见 §36 */
+    padding: 4px 16px 8px !important;
+    /* 保存页 transcript 壳层 font-sans 14px/21px（行内各元素自有字体的除外） */
+    font-size: 14px;
+    line-height: 21px;
 }
 #homeView.chatting .home-center {
     flex: 0 0 auto !important;
     height: auto !important;
     transform: none !important;
-    padding: 8px 24px 16px !important;
-    /* composer 752px + 左右 padding 24px：列宽需 800px 才放得下 */
-    max-width: 800px !important;
+    /* 2026-09-19 对齐保存页：chat-column max-w-[50.5rem](808) px-5(20)
+       → composer-dock 净宽 768 = transcript 同宽 */
+    padding: 8px 20px 16px !important;
+    max-width: 808px !important;
     /* 2026-08-11 对齐 ai提问块.html 快照：Claude 对话页输入区上方没有分隔线。
        这条线来自 cancri_chat.css:5515（旧版底部栏设计）的 border-top，在此覆盖层收口。 */
     border-top: 0 !important;
@@ -9088,71 +9106,118 @@ body.claude-upgrade-modal-open {
     }
 }
 
+/* 2026-09-19 重写为保存页实测的 data-cds="Banner" 独立卡片
+   （原"焊在 composer 顶部"的融合样式已废弃）：
+     卡片   rounded-composer(14) / padding 12 / bg gray-10(#fcfcfb) /
+            ring 1px rgba(11,11,11,.10)，与 composer 间 gap 8
+     结构   icon 20×20(gray-600) + text 14/20(gray-600) +
+            CTA h28 radius 7 px-10 + close 28×28 radius 7
+     移动端 CTA 折到第二行，缩进 28px(=icon20+gap8) 与文本列对齐 */
 .claude-composer-quota-ribbon {
     width: 100%;
-    margin-bottom: -20px;
+    margin-bottom: 8px;
     position: relative;
     z-index: 0;
 }
 .claude-composer-quota-ribbon[hidden] {
     display: none !important;
 }
-/* 2026-06-25：钱包低余额黄色预警 / 余额用完红色警报 */
-.claude-composer-quota-ribbon.is-warn .claude-composer-quota-ribbon-inner {
-    background: color-mix(in srgb, #ffd84d 22%, hsl(var(--bg-300, 48 25% 92.2%)));
-    color: #8a5a00;
-}
-.claude-composer-quota-ribbon.is-danger .claude-composer-quota-ribbon-inner {
-    background: color-mix(in srgb, #e5484d 16%, hsl(var(--bg-300, 48 25% 92.2%)));
-    color: #b3141a;
-}
 .claude-composer-quota-ribbon-inner {
-    width: 100%;
-    border: 0.5px solid transparent;
-    border-bottom: 0;
-    border-radius: 20px 20px 0 0;
-    padding: 8px 14px 28px;
-    background: hsl(var(--bg-300, 48 25% 92.2%));
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
     gap: 8px;
-    color: hsl(var(--text-300, 60 2.5% 23.3%));
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--c-bg);
+    box-shadow:
+        inset 0 0 0 0.5px var(--c-line),
+        0 0 0 1px var(--c-line);
+    color: var(--c-text-soft);
+    font-size: 14px;
+    line-height: 20px;
+}
+.claude-composer-quota-ribbon-icon {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-text-soft);
+}
+.claude-composer-quota-ribbon-msg {
+    flex: 1 1 auto;
+    min-width: 120px;
 }
 .claude-composer-quota-ribbon-msg .text-sm {
-    font-size: 0.875rem;
-    line-height: 1.45;
+    font-size: 14px;
+    line-height: 20px;
+}
+.claude-composer-quota-ribbon-action {
+    flex: 0 0 auto;
+    margin-left: auto;
 }
 .claude-composer-quota-upgrade-link {
-    font-size: 0.875rem;
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+    display: inline-flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 7px;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--c-text);
+    text-decoration: none;
     white-space: nowrap;
+    box-shadow: inset 0 0 0 1px var(--c-line-strong);
 }
 .claude-composer-quota-upgrade-link:hover,
 .claude-composer-quota-upgrade-link:focus {
-    text-decoration-color: currentColor;
+    background: var(--c-hover);
 }
-@media (min-width: 768px) {
-    .claude-composer-quota-ribbon-inner {
-        flex-direction: row;
-        align-items: center;
-        gap: 24px;
-    }
-    .claude-composer-quota-ribbon-msg {
-        flex: 1 1 auto;
-        width: 100%;
+.claude-composer-quota-ribbon-close {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--c-text-soft);
+    cursor: pointer;
+}
+.claude-composer-quota-ribbon-close:hover {
+    background: var(--c-hover);
+    color: var(--c-text);
+}
+/* 2026-06-25：钱包低余额黄色预警 / 余额用完红色警报 */
+.claude-composer-quota-ribbon.is-warn .claude-composer-quota-ribbon-inner {
+    background: color-mix(in srgb, #ffd84d 22%, var(--c-bg-elev-3));
+    color: #8a5a00;
+}
+.claude-composer-quota-ribbon.is-danger .claude-composer-quota-ribbon-inner {
+    background: color-mix(in srgb, #e5484d 16%, var(--c-bg-elev-3));
+    color: #b3141a;
+}
+@media (max-width: 768px) {
+    /* 保存页移动端：row1 = icon + 文案 + close，CTA 折到 row2 缩进 28。
+       DOM 顺序是 icon→msg→action→close，不给 close 提序它会掉到第三行。 */
+    .claude-composer-quota-ribbon-close {
+        order: 1;
+        align-self: flex-start;
     }
     .claude-composer-quota-ribbon-action {
-        flex: 0 0 auto;
-        width: fit-content;
+        order: 2;
+        flex: 0 0 100%;
+        /* icon 20 + gap 8 → 与文本列左缘对齐（保存页 CTA x=48 = 内容x20+28） */
+        margin-left: 28px;
     }
-}
-.composer-wrap:has(.claude-composer-quota-ribbon:not([hidden])) .composer {
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
 }
 
 /* ───────────────────────────────────────────────────────────
@@ -9175,14 +9240,34 @@ html[data-theme] {
     display: none !important;
 }
 
+/* 2026-09-19：元素挂进 .composer-chin（chin-left 与 chin-right 之间），
+   绝对居中 —— 对齐保存页 disclaimer band：居中文本 13px/17px gray-400，
+   移动端 11px/17px，与右侧模型选择器同处一行。 */
+#homeView.chatting .composer-chin {
+    position: relative;
+}
 #homeView.chatting .composer-disclaimer {
     display: block;
-    text-align: center;
-    color: hsl(var(--text-500));
-    font-size: 12px;
-    line-height: 1.25;
-    padding: 8px 16px 0;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    max-width: min(60%, 480px);
     margin: 0;
+    padding: 0;
+    text-align: center;
+    color: var(--c-text-dim);
+    font-size: 13px;
+    line-height: 17px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+@media (max-width: 768px) {
+    #homeView.chatting .composer-disclaimer {
+        font-size: 11px;
+    }
 }
 
 .composer-disclaimer-link {
@@ -9240,6 +9325,9 @@ html[data-theme] {
 
 #homeView.chatting .composer-wrap {
     width: 100%;
+    /* 2026-09-19：放开 cancri_chat.css:5621 的 max-width:752px —— 保存页
+       composer-dock 与 transcript 同宽 768，由 home-center 列宽供给。 */
+    max-width: none !important;
     margin: 0 auto;
 }
 
@@ -9541,13 +9629,11 @@ html[data-theme="dark"] .ask-user-card {
        聊天页在下面把 gap 归 0、改用每个块自己的上外距，跟参考的 .prose 模型一致。 */
     gap: 12px;
     font-family: var(--c-font-serif) !important;
-    /* ⚠ 这里必须写死 16px，不能写 1rem。cancri_chat.css 有一条
-       `html { font-size: 15px }`，全项目的 rem 基准是 15 不是 16，
-       之前这里的 1rem 其实只有 15px，跟注释里声称的"对齐真站 16px"不符。
-       16 / 24 = 参考 --cds-font-size-prose(1rem) / --cds-leading-prose(1.5rem)。 */
-    font-size: 16px !important;
+    /* 2026-09-19 保存页（八小时工作制 2026_9_18）实测：助手正文段落
+       15px / 22px（serif response-body 成品值，非 --cds-* token 推算）。 */
+    font-size: 15px !important;
     font-weight: 400 !important;
-    line-height: 1.5 !important;
+    line-height: calc(22 / 15) !important;
     color: hsl(var(--text-100)) !important;
 }
 
@@ -9565,7 +9651,8 @@ html[data-theme="dark"] .ask-user-card {
 .answer-body.standard-markdown :is(p, blockquote, h1, h2, h3, h4, h5, h6),
 .standard-markdown.answer-body :is(p, blockquote, h1, h2, h3, h4, h5, h6) {
     padding-left: var(--c-response-gutter, 8px);
-    padding-right: 32px;
+    /* 2026-09-19 保存页实测：桌面 56px / 移动端 0，经 --c-response-rpad 供给 */
+    padding-right: var(--c-response-rpad, 32px);
     font-family: inherit;
     font-size: inherit;
     font-weight: 400;
@@ -9641,7 +9728,7 @@ html[data-theme="dark"] .ask-user-card {
 .standard-markdown.answer-body ol {
     margin: 0;
     padding-left: calc(var(--c-response-gutter, 8px) + 1.35em);
-    padding-right: 32px;
+    padding-right: var(--c-response-rpad, 32px);
 }
 
 .answer-body.standard-markdown li + li,
@@ -9678,9 +9765,14 @@ html[data-theme="dark"] .ask-user-card {
     font-size: 12px !important;
 }
 
-.chat-messages .message.assistant + .message.user,
+/* 2026-09-19 保存页实测：助手行自身无 margin，turn 间距由用户行
+   mt-[1.5rem](24) + 上行 mb-1(4) 组成 → user→assistant 净 8px，
+   assistant→user 净 28px。 */
 .chat-messages .message.user + .message.assistant {
-    margin-top: 20px !important;
+    margin-top: 4px !important;
+}
+.chat-messages .message.assistant + .message.user {
+    margin-top: 24px !important;
 }
 
 .font-claude-response {
@@ -9692,6 +9784,9 @@ html[data-theme="dark"] .ask-user-card {
    .message-content 上，因为操作条是 .message-content 的兄弟节点，挂在里层它读不到。 */
 .chat-messages .message.assistant {
     --c-response-gutter: 4px;
+    /* 2026-09-19 保存页实测：助手段落右侧留白 56px（桌面），移动端 0。
+       消费方 = §MD 段落的 padding-right（本文件 §36 覆盖块）。 */
+    --c-response-rpad: 56px;
 }
 
 .chat-messages .message.assistant .message-content {
@@ -9774,24 +9869,27 @@ html[data-theme="dark"] .ask-user-card {
     opacity: 1 !important;
 }
 
+/* 2026-09-19 保存页实测：时间戳 11px/17px gray-400(#898781)，右侧间距 6px。 */
 .message-action-ts {
-    font-size: 12px !important;
+    font-size: 11px !important;
     color: hsl(var(--text-500)) !important;
-    margin-right: 8px !important;
-    line-height: 24px !important;
+    margin-right: 6px !important;
+    line-height: 17px !important;
     flex-shrink: 0;
 }
 
 /* 按钮 24px + 图标 16px = 参考 data-size=xs 的 --cds-h-control--xs / icon font-size。
-   本文件上游原有一份 32px / 18px 的声明，2026-09-06 已删（它一直被这里盖着）。 */
+   2026-09-19 保存页实测按钮 radius 6（非 8）。 */
 .message-action-btn {
     width: 24px !important;
     height: 24px !important;
     padding: 0 !important;
-    border-radius: 8px !important;
+    border-radius: 6px !important;
     border: 0 !important;
     background: transparent !important;
     color: hsl(var(--text-400)) !important;
+    /* 2026-09-19 保存页实测按钮 font 13px（影响按钮内计数/文本，图标仍是 16px） */
+    font-size: 13px !important;
     transition: background 120ms ease, color 120ms ease !important;
 }
 
@@ -9919,10 +10017,16 @@ html[data-theme="dark"] .ask-user-card {
    .think-body 也是给 arena 的基线 —— 都别拿来改聊天页。
    ─────────────────────────────────────────────────────────── */
 .message.assistant .think-block {
-    /* margin-bottom 故意为 0：跟正文的间隙由 .message-content 的 gap:12px 提供，
-       不要在这里再加，否则两个数相加又变成"改一处不生效"。 */
-    margin: 0 !important;
-    padding: 6px 0 6px var(--c-response-gutter, 4px) !important;
+    /* 2026-09-19 保存页实测 TurnStatus：h32 = pad-6 + label 20；
+       ms-[text-inset - outset-x] = 4 - 6 = -2px 左悬，
+       me-[text-stop - outset-x] 桌面端右缩 50px / 移动端 -6px。
+       行内容（label）起点 = feed - 2 + 6 = feed + 4 = gutter 对齐。 */
+    margin: 0 50px 0 -2px !important;
+    padding: 6px !important;
+    /* 保存页 TurnStatus 自身 font-sans 14/20 + rounded-lg(8) hover 底 */
+    font-size: 14px !important;
+    line-height: 20px !important;
+    border-radius: 8px !important;
 }
 
 .message.assistant .think-header {
@@ -9930,7 +10034,7 @@ html[data-theme="dark"] .ask-user-card {
     align-items: center !important;
     /* 参考 gap-xs(8px) 配箭头按钮的 -ms-1(-4px)，净 4px */
     gap: 4px !important;
-    padding: 6px 0 !important;
+    padding: 0 !important;
 }
 
 .message.assistant .think-label {
@@ -9998,15 +10102,17 @@ html[data-theme="dark"] .ask-user-card {
     display: inline-flex !important;
     flex-direction: column !important;
     gap: 8px !important;
-    max-width: min(75ch, 85%) !important;
+    /* 2026-09-19：保存页实测 max-w 就是 85%（无 75ch 上限 —— 75ch@15px≈679px 会在宽 feed 提前截断） */
+    max-width: 85% !important;
     background: hsl(var(--bg-300)) !important;
     color: hsl(var(--text-100)) !important;
     border: none !important;
     border-radius: 12px !important;
-    padding: 10px 16px !important;
+    /* 2026-09-19 保存页实测：py-md(12) px-lg(16) / 15px / lh 20px / 400 */
+    padding: 12px 16px !important;
     box-shadow: none !important;
     font-size: 15px !important;
-    line-height: 1.55 !important;
+    line-height: calc(20 / 15) !important;
     font-weight: 400 !important;
 }
 
@@ -10020,12 +10126,12 @@ html[data-theme="dark"] .ask-user-card {
     max-width: 100% !important;
 }
 
-/* 跟上面 .answer-body.standard-markdown 那条是同一组值（两个类恒同时出现），
-   写死 16px 的理由同上：html 的 rem 基准是 15px。 */
+/* 跟上面 .answer-body.standard-markdown 那条是同一组值（两个类恒同时出现）。
+   2026-09-19 保存页实测正文 15px / 22px。 */
 .message.assistant .answer-body.font-claude-response {
     font-family: var(--c-font-serif) !important;
-    font-size: 16px !important;
-    line-height: 1.5 !important;
+    font-size: 15px !important;
+    line-height: calc(22 / 15) !important;
     color: hsl(var(--text-100)) !important;
 }
 
@@ -11001,11 +11107,13 @@ html[data-theme] {
 .composer,
 #homeView.chatting .composer {
     width: 100% !important;
-    max-width: 100% !important;
+    /* 2026-09-19 保存页实测：composer-box 640，居中于 768 dock
+       （wrap 是 flex-column align-items:center，max-width 一收即居中） */
+    max-width: var(--composer-max-w, 640px) !important;
     min-height: 0 !important;
     max-height: none !important;
     padding: 8px !important;
-    gap: 2px !important; /* 输入行 → 底行：真站 editor pb 34 = 32 + 2 */
+    gap: 8px !important; /* 保存页 composer-box gap-2 = 8px */
     border: 0 !important;
     border-radius: 14px !important;
 }
@@ -11065,8 +11173,9 @@ html[data-theme="black"] .composer:focus-within {
 .composer[data-workbench-composer] .composer-input {
     font-size: 16px !important;
     line-height: 22px !important;
-    font-weight: 430 !important;
-    padding: 5px 0 5px 8px !important;
+    /* 2026-09-19 保存页实测：font-weight 400 / padding 5px 0 5px 6px */
+    font-weight: 400 !important;
+    padding: 5px 0 5px 6px !important;
     min-height: 54px !important; /* 2 行 = 2×22 + 2×5 */
     max-height: 384px !important;
 }
@@ -11340,5 +11449,109 @@ html[data-theme="black"] .composer:focus-within {
     }
     #composerChin .claude-suggest {
         flex-shrink: 0 !important;
+    }
+}
+
+/* ───────────────────────────────────────────────────────────
+   §36. 会话页排版对齐（2026-09-19）
+   唯一真值：C:\Users\HP\Downloads\八小时工作制的起源 - Claude (2026_9_18 12：59：33).html
+   Playwright 实测（1440×900 light / 375×812，隐藏侧栏排水沟后）：
+
+     transcript  max-w-3xl(768) + pt-1(4) px-4(16) / 移动端 px-5(20) → feed 736
+     用户气泡    bg rgba(11,11,11,.05) / radius 12 / padding 12px 16px /
+                 max-w 85% / 15px / lh 20 / 400 —— 右贴 feed
+     助手正文    serif 15px / lh 22 / padding 0 56px 0 4px（≤768px 右 0）
+     思考行      h32（pad 6 + label 20），ml -2 / mr 50（移动端 mr -6）
+     操作条      h24，按钮 24×24 radius 6，时间戳 11px/17px gray-400
+     图片消息    wrap margin -12（贴气泡内边），radius 10，桌面样本 480 宽 /
+                 移动端满 feed 宽，object-contain，min 120
+     composer   dock = transcript 同宽 768 / 卡片 padding 8 gap 8 radius 14 /
+                 移动端外边距 8；chin 行内含居中 disclaimer（13→11px/17）
+     90%横幅    独立卡片：radius 14 / padding 12 / bg gray-10 / ring 1px α.10，
+                 icon 20 + text 14/20 + CTA h28 r7 + close 28 r7，
+                 ≤768px CTA 折行缩进 28（见 §28 重写块）
+
+   本节只收"必须放在文件最末才能赢"的覆盖（§MD .md-content 三次叠类
+   的 14px/1.65 属 cancri-code 桌面端口径；本页真值 15px/22px 只改
+   .message.assistant 作用域，arena 的 .duel-answer 保持 §MD 原值）。
+   ─────────────────────────────────────────────────────────── */
+
+/* 助手正文：15px / 22px（serif 由 §17 data-chat-font / .font-claude-response 供给） */
+.message.assistant .answer-body.md-content.md-content.md-content,
+.message.assistant .answer-body.md-content.md-content.md-content :is(p, li, blockquote, td) {
+    font-size: 15px !important;
+    line-height: calc(22 / 15) !important;
+}
+/* 段落右缩进：桌面 56 / 移动 0（--c-response-rpad，见 :9766 一带定义）；
+   左侧 4px = --msg-text-inset（--c-response-gutter）。§MD 原值是 0 32px 0 0。 */
+.message.assistant .answer-body.md-content.md-content.md-content p,
+.message.assistant .answer-body.md-content.md-content.md-content .md-h {
+    padding: 0 var(--c-response-rpad, 56px) 0 var(--c-response-gutter, 4px) !important;
+}
+.message.assistant .answer-body.md-content.md-content.md-content :is(ul, ol) {
+    padding: 0 var(--c-response-rpad, 56px) 0 32px !important;
+}
+
+/* 用户图片消息：图片贴上/左/右气泡内边（参考 wrap margin -12；
+   本气泡 padding 是 12/16，四周统一 -12 → 侧边留 4px，与参考一致），
+   含文字时底边不外扩（gap 8 留给文字），纯图片消息底部贴边。
+   附件气泡放宽到 min(504,100%)：保存页移动端图片几乎吃满 feed（325/325），
+   504 = 480 图 + 24（-12×2 负边回补），桌面端图仍被 item 的 480 上限截住。 */
+.message.user .message-content:has(.user-attachments) {
+    max-width: min(504px, 100%) !important;
+}
+.message.user .user-attachments {
+    margin: -12px -12px 0 !important;
+    gap: 8px;
+    border-radius: 10px; /* 保存页 img-wrap rounded-[10px] */
+}
+.message.user .user-attachments:last-child {
+    margin-bottom: -12px !important;
+}
+.message.user .user-attachment {
+    /* 保存页：图按 min(480, 可用宽) 展示。不能写 min(480px,100%) —— 气泡
+       shrink-wrap 下 100% 无 definite 基值会塌缩成 intrinsic 最小宽；
+       width:480 + max-width:100% 让固有宽顶开气泡、再由气泡/容器上限截回。 */
+    width: 480px !important;
+    height: auto !important;
+    min-width: 120px;
+    min-height: 120px;
+    max-width: 100% !important;
+    border-radius: 10px !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+.message.user .user-attachment img {
+    display: block;
+    width: 100% !important;
+    height: auto !important;
+    max-height: 384px;
+    min-width: 120px;
+    min-height: 120px;
+    object-fit: contain !important;
+    border-radius: 10px;
+}
+
+@media (max-width: 768px) {
+    /* transcript px-5(20) → feed = vw - 40（保存页 365 列 feed 325） */
+    #homeView.chatting .chat-messages.active {
+        padding: 4px 20px 8px !important;
+    }
+    /* composer 外边距 8（保存页 cbox x8 w349 on 365 列） */
+    #homeView.chatting .home-center {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+    #homeView.chatting .composer {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    /* 助手段落右缩进归零（保存页 ap pad 0 0 0 4） */
+    .chat-messages .message.assistant {
+        --c-response-rpad: 0px;
+    }
+    /* TurnStatus 移动端 me -6（保存页 ts margin 0 -6px 0 -2px） */
+    .message.assistant .think-block {
+        margin-right: -6px !important;
     }
 }

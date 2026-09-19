@@ -11,6 +11,8 @@
   var modalEl = null;
   var ribbonEl = null;
   var lastRibbonKey = "";
+  // 2026-09-19：横幅关闭按 dismiss key 记录（本次会话内不再重出同一文案）。
+  var dismissedRibbonKeys = {};
 
   var FEATURE_CARDS = [
     {
@@ -231,6 +233,28 @@
     };
   }
 
+  // 2026-09-19：对齐 Claude 保存页的 "You've used 90% of your session limit"
+  // 横幅 —— 免费档 5 小时 token 窗口就是 session limit 的直接对应。
+  // 与 analyzeExhaustion（硬耗尽）不同，这是可关闭的软预警。
+  function analyzeSessionWarning(snap) {
+    if (!snap || !snap.fetchedAt) return null;
+    // wallet_v3 的低余额预警已由 analyzeExhaustion 的 wallet_low 覆盖
+    if (snap.billingMode === "wallet_v3") return null;
+    if (snap.tier !== "free") return null;
+    var used = Number(snap.tokenWindow5hUsed);
+    var limit = Number(snap.tokenWindow5hLimit);
+    if (!isFinite(used) || !isFinite(limit) || limit <= 0) return null;
+    var ratio = used / limit;
+    if (ratio >= 0.9 && ratio < 1) {
+      return {
+        kind: "free_token_5h_warn",
+        tier: "free",
+        pct: Math.floor(ratio * 100),
+      };
+    }
+    return null;
+  }
+
   function buildModalCopy(exhaustion) {
     if (!exhaustion) {
       return {
@@ -321,6 +345,15 @@
 
   function buildRibbonCopy(exhaustion) {
     if (!exhaustion) return null;
+    // 2026-09-19：session 窗口 ≥90% 软预警（保存页 "used 90% of your
+    // session limit" + "Get more usage" 的中文对应）
+    if (exhaustion.kind === "free_token_5h_warn") {
+      return {
+        message:
+          "你已使用本会话窗口额度的 " + (exhaustion.pct || 90) + "%",
+        upgradeLabel: "获取更多额度",
+      };
+    }
     // 2026-06-23 按量计费 wallet_v3
     if (exhaustion.kind === "wallet_low") {
       return {
@@ -491,8 +524,9 @@
     var ribbon = ensureRibbon();
     if (!ribbon) return;
     var snap = getSnapshot();
-    var exhaustion = analyzeExhaustion(snap);
-    if (!exhaustion) {
+    // 2026-09-19：硬耗尽优先；否则落 ≥90% 会话窗口软预警（保存页同款横幅）
+    var state = analyzeExhaustion(snap) || analyzeSessionWarning(snap);
+    if (!state) {
       ribbon.hidden = true;
       ribbon.innerHTML = "";
       lastRibbonKey = "";
@@ -503,20 +537,33 @@
       }
       return;
     }
-    var copy = buildRibbonCopy(exhaustion);
+    var copy = buildRibbonCopy(state);
     if (!copy) {
       ribbon.hidden = true;
       return;
     }
-    var key = exhaustion.kind + "|" + copy.message;
+    var key = state.kind + "|" + copy.message;
+    // 已手动关闭的同文案横幅不再重出（用量再涨 → 新 key → 会重新出现）
+    if (dismissedRibbonKeys[key]) {
+      ribbon.hidden = true;
+      return;
+    }
     if (key === lastRibbonKey && !ribbon.hidden) return;
     lastRibbonKey = key;
     // 2026-06-25：低余额黄色预警 / 余额用完红色警报，靠修饰类着色。
     ribbon.classList.remove("is-warn", "is-danger");
-    if (exhaustion.kind === "wallet_low") ribbon.classList.add("is-warn");
-    else if (exhaustion.kind === "wallet_empty") ribbon.classList.add("is-danger");
+    if (state.kind === "wallet_low") ribbon.classList.add("is-warn");
+    else if (state.kind === "wallet_empty") ribbon.classList.add("is-danger");
+    // 2026-09-19：结构对齐保存页 data-cds="Banner"
+    // icon 20 + msg + CTA(h28/r7) + close(28/r7)
     ribbon.innerHTML =
       '<div class="claude-composer-quota-ribbon-inner">' +
+      '<span class="claude-composer-quota-ribbon-icon" aria-hidden="true">' +
+      '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">' +
+      '<circle cx="10" cy="10" r="7.5"/>' +
+      '<path d="M10 9.2v4.3" stroke-linecap="round"/>' +
+      '<circle cx="10" cy="6.3" r="1" fill="currentColor" stroke="none"/>' +
+      "</svg></span>" +
       '<div class="claude-composer-quota-ribbon-msg">' +
       '<div class="text-sm">' +
       escapeHtml(copy.message) +
@@ -526,7 +573,18 @@
       PRICING_URL +
       '" class="claude-composer-quota-upgrade-link">' +
       escapeHtml(copy.upgradeLabel) +
-      "</a></div></div>";
+      "</a></div>" +
+      '<button type="button" class="claude-composer-quota-ribbon-close" aria-label="关闭">' +
+      '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">' +
+      '<path d="M3 3l8 8M11 3l-8 8"/>' +
+      "</svg></button></div>";
+    var closeBtn = ribbon.querySelector(".claude-composer-quota-ribbon-close");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", function () {
+        dismissedRibbonKeys[key] = true;
+        ribbon.hidden = true;
+      });
+    }
     ribbon.hidden = false;
 
     var legacy = document.getElementById("freeQuotaBanner");
