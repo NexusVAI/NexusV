@@ -11555,3 +11555,175 @@ html[data-theme="black"] .composer:focus-within {
         margin-right: -6px !important;
     }
 }
+
+/* ───────────────────────────────────────────────────────────
+   §37. composer 二次实测修正（2026-09-19 第二轮）
+   上一轮把"工具行在盒内"的布局当成了参考 —— 保存页实测（1440×900）：
+     composer 盒 = 768×48 单行圆角卡（pad 8 + 输入区 32 + 右侧
+        Stop/Send 钮 32×32 垂直居中），内部无工具行；
+     盒下 8px 是 chin 行：左 [+ 24×24][Dictate 24×24][Mic 20×24]、
+        中 disclaimer 13px/17 对整条 768 带绝对居中、
+        右 [Model 91×24][Auto 46×24]。
+   实现：DOM 里 .composer-card 包住 preview + .composer-input-row
+   （textarea + .composer-send-slot 发送钮）；chat 态外层 .composer
+   转 display:contents 让 card/bottom/chin 子项全部并入 wrap 的
+   wrap-flex，行序 = [横幅][卡][工具群 免责声明 模型选择]。
+   home 态 .composer 仍是整卡，card/input-row 只是无样式容器。 */
+
+/* 输入行（两态通用）：textarea 吃满，发送钮钉右端、多行时贴底 */
+.composer-input-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+}
+.composer-input-row .composer-input {
+    /* 99-polish-fixes.css:356 给 .composer-input 写过 order:1（当初让它排在
+       盒内其他元素之后）；进 input-row 后会把 textarea 排到发送钮右边。 */
+    order: 0 !important;
+    flex: 1 1 auto !important;
+    min-width: 0;
+    width: auto !important;
+}
+.composer-send-slot {
+    order: 1;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    width: 32px;
+    height: 32px;
+    min-width: 0;
+}
+.composer-send-slot .send-btn {
+    width: 32px !important;
+    height: 32px !important;
+    flex: 0 0 32px !important;
+    aspect-ratio: auto !important;
+}
+
+/* chat 态：外壳溶解，card 承盒 */
+#homeView.chatting .composer-wrap {
+    position: relative;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    row-gap: 8px !important;
+}
+#homeView.chatting .composer {
+    display: contents !important;
+}
+#homeView.chatting .composer-card {
+    order: 0;
+    flex: 0 0 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 14px;
+    background: var(--c-bg-elev);
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.18),
+        0 0 0 1px var(--c-line);
+    transition:
+        background-color 200ms,
+        box-shadow 200ms;
+}
+#homeView.chatting .composer-card:hover {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.18),
+        0 0 0 1px var(--c-line-strong);
+}
+#homeView.chatting .composer-card:focus-within {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.26),
+        0 0 0 1px var(--c-line-strong);
+}
+html[data-theme="light"] #homeView.chatting .composer-card {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.035),
+        0 0 0 1px var(--c-line);
+}
+html[data-theme="light"] #homeView.chatting .composer-card:hover {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.035),
+        0 0 0 1px var(--c-line-strong);
+}
+html[data-theme="light"] #homeView.chatting .composer-card:focus-within {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.075),
+        0 0 0 1px var(--c-line-strong);
+}
+/* 拖拽态类名挂在 .composer 上（display:contents 无盒），描边转到 card */
+#homeView.chatting .composer.is-drag-over .composer-card {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.075),
+        0 0 0 2px var(--c-line-strong) !important;
+}
+
+/* chin 行 = bottom 工具群 + chin 子项并入 wrap 同一行 */
+#homeView.chatting .composer-bottom {
+    order: 1;
+    flex: 0 0 auto;
+    min-height: 0 !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+}
+#homeView.chatting .composer-tools-row {
+    justify-content: flex-start !important;
+    width: auto !important;
+    min-height: 0 !important;
+    gap: 4px !important;
+}
+#homeView.chatting .composer-tools-row .composer-actions {
+    margin-left: 0 !important;
+}
+/* 参考 chin 工具钮 24×24（区别于盒内发送钮 32×32） */
+#homeView.chatting .composer-tools .composer-tool-btn,
+#homeView.chatting .composer-bottom .composer-actions .voice-btn,
+#homeView.chatting .composer-bottom .composer-actions .voice-btn:not(.hidden) {
+    width: 24px !important;
+    height: 24px !important;
+    flex: 0 0 24px !important;
+    border-radius: 6px !important;
+}
+#homeView.chatting .composer-tools .composer-tool-btn svg,
+#homeView.chatting .composer-bottom .composer-actions .voice-btn svg {
+    width: 16px !important;
+    height: 16px !important;
+}
+
+#homeView.chatting .composer-chin {
+    display: contents !important;
+}
+#homeView.chatting .composer-chin-left {
+    display: none !important;
+}
+#homeView.chatting .composer-chin-right {
+    order: 3;
+    flex: 0 0 auto;
+    margin-left: auto !important;
+}
+/* disclaimer 对整条 chin 带绝对居中（参考文本块中心 = 768 带中点），
+   不参与 flex 排布；行高由工具钮/模型选择器的 24px 撑出。 */
+#homeView.chatting .composer-disclaimer {
+    position: absolute !important;
+    left: 50% !important;
+    top: auto !important;
+    bottom: 4px; /* chin 行 24 − 文本 17，上下各 ~3.5 */
+    transform: translateX(-50%) !important;
+    margin: 0 !important;
+    pointer-events: none !important;
+}
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    @media (max-width: 768px) {
+        /* wrap 底部 padding = 8 + env，chin 行底在其上方 → 补回 */
+        #homeView.chatting .composer-disclaimer {
+            bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+        }
+    }
+}
+/* 90% 横幅（挂 wrap 首子）在 wrap-flex 里独占一行、排在最前 */
+#homeView.chatting .claude-composer-quota-ribbon {
+    order: -1;
+    flex: 0 0 100%;
+}

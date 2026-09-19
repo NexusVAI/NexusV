@@ -992,17 +992,65 @@
                         </h1>
                         <div class="composer-wrap">
                             <div class="composer" data-workbench-composer>
-                                <div
-                                    class="attachment-preview"
-                                    id="attachmentPreview"
-                                    hidden
-                                ></div>
-                                <textarea
-                                    class="composer-input"
-                                    id="homeInput"
-                                    rows="1"
-                                    placeholder="今天我能帮你什么？"
-                                ></textarea>
+                                <!-- 2026-09-19 保存页二次实测：chat 态 composer 盒是
+                                     768×48 单行（输入区 + 右侧 32px 发送钮），工具钮在
+                                     盒下 chin 行。.composer-card 只在 chat 态承接盒样式
+                                     （外层 .composer 转 display:contents），home 态不变。 -->
+                                <div class="composer-card">
+                                    <div
+                                        class="attachment-preview"
+                                        id="attachmentPreview"
+                                        hidden
+                                    ></div>
+                                    <div class="composer-input-row">
+                                        <textarea
+                                            class="composer-input"
+                                            id="homeInput"
+                                            rows="1"
+                                            placeholder="今天我能帮你什么？"
+                                        ></textarea>
+                                        <div class="composer-actions composer-send-slot">
+                                            <button
+                                                class="send-btn hidden"
+                                                id="sendChatBtn"
+                                                data-glass="button"
+                                                aria-label="发送消息"
+                                                disabled
+                                            >
+                                                <svg
+                                                    class="send-icon-arrow"
+                                                    width="18"
+                                                    height="18"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2.2"
+                                                >
+                                                    <path d="M12 19V5"></path>
+                                                    <path
+                                                        d="m5 12 7-7 7-7"
+                                                    ></path>
+                                                </svg>
+                                                <svg
+                                                    class="send-icon-stop"
+                                                    width="18"
+                                                    height="18"
+                                                    viewBox="0 0 24 24"
+                                                    fill="currentColor"
+                                                    stroke="none"
+                                                >
+                                                    <rect
+                                                        x="7"
+                                                        y="7"
+                                                        width="10"
+                                                        height="10"
+                                                        rx="1.5"
+                                                    ></rect>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="composer-bottom">
                                     <div
                                         class="composer-status"
@@ -1096,44 +1144,6 @@
                                                     <rect class="voice-bar" x="12" y="5.5" width="1" height="10" rx="0.5" fill="currentColor"></rect>
                                                     <rect class="voice-bar" x="16" y="2.5" width="1" height="16" rx="0.5" fill="currentColor"></rect>
                                                     <rect class="voice-bar" x="20" y="7.5" width="1" height="6" rx="0.5" fill="currentColor"></rect>
-                                                </svg>
-                                            </button>
-                                            <button
-                                                class="send-btn hidden"
-                                                id="sendChatBtn"
-                                                data-glass="button"
-                                                aria-label="发送消息"
-                                                disabled
-                                            >
-                                                <svg
-                                                    class="send-icon-arrow"
-                                                    width="18"
-                                                    height="18"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    stroke-width="2.2"
-                                                >
-                                                    <path d="M12 19V5"></path>
-                                                    <path
-                                                        d="m5 12 7-7 7 7"
-                                                    ></path>
-                                                </svg>
-                                                <svg
-                                                    class="send-icon-stop"
-                                                    width="18"
-                                                    height="18"
-                                                    viewBox="0 0 24 24"
-                                                    fill="currentColor"
-                                                    stroke="none"
-                                                >
-                                                    <rect
-                                                        x="7"
-                                                        y="7"
-                                                        width="10"
-                                                        height="10"
-                                                        rx="1.5"
-                                                    ></rect>
                                                 </svg>
                                             </button>
                                         </div>
