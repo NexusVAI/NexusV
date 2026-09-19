@@ -2915,7 +2915,44 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         opt.title =
           status.error && status.error !== "额度已用完" ? status.error : "";
       }
+      syncModelAccessBadge(opt, modelId);
     });
+  }
+
+  // ── 订阅闸门 PAID + Upgrade 徽章（2026-09-19 补回） ──────────────
+  // cancri_chat.css:1662-1705 一直留着 .model-access / .model-access-badge /
+  // .model-upgrade-link 三条样式（含 dark 覆写），但**没有任何地方注入这段
+  // markup** —— 所以线上只剩 .quota-blocked 的灰条，用户说的「同款 UI 没了」。
+  // 结构与判据 1:1 照 cancri-code/src/main.ts 8068-8098：订阅闸门才出
+  // PAID + Upgrade（判据是阻挡文案里带「订阅 / PAID / Pro」），
+  // 纯不可用（上游挂了 / 额度锁）只置灰、不带升级钮。
+  const MODEL_UPGRADE_HREF = "./pricing.html";
+  function syncModelAccessBadge(opt, modelId) {
+    const existing = opt.querySelector(":scope > .model-access");
+    const message = opt.classList.contains("quota-blocked")
+      ? getQuotaBlockMessage(modelId)
+      : "";
+    const isSubGate = Boolean(message) && /订阅|PAID|Pro/.test(message);
+    if (!isSubGate) {
+      opt.classList.remove("is-upgrade-gated");
+      existing?.remove();
+      return;
+    }
+    opt.classList.add("is-upgrade-gated");
+    if (existing) return;
+    const wrap = document.createElement("span");
+    wrap.className = "model-access";
+    const badge = document.createElement("span");
+    badge.className = "model-access-badge";
+    badge.textContent = "PAID";
+    const link = document.createElement("a");
+    link.className = "model-upgrade-link";
+    link.href = MODEL_UPGRADE_HREF;
+    link.dataset.modelUpgrade = "1";
+    link.title = "前往定价页升级";
+    link.textContent = "Upgrade";
+    wrap.append(badge, link);
+    opt.appendChild(wrap);
   }
   
   function usesSharedQuota(modelId = currentModel) {
@@ -4046,6 +4083,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     let height = Math.max(0, Math.round(window.innerHeight - rect.top));
     if (homeView?.classList.contains("chatting")) {
       height += 34;
+    }
+    // 2026-09-19：chat 态的 dock（#homeCenter）改成绝对定位浮层后（claude.css §39），
+    // 它不再占文档流高度，正文得自己留出等高的 padding-bottom，否则最后一条消息
+    // 会被浮层永久盖住。--composer-height 是「composer-wrap 顶 → 视口底 + 34」，
+    // 含那个给 scroll-to-bottom 钮用的 34px 补偿，不能直接当 padding 用。
+    const dockH = homeCenter ? Math.round(homeCenter.getBoundingClientRect().height) : 0;
+    if (dockH) {
+      document.documentElement.style.setProperty("--composer-dock-h", `${dockH}px`);
     }
     if (!height) return;
     document.documentElement.style.setProperty("--composer-height", `${height}px`);
@@ -11469,6 +11514,244 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     return renderInlineMarkdown(String(text || "")).replace(/\r?\n/g, "<br>");
   }
   
+  /* ────────────────────────────────────────────────────────────────
+     流式尾字渐显（2026-09-19，1:1 移植自 cancri-code）
+     源：cancri-code/src/chat.ts 的 createStreamingFade / createStreamingAppend /
+         animateStreamingSubtree / patchStreamingTextLeaf / isStreamingTextPiece /
+         patchStreamingChildren / patchStreamingMarkdown（9872–10026 一带）
+         + cancri-code/src/styles.css 7717–7730 的 .chat-stream-fade /
+         @keyframes codexTextFade（760ms、cubic-bezier(.16,1,.3,1)、.18→.72→1）。
+     CSS 那半边落在 claude.css §41。
+
+     为什么不能只加 CSS：本函数原来每帧 `innerHTML = renderMarkdown(...)`，
+     整棵子树重建 → 所有文字每帧都重新入场，屏幕上是整段正文在抖。
+     所以必须连 cancri-code 的**增量 patch** 一起搬：每帧把完整 markdown 渲成
+     一份新 DOM，与现有子树对账，只有真正新增的那一截包进 span.chat-stream-fade。
+
+     ⚠ 与上游的一处**刻意差异**：只有「追加」才建 fade，「替换」一律裸 Text。
+     上游 cancri-code 里替换路径也 fade，但我们这边 renderPostMarkdownInElement()
+     每帧都跑 KaTeX，把 `$x$` 就地换成 .katex 子树；下一帧新渲染出来的还是裸
+     `$x$` 文本，对账时必然判成"替换" —— 若照抄上游，含公式的段落会每帧重播一次
+     淡入（整段脉动）。判据用 currentNode===null / startsWith 前缀，见下面各处。
+     ──────────────────────────────────────────────────────────────── */
+
+  // 身份指纹要忽略的「运行时 class」。漏掉任何一个，被它接管过的节点在对账时
+  // 都会判成"不是同一个节点"→ 整块 replaceChild → 每帧重建（上游踩过的坑：
+  // 代码块在模型输出期间一直闪）。
+  const STREAM_RUNTIME_ONLY_CLASSES = new Set([
+    "has-scroll-fade", // syncMdTableScrollFade
+    "font-claude-response-body", // portStampResponseBodyClasses
+    "break-words",
+    "whitespace-normal",
+  ]);
+  // 运行时注入的**子节点**：表格横向滚动轨道。它不是 markdown 渲染器产出的，
+  // 不参与对账，也不能在收尾清理里被当成"多余节点"删掉。
+  const STREAM_RUNTIME_ONLY_CHILD_SELECTOR = ".md-table-hscroll";
+
+  function prefersReducedMotionForStream(doc) {
+    try {
+      return Boolean(doc?.defaultView?.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function createStreamingFade(value, doc) {
+    // 纯空白不值得动画；减动效时直接给裸 Text（与上游一致）。
+    if (!value.trim() || prefersReducedMotionForStream(doc)) {
+      return doc.createTextNode(value);
+    }
+    const fade = doc.createElement("span");
+    fade.className = "chat-stream-fade";
+    fade.textContent = value;
+    // 播完就把 span 拆成 Text 并 normalize —— 否则长回复会攒下成千上万个空 span，
+    // 而且下一帧的前缀比对会被 span 边界打碎。
+    fade.addEventListener(
+      "animationend",
+      () => {
+        const parent = fade.parentNode;
+        if (!parent) return;
+        parent.replaceChild(doc.createTextNode(fade.textContent ?? ""), fade);
+        parent.normalize();
+      },
+      { once: true },
+    );
+    return fade;
+  }
+
+  // 正在播的 fade 算「已有文字」，下一帧不会被拆掉重播。
+  function isStreamingTextPiece(node) {
+    return (
+      node.nodeType === Node.TEXT_NODE ||
+      (node.nodeType === Node.ELEMENT_NODE && node.matches("span.chat-stream-fade"))
+    );
+  }
+
+  // fade=true 时整棵子树的文本都包 fade（用于"这块是新追加的"）。
+  function createStreamingAppend(node, doc, fade) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const value = node.nodeValue ?? "";
+      return fade ? createStreamingFade(value, doc) : doc.createTextNode(value);
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return node.cloneNode(true);
+    const clone = node.cloneNode(false);
+    for (const child of Array.from(node.childNodes)) {
+      clone.appendChild(createStreamingAppend(child, doc, fade));
+    }
+    return clone;
+  }
+
+  function stableClassKey(el) {
+    const own = Array.from(el.classList).filter(
+      (c) => !STREAM_RUNTIME_ONLY_CLASSES.has(c),
+    );
+    own.sort();
+    return own.join(" ");
+  }
+
+  function syncStreamingAttributes(current, next) {
+    const keepCls = Array.from(current.classList).filter((c) =>
+      STREAM_RUNTIME_ONLY_CLASSES.has(c),
+    );
+    for (const attr of Array.from(current.attributes)) {
+      // style 是运行时写的（md-table 的 --md-table-fade-*），渲染器从不产出它，
+      // 每帧删一遍等于把轨道位置也一起抹掉。
+      if (attr.name === "style") continue;
+      if (!next.hasAttribute(attr.name)) current.removeAttribute(attr.name);
+    }
+    for (const attr of Array.from(next.attributes)) {
+      if (current.getAttribute(attr.name) !== attr.value) {
+        current.setAttribute(attr.name, attr.value);
+      }
+    }
+    keepCls.forEach((c) => current.classList.add(c));
+  }
+
+  function patchStreamingTextLeaf(current, next) {
+    const nextChildren = Array.from(next.childNodes);
+    if (nextChildren.length !== 1 || nextChildren[0].nodeType !== Node.TEXT_NODE) {
+      return false;
+    }
+    const currentChildren = Array.from(current.childNodes);
+    if (!currentChildren.length) return false;
+    if (!currentChildren.every((node) => isStreamingTextPiece(node))) return false;
+    const currentText = current.textContent ?? "";
+    const nextText = nextChildren[0].nodeValue ?? "";
+    if (currentText === nextText) return true;
+    if (nextText.startsWith(currentText)) {
+      const suffix = nextText.slice(currentText.length);
+      if (suffix) current.appendChild(createStreamingFade(suffix, current.ownerDocument));
+      return true;
+    }
+    // 非前缀增长 = 改写，不是追加 → 裸 Text（见顶部「刻意差异」）
+    current.replaceChildren(current.ownerDocument.createTextNode(nextText));
+    return true;
+  }
+
+  function patchStreamingNode(current, next) {
+    if (current.nodeType !== Node.ELEMENT_NODE || next.nodeType !== Node.ELEMENT_NODE) {
+      return false;
+    }
+    if (current.tagName !== next.tagName) return false;
+    if (stableClassKey(current) !== stableClassKey(next)) return false;
+    syncStreamingAttributes(current, next);
+    patchStreamingChildren(current, next);
+    return true;
+  }
+
+  function patchStreamingChildren(current, next) {
+    if (patchStreamingTextLeaf(current, next)) return;
+    const nextChildren = Array.from(next.childNodes);
+    const doc = current.ownerDocument;
+    let currentIndex = 0;
+
+    for (const nextNode of nextChildren) {
+      let currentNode = current.childNodes[currentIndex] ?? null;
+      while (
+        currentNode &&
+        currentNode.nodeType === Node.ELEMENT_NODE &&
+        currentNode.matches(STREAM_RUNTIME_ONLY_CHILD_SELECTOR)
+      ) {
+        currentIndex += 1;
+        currentNode = current.childNodes[currentIndex] ?? null;
+      }
+
+      if (nextNode.nodeType === Node.TEXT_NODE) {
+        const run = [];
+        let cursor = currentNode;
+        while (cursor && isStreamingTextPiece(cursor)) {
+          run.push(cursor);
+          cursor = cursor.nextSibling;
+        }
+        const nextText = nextNode.nodeValue ?? "";
+        if (!run.length) {
+          // currentNode === null 才是真「追加到末尾」；插在别的节点前面属于改写。
+          const node = currentNode
+            ? doc.createTextNode(nextText)
+            : createStreamingFade(nextText, doc);
+          current.insertBefore(node, currentNode);
+          currentIndex += 1;
+          continue;
+        }
+        const currentText = run.map((n) => n.textContent ?? "").join("");
+        if (nextText.startsWith(currentText)) {
+          const suffix = nextText.slice(currentText.length);
+          if (suffix) current.insertBefore(createStreamingFade(suffix, doc), cursor);
+          currentIndex += run.length + (suffix ? 1 : 0);
+          continue;
+        }
+        current.insertBefore(doc.createTextNode(nextText), run[0]);
+        for (const node of run) node.parentNode?.removeChild(node);
+        currentIndex += 1;
+        continue;
+      }
+
+      while (currentNode && isStreamingTextPiece(currentNode)) {
+        currentNode.remove();
+        currentNode = current.childNodes[currentIndex] ?? null;
+      }
+      if (!currentNode) {
+        current.appendChild(createStreamingAppend(nextNode, doc, true));
+      } else if (
+        !currentNode.isEqualNode(nextNode) &&
+        !patchStreamingNode(currentNode, nextNode)
+      ) {
+        current.replaceChild(createStreamingAppend(nextNode, doc, false), currentNode);
+      }
+      currentIndex += 1;
+    }
+
+    while (current.childNodes.length > currentIndex) {
+      const node = current.childNodes[currentIndex];
+      if (
+        node.nodeType === Node.ELEMENT_NODE &&
+        node.matches(STREAM_RUNTIME_ONLY_CHILD_SELECTOR)
+      ) {
+        currentIndex += 1;
+        continue;
+      }
+      node.remove();
+    }
+  }
+
+  function patchStreamingMarkdown(target, html) {
+    if (!target.firstChild) {
+      // 首帧：没有可对账的旧树，整段包 fade（对应上游 animateStreamingSubtree）
+      const tpl = document.createElement("template");
+      tpl.innerHTML = html;
+      const doc = target.ownerDocument;
+      target.replaceChildren(
+        ...Array.from(tpl.content.childNodes).map((n) =>
+          createStreamingAppend(n, doc, true),
+        ),
+      );
+      return;
+    }
+    const tpl = document.createElement("template");
+    tpl.innerHTML = html;
+    patchStreamingChildren(target, tpl.content);
+  }
+
   function syncStreamingMarkdownBlock(
     blockElement,
     streamState,
@@ -11499,7 +11782,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     blockElement.classList.toggle("is-streaming", Boolean(thinking));
     const isThinkBody = blockElement.classList.contains("think-body");
     const renderText = isThinkBody ? normalizeThinkDisplayText(nextText) : nextText;
-    blockElement.innerHTML = renderMarkdown(renderText);
+    // 2026-09-19：从 `innerHTML =` 改成增量 patch（见上面那段注释）。
+    // 占位符 typing-indicator 不是 markdown 产物，先清掉再走首帧分支。
+    if (blockElement.querySelector(":scope > .typing-indicator")) {
+      blockElement.textContent = "";
+    }
+    patchStreamingMarkdown(blockElement, renderMarkdown(renderText));
     if (blockElement.classList.contains("answer-body")) {
       portStampResponseBodyClasses(blockElement);
     }
@@ -17951,6 +18239,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   function renderModelDropdownFromCatalog() {
     const content = document.getElementById("modelDropdownContent");
     if (!content) return;
+    // 菜单开着时重建列表不要再放入场动画（见 openModelDropdown 里 420ms 那段
+    // 注释）：这条是兜底，覆盖 catalog 在入场动画未结束时就返回的时间窗。
+    if (modelDropdown?.classList.contains("animating") && !modelDropdown.hidden) {
+      modelDropdown.classList.remove("animating");
+    }
     content.textContent = "";
 
     // 2026-06-19: 后端 catalog 加载完成前显示骨架屏，不展示硬编码模型。
@@ -18100,6 +18393,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   function modelMatchesFilter(option, filter, query) {
     const modelId = option.dataset.model || "";
     const meta = getModelMeta(modelId);
+    // filter chip（code / image）判定仍然吃全量文本 —— 它匹配的是
+    // "coder" / "vision" 这类只出现在 id / tag 里的线索。
     const haystack = [
       modelId,
       meta.canonicalId,
@@ -18113,7 +18408,24 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     const q = String(query || "")
       .trim()
       .toLowerCase();
-    if (q && !haystack.includes(q)) return false;
+    if (q) {
+      // 2026-09-19：搜索框只认**用户看得见的那串字**（品牌 + 名称 + 线路名）。
+      // 原来直接在上面那个全量 haystack 上做 includes，里面混着 modelId /
+      // canonicalId / tags —— 全是 `gpt-5.1-2025-04-14` 这种带版本号和日期的
+      // slug。于是输一个 "1" 就把所有 id 里带 1 的模型（含 GPT 5.5，因为它的
+      // canonicalId 里有 "...-1...") 全捞出来，用户看到的就是"模糊搜索没用"。
+      const label = [meta.displayName, meta.brand, meta.lineLabel]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      // 允许忽略空格/连字符/点：输 "gpt55" 命中 "GPT 5.5"，输 "opus5" 命中 "Opus 5"。
+      const loose = (s) => s.replace(/[\s._-]+/g, "");
+      let hit = label.includes(q) || loose(label).includes(loose(q));
+      // ≥3 字符才放开到原始 id —— 短查询落到 id 上就是上面那个噪音源，
+      // 3 字符以上（"sonnet" / "kimi" / "0528"）才有区分度，power user 需要。
+      if (!hit && q.length >= 3) hit = haystack.includes(q);
+      if (!hit) return false;
+    }
     if (filter === "code") return /code|coder|编程|编码/.test(haystack);
     if (filter === "image")
       return meta.multimodal || /image|多模态|视觉|图片|生图/.test(haystack);
@@ -18174,6 +18486,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
   let modelDropdownTriggerEl = null;
   let modelDropdownSyncRaf = 0;
+  let modelDropdownAnimTimer = 0;
   
   function setModelDropdownLayout(prop, value) {
     if (!modelDropdown) return;
@@ -18343,6 +18656,20 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       modelDropdown.querySelectorAll(".model-option").forEach((opt, i) => {
         opt.style.setProperty("--stagger", String(i));
       });
+      // 2026-09-19「打开会闪一下」的修复。
+      // .animating 原来只在 closeModelDropdown 里摘，于是它在整个菜单打开期间
+      // 一直挂着；而 openModelDropdown 上面那句 initModelCatalogFromServer()
+      // 的响应回来后会走 applyCatalogToUi → renderModelDropdownFromCatalog，
+      // 把 #modelDropdownContent 整个 textContent="" 重建。新建的 .model-option
+      // 一落地就重新命中 cancri_chat.css:1600 的 modelOptionAppear
+      // （opacity:0 + translateY(-6px) + 最长 180ms stagger）→ 已经稳定显示的
+      // 列表整片重放入场动画，肉眼就是"闪一下"。
+      // 入场动画 180ms + stagger 上限 180ms = 360ms，留点余量后摘掉即可：
+      // 首次入场不受影响，之后任何重建都不会再动画。
+      clearTimeout(modelDropdownAnimTimer);
+      modelDropdownAnimTimer = setTimeout(() => {
+        modelDropdown.classList.remove("animating");
+      }, 420);
   
       modelDropdownTriggerEl = triggerEl || getActiveModelDropdownTrigger();
       if (modelDropdownTriggerEl) {
@@ -18363,6 +18690,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     modelCurrentBtn?.setAttribute("aria-expanded", "false");
     compareModelCurrentBtn?.setAttribute("aria-expanded", "false");
   
+    clearTimeout(modelDropdownAnimTimer);
     modelDropdown?.classList.remove("animating");
     modelDropdownTriggerEl = null;
   
@@ -18505,6 +18833,19 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   if (modelDropdown) {
     // 事件委托：监听容器上的点击，动态创建的 .model-option 也能响应
     modelDropdown.addEventListener("click", (e) => {
+      // Upgrade 链先截：开定价页，不切模型，也不弹"该模型不可用"的 toast。
+      // 与 cancri-code/src/main.ts 8284-8295 同一处理顺序。
+      const upgradeLink = e.target.closest("[data-model-upgrade]");
+      if (upgradeLink && modelDropdown.contains(upgradeLink)) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeModelDropdown();
+        // href 先取出来：P2-27 那条测试用 /window\.open\([^)]*\)/ 扫源码，
+        // 参数里出现嵌套括号会让它在 noopener 之前就截断（误判）。
+        const upgradeHref = upgradeLink.getAttribute("href") || MODEL_UPGRADE_HREF;
+        window.open(upgradeHref, "_blank", "noopener,noreferrer");
+        return;
+      }
       const option = e.target.closest(".model-option");
       if (!option || !modelDropdown.contains(option)) return;
       const modelId = option.dataset.model;

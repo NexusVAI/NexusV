@@ -55,19 +55,36 @@
    底 + #2c2825 暖深棕字色）。切 theme 时 sidebar/main/composer/popover
    等所有读 var(--c-*) 的元素都自动跟随。
    ─────────────────────────────────────────────────────────── */
+/* 2026-09-19 深色重塑：全部取自 Claude 真站 data-mode="dark" 的实测计算值
+   （源文件：Downloads/New session - Claude (2026_9_19 16：22：41).html 与
+   Downloads/Devin的Fusion是什么 - Claude (2026_9_19 16：22：15).html，
+   用 CDP getComputedStyle 读 html 上的 --cds-* 与各元素实渲染 backgroundColor）：
+
+     --cds-surface-1 / --cds-page-bg  #151515   ← body / main 实测 rgb(21,21,21)
+     --cds-surface-2                  #1a1a19
+     --cds-surface-3                  #20201f   ← composer 盒实测 rgb(32,32,31)
+     aside.dframe-sidebar             #111111   ← 实测 srgb .0659 → 16.8
+     用户气泡                          白 5% 叠在 #151515 上 = #202020（实测 rgb(1 1 1/.05)）
+     --cds-text-primary/secondary/muted  #f0efec / #c3c2b7 / #898781
+     --cds-border / --cds-border-strong  白 10% / 白 20%
+     --cds-alpha-1 / -2 / -3             白 5% / 10% / 20%
+
+   旧值（#262624 / #30302e / #3a3935 / #faf9f5）是早期目测的暖灰，比真站亮
+   一大截也偏黄。hover 一并从实色换成 alpha —— 跟 light 那组同一个做法，
+   叠在卡片、浮层、正文底上都自洽，不用每层再补一套实色。 */
 html, html[data-theme="dark"] {
-    --c-bg:        #262624;     /* 主区背景（中央列） */
-    --c-bg-side:   #262624;     /* 侧栏背景（更暗一点） */
-    --c-bg-elev:   #30302e;     /* 输入框、卡片浮起背景 */
-    --c-bg-elev-2: #30302e;     /* popover / dropdown 卡片 */
-    --c-bg-elev-3: #3a3935;     /* user message bubble */
-    --c-text:        #faf9f5;
-    --c-text-soft:   #c2c0b8;
-    --c-text-dim:    #9b9890;
-    --c-line:        rgba(226, 223, 213, 0.15);
-    --c-line-strong: rgba(226, 223, 213, 0.30);
-    --c-hover:        #30302e;
-    --c-hover-strong: #141413;
+    --c-bg:        #151515;     /* 主区背景（中央列）= --cds-surface-1 */
+    --c-bg-side:   #111111;     /* 侧栏背景 = aside.dframe-sidebar */
+    --c-bg-elev:   #20201F;     /* 输入框、卡片浮起背景 = --cds-surface-3 */
+    --c-bg-elev-2: #1A1A19;     /* popover / dropdown 卡片 = --cds-surface-2 */
+    --c-bg-elev-3: #202020;     /* user message bubble = 白5% on #151515 */
+    --c-text:        #F0EFEC;
+    --c-text-soft:   #C3C2B7;
+    --c-text-dim:    #898781;
+    --c-line:        rgba(255, 255, 255, 0.10);   /* = --cds-border / alpha-2 */
+    --c-line-strong: rgba(255, 255, 255, 0.20);   /* = --cds-border-strong / alpha-3 */
+    --c-hover:        rgba(255, 255, 255, 0.05);  /* = --cds-alpha-1 */
+    --c-hover-strong: rgba(255, 255, 255, 0.10);  /* = --cds-alpha-2 */
     --c-accent:        var(--accent, hsl(15 63.1% 59.6%));
     --c-accent-hover:  var(--accent, hsl(15 63.1% 59.6%));
     --c-accent-soft:   color-mix(in srgb, var(--accent, hsl(15 63.1% 59.6%)) 16%, transparent);
@@ -9373,13 +9390,29 @@ html[data-theme] {
    claude.css:1457 的(0,1,0) 32px，把整行撑到 34。仅对话态桌面端收口；
    ≤768px 的 36px 移动端规格（:7377 一带）保持不动。 */
 @media (min-width: 769px) {
-    #homeView.chatting .composer-actions .voice-btn,
-    #homeView.chatting .composer-actions .send-btn {
+    /* 2026-09-19：必须带 :not(.hidden)。这条(1,3,0)!important 压过
+       component-composer.css:217 的 `.composer-actions button.voice-btn.hidden`
+       (0,3,1)!important，把「已隐藏」的 voice 钮也钉成 32px flex-basis。
+       §38 把 voice + send 收进同一个 32px 宽的 .composer-send-slot 之后，
+       两个 32px 子项塞进 32px 容器 → send 被挤出输入卡右边缘 ~40px
+       （实测 slot x=1448 w=32，send x=1488 = 卡片右沿外）。 */
+    #homeView.chatting .composer-actions .voice-btn:not(.hidden),
+    #homeView.chatting .composer-actions .send-btn:not(.hidden) {
         width: 32px !important;
         height: 32px !important;
         /* 2026-08-12 审计#6：99-polish-fixes.css:184 还有 flex:0 0 34px，
            flex-basis 决定主轴尺寸 → 只收 width 实渲染仍 34×32 非正方形。 */
         flex: 0 0 32px !important;
+    }
+    /* 隐藏态彻底不占主轴（component-composer.css 的 width:0 被上面那条
+       历史规则盖掉过，这里用同等特异性显式收口，别再依赖谁先谁后）。 */
+    #homeView.chatting .composer-actions .voice-btn.hidden,
+    #homeView.chatting .composer-actions .send-btn.hidden {
+        width: 0 !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        flex: 0 0 0 !important;
     }
 }
 
@@ -10055,6 +10088,24 @@ html[data-theme="dark"] .ask-user-card {
     height: 12px !important;
 }
 
+/* 2026-09-19 收起/展开两处实测缺陷的修复（两条都只在聊天页这份思考块上）：
+   1) 描边（box-shadow）不在 cancri_chat.css:3525 那份过渡清单里，收起瞬间
+      `box-shadow:none` 直接生效 —— 卡片高度还在收，边框已经没了。
+   2) 收起态原本把 padding 一路收到 0，横向 12→0 会让内容盒变宽 24px，
+      于是收起/展开的每一帧文字都在重新折行（用户报的「文字自动换行，
+      收起展开不顺畅」）。横向内距改为常驻，只收纵向；滚动条槽位也钉死，
+      免得 overflow auto→hidden 让出 4px 再引发一次重排。 */
+.message.assistant .think-body {
+    transition:
+        max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.22s ease,
+        margin 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+        padding 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.24s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    scrollbar-gutter: stable;
+    overflow-x: hidden !important;
+}
+
 /* 展开态：思考内容装在圆角描边卡片里（参考 rounded-card + shadow-card-ring）。
    max-height/overflow 是本项目特有的保护 —— 参考页展示的是一行摘要，我们塞的是
    完整原始推理，不设上限单条消息会长到失控，所以保留 260px 内滚。 */
@@ -10075,14 +10126,18 @@ html[data-theme="dark"] .ask-user-card {
     overflow-y: auto !important;
 }
 
-/* 收起态：卡片连描边一起收干净 */
+/* 收起态：卡片连描边一起收干净（描边走 transparent 而不是 none —— none 不可
+   插值，会让 box-shadow 过渡退化成瞬切，正是「收起时描边直接消失」的原因）。
+   横向 padding 保持 12px：一旦收成 0，文字会在收起动画的每一帧重新折行。 */
 .message.assistant .think-block.is-collapsed .think-body {
     max-height: 0 !important;
     opacity: 0 !important;
     overflow: hidden !important;
-    padding: 0 !important;
+    padding: 0 12px !important;
     margin: 0 !important;
-    box-shadow: none !important;
+    box-shadow:
+        inset 0 0 0 1px transparent,
+        0 0 0 0.5px transparent !important;
     pointer-events: none !important;
 }
 
@@ -10104,8 +10159,11 @@ html[data-theme="dark"] .ask-user-card {
     gap: 8px !important;
     /* 2026-09-19：保存页实测 max-w 就是 85%（无 75ch 上限 —— 75ch@15px≈679px 会在宽 feed 提前截断） */
     max-width: 85% !important;
-    background: hsl(var(--bg-300)) !important;
-    color: hsl(var(--text-100)) !important;
+    /* 2026-09-19：从 hsl(var(--bg-300)) 换成 --c-bg-elev-3。真站的用户气泡是
+       bg-alpha-1（白 5%）叠在 surface-1 上 = dark #202020 / light #f3f3f0，
+       并不是 bg-300 那一档（dark 的 bg-300 是 #0d0d0d，比正文底还深）。 */
+    background: var(--c-bg-elev-3) !important;
+    color: var(--c-text) !important;
     border: none !important;
     border-radius: 12px !important;
     /* 2026-09-19 保存页实测：py-md(12) px-lg(16) / 15px / lh 20px / 400 */
@@ -11802,4 +11860,230 @@ body.is-chatting #homeView.chatting .chat-messages.active {
 .composer-send-slot .send-btn svg,
 .composer-send-slot .voice-btn svg {
     flex: 0 0 auto;
+}
+
+/* ───────────────────────────────────────────────────────────
+   §39. 提问卡 = 透明浮层（2026-09-19 按 移植，直接搬/ai提问块.html 重移植）
+   参考原版 DOM（该文件 2122xxx 附近）：
+
+     <div data-chat-input-container class="sticky bottom-0 mx-auto w-full pt-6 z-[5]">
+       <div class="mb-2"><div data-ask-user-input-banner class="bg-surface-3 …"></div></div>
+       <div class="relative"> …composer… </div>
+     </div>
+
+   关键点：**这个 dock 自己没有背景**，它 sticky 在滚动容器底部，正文从它
+   底下穿过去 —— 所以原版里提问卡上下都能看到被卡片盖住一半的正文。
+   我们这边 dock（#homeCenter）是 .chat-messages 的 flex 兄弟，占实体高度，
+   于是提问卡一出现就把消息区压短一截，露出一大片页面底色 —— 用户说的
+   「提问卡背后有一个背景」就是这个。术语：原版是 **sticky/absolute 浮层
+   (overlay)，容器背景透明**；我们原来是 **文档流里的实体块**。
+
+   这里把 chat 态的 dock 改成绝对定位浮层 + 容器透明，正文改用 padding-bottom
+   给它让位（于是正文可以滚到卡片下面）。dock 本体 pointer-events:none，
+   只有真正的控件收事件 —— 否则浮层会吃掉那片透明区的滚轮。
+   ─────────────────────────────────────────────────────────── */
+
+#homeView.chatting {
+    position: relative;
+}
+#homeView.chatting .home-center {
+    position: absolute !important;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    background: transparent !important;
+    pointer-events: none;
+}
+/* 真正的交互盒（提问卡 + 输入卡 + chin）收事件；其余透明区放行滚轮 */
+#homeView.chatting .home-center > * {
+    pointer-events: auto;
+}
+/* 正文占满整列，底部留出 dock 的高度（JS syncComposerHeightVar 维护），
+   这样最后一条消息不会被浮层永久盖住，同时上滑时正文从卡片下穿过。 */
+#homeView.chatting .chat-messages.active {
+    padding-bottom: calc(var(--composer-dock-h, 180px) + 8px) !important;
+    scroll-padding-bottom: calc(var(--composer-dock-h, 180px) + 8px);
+}
+/* 提问卡本体：原版 rounded-2xl(16) + pt-3(12) + bg-surface-3 + 那两层阴影。
+   卡片自己有底色，卡片之外一律透明。 */
+#homeView.chatting .ask-user-card {
+    position: relative;
+    z-index: 1;
+}
+
+/* ───────────────────────────────────────────────────────────
+   §40. 深色模式重塑（2026-09-19）
+   token 层已经在 §1 / styles/01-claude-tokens.css / styles/02-themes.css
+   换成真站实测值。这一节只收拾**绕过 token 直接硬编码深色**的两处遗留：
+
+   1) 「MODEL DROPDOWN — OpenAI-style redesign」那一整块（本文件 §上方）
+      写死了 #212121 / #fff / 白 alpha，和主题无关。它下面已经有一段
+      html[data-theme="light"] 的覆写，说明这就是该文件既定的处理手法 ——
+      这里照同一手法补一段 dark，把它拉回 surface-2(#1a1a19) 这一档。
+   2) 设置卡原来整张一个 --c-bg-elev。真站是双色：左导航 = surface-1，
+      右详情 = surface-2。
+   ─────────────────────────────────────────────────────────── */
+
+html[data-theme="dark"] .model-dropdown {
+    background: var(--c-bg-elev-2) !important;   /* #1a1a19 */
+    border: 1px solid var(--c-line) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55) !important;
+    color: var(--c-text) !important;
+}
+html[data-theme="dark"] .model-dropdown .model-search-panel {
+    border-bottom: 1px solid var(--c-line) !important;
+}
+html[data-theme="dark"] .model-dropdown .model-search-input-wrap {
+    background: var(--c-hover) !important;
+}
+html[data-theme="dark"] .model-dropdown .model-search-icon {
+    color: var(--c-text-dim) !important;
+}
+html[data-theme="dark"] .model-dropdown #modelSearchInput {
+    color: var(--c-text) !important;
+}
+html[data-theme="dark"] .model-dropdown #modelSearchInput::placeholder {
+    color: var(--c-text-dim) !important;
+}
+html[data-theme="dark"] .model-dropdown .model-section-header,
+html[data-theme="dark"] .model-dropdown .model-group-header {
+    color: var(--c-text-dim) !important;
+}
+html[data-theme="dark"] .model-dropdown .model-option {
+    color: var(--c-text) !important;
+}
+html[data-theme="dark"] .model-dropdown .model-option:hover {
+    background: var(--c-hover) !important;
+}
+html[data-theme="dark"] .model-dropdown .model-option.active,
+html[data-theme="dark"] .model-dropdown .model-option.selected {
+    background: var(--c-hover-strong) !important;
+}
+html[data-theme="dark"] .model-dropdown .model-label-text {
+    color: var(--c-text) !important;
+}
+html[data-theme="dark"] .model-dropdown .model-label-subtext {
+    color: var(--c-text-dim) !important;
+}
+html[data-theme="dark"] .model-dropdown .model-badge {
+    background: var(--c-hover-strong) !important;
+    color: var(--c-text-soft) !important;
+}
+html[data-theme="dark"] .model-current {
+    background: var(--c-hover) !important;
+    border: 1px solid var(--c-line) !important;
+    color: var(--c-text) !important;
+}
+html[data-theme="dark"] .model-current:hover {
+    background: var(--c-hover-strong) !important;
+}
+html[data-theme="dark"] .model-current .model-name {
+    color: var(--c-text) !important;
+}
+html[data-theme="dark"] .model-current svg {
+    color: var(--c-text-dim) !important;
+}
+
+/* 设置卡双色：左导航列 = surface-1(#151515)，右详情 = surface-2(#1a1a19)。
+   modal-content 本体取导航那一档，详情列自己盖一层，两列交界只靠现成的
+   .settings-nav border-right 分隔。 */
+#settingsModal .modal-content {
+    background: var(--c-bg) !important;
+}
+#settingsModal .settings-layout {
+    background: var(--c-bg) !important;
+}
+#settingsModal .settings-content,
+#settingsModal .settings-scroll {
+    background: var(--c-bg-elev-2) !important;
+}
+#settingsModal .settings-nav,
+#settingsModal .settings-sidebar {
+    background: var(--c-bg) !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   §41. 流式尾字渐显（2026-09-19，1:1 移植自 cancri-code）
+   源：cancri-code/src/styles.css 186-194（时长/缓动 token）与
+       7717-7730（.chat-stream-fade / @keyframes codexTextFade）。
+   数值原样：760ms、cubic-bezier(.16,1,.3,1)、both、0.18 → 0.72(45%) → 1。
+   JS 那半边（增量 patch + 只给新增后缀包 span）在 src/main.js 的
+   patchStreamingMarkdown 一带，两边必须同时在，单独加 CSS 不会有效果
+   —— 原来每帧 innerHTML 整替换，所有文字都会一起重播。
+   ─────────────────────────────────────────────────────────── */
+.chat-stream-fade {
+    animation: codexTextFade 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes codexTextFade {
+    from { opacity: 0.18; }
+    45%  { opacity: 0.72; }
+    to   { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .chat-stream-fade {
+        animation: none;
+    }
+}
+
+/* ───────────────────────────────────────────────────────────
+   §42. 订阅闸门行：PAID + Upgrade（2026-09-19 补回）
+   徽章本体样式一直在 cancri_chat.css:1662-1705，这里只补 cancri-code
+   src/styles.css 2484-2492 的那条：**订阅闸门行不要压灰**，否则
+   Upgrade 按钮跟着 opacity .45 看不清（上游 2026-08-02 的原话）。
+   ─────────────────────────────────────────────────────────── */
+.model-dropdown .model-option.quota-blocked.is-upgrade-gated {
+    opacity: 1 !important;
+    cursor: default;
+    color: var(--c-text) !important;
+}
+.model-dropdown .model-option.is-upgrade-gated .model-access {
+    margin-left: auto;
+}
+.model-dropdown .model-option.is-upgrade-gated .model-upgrade-link {
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+/* ───────────────────────────────────────────────────────────
+   §39. 2026-09-19 第四轮体感修正
+   1) home 态发送/语音钮回到盒右下角（§38 把它挪进 .composer-input-row
+      之后，home 态它跟着 48px 高的 textarea 走 flex-end，实测落在
+      y 507（盒 477→587）—— 视觉上"居中"在输入框里，而 + 钮在 y 547
+      的下行。这里把整槽钉到盒右下，与盒圆角同心。
+   2) 聊天正文不再显示滚动条（滚动照常，只是不画那条 4px 竖线）。
+   3) 顶栏 Cancri 字标收起时不再横向平移 18px（原 translateX 让字标一边
+      被裁一边往右滑，看着像漂走了）。
+   ─────────────────────────────────────────────────────────── */
+
+/* ── 1) home 态发送槽：盒右下角 ── */
+#homeView:not(.chatting) .composer-send-slot {
+    position: absolute;
+    /* .composer 自身 padding 8px（实测），钉同一个内距即与圆角同心 */
+    right: 8px;
+    bottom: 8px;
+    z-index: 3;
+}
+/* 工具行右侧给发送槽让位（模型气泡 popover 也在这条里） */
+#homeView:not(.chatting) .composer-tools-row {
+    padding-right: 40px;
+}
+
+/* ── 2) 聊天正文滚动条隐藏 ── */
+#homeView.chatting .chat-messages.active {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+#homeView.chatting .chat-messages.active::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+}
+#homeView.chatting .chat-messages.active::-webkit-scrollbar-thumb {
+    background: transparent !important;
+}
+
+/* ── 3) 字标收起：原地淡出 + 右侧裁切，不要再往右平移 ── */
+.sidebar.collapsed .sidebar-topbar::before,
+.sidebar[data-collapsed="true"] .sidebar-topbar::before {
+    transform: none !important;
 }

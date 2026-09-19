@@ -1,22 +1,26 @@
+/* 2026-09-19 深色重塑：与 claude.css 的 --c-* 一组同源，全部取自 Claude 真站
+   data-mode="dark" 实测（见 claude.css §1 那段注释里的取值出处）。
+   surface-1 #151515 / surface-2 #1a1a19 / surface-3 #20201f / sidebar #111111，
+   文字 #f0efec / #c3c2b7 / #898781，线与 hover 统一走白色 alpha。 */
 html[data-theme="dark"] {
-  --bg: #141414;
-  --main-bg: #141414;
-  --sidebar-bg: #1a1a1a;
-  --surface: #1e1e1e;
-  --surface-elevated: #262626;
-  --composer-bg: #2a2a2a;
-  --panel: #1e1e1e;
-  --panel-2: #262626;
-  --input: #2a2a2a;
+  --bg: #151515;
+  --main-bg: #151515;
+  --sidebar-bg: #111111;
+  --surface: #1a1a19;
+  --surface-elevated: #20201f;
+  --composer-bg: #20201f;
+  --panel: #1a1a19;
+  --panel-2: #20201f;
+  --input: #20201f;
   --line: rgba(255,255,255,.10);
-  --line-2: rgba(255,255,255,.14);
-  --text: rgba(255,255,255,.94);
-  --text-soft: rgba(255,255,255,.58);
-  --text-dim: rgba(255,255,255,.36);
-  --hover: rgba(255,255,255,.07);
-  --hover-strong: rgba(255,255,255,.11);
+  --line-2: rgba(255,255,255,.20);
+  --text: #f0efec;
+  --text-soft: #c3c2b7;
+  --text-dim: #898781;
+  --hover: rgba(255,255,255,.05);
+  --hover-strong: rgba(255,255,255,.10);
   --send-bg: #ffffff;
-  --send-fg: #1a1a1a;
+  --send-fg: #151515;
   --scrim: rgba(0,0,0,.50);
 }
 

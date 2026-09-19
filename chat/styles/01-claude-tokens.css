@@ -132,17 +132,27 @@ html[data-theme="black"] {
   --accent-200: 210 70.9% 51.6%;
   --accent-900: 210 55.9% 24.6%;
 
-  --bg-000: 60 2.1% 18.4%;
-  --bg-100: 60 2.7% 14.5%;
-  --bg-200: 30 3.3% 11.8%;
-  --bg-300: 60 2.6% 7.6%;
+  /* 2026-09-19 深色重塑：这 4 档直接抄 Claude 真站 data-mode="dark" 的
+     computed 值（源 Downloads/New session - Claude (2026_9_19 16：22：41).html，
+     CDP 读 html 上的 --bg-000/100/200/300）：
+       --bg-000 60 1.5873% 12.3529%  → #20201f  输入框 / 卡片（= --cds-surface-3）
+       --bg-100 0 0% 8.2353%         → #151515  主区（= --cds-surface-1）
+       --bg-200 0 0% 6.6667%         → #111111  侧栏
+       --bg-300 0 0% 5.098%          → #0d0d0d
+     旧值（18.4% / 14.5% / 11.8% / 7.6% 且带黄绿色相）是早期目测的暖灰。 */
+  --bg-000: 60 1.6% 12.4%;      /* #20201f */
+  --bg-100: 0 0% 8.2%;          /* #151515 */
+  --bg-200: 0 0% 6.7%;          /* #111111 */
+  --bg-300: 0 0% 5.1%;          /* #0d0d0d */
   --bg-400: 0 0% 0%;
   --bg-500: 0 0% 0%;
 
-  --border-100: 51 16.5% 84.5%;
-  --border-200: 51 16.5% 84.5%;
-  --border-300: 51 16.5% 84.5%;
-  --border-400: 51 16.5% 84.5%;
+  /* 真站 dark 的 --border-200/300 = 52.5 11.7647% 86.6667%（#e2e0d6），
+     实际描边靠 hsl(var(--border-300) / 0.x) 的 alpha 取出来。 */
+  --border-100: 52.5 11.8% 86.7%;
+  --border-200: 52.5 11.8% 86.7%;
+  --border-300: 52.5 11.8% 86.7%;
+  --border-400: 52.5 11.8% 86.7%;
 
   --danger-000: 0 98.4% 75.1%;
   --danger-100: 0 67% 59.6%;
@@ -158,12 +168,14 @@ html[data-theme="black"] {
   --success-200: 97 75% 32.9%;
   --success-900: 127 100% 13.9%;
 
-  --text-000: 48 33.3% 97.1%;
-  --text-100: 48 33.3% 97.1%;
-  --text-200: 50 9% 73.7%;
-  --text-300: 50 9% 73.7%;
-  --text-400: 48 4.8% 59.2%;
-  --text-500: 48 4.8% 59.2%;
+  /* 同上，真站 dark 实测：--text-000/100 60 14.2857% 97.2549%（#f8f8f6）、
+     --text-200/300 55 9.0909% 74.1176%（#c3c2b7）、--text-500 48 4.5872% 57.2549%。 */
+  --text-000: 60 14.3% 97.3%;
+  --text-100: 60 14.3% 97.3%;
+  --text-200: 55 9.1% 74.1%;
+  --text-300: 55 9.1% 74.1%;
+  --text-400: 48 4.6% 57.3%;
+  --text-500: 48 4.6% 57.3%;
 
   /* Warning / pictogram (dark-mode official Claude values) */
   --warning-000: 40 71% 50%;
@@ -222,16 +234,18 @@ html[data-theme="light"] {
 html[data-theme="dark"],
 html[data-theme="black"] {
   --claude-foreground-color: white;
-  --claude-background-color: #262624;
-  --claude-secondary-color: #a6a39a;
-  --claude-border: #eaddd81a;
-  --claude-border-300: #6c6a6040;
-  --claude-border-300-more: #6c6a6094;
-  --claude-text-100: #f5f4ef;
-  --claude-text-200: #e5e5e2;
-  --claude-text-400: #b8b5a9;
-  --claude-text-500: #a6a39b;
-  --claude-description-text: #ceccc5;
+  /* 2026-09-19 深色重塑：跟 --cds-surface-1 对齐（真站实测 #151515），
+     旧值 #262624 是早期目测的暖灰，比真站亮一大截。 */
+  --claude-background-color: #151515;
+  --claude-secondary-color: #898781;
+  --claude-border: #ffffff1a;
+  --claude-border-300: #ffffff1a;
+  --claude-border-300-more: #ffffff33;
+  --claude-text-100: #f0efec;
+  --claude-text-200: #e2e1dc;
+  --claude-text-400: #c3c2b7;
+  --claude-text-500: #898781;
+  --claude-description-text: #c3c2b7;
 }
 
 html[data-theme="black"] {

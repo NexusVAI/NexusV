@@ -9547,7 +9547,33 @@
 				delete opt.dataset.quotaReason;
 				opt.title = status.error && status.error !== "额度已用完" ? status.error : "";
 			}
+			syncModelAccessBadge(opt, modelId);
 		});
+	}
+	var MODEL_UPGRADE_HREF = "./pricing.html";
+	function syncModelAccessBadge(opt, modelId) {
+		const existing = opt.querySelector(":scope > .model-access");
+		const message = opt.classList.contains("quota-blocked") ? getQuotaBlockMessage(modelId) : "";
+		if (!(Boolean(message) && /订阅|PAID|Pro/.test(message))) {
+			opt.classList.remove("is-upgrade-gated");
+			existing?.remove();
+			return;
+		}
+		opt.classList.add("is-upgrade-gated");
+		if (existing) return;
+		const wrap = document.createElement("span");
+		wrap.className = "model-access";
+		const badge = document.createElement("span");
+		badge.className = "model-access-badge";
+		badge.textContent = "PAID";
+		const link = document.createElement("a");
+		link.className = "model-upgrade-link";
+		link.href = MODEL_UPGRADE_HREF;
+		link.dataset.modelUpgrade = "1";
+		link.title = "前往定价页升级";
+		link.textContent = "Upgrade";
+		wrap.append(badge, link);
+		opt.appendChild(wrap);
 	}
 	function usesSharedQuota(modelId = currentModel) {
 		return !INDEPENDENT_QUOTA_MODEL_IDS.has(modelId);
@@ -10351,6 +10377,8 @@
 		const rect = anchor.getBoundingClientRect();
 		let height = Math.max(0, Math.round(window.innerHeight - rect.top));
 		if (homeView?.classList.contains("chatting")) height += 34;
+		const dockH = homeCenter ? Math.round(homeCenter.getBoundingClientRect().height) : 0;
+		if (dockH) document.documentElement.style.setProperty("--composer-dock-h", `${dockH}px`);
 		if (!height) return;
 		document.documentElement.style.setProperty("--composer-height", `${height}px`);
 	}
@@ -15693,6 +15721,151 @@
 	function renderStreamingFragment(text) {
 		return renderInlineMarkdown(String(text || "")).replace(/\r?\n/g, "<br>");
 	}
+	var STREAM_RUNTIME_ONLY_CLASSES = new Set([
+		"has-scroll-fade",
+		"font-claude-response-body",
+		"break-words",
+		"whitespace-normal"
+	]);
+	var STREAM_RUNTIME_ONLY_CHILD_SELECTOR = ".md-table-hscroll";
+	function prefersReducedMotionForStream(doc) {
+		try {
+			return Boolean(doc?.defaultView?.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+		} catch (e) {
+			return false;
+		}
+	}
+	function createStreamingFade(value, doc) {
+		if (!value.trim() || prefersReducedMotionForStream(doc)) return doc.createTextNode(value);
+		const fade = doc.createElement("span");
+		fade.className = "chat-stream-fade";
+		fade.textContent = value;
+		fade.addEventListener("animationend", () => {
+			const parent = fade.parentNode;
+			if (!parent) return;
+			parent.replaceChild(doc.createTextNode(fade.textContent ?? ""), fade);
+			parent.normalize();
+		}, { once: true });
+		return fade;
+	}
+	function isStreamingTextPiece(node) {
+		return node.nodeType === Node.TEXT_NODE || node.nodeType === Node.ELEMENT_NODE && node.matches("span.chat-stream-fade");
+	}
+	function createStreamingAppend(node, doc, fade) {
+		if (node.nodeType === Node.TEXT_NODE) {
+			const value = node.nodeValue ?? "";
+			return fade ? createStreamingFade(value, doc) : doc.createTextNode(value);
+		}
+		if (node.nodeType !== Node.ELEMENT_NODE) return node.cloneNode(true);
+		const clone = node.cloneNode(false);
+		for (const child of Array.from(node.childNodes)) clone.appendChild(createStreamingAppend(child, doc, fade));
+		return clone;
+	}
+	function stableClassKey(el) {
+		const own = Array.from(el.classList).filter((c) => !STREAM_RUNTIME_ONLY_CLASSES.has(c));
+		own.sort();
+		return own.join(" ");
+	}
+	function syncStreamingAttributes(current, next) {
+		const keepCls = Array.from(current.classList).filter((c) => STREAM_RUNTIME_ONLY_CLASSES.has(c));
+		for (const attr of Array.from(current.attributes)) {
+			if (attr.name === "style") continue;
+			if (!next.hasAttribute(attr.name)) current.removeAttribute(attr.name);
+		}
+		for (const attr of Array.from(next.attributes)) if (current.getAttribute(attr.name) !== attr.value) current.setAttribute(attr.name, attr.value);
+		keepCls.forEach((c) => current.classList.add(c));
+	}
+	function patchStreamingTextLeaf(current, next) {
+		const nextChildren = Array.from(next.childNodes);
+		if (nextChildren.length !== 1 || nextChildren[0].nodeType !== Node.TEXT_NODE) return false;
+		const currentChildren = Array.from(current.childNodes);
+		if (!currentChildren.length) return false;
+		if (!currentChildren.every((node) => isStreamingTextPiece(node))) return false;
+		const currentText = current.textContent ?? "";
+		const nextText = nextChildren[0].nodeValue ?? "";
+		if (currentText === nextText) return true;
+		if (nextText.startsWith(currentText)) {
+			const suffix = nextText.slice(currentText.length);
+			if (suffix) current.appendChild(createStreamingFade(suffix, current.ownerDocument));
+			return true;
+		}
+		current.replaceChildren(current.ownerDocument.createTextNode(nextText));
+		return true;
+	}
+	function patchStreamingNode(current, next) {
+		if (current.nodeType !== Node.ELEMENT_NODE || next.nodeType !== Node.ELEMENT_NODE) return false;
+		if (current.tagName !== next.tagName) return false;
+		if (stableClassKey(current) !== stableClassKey(next)) return false;
+		syncStreamingAttributes(current, next);
+		patchStreamingChildren(current, next);
+		return true;
+	}
+	function patchStreamingChildren(current, next) {
+		if (patchStreamingTextLeaf(current, next)) return;
+		const nextChildren = Array.from(next.childNodes);
+		const doc = current.ownerDocument;
+		let currentIndex = 0;
+		for (const nextNode of nextChildren) {
+			let currentNode = current.childNodes[currentIndex] ?? null;
+			while (currentNode && currentNode.nodeType === Node.ELEMENT_NODE && currentNode.matches(STREAM_RUNTIME_ONLY_CHILD_SELECTOR)) {
+				currentIndex += 1;
+				currentNode = current.childNodes[currentIndex] ?? null;
+			}
+			if (nextNode.nodeType === Node.TEXT_NODE) {
+				const run = [];
+				let cursor = currentNode;
+				while (cursor && isStreamingTextPiece(cursor)) {
+					run.push(cursor);
+					cursor = cursor.nextSibling;
+				}
+				const nextText = nextNode.nodeValue ?? "";
+				if (!run.length) {
+					const node = currentNode ? doc.createTextNode(nextText) : createStreamingFade(nextText, doc);
+					current.insertBefore(node, currentNode);
+					currentIndex += 1;
+					continue;
+				}
+				const currentText = run.map((n) => n.textContent ?? "").join("");
+				if (nextText.startsWith(currentText)) {
+					const suffix = nextText.slice(currentText.length);
+					if (suffix) current.insertBefore(createStreamingFade(suffix, doc), cursor);
+					currentIndex += run.length + (suffix ? 1 : 0);
+					continue;
+				}
+				current.insertBefore(doc.createTextNode(nextText), run[0]);
+				for (const node of run) node.parentNode?.removeChild(node);
+				currentIndex += 1;
+				continue;
+			}
+			while (currentNode && isStreamingTextPiece(currentNode)) {
+				currentNode.remove();
+				currentNode = current.childNodes[currentIndex] ?? null;
+			}
+			if (!currentNode) current.appendChild(createStreamingAppend(nextNode, doc, true));
+			else if (!currentNode.isEqualNode(nextNode) && !patchStreamingNode(currentNode, nextNode)) current.replaceChild(createStreamingAppend(nextNode, doc, false), currentNode);
+			currentIndex += 1;
+		}
+		while (current.childNodes.length > currentIndex) {
+			const node = current.childNodes[currentIndex];
+			if (node.nodeType === Node.ELEMENT_NODE && node.matches(STREAM_RUNTIME_ONLY_CHILD_SELECTOR)) {
+				currentIndex += 1;
+				continue;
+			}
+			node.remove();
+		}
+	}
+	function patchStreamingMarkdown(target, html) {
+		if (!target.firstChild) {
+			const tpl = document.createElement("template");
+			tpl.innerHTML = html;
+			const doc = target.ownerDocument;
+			target.replaceChildren(...Array.from(tpl.content.childNodes).map((n) => createStreamingAppend(n, doc, true)));
+			return;
+		}
+		const tpl = document.createElement("template");
+		tpl.innerHTML = html;
+		patchStreamingChildren(target, tpl.content);
+	}
 	function syncStreamingMarkdownBlock(blockElement, streamState, text, { thinking = false, placeholder = "正在思考中…" } = {}) {
 		const nextText = String(text || "");
 		if (!nextText.trim()) {
@@ -15705,7 +15878,9 @@
 		}
 		if (streamState.ready && streamState.text === nextText && streamState.thinking === thinking) return;
 		blockElement.classList.toggle("is-streaming", Boolean(thinking));
-		blockElement.innerHTML = renderMarkdown(blockElement.classList.contains("think-body") ? normalizeThinkDisplayText(nextText) : nextText);
+		const renderText = blockElement.classList.contains("think-body") ? normalizeThinkDisplayText(nextText) : nextText;
+		if (blockElement.querySelector(":scope > .typing-indicator")) blockElement.textContent = "";
+		patchStreamingMarkdown(blockElement, renderMarkdown(renderText));
 		if (blockElement.classList.contains("answer-body")) portStampResponseBodyClasses(blockElement);
 		if (!thinking) renderPostMarkdownInElement(blockElement);
 		else if (!streamState._katexTimer) streamState._katexTimer = setTimeout(() => {
@@ -20002,6 +20177,7 @@
 	function renderModelDropdownFromCatalog() {
 		const content = document.getElementById("modelDropdownContent");
 		if (!content) return;
+		if (modelDropdown?.classList.contains("animating") && !modelDropdown.hidden) modelDropdown.classList.remove("animating");
 		content.textContent = "";
 		if (!modelCatalogLoaded) {
 			for (let i = 0; i < 8; i++) {
@@ -20116,7 +20292,17 @@
 			...meta.tags || []
 		].join(" ").toLowerCase();
 		const q = String(query || "").trim().toLowerCase();
-		if (q && !haystack.includes(q)) return false;
+		if (q) {
+			const label = [
+				meta.displayName,
+				meta.brand,
+				meta.lineLabel
+			].filter(Boolean).join(" ").toLowerCase();
+			const loose = (s) => s.replace(/[\s._-]+/g, "");
+			let hit = label.includes(q) || loose(label).includes(loose(q));
+			if (!hit && q.length >= 3) hit = haystack.includes(q);
+			if (!hit) return false;
+		}
 		if (filter === "code") return /code|coder|编程|编码/.test(haystack);
 		if (filter === "image") return meta.multimodal || /image|多模态|视觉|图片|生图/.test(haystack);
 		return true;
@@ -20164,6 +20350,7 @@
 	}
 	var modelDropdownTriggerEl = null;
 	var modelDropdownSyncRaf = 0;
+	var modelDropdownAnimTimer = 0;
 	function setModelDropdownLayout(prop, value) {
 		if (!modelDropdown) return;
 		if (value === "" || value == null) {
@@ -20265,6 +20452,10 @@
 			modelDropdown.querySelectorAll(".model-option").forEach((opt, i) => {
 				opt.style.setProperty("--stagger", String(i));
 			});
+			clearTimeout(modelDropdownAnimTimer);
+			modelDropdownAnimTimer = setTimeout(() => {
+				modelDropdown.classList.remove("animating");
+			}, 420);
 			modelDropdownTriggerEl = triggerEl || getActiveModelDropdownTrigger();
 			if (modelDropdownTriggerEl) {
 				positionModelDropdown(modelDropdownTriggerEl);
@@ -20280,6 +20471,7 @@
 		document.body.classList.remove("header-model-menu-open");
 		modelCurrentBtn?.setAttribute("aria-expanded", "false");
 		compareModelCurrentBtn?.setAttribute("aria-expanded", "false");
+		clearTimeout(modelDropdownAnimTimer);
 		modelDropdown?.classList.remove("animating");
 		modelDropdownTriggerEl = null;
 		if (modelDropdown) {
@@ -20379,6 +20571,14 @@
 	} catch (e) {}
 	if (modelDropdown) {
 		modelDropdown.addEventListener("click", (e) => {
+			const upgradeLink = e.target.closest("[data-model-upgrade]");
+			if (upgradeLink && modelDropdown.contains(upgradeLink)) {
+				e.preventDefault();
+				e.stopPropagation();
+				closeModelDropdown();
+				window.open(upgradeLink.getAttribute("href") || MODEL_UPGRADE_HREF, "_blank", "noopener,noreferrer");
+				return;
+			}
 			const option = e.target.closest(".model-option");
 			if (!option || !modelDropdown.contains(option)) return;
 			const modelId = option.dataset.model;

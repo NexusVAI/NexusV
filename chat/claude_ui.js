@@ -4896,7 +4896,13 @@
 
         // 虚线占位框只在桌面端插：手机上输入框里 + / 麦克风已经贴边，
         // 塞不进去，也没必要 —— 卡片直接指新家。
-        if (!isMobile()) {
+        // 2026-09-19：再加一道宽度闸。claude.css §38 之后 .composer-actions
+        // 就等于 32px 宽的 .composer-send-slot（只装 voice/send 同一个槽），
+        // 往里塞 92px 的占位框会把 send 钮挤出输入卡右边缘（实测外溢 ~40px）。
+        // 容器装不下就不插虚线框，卡片直接指模型钮新家 —— 与移动端同一策略。
+        var SLOT_W = 92;
+        var actionsW = composerActions.getBoundingClientRect().width;
+        if (!isMobile() && actionsW >= SLOT_W + 40) {
             slot = document.createElement('div');
             slot.className = 'cancri-coachmark-slot';
             slot.setAttribute('aria-hidden', 'true');
