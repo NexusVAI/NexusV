@@ -10444,7 +10444,7 @@
 			const count = pendingAttachments.length;
 			attachmentStatusPill.hidden = count === 0;
 			if (!count) attachmentStatusPill.textContent = "";
-			else attachmentStatusPill.textContent = pendingAttachments.some((item) => isImageAttachment(item) && !item?.isTextFile) && !isMultimodalModel(currentModel) && !isOmniVideoModel(currentModel) ? `${count} 个附件 · 发送时将 OCR 识别` : `${count} 个附件`;
+			else attachmentStatusPill.textContent = `${count} 个附件`;
 		}
 	}
 	function setWebSearchEnabled(enabled) {
@@ -10947,74 +10947,24 @@
 			} catch (_) {}
 		});
 	}
-	async function requestOcrForImages(images) {
-		const list = Array.isArray(images) ? images.filter((item) => isImageAttachment(item)) : [];
-		if (!list.length) return {
-			textBlock: "",
-			partialFailures: false
-		};
-		const session = await ensureAuthSession();
-		const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				apikey: SUPABASE_ANON_KEY
-			},
-			body: JSON.stringify({
-				endpoint: "ocr",
-				__auth_token: session.access_token,
-				images: list.map((img) => ({
-					name: img.name || "image",
-					data_url: img.dataUrl || img.url
-				}))
-			})
-		}, OCR_REQUEST_TIMEOUT_MS, "图片识别");
-		const text = await response.text().catch(() => "");
-		let data = {};
-		try {
-			data = text ? JSON.parse(text) : {};
-		} catch (_) {
-			data = {};
-		}
-		if (!response.ok || data.ok === false) {
-			const message = data.message || data.error || (response.status === 429 ? "今日图片识别次数已用完，请明天再试。" : "图片识别失败，请稍后重试。");
-			throw new Error(message);
-		}
-		const results = Array.isArray(data.results) ? data.results : [];
-		const blocks = [];
-		let partialFailures = false;
-		for (const row of results) if (row?.ok && row.text) blocks.push(`\n\n--- 图片 OCR：${row.name || "image"} ---\n${String(row.text).trim()}\n--- OCR 结束 ---`);
-		else partialFailures = true;
-		if (!blocks.length) throw new Error(data.message || "图片识别未返回有效文字。");
-		return {
-			textBlock: blocks.join(""),
-			partialFailures
-		};
-	}
 	async function buildUserContentForModel(query, attachments, modelId) {
 		const trimmedQuery = String(query || "").trim();
-		if (isMultimodalModel(modelId) || isOmniVideoModel(modelId)) {
-			if (!attachments.length) return trimmedQuery;
-			return attachmentToUserContent(trimmedQuery, attachments);
+		if (!attachments.length) return trimmedQuery;
+		const isVisionCapable = isMultimodalModel(modelId) || isOmniVideoModel(modelId);
+		if (isVisionCapable) return attachmentToUserContent(trimmedQuery, attachments);
+		if (!isVisionCapable && attachments.some((item) => isVideoAttachment(item))) throw new Error("当前模型不支持视频，请切换到支持多模态的模型。");
+		if (!attachments.filter((item) => isImageAttachment(item) && !item?.isTextFile).length) {
+			const parts = [];
+			attachments.forEach((item) => {
+				if (!item?.isTextFile || !item?.textContent) return;
+				parts.push(`\n\n--- 附件：${item.name} ---\n${item.textContent}\n--- 附件结束 ---\n`);
+			});
+			if (trimmedQuery) parts.push(trimmedQuery);
+			const combined = parts.join("\n").trim();
+			if (!combined) throw new Error("请输入问题或上传有效附件。");
+			return combined;
 		}
-		if (attachments.some((item) => isVideoAttachment(item))) throw new Error("当前模型不支持视频，请切换到支持多模态的模型。");
-		const textFiles = attachments.filter((item) => item?.isTextFile);
-		const images = attachments.filter((item) => isImageAttachment(item) && !item?.isTextFile);
-		const parts = [];
-		textFiles.forEach((item) => {
-			if (!item?.textContent) return;
-			parts.push(`\n\n--- 附件：${item.name} ---\n${item.textContent}\n--- 附件结束 ---\n`);
-		});
-		if (images.length) {
-			const { textBlock, partialFailures } = await requestOcrForImages(images);
-			if (textBlock) parts.push(textBlock);
-			if (partialFailures) showToast("部分图片识别失败，已使用成功识别的内容继续。");
-		}
-		if (trimmedQuery) parts.push(trimmedQuery);
-		else if (images.length) parts.push("请根据以下图片识别内容回答。");
-		const combined = parts.join("\n").trim();
-		if (!combined) throw new Error("请输入问题或上传有效附件。");
-		return combined;
+		return attachmentToUserContent(trimmedQuery, attachments);
 	}
 	async function reserveFileUploadUsage(fileCount) {
 		const count = Math.max(1, Math.min(20, Number(fileCount) || 1));
@@ -11053,7 +11003,7 @@
 	async function handleSelectedAttachmentFiles(files) {
 		const nextAttachments = await filesToAttachments(files);
 		if (!nextAttachments.length) return;
-		if (isMultimodalModel(currentModel) || isOmniVideoModel(currentModel) || nextAttachments.some((item) => item?.isTextFile)) {
+		if (nextAttachments.length) {
 			if (!await reserveFileUploadUsage(nextAttachments.length)) {
 				cleanupAttachmentItems(nextAttachments);
 				return;
@@ -11181,7 +11131,6 @@
 	var FETCH_TIMEOUT_MS = 2e4;
 	var CHAT_REQUEST_TIMEOUT_MS = 115e3;
 	var CHAT_TURN_TIMEOUT_MS = 1800 * 1e3;
-	var OCR_REQUEST_TIMEOUT_MS = 120 * 1e3;
 	var STREAM_IDLE_TIMEOUT_MS = 110 * 1e3;
 	var TOOL_CALL_TIMEOUT_MS = 25e3;
 	var VIDEO_GENERATION_POLL_TIMEOUT_MS = 900 * 1e3;
@@ -12027,6 +11976,7 @@
 		currentChatId = null;
 		loadedChatModel = "";
 		conversationHistory = [];
+		clearPinnedTurnReserve();
 		messageSink.innerHTML = "";
 		hideAskUserBlock();
 		homeCenter.style.display = "flex";
@@ -12043,6 +11993,7 @@
 	}
 	function renderMessages() {
 		if (!chatMessages) return;
+		clearPinnedTurnReserve();
 		messageSink.innerHTML = "";
 		let lastUserMessageIndex = -1;
 		let tailAssistantId = null;
@@ -16323,6 +16274,54 @@
 			requestAnimationFrame(run);
 		});
 	}
+	var TURN_PIN_TOP_GAP = 24;
+	var pinnedTurnEl = null;
+	var pinnedTurnObserver = null;
+	function clearPinnedTurnReserve() {
+		pinnedTurnObserver?.disconnect();
+		pinnedTurnObserver = null;
+		if (pinnedTurnEl && pinnedTurnEl.style) pinnedTurnEl.style.minHeight = "";
+		pinnedTurnEl = null;
+	}
+	function measureTurnReserve(assistantEl) {
+		const viewport = chatMessages.clientHeight;
+		if (!viewport) return 0;
+		const styles = getComputedStyle(chatMessages);
+		const padBottom = parseFloat(styles.paddingBottom) || 0;
+		const userEl = assistantEl.previousElementSibling;
+		const userToAssistant = userEl && userEl.classList?.contains("message") ? assistantEl.getBoundingClientRect().top - userEl.getBoundingClientRect().top : 0;
+		const assistantStyles = getComputedStyle(assistantEl);
+		const assistantMarginBottom = parseFloat(assistantStyles.marginBottom) || 0;
+		return Math.max(0, viewport - userToAssistant - assistantMarginBottom - padBottom - TURN_PIN_TOP_GAP);
+	}
+	function pinTurnToTop(assistantEl) {
+		if (!chatMessages || !assistantEl?.style) return;
+		if (!homeView?.classList.contains("chatting")) return;
+		clearPinnedTurnReserve();
+		resetChatAutoScrollLock();
+		pinnedTurnEl = assistantEl;
+		const isCurrent = () => pinnedTurnEl === assistantEl && chatMessages.contains(assistantEl) && homeView.classList.contains("chatting");
+		const refreshReserve = () => {
+			assistantEl.style.minHeight = `${Math.round(measureTurnReserve(assistantEl))}px`;
+		};
+		refreshReserve();
+		if (typeof ResizeObserver === "function") {
+			pinnedTurnObserver = new ResizeObserver(() => {
+				if (!isCurrent()) return;
+				const follow = isChatNearBottom() && !state.autoScrollLocked;
+				refreshReserve();
+				if (follow) scrollChatToBottom(false);
+			});
+			if (assistantEl.previousElementSibling) pinnedTurnObserver.observe(assistantEl.previousElementSibling);
+			pinnedTurnObserver.observe(chatMessages);
+		}
+		requestAnimationFrame(() => {
+			if (!isCurrent()) return;
+			refreshReserve();
+			const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+			scrollChatToBottom(!reduced, true);
+		});
+	}
 	function isIosLikeDevice() {
 		const ua = navigator.userAgent || "";
 		if (/iPad|iPhone|iPod/.test(ua)) return true;
@@ -16597,6 +16596,7 @@
 		updateComposerSendButton();
 		const assistantMessageId = createAssistantMessage(metadata);
 		tagAssistantRetryUserIndex(assistantMessageId, turnUserIndex);
+		pinTurnToTop(document.getElementById(assistantMessageId));
 		updateAssistantMessage(assistantMessageId, {
 			answer: "",
 			thinking: false
@@ -16816,6 +16816,7 @@
 		updateComposerSendButton();
 		const assistantMessageId = createAssistantMessage(metadata);
 		tagAssistantRetryUserIndex(assistantMessageId, turnUserIndex);
+		pinTurnToTop(document.getElementById(assistantMessageId));
 		updateAssistantMessage(assistantMessageId, {
 			answer: "",
 			thinking: false
@@ -17670,6 +17671,7 @@
 	function clearConversation() {
 		exitSharedConversationMode();
 		stopVoiceRecognition();
+		clearPinnedTurnReserve();
 		if (!hasActiveGeneration() && state.activeRequestController) {
 			state.activeRequestController.abort(createAbortError("已切换会话。"));
 			state.activeRequestController = null;
@@ -17756,15 +17758,8 @@
 		updateChatShareButtonVisibility();
 		clearPendingAttachments();
 	}
-	function normalizeHistoryContentForModel(content, modelId) {
-		if (!Array.isArray(content)) return content;
-		if (isMultimodalModel(modelId)) return content;
-		const textParts = content.filter((part) => part && part.type === "text" && typeof part.text === "string").map((part) => part.text.trim()).filter(Boolean);
-		const imageCount = content.filter((part) => part && part.type === "image_url").length;
-		const summaryParts = [];
-		if (textParts.length) summaryParts.push(textParts.join(" "));
-		if (imageCount) summaryParts.push(`（含 ${imageCount} 张图片）`);
-		return summaryParts.join(" ").trim() || "（包含图片上下文）";
+	function normalizeHistoryContentForModel(content, _modelId) {
+		return content;
 	}
 	function describeContentForCompression(content) {
 		if (!Array.isArray(content)) return String(content || "").trim();
@@ -19307,24 +19302,17 @@
 			await sendVideoGenerationMessage(query, turnModelId, turnModelMetadata, attachmentsForSend);
 			return;
 		}
-		const effectiveQuery = query || (attachmentsForSend.some((a) => isImageAttachment(a)) ? "请根据以下图片识别内容回答。" : "请分析上传的内容。");
+		const effectiveQuery = query || (attachmentsForSend.some((a) => isImageAttachment(a)) ? "请看这些图片并回答。" : "请分析上传的内容。");
 		const turnUserIndex = conversationHistory.length;
-		const needsOcr = !isMultimodalModel(turnModelId) && !isOmniVideoModel(turnModelId) && attachmentsForSend.some((a) => isImageAttachment(a) && !a?.isTextFile);
 		let userContent = effectiveQuery;
 		if (attachmentsForSend.length) try {
 			setComposerBusy(true);
-			if (needsOcr && attachmentStatusPill) {
-				attachmentStatusPill.hidden = false;
-				attachmentStatusPill.textContent = "识别图片中…";
-			}
 			userContent = await buildUserContentForModel(effectiveQuery, attachmentsForSend, turnModelId);
 		} catch (error) {
-			showToast(normalizeErrorMessage(error, "图片识别失败，请稍后重试。"));
+			showToast(normalizeErrorMessage(error, "附件处理失败，请稍后重试。"));
 			setComposerBusy(false);
 			updateComposerToolStatus();
 			return;
-		} finally {
-			if (needsOcr) updateComposerToolStatus();
 		}
 		createUserMessage(query || effectiveQuery, attachmentsForSend, turnUserIndex);
 		homeInput.value = "";
@@ -19347,6 +19335,7 @@
 		setComposerBusy(true);
 		const assistantMessageId = createAssistantMessage(turnModelMetadata);
 		tagAssistantRetryUserIndex(assistantMessageId, turnUserIndex);
+		pinTurnToTop(document.getElementById(assistantMessageId));
 		const controller = new AbortController();
 		const clearTurnTimeout = startAbortTimer(controller, CHAT_TURN_TIMEOUT_MS, "对话请求");
 		const turnId = createChatTurnId();

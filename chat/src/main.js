@@ -4206,16 +4206,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       if (!count) {
         attachmentStatusPill.textContent = "";
       } else {
-        const hasImages = pendingAttachments.some(
-          (item) => isImageAttachment(item) && !item?.isTextFile,
-        );
-        const ocrMode =
-          hasImages &&
-          !isMultimodalModel(currentModel) &&
-          !isOmniVideoModel(currentModel);
-        attachmentStatusPill.textContent = ocrMode
-          ? `${count} 个附件 · 发送时将 OCR 识别`
-          : `${count} 个附件`;
+        // 2026-09-19：取消「非多模态模型先 OCR 再发文字」的机制，附件一律原样
+        // 发给所选模型，所以这里不再有 OCR 提示文案。
+        attachmentStatusPill.textContent = `${count} 个附件`;
       }
     }
   }
@@ -4907,108 +4900,46 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     });
   }
   
-  async function requestOcrForImages(images) {
-    const list = Array.isArray(images)
-      ? images.filter((item) => isImageAttachment(item))
-      : [];
-    if (!list.length) {
-      return { textBlock: "", partialFailures: false };
-    }
-    const session = await ensureAuthSession();
-    const response = await proxyFetchWithTimeout(
-      EDGE_FUNCTION_URL,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({
-          endpoint: "ocr",
-          __auth_token: session.access_token,
-          images: list.map((img) => ({
-            name: img.name || "image",
-            data_url: img.dataUrl || img.url,
-          })),
-        }),
-      },
-      OCR_REQUEST_TIMEOUT_MS,
-      "图片识别",
-    );
-    const text = await response.text().catch(() => "");
-    let data = {};
-    try {
-      data = text ? JSON.parse(text) : {};
-    } catch (_) {
-      data = {};
-    }
-    if (!response.ok || data.ok === false) {
-      const message =
-        data.message ||
-        data.error ||
-        (response.status === 429
-          ? "今日图片识别次数已用完，请明天再试。"
-          : "图片识别失败，请稍后重试。");
-      throw new Error(message);
-    }
-    const results = Array.isArray(data.results) ? data.results : [];
-    const blocks = [];
-    let partialFailures = false;
-    for (const row of results) {
-      if (row?.ok && row.text) {
-        blocks.push(
-          `\n\n--- 图片 OCR：${row.name || "image"} ---\n${String(row.text).trim()}\n--- OCR 结束 ---`,
-        );
-      } else {
-        partialFailures = true;
-      }
-    }
-    if (!blocks.length) {
-      throw new Error(data.message || "图片识别未返回有效文字。");
-    }
-    return { textBlock: blocks.join(""), partialFailures };
-  }
-
+  // 2026-09-19：requestOcrForImages 已删除。原来非多模态模型收到图片时，前端会
+  // 先打 endpoint:"ocr" 把图转成一段文字塞进 prompt。问题是 OCR 的错字会以
+  // **用户原话**的身份进入对话，模型无从分辨；而且它自带一套日配额，用完直接
+  // 挡住发送。现在图片一律按 image_url 原样发给所选模型 —— 模型看不见图就自己
+  // 说看不见，这比我们悄悄换成一段可能抄错的文字诚实。
   async function buildUserContentForModel(query, attachments, modelId) {
     const trimmedQuery = String(query || "").trim();
-    if (isMultimodalModel(modelId) || isOmniVideoModel(modelId)) {
-      if (!attachments.length) return trimmedQuery;
-      return attachmentToUserContent(trimmedQuery, attachments);
-    }
+    if (!attachments.length) return trimmedQuery;
 
-    if (attachments.some((item) => isVideoAttachment(item))) {
+    const isVisionCapable =
+      isMultimodalModel(modelId) || isOmniVideoModel(modelId);
+    // 保持原多模态附件路径，尤其是没有图片的 Omni 视频输入。
+    if (isVisionCapable) return attachmentToUserContent(trimmedQuery, attachments);
+    if (!isVisionCapable && attachments.some((item) => isVideoAttachment(item))) {
       throw new Error("当前模型不支持视频，请切换到支持多模态的模型。");
     }
 
-    const textFiles = attachments.filter((item) => item?.isTextFile);
     const images = attachments.filter(
       (item) => isImageAttachment(item) && !item?.isTextFile,
     );
-    const parts = [];
 
-    textFiles.forEach((item) => {
-      if (!item?.textContent) return;
-      parts.push(
-        `\n\n--- 附件：${item.name} ---\n${item.textContent}\n--- 附件结束 ---\n`,
-      );
-    });
-
-    if (images.length) {
-      const { textBlock, partialFailures } = await requestOcrForImages(images);
-      if (textBlock) parts.push(textBlock);
-      if (partialFailures) {
-        showToast("部分图片识别失败，已使用成功识别的内容继续。");
+    // 纯文本附件（.md/.txt/代码文件等）继续内联成一段**纯字符串**：不少纯文本
+    // 模型的上游不接受 content 数组，没图的时候没必要改协议形状。
+    if (!images.length) {
+      const parts = [];
+      attachments.forEach((item) => {
+        if (!item?.isTextFile || !item?.textContent) return;
+        parts.push(
+          `\n\n--- 附件：${item.name} ---\n${item.textContent}\n--- 附件结束 ---\n`,
+        );
+      });
+      if (trimmedQuery) parts.push(trimmedQuery);
+      const combined = parts.join("\n").trim();
+      if (!combined) {
+        throw new Error("请输入问题或上传有效附件。");
       }
+      return combined;
     }
 
-    if (trimmedQuery) parts.push(trimmedQuery);
-    else if (images.length) parts.push("请根据以下图片识别内容回答。");
-
-    const combined = parts.join("\n").trim();
-    if (!combined) {
-      throw new Error("请输入问题或上传有效附件。");
-    }
-    return combined;
+    return attachmentToUserContent(trimmedQuery, attachments);
   }
 
   async function reserveFileUploadUsage(fileCount) {
@@ -5057,11 +4988,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   async function handleSelectedAttachmentFiles(files) {
     const nextAttachments = await filesToAttachments(files);
     if (!nextAttachments.length) return;
-    const needsFileUploadQuota =
-      isMultimodalModel(currentModel) ||
-      isOmniVideoModel(currentModel) ||
-      nextAttachments.some((item) => item?.isTextFile);
-    if (needsFileUploadQuota) {
+    // 2026-09-19：原判据是「多模态 / omni / 文本附件」才占文件上传额度 ——
+    // 剩下那条路（非多模态模型 + 图片）当时走 OCR，吃的是 OCR 自己的日配额。
+    // OCR 已取消、图片一律直传模型，那条免费口子必须跟着关掉，否则同一张图
+    // 换个文本模型上传就不计额度了。
+    if (nextAttachments.length) {
       const allowed = await reserveFileUploadUsage(nextAttachments.length);
       if (!allowed) {
         cleanupAttachmentItems(nextAttachments);
@@ -5240,7 +5171,6 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   //     STREAM_IDLE_TIMEOUT_MS 内没收到任何 SSE chunk 才视为停摆
   // arena 双模并行 fetch（非流式）依然用 CHAT_TURN_TIMEOUT_MS 当 wall。
   const CHAT_TURN_TIMEOUT_MS = 30 * 60 * 1000;
-  const OCR_REQUEST_TIMEOUT_MS = 120 * 1000;
   // SSE 流式空闲超时：常规模型 1-2s 出 chunk，Claude Opus thinking 可能 60s+
   // 才出第一个 reasoning chunk。110s 窗口对各家上游中转都安全。
   const STREAM_IDLE_TIMEOUT_MS = 110 * 1000;
@@ -6397,6 +6327,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     currentChatId = null;
     loadedChatModel = "";
     conversationHistory = [];
+    clearPinnedTurnReserve();
     messageSink.innerHTML = "";
     hideAskUserBlock();
     homeCenter.style.display = "flex";
@@ -6418,6 +6349,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   // 渲染消息
   function renderMessages() {
     if (!chatMessages) return;
+    // 整页重绘会换掉所有节点，本轮置顶垫高的那个节点随之作废。
+    clearPinnedTurnReserve();
     messageSink.innerHTML = "";
   
     let lastUserMessageIndex = -1;
@@ -12268,6 +12201,86 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       requestAnimationFrame(run);
     });
   }
+
+  // ── 本轮气泡置顶（2026-09-19，对齐 cancri-code 桌面端手感）─────────────
+  // 目标：刚发出的用户气泡滑到视口顶部，屏幕上只剩「这一问 + 正在生成的回答」，
+  // 不管发送前停在对话的哪个位置。
+  //
+  // 手法是给本轮的助手节点垫一个 min-height，让「这一轮」至少占满一屏，于是：
+  //   · 既有的 scrollChatToBottom 滚到底，落点正好是用户气泡贴顶；
+  //   · 回答在 min-height 之内长高时 scrollHeight 不变，画面不会边生成边往下抽；
+  //   · 回答超过一屏后 min-height 自然失效，恢复正常的跟随到底。
+  // 只给「最后一轮」垫，开下一轮时把上一轮的垫高撤掉，免得回翻历史时到处是空白。
+  // 顶部余量：正文列上沿有一层 20px 的渐隐遮罩（claude.css §38），气泡顶部要落
+  // 在它下面，否则"置顶"的那条气泡自己是半透明的。
+  const TURN_PIN_TOP_GAP = 24;
+  // 用 var 不是 let：renderMessages() 也要调 clearPinnedTurnReserve()，而它在本
+  // 文件里的位置比这里靠前。目前没有任何顶层同步调用链能走到，但 var 能让万一
+  // 的提前调用退化成 undefined，而不是 TDZ 抛错把整页初始化打断。
+  var pinnedTurnEl = null;
+  var pinnedTurnObserver = null;
+
+  function clearPinnedTurnReserve() {
+    pinnedTurnObserver?.disconnect();
+    pinnedTurnObserver = null;
+    if (pinnedTurnEl && pinnedTurnEl.style) {
+      pinnedTurnEl.style.minHeight = "";
+    }
+    pinnedTurnEl = null;
+  }
+
+  function measureTurnReserve(assistantEl) {
+    const viewport = chatMessages.clientHeight;
+    if (!viewport) return 0;
+    const styles = getComputedStyle(chatMessages);
+    const padBottom = parseFloat(styles.paddingBottom) || 0;
+    const userEl = assistantEl.previousElementSibling;
+    const userToAssistant =
+      userEl && userEl.classList?.contains("message")
+        ? assistantEl.getBoundingClientRect().top - userEl.getBoundingClientRect().top
+        : 0;
+    // 用两行的实际间距包含用户行高度、双方 margin 和列表 gap。
+    // 只减用户 height 会漏掉用户行的 margin-bottom，置顶位置偏进渐隐区。
+    const assistantStyles = getComputedStyle(assistantEl);
+    const assistantMarginBottom = parseFloat(assistantStyles.marginBottom) || 0;
+    return Math.max(
+      0,
+      viewport - userToAssistant - assistantMarginBottom - padBottom - TURN_PIN_TOP_GAP,
+    );
+  }
+
+  function pinTurnToTop(assistantEl) {
+    if (!chatMessages || !assistantEl?.style) return;
+    if (!homeView?.classList.contains("chatting")) return;
+    clearPinnedTurnReserve();
+    resetChatAutoScrollLock();
+    pinnedTurnEl = assistantEl;
+    const isCurrent = () => pinnedTurnEl === assistantEl &&
+      chatMessages.contains(assistantEl) && homeView.classList.contains("chatting");
+    const refreshReserve = () => {
+      assistantEl.style.minHeight = `${Math.round(measureTurnReserve(assistantEl))}px`;
+    };
+    refreshReserve();
+    // 图片解码、输入框高度或窗口尺寸变化后重新量本轮；只观察用户行和视口，
+    // 不观察自己写 min-height 的助手节点，避免 ResizeObserver 写读循环。
+    if (typeof ResizeObserver === "function") {
+      pinnedTurnObserver = new ResizeObserver(() => {
+        if (!isCurrent()) return;
+        const follow = isChatNearBottom() && !state.autoScrollLocked;
+        refreshReserve();
+        if (follow) scrollChatToBottom(false);
+      });
+      if (assistantEl.previousElementSibling) pinnedTurnObserver.observe(assistantEl.previousElementSibling);
+      pinnedTurnObserver.observe(chatMessages);
+    }
+    requestAnimationFrame(() => {
+      // 切换会话/重绘以后，旧帧不能滚动正在看的另一条对话。
+      if (!isCurrent()) return;
+      refreshReserve();
+      const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      scrollChatToBottom(!reduced, true);
+    });
+  }
   
   // iPadOS 13+ 会把自己报成 Macintosh，所以补一条 touch 判据。
   function isIosLikeDevice() {
@@ -12833,6 +12846,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
     const assistantMessageId = createAssistantMessage(metadata);
     tagAssistantRetryUserIndex(assistantMessageId, turnUserIndex);
+    pinTurnToTop(document.getElementById(assistantMessageId));
     updateAssistantMessage(assistantMessageId, {
       answer: "",
       thinking: false,
@@ -13152,6 +13166,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
     const assistantMessageId = createAssistantMessage(metadata);
     tagAssistantRetryUserIndex(assistantMessageId, turnUserIndex);
+    pinTurnToTop(document.getElementById(assistantMessageId));
     updateAssistantMessage(assistantMessageId, {
       answer: "",
       thinking: false,
@@ -14383,6 +14398,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   function clearConversation() {
     exitSharedConversationMode();
     stopVoiceRecognition();
+    clearPinnedTurnReserve();
     // 2026-06-17：有后台生成在进行时不中断它（转入后台继续 + 侧栏转圈 + 完成通知）；
     // 否则按原逻辑取消当前请求。
     if (!hasActiveGeneration() && state.activeRequestController) {
@@ -14513,25 +14529,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     clearPendingAttachments();
   }
   
-  function normalizeHistoryContentForModel(content, modelId) {
-    if (!Array.isArray(content)) return content;
-    // 多模态模型保留完整内容
-    if (isMultimodalModel(modelId)) return content;
-  
-    const textParts = content
-      .filter(
-        (part) => part && part.type === "text" && typeof part.text === "string",
-      )
-      .map((part) => part.text.trim())
-      .filter(Boolean);
-    const imageCount = content.filter(
-      (part) => part && part.type === "image_url",
-    ).length;
-  
-    const summaryParts = [];
-    if (textParts.length) summaryParts.push(textParts.join(" "));
-    if (imageCount) summaryParts.push(`（含 ${imageCount} 张图片）`);
-    return summaryParts.join(" ").trim() || "（包含图片上下文）";
+  // 2026-09-19：这里原来会把非多模态模型的图片段替换成「（含 N 张图片）」这种
+  // 占位文字。配合已删除的 OCR 前置，那条路径的净效果是：模型既拿不到图，也
+  // 拿不到图里的内容，却收到一句"有图"的旁白 —— 它只能瞎猜。现在图片一律原样
+  // 带上，上游支持就看图，不支持就自己说看不见。函数保留（调用点两处）以便
+  // 将来要按模型裁剪内容时还有落点。
+  function normalizeHistoryContentForModel(content, _modelId) {
+    return content;
   }
   
   function describeContentForCompression(content) {
@@ -16880,36 +16884,24 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     const effectiveQuery =
       query ||
       (attachmentsForSend.some((a) => isImageAttachment(a))
-        ? "请根据以下图片识别内容回答。"
+        ? "请看这些图片并回答。"
         : "请分析上传的内容。");
     const turnUserIndex = conversationHistory.length;
-    const needsOcr =
-      !isMultimodalModel(turnModelId) &&
-      !isOmniVideoModel(turnModelId) &&
-      attachmentsForSend.some((a) => isImageAttachment(a) && !a?.isTextFile);
 
     let userContent = effectiveQuery;
     if (attachmentsForSend.length) {
       try {
         setComposerBusy(true);
-        if (needsOcr && attachmentStatusPill) {
-          attachmentStatusPill.hidden = false;
-          attachmentStatusPill.textContent = "识别图片中…";
-        }
         userContent = await buildUserContentForModel(
           effectiveQuery,
           attachmentsForSend,
           turnModelId,
         );
       } catch (error) {
-        showToast(
-          normalizeErrorMessage(error, "图片识别失败，请稍后重试。"),
-        );
+        showToast(normalizeErrorMessage(error, "附件处理失败，请稍后重试。"));
         setComposerBusy(false);
         updateComposerToolStatus();
         return;
-      } finally {
-        if (needsOcr) updateComposerToolStatus();
       }
     }
 
@@ -16954,6 +16946,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
     const assistantMessageId = createAssistantMessage(turnModelMetadata);
     tagAssistantRetryUserIndex(assistantMessageId, turnUserIndex);
+    pinTurnToTop(document.getElementById(assistantMessageId));
     const controller = new AbortController();
     const clearTurnTimeout = startAbortTimer(
       controller,

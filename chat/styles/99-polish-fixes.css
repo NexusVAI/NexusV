@@ -1147,9 +1147,12 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
       background 160ms ease,
       box-shadow 180ms ease !important;
   }
+  /* 右缘渐隐带：28px 是按 288px 面板挑的，可面板会一路收到 52.5px —— 动画后段
+     这条渐隐带会盖住半个 rail，把已经就位的图标也擦淡，等 540ms 摘类时又"啪"地
+     恢复。加 22% 上限后 rail 末态只渐隐最右 ~11px，图标不再被擦。 */
   html body .sidebar.is-sb-animating {
-    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 28px), transparent);
-    mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 28px), transparent);
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - min(28px, 22%)), transparent);
+    mask-image: linear-gradient(to right, #000 0, #000 calc(100% - min(28px, 22%)), transparent);
   }
   html body .sidebar :is(.sidebar-label, .sidebar-footer-text, .claude-recent-header, #chatHistoryList,
     #claudeOnboardingCard, .account-meta, .upgrade-btn, .account-arrow, .sidebar-search-wrap) {
@@ -1166,19 +1169,55 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
   }
   html body .sidebar .sidebar-label { white-space: nowrap; }
   /* 对话列表（最近 / 聊天记录 / 引导卡）：原规则一收起就 max-height:0 + display:none，
-     列表瞬间消失、没有动画。收起过渡期间（.is-sb-animating，540ms）保持原高度，
-     与文字一起 blur+淡出，动画结束后再交还原规则折叠。 */
-  html body .sidebar.sidebar.collapsed.is-sb-animating :is(.claude-recent-header, .recent-wrap, #chatHistoryList,
+     列表瞬间消失、没有动画。收起过渡期间保持原高度，与文字一起 blur+淡出，
+     动画窗口（540ms，此时已全透明）结束后再交还原规则折叠。
+
+     2026-09-19 三处实测缺陷一并根治（用户报「收起时聊天记录标题直接消失、
+     每行左边的模型 logo 整块往上跳」）：
+     a) 淡出规则原来挂在 `.collapsed.is-sb-animating` 上，而这两个类不是同一处
+        加的 —— .collapsed 由 cancri_chat.js 的 toggleSidebarCollapsed 加，
+        .is-sb-animating 由 js/ui/sidebar.js 的另一个 click 监听加，中间
+        closePopover/updateScrimVisibility 会读布局触发一次样式重算。那一次重算里
+        `.sidebar.collapsed .claude-recent-header{display:none}`（claude.css）生效，
+        opacity 过渡当场作废（实测：只加 .collapsed 时 header 的 opacity 第一帧
+        就是 0，加两个类才会 520ms 渐隐）。现在淡出只认 .collapsed，与时序无关。
+     b) 分节标题的 margin-top 16→0 / padding-bottom 4→0 / max-height 28→0 都不在
+        过渡清单里，是硬切 —— 一按收起整块（含每行 logo）往上抽 20px，列表还顺势
+        长高 42px。收起态干脆把它的几何整个冻住：反正后面跟着的列表是 max-height:0，
+        rail 里这 48px 空白看不见，但换来零位移。
+     c) 每行标题被 layout-sidebar.css 收成 width:0，行内当场重排、logo 被往回拽。
+        收起时只淡出，宽度不动。 */
+  html body .sidebar.sidebar.collapsed :is(.claude-recent-header, .recent-wrap, #chatHistoryList,
+    #claudeOnboardingCard, .claude-onboarding-card),
+  html body .sidebar.sidebar[data-collapsed="true"] :is(.claude-recent-header, .recent-wrap, #chatHistoryList,
     #claudeOnboardingCard, .claude-onboarding-card) {
-    max-height: 100vh !important;
     overflow: hidden !important;
     opacity: 0 !important;
     filter: blur(5px);
+    /* 清单里**故意**没有 max-height：这样「.collapsed 已落地、.is-sb-animating
+       还没挂上」的那次重算不会启动一段高度动画，随后 100vh 也不会把它拽回去。 */
     transition: opacity var(--sb-dur) ease, filter var(--sb-dur) ease !important;
   }
-  html body .sidebar.sidebar.collapsed.is-sb-animating .claude-recent-header {
+  html body .sidebar.sidebar.collapsed .claude-recent-header,
+  html body .sidebar.sidebar[data-collapsed="true"] .claude-recent-header {
     display: flex !important;
+    margin-top: 16px !important;
     padding: 0 8px 4px 10px !important;
+    max-height: 28px !important;
+    min-height: 28px !important;
+  }
+  html body .sidebar.sidebar.collapsed :is(.recent-item-title, .conversation-item-title,
+    .recent-conversation-title, .conversation-title, .section-title, .recent-placeholder),
+  html body .sidebar.sidebar[data-collapsed="true"] :is(.recent-item-title, .conversation-item-title,
+    .recent-conversation-title, .conversation-title, .section-title, .recent-placeholder) {
+    width: auto !important;
+    max-width: none !important;
+    opacity: 0 !important;
+    transition: opacity var(--sb-dur) ease !important;
+  }
+  html body .sidebar.sidebar.collapsed.is-sb-animating :is(.recent-wrap, #chatHistoryList,
+    #claudeOnboardingCard, .claude-onboarding-card) {
+    max-height: 100vh !important;
   }
   html body .sidebar.sidebar.collapsed.is-sb-animating :is(.recent-wrap, #chatHistoryList) {
     padding: 0 4px !important;

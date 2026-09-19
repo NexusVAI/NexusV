@@ -12058,7 +12058,8 @@ html[data-theme="dark"] .model-current svg {
 
 /* ── 1) home 态发送槽：盒右下角 ── */
 #homeView:not(.chatting) .composer-send-slot {
-    position: absolute;
+    /* 移动端 .composer-actions 有 position:relative !important，同样要覆盖。 */
+    position: absolute !important;
     /* .composer 自身 padding 8px（实测），钉同一个内距即与圆角同心 */
     right: 8px;
     bottom: 8px;

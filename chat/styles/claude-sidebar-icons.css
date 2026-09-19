@@ -275,10 +275,10 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
 .sidebar #newChatBtn:hover .nav-icon-bounce {
   transform: rotate(-3deg) scale(1.1);
 }
-.sidebar #newChatBtn:active .nav-icon-bounce {
-  transform: rotate(6deg) scale(0.98);
-  transition-duration: 80ms;
-}
+/* 2026-09-19：长按（:active）态的图标动画已取消。原来这里是
+   `rotate(6deg) scale(.98)` 配下面那条把圆环刷成 hsl(var(--text-200))
+   —— 深色主题下 --text-200 是 55 9.1% 74.1%（淡卡其），浅色是
+   60 2.8% 21.4%（近黑），两个主题按住都会出现一圈异色，用户要求直接去掉。 */
 .sidebar .nav-icon-ring {
   display: flex;
   align-items: center;
@@ -292,9 +292,6 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
 }
 .sidebar #newChatBtn:hover .nav-icon-ring {
   background: hsl(var(--text-500, 48 2% 45%) / 0.25);
-}
-.sidebar #newChatBtn:active .nav-icon-ring {
-  background: hsl(var(--text-200, 48 3% 84%));
 }
 .sidebar-nav-primary,
 .sidebar-nav-secondary {
@@ -579,7 +576,11 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
   min-height: 32px !important;
   max-height: 32px !important;
   margin: 0 !important;
-  padding: 0 0 0 calc((var(--workbench-rail-width, 56px) - 36px) / 2) !important;
+  /* 2026-09-19：原值 calc((rail − 36)/2)。rail = 3.5rem，根字号 15px → 8.25px，
+     而展开态是 8px —— 收起时图标会往右挪 0.25px（用户报的「新聊天/搜索/聊天
+     收起时往右漂一点」，实测逐帧 x：16 → 16.25）。与展开态取同一个 8px，
+     位移归零；rail 中心 26.25 与图标中心 26 只差 0.25px，看不出偏心。 */
+  padding: 0 0 0 8px !important;
   overflow: hidden !important;
   position: relative !important;
   justify-content: unset !important;
@@ -802,4 +803,47 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
   .sidebar .nav-row {
     border-radius: 11px !important; /* 9×1.2 */
   }
+}
+
+/* ── 侧栏滚动条：圆润细条（2026-09-19）────────────────────────
+   之前吃的是 claude.css §12 的全局 `*::-webkit-scrollbar`：8px 宽、thumb
+   圆角 4px，在 232~288px 宽的面板里是一条明显的方头灰带。这里给会滚动的
+   三层（nav-group / recent-wrap / 聊天记录列表）单独收窄到 6px 并整条圆头，
+   thumb 用 padding-box 内缩 1px，视觉上更细更圆。 */
+.sidebar .nav-group,
+.sidebar .recent-wrap,
+.sidebar #chatHistoryList {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-line-strong, rgba(140, 140, 140, 0.45)) transparent;
+}
+.sidebar .nav-group::-webkit-scrollbar,
+.sidebar .recent-wrap::-webkit-scrollbar,
+.sidebar #chatHistoryList::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.sidebar .nav-group::-webkit-scrollbar-track,
+.sidebar .recent-wrap::-webkit-scrollbar-track,
+.sidebar #chatHistoryList::-webkit-scrollbar-track {
+  background: transparent;
+  border: 0;
+}
+.sidebar .nav-group::-webkit-scrollbar-thumb,
+.sidebar .recent-wrap::-webkit-scrollbar-thumb,
+.sidebar #chatHistoryList::-webkit-scrollbar-thumb {
+  background: var(--c-line-strong, rgba(140, 140, 140, 0.45));
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+.sidebar .nav-group::-webkit-scrollbar-thumb:hover,
+.sidebar .recent-wrap::-webkit-scrollbar-thumb:hover,
+.sidebar #chatHistoryList::-webkit-scrollbar-thumb:hover {
+  background: var(--c-hover-strong, rgba(140, 140, 140, 0.7));
+  background-clip: padding-box;
+}
+.sidebar .nav-group::-webkit-scrollbar-corner,
+.sidebar .recent-wrap::-webkit-scrollbar-corner,
+.sidebar #chatHistoryList::-webkit-scrollbar-corner {
+  background: transparent;
 }
