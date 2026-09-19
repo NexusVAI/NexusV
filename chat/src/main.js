@@ -4000,6 +4000,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   function updateAttachmentPreview() {
     if (!attachmentPreview) return;
     attachmentPreview.innerHTML = "";
+    attachmentPreview.dataset.count = String(pendingAttachments.length);
   
     if (!pendingAttachments.length) {
       attachmentPreview.hidden = true;
