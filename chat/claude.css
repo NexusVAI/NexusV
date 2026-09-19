@@ -12088,3 +12088,65 @@ html[data-theme="dark"] .model-current svg {
 .sidebar[data-collapsed="true"] .sidebar-topbar::before {
     transform: none !important;
 }
+
+/* Claude snapshot parity: attachments live inside the composer as compact
+   horizontal cards, while the tool row exposes the current attachment count. */
+.composer-card > .attachment-preview {
+    display: flex;
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 100%;
+    max-height: none;
+    min-height: 0;
+    margin: -2px 0 2px;
+    padding: 2px 2px 0;
+    gap: 12px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+}
+.composer-card > .attachment-preview::-webkit-scrollbar { display: none; }
+.composer-card > .attachment-preview .attachment-item {
+    width: 120px;
+    height: 120px;
+    flex: 0 0 120px;
+    border-radius: 12px;
+    border: 0;
+    background: var(--c-bg-elev, var(--panel));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--c-line, #d9d9d5) 75%, transparent);
+}
+.composer-card > .attachment-preview .attachment-item img,
+.composer-card > .attachment-preview .attachment-item video {
+    object-fit: contain;
+    background: var(--c-bg-elev, var(--panel));
+}
+.composer-card > .attachment-preview .attachment-remove {
+    top: 8px;
+    right: 8px;
+    width: 22px;
+    height: 22px;
+    font-size: 14px;
+    background: rgba(55, 55, 55, .78);
+}
+.composer-card > .attachment-preview .attachment-label {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    font-size: 11px;
+}
+.composer-card > .attachment-preview::after {
+    content: attr(data-count) " 个附件";
+    order: 2;
+    align-self: flex-end;
+    flex: 0 0 auto;
+    margin: 0 0 2px 0;
+    padding: 6px 10px;
+    border: 1px solid color-mix(in srgb, var(--c-accent, #e87955) 38%, transparent);
+    border-radius: 10px;
+    color: var(--c-text-soft, #6f6f6b);
+    background: color-mix(in srgb, var(--c-accent, #e87955) 10%, transparent);
+    font-size: 12px;
+    white-space: nowrap;
+}
+.composer-card > .attachment-preview[data-count="0"]::after { display: none; }
