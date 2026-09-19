@@ -1014,6 +1014,29 @@
                                         ></textarea>
                                         <div class="composer-actions composer-send-slot">
                                             <button
+                                                class="voice-btn"
+                                                id="voiceToastBtn"
+                                                data-glass="button"
+                                                aria-label="语音输入"
+                                                title="语音输入"
+                                            >
+                                                <svg
+                                                    width="20"
+                                                    height="20"
+                                                    viewBox="0 0 21 21"
+                                                    fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    class="voice-wave-svg"
+                                                >
+                                                    <rect class="voice-bar" x="0" y="7.5" width="1" height="6" rx="0.5" fill="currentColor"></rect>
+                                                    <rect class="voice-bar" x="4" y="5.5" width="1" height="10" rx="0.5" fill="currentColor"></rect>
+                                                    <rect class="voice-bar" x="8" y="2.5" width="1" height="16" rx="0.5" fill="currentColor"></rect>
+                                                    <rect class="voice-bar" x="12" y="5.5" width="1" height="10" rx="0.5" fill="currentColor"></rect>
+                                                    <rect class="voice-bar" x="16" y="2.5" width="1" height="16" rx="0.5" fill="currentColor"></rect>
+                                                    <rect class="voice-bar" x="20" y="7.5" width="1" height="6" rx="0.5" fill="currentColor"></rect>
+                                                </svg>
+                                            </button>
+                                            <button
                                                 class="send-btn hidden"
                                                 id="sendChatBtn"
                                                 data-glass="button"
@@ -1027,7 +1050,9 @@
                                                     viewBox="0 0 24 24"
                                                     fill="none"
                                                     stroke="currentColor"
-                                                    stroke-width="2.2"
+                                                    stroke-width="2.8"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
                                                 >
                                                     <path d="M12 19V5"></path>
                                                     <path
@@ -1127,29 +1152,6 @@
                                         </div>
                                         <div class="composer-actions">
                                             <div class="model-cost-pop" id="model-cost-pop" hidden></div>
-                                            <button
-                                                class="voice-btn"
-                                                id="voiceToastBtn"
-                                                data-glass="button"
-                                                aria-label="语音输入"
-                                                title="语音输入"
-                                            >
-                                                <svg
-                                                    width="20"
-                                                    height="20"
-                                                    viewBox="0 0 21 21"
-                                                    fill="none"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    class="voice-wave-svg"
-                                                >
-                                                    <rect class="voice-bar" x="0" y="7.5" width="1" height="6" rx="0.5" fill="currentColor"></rect>
-                                                    <rect class="voice-bar" x="4" y="5.5" width="1" height="10" rx="0.5" fill="currentColor"></rect>
-                                                    <rect class="voice-bar" x="8" y="2.5" width="1" height="16" rx="0.5" fill="currentColor"></rect>
-                                                    <rect class="voice-bar" x="12" y="5.5" width="1" height="10" rx="0.5" fill="currentColor"></rect>
-                                                    <rect class="voice-bar" x="16" y="2.5" width="1" height="16" rx="0.5" fill="currentColor"></rect>
-                                                    <rect class="voice-bar" x="20" y="7.5" width="1" height="6" rx="0.5" fill="currentColor"></rect>
-                                                </svg>
-                                            </button>
                                         </div>
                                     </div>
                                 </div>

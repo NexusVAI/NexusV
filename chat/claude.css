@@ -11727,3 +11727,79 @@ html[data-theme="light"] #homeView.chatting .composer-card:focus-within {
     order: -1;
     flex: 0 0 100%;
 }
+
+/* ───────────────────────────────────────────────────────────
+   §38. 第三轮实测修正（2026-09-19）
+   1) ask-user 提问卡：wrap 改 wrap-flex 后 align-self:stretch 失效，
+      需独占整行 = 与输入卡同宽（原设计的「和输入框一样长」）。
+   2) 键盘提示行 .ask-user-hint 移除（挤压 chin 行，用户要求删）。
+   3) 顶部 mask 渐隐 32px→20px：pt-4 后首条用户气泡顶 ≈28px，
+      原渐隐区会盖住气泡顶部；移动端 44px→24px 同理。
+   4) home-center 底部 padding 14→8：保存页 chin 底距视口 ≈8px。
+   5) voice 钮移入 .composer-send-slot（与 send 同槽 32×32，
+      空态显 mic、输入后 send 弹入 —— 原有互换特性）。 */
+
+#homeView.chatting .ask-user-card {
+    order: -1;
+    flex: 0 0 auto;
+    width: 100%;
+    margin: 0 0 8px;
+}
+/* 横幅在提问卡之上（ribbon order:-1 与 card 平级，DOM 序 ribbon 在前） */
+#homeView.chatting .claude-composer-quota-ribbon {
+    order: -2;
+}
+#homeView.chatting .ask-user-hint {
+    display: none !important;
+}
+
+body.is-chatting #homeView.chatting .chat-messages.active {
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        rgba(0, 0, 0, 0.35) 8px,
+        #000 20px,
+        #000 100%
+    ) !important;
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        rgba(0, 0, 0, 0.35) 8px,
+        #000 20px,
+        #000 100%
+    ) !important;
+}
+@media (max-width: 768px) {
+    body.is-chatting #homeView.chatting .chat-messages.active {
+        -webkit-mask-image: linear-gradient(
+            to bottom,
+            transparent 0,
+            rgba(0, 0, 0, 0.3) 10px,
+            #000 24px,
+            #000 100%
+        ) !important;
+        mask-image: linear-gradient(
+            to bottom,
+            transparent 0,
+            rgba(0, 0, 0, 0.3) 10px,
+            #000 24px,
+            #000 100%
+        ) !important;
+    }
+}
+
+#homeView.chatting .home-center {
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+}
+
+/* 同槽 32×32：空态 voice、有字 send（隐藏态由 .hidden 规则收成 0） */
+.composer-send-slot .voice-btn:not(.hidden) {
+    width: 32px !important;
+    height: 32px !important;
+    flex: 0 0 32px !important;
+    border-radius: 8px !important;
+}
+.composer-send-slot .send-btn svg,
+.composer-send-slot .voice-btn svg {
+    flex: 0 0 auto;
+}
