@@ -168,6 +168,8 @@
     // 两条线折叠成一张卡，代表是 gpt-6-astra；Pro 分组也登记一份，免得日后换代表后卡面掉回随机图。
     "gpt-6-astra": "gpt6-astra.png",
     "gpt-6-astra-pro": "gpt6-astra.png",
+    // 2026-09-21: Pro5x 分组（moyuu）并进同一张卡，同样登记一份。
+    "gpt-6-astra-pro5x": "gpt6-astra.png",
   };
 
   var HIDE_IDS = {
