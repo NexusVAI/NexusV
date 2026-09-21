@@ -1718,7 +1718,7 @@
   }
 
   function wireCreateKeyButton(onCreate) {
-    var needles = ["Create new secret key", "创建新密钥", "Create an API key"];
+    var needles = ["Create new secret key", "创建新密钥", "Create an API key", "创建 API 密钥"];
     document.querySelectorAll("button").forEach(function (btn) {
       var txt = (btn.textContent || "").replace(/\s+/g, " ").trim();
       var hit = false;

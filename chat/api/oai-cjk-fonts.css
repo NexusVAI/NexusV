@@ -5,26 +5,28 @@
  *   Noto Sans SC first (what Codex desktop actually hits for Chinese).
  *   Never put system-ui before CJK names — Windows would lock onto YaHei.
  *
- * OpenAI Sans files: cancri-code/tasks/_codex-dump/ → chat/assets/fonts/
+ * OpenAI Sans source: cancri-code/tasks/_codex-dump/ → chat/assets/fonts/
+ * Use an installed copy only: these font files are not published with the site.
+ * When unavailable, retain the system Latin and CJK fallbacks below.
  * (Latin only ~50KB; Chinese always falls through --font-cjk.)
  */
 @font-face {
   font-family: "OpenAI Sans";
-  src: url("../assets/fonts/OpenAISans-Regular.woff2") format("woff2");
+  src: local("OpenAI Sans Regular"), local("OpenAISans-Regular");
   font-style: normal;
   font-weight: 400;
   font-display: swap;
 }
 @font-face {
   font-family: "OpenAI Sans";
-  src: url("../assets/fonts/OpenAISans-Medium.woff2") format("woff2");
+  src: local("OpenAI Sans Medium"), local("OpenAISans-Medium");
   font-style: normal;
   font-weight: 500;
   font-display: swap;
 }
 @font-face {
   font-family: "OpenAI Sans";
-  src: url("../assets/fonts/OpenAISans-Medium.woff2") format("woff2");
+  src: local("OpenAI Sans Medium"), local("OpenAISans-Medium");
   font-style: normal;
   font-weight: 600 700;
   font-display: swap;

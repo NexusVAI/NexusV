@@ -3670,6 +3670,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   let voiceRecognition = null;
   let voiceListening = false;
   let voiceBaseText = "";
+  let voiceInputEpoch = 0;
 
   // ── 2026-09-19：服务端转写通道（MediaRecorder → voice_transcribe）────────
   //
@@ -4170,12 +4171,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     }
   }
   
-  function clearPendingAttachments() {
+  function clearPendingAttachments(attachments = pendingAttachments.slice()) {
+    const consumed = pendingAttachments.filter((item) => attachments.includes(item));
     const attachmentService = window.NexusWorkbench?.fileAttachments;
     if (attachmentService?.cleanupAttachments) {
-      attachmentService.cleanupAttachments(pendingAttachments);
+      attachmentService.cleanupAttachments(consumed);
     } else {
-      pendingAttachments.forEach((item) => {
+      consumed.forEach((item) => {
         if (item?.previewUrl?.startsWith("blob:")) {
           URL.revokeObjectURL(item.previewUrl);
         }
@@ -4183,7 +4185,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     }
     // pendingAttachments 是 const 数组，不能整体替换，只能就地清空，
     // 否则会触发 "Assignment to constant variable" 运行时错误。
-    pendingAttachments.length = 0;
+    for (let i = pendingAttachments.length - 1; i >= 0; i -= 1) {
+      if (consumed.includes(pendingAttachments[i])) pendingAttachments.splice(i, 1);
+    }
     updateAttachmentPreview();
   }
   
@@ -4351,8 +4355,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     voiceRecognition.continuous = false;
     voiceRecognition.interimResults = true;
     voiceRecognition.maxAlternatives = 1;
+    const recognition = voiceRecognition;
   
     voiceRecognition.onstart = () => {
+      if (voiceRecognition !== recognition) return;
       voiceListening = true;
       voiceBaseText = homeInput.value;
       updateVoiceButtonState();
@@ -4360,6 +4366,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     };
   
     voiceRecognition.onresult = (event) => {
+      if (voiceRecognition !== recognition) return;
       const transcript = Array.from(event.results)
         .map((result) => String(result?.[0]?.transcript || ""))
         .join("")
@@ -4373,11 +4380,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     };
   
     voiceRecognition.onend = () => {
+      if (voiceRecognition !== recognition) return;
       voiceListening = false;
       updateVoiceButtonState();
     };
   
     voiceRecognition.onerror = (event) => {
+      if (voiceRecognition !== recognition) return;
       voiceListening = false;
       updateVoiceButtonState();
       if (event.error === "aborted") return;
@@ -4444,15 +4453,19 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
   
   function stopVoiceRecognition() {
-    // 发送消息 / 清空会话时调用：Web Speech、录音、在途转写全停。
-    if (voiceRecognition && voiceListening) {
-      try {
-        voiceRecognition.stop();
-      } catch {
-        voiceListening = false;
-      }
+    // 导航 / 发送 / 登出是取消；只有再次点击麦克风才正常结束并提交录音。
+    voiceInputEpoch++;
+    const recognition = voiceRecognition;
+    voiceRecognition = null;
+    voiceListening = false;
+    if (recognition) {
+      try { recognition.abort(); } catch {}
     }
-    if (voiceRecording) stopVoiceRecording();
+    const recorder = voiceRecorder;
+    cleanupVoiceRecording();
+    if (recorder && recorder.state !== "inactive") {
+      try { recorder.stop(); } catch {}
+    }
     if (voiceTranscribeAbort) {
       voiceTranscribeAbort.abort();
       voiceTranscribeAbort = null;
@@ -4466,6 +4479,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   // ── MediaRecorder → voice_transcribe 服务端转写 ───────────────────────────
   
   async function startVoiceRecording() {
+    const voiceEpoch = ++voiceInputEpoch;
+    const epoch = authSessionEpoch;
+    const navigationSeq = loadChatSeq;
+    const isCurrentRecording = () => voiceEpoch === voiceInputEpoch &&
+      epoch === authSessionEpoch && navigationSeq === loadChatSeq;
     const mime = pickVoiceRecorderMime();
     if (!mime) {
       showToast("当前浏览器不支持语音输入");
@@ -4475,6 +4493,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
+      if (!isCurrentRecording()) return;
       const name = err && err.name ? err.name : "";
       showToast(
         name === "NotAllowedError" || name === "SecurityError"
@@ -4483,6 +4502,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
             ? "没有找到可用的麦克风"
             : "无法访问麦克风",
       );
+      return;
+    }
+    if (!isCurrentRecording()) {
+      stream.getTracks().forEach((t) => t.stop());
       return;
     }
     let recorder;
@@ -4499,12 +4522,15 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     voiceRecording = true;
   
     recorder.ondataavailable = (e) => {
+      if (!isCurrentRecording() || voiceRecorder !== recorder) return;
       if (e.data && e.data.size) voiceRecorderChunks.push(e.data);
     };
     recorder.onstop = () => {
+      if (!isCurrentRecording() || voiceRecorder !== recorder) return;
       void finishVoiceRecording();
     };
     recorder.onerror = () => {
+      if (!isCurrentRecording() || voiceRecorder !== recorder) return;
       cleanupVoiceRecording();
       updateVoiceButtonState();
       showToast("录音失败，请重试");
@@ -4518,7 +4544,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       return;
     }
     voiceRecordStopTimer = setTimeout(() => {
-      if (voiceRecording) {
+      if (isCurrentRecording() && voiceRecorder === recorder && voiceRecording) {
         showToast("已到 60 秒上限，自动停止");
         stopVoiceRecording();
       }
@@ -4602,12 +4628,20 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
   
   async function transcribeVoiceBlob(blob) {
+    const epoch = authSessionEpoch;
+    const navigationSeq = loadChatSeq;
+    const voiceEpoch = voiceInputEpoch;
+    const controller = new AbortController();
+    const isCurrentTranscription = () => !controller.signal.aborted &&
+      voiceTranscribeAbort === controller && voiceEpoch === voiceInputEpoch &&
+      epoch === authSessionEpoch && navigationSeq === loadChatSeq;
     voiceTranscribing = true;
     updateVoiceButtonState();
-    voiceTranscribeAbort = new AbortController();
+    voiceTranscribeAbort = controller;
     try {
       const client = getSupabaseClient();
       const { data } = await client.auth.getSession();
+      if (!isCurrentTranscription()) return;
       const token = data?.session?.access_token;
       if (!token) {
         showToast("请先登录后再使用语音输入");
@@ -4619,6 +4653,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         return;
       }
       const audio = await blobToBase64(blob);
+      if (!isCurrentTranscription()) return;
       const resp = await gatewayFetch(`${baseUrl}/functions/v1/chat-gateway`, {
         method: "POST",
         headers: {
@@ -4632,9 +4667,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           mime: blob.type || "",
           lang: speechToAsrLang(),
         }),
-        signal: voiceTranscribeAbort.signal,
+        signal: controller.signal,
       });
+      if (!isCurrentTranscription()) return;
       const j = await resp.json().catch(() => null);
+      if (!isCurrentTranscription()) return;
       if (!resp.ok) {
         showToast(voiceTranscribeErrorMessage(j, resp.status));
         return;
@@ -4649,12 +4686,15 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       homeInput.dispatchEvent(new Event("input", { bubbles: true }));
       showToast("语音输入完成");
     } catch (err) {
+      if (!isCurrentTranscription()) return;
       if (err && err.name === "AbortError") return;
       showToast("语音识别网络异常，请检查网络后重试");
     } finally {
-      voiceTranscribing = false;
-      voiceTranscribeAbort = null;
-      updateVoiceButtonState();
+      if (voiceTranscribeAbort === controller) {
+        voiceTranscribing = false;
+        voiceTranscribeAbort = null;
+        updateVoiceButtonState();
+      }
     }
   }
   
@@ -5202,6 +5242,33 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   let authSessionPromise = null;
   let authSessionInflight = null;
   let authInitialized = false;
+  let authSessionEpoch = 0;
+  let authUserId = "";
+
+  function clearAccountSessionState() {
+    authSessionEpoch += 1;
+    authUserId = "";
+    authSessionPromise = null;
+    authSessionInflight = null;
+    lastResolvedSession = null;
+    authInitialized = false;
+    for (const gen of activeGenerations.values()) {
+      gen.status = "cancelled";
+      gen.controller?.abort(createAbortError("登录账号已改变。"));
+      unregisterGeneration(gen);
+    }
+    clearConversation();
+    clearSessionNav();
+    clearUnsavedNotice();
+    chatHistoryListRenderSeq += 1;
+    chatHistoryList = [];
+    try { localStorage.removeItem(CHAT_HISTORY_LIST_CACHE_KEY); } catch {}
+    const list = document.getElementById("chatHistoryList");
+    if (list) list.innerHTML = "";
+    state.userMemories = [];
+    state.userMemoryEnabled = true;
+    renderMemoriesInSettings();
+  }
   
   function getSupabaseClient() {
     if (supabaseClient) return supabaseClient;
@@ -5317,6 +5384,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
   function updateAccountInfo(user) {
     if (!user) return;
+    const userId = String(user.id || "");
+    const userChanged = userId !== authUserId;
+    if (authUserId && userId !== authUserId) clearAccountSessionState();
+    authUserId = userId;
+    if (userChanged) restoreComposerDraft();
     const email = user.email || "";
     const displayName =
       getNickname() ||
@@ -5350,11 +5422,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     // 旧实现把首次 session 永久缓存在 authSessionPromise 里，TOKEN_REFRESHED
     // 后仍发送过期 JWT → chat-gateway 返回 invalid_session（用户看到「登录已失效」）。
     if (authSessionInflight) return authSessionInflight;
+    const epoch = authSessionEpoch;
     authSessionInflight = (async () => {
       try {
         const client = getSupabaseClient();
         const { data: sessionData, error: sessionError } =
           await client.auth.getSession();
+        if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
         if (sessionError) throw sessionError;
         if (sessionData?.session?.access_token) {
           const user = sessionData.session.user;
@@ -5370,6 +5444,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         showAuthOverlay();
         throw new Error("请先登录后再使用。");
       } catch (error) {
+        if (epoch !== authSessionEpoch) throw error;
         authSessionPromise = null;
         const raw = error instanceof Error ? error.message : String(error);
         if (/assignment to constant|immutable|readonly|cannot assign/i.test(raw)) {
@@ -5378,7 +5453,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         }
         throw error;
       } finally {
-        authSessionInflight = null;
+        if (epoch === authSessionEpoch) authSessionInflight = null;
       }
     })();
     return authSessionInflight;
@@ -5392,11 +5467,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   // 还是有效的，强制刷一次就能恢复，用户根本不该看到那条错误。
   // 这里只做「强制刷新」这一件事；是否重试由调用方决定。
   async function forceRefreshAuthSession() {
+    const epoch = authSessionEpoch;
     authSessionPromise = null;
     authSessionInflight = null;
     try {
       const client = getSupabaseClient();
       const { data, error } = await client.auth.refreshSession();
+      if (epoch !== authSessionEpoch) return null;
       if (error) throw error;
       const session = data?.session || null;
       if (session?.access_token) {
@@ -5429,17 +5506,28 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   // 带一次「刷新 token 后重发」的通用外壳。send(session) 必须是可重入的
   // （每次调用自己重新构造 body），因为第二次要换成新的 access_token。
   async function fetchWithSessionRetry(send) {
+    const epoch = authSessionEpoch;
     const session = await ensureAuthSession();
+    if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
     const response = await send(session);
-    if (!(await isInvalidSessionResponse(response))) return response;
+    if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
+    const invalid = await isInvalidSessionResponse(response);
+    if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
+    if (!invalid) return response;
     const refreshed = await forceRefreshAuthSession();
+    if (epoch !== authSessionEpoch || (refreshed && refreshed.user?.id !== session.user?.id)) {
+      throw createAbortError("登录账号已改变。");
+    }
     if (!refreshed) {
       // refresh_token 也废了 —— 这才是真的掉线，给登录浮层而不是只丢一条 toast。
       showAuthOverlay();
       return response;
     }
     const retried = await send(refreshed);
-    if (await isInvalidSessionResponse(retried)) showAuthOverlay();
+    if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
+    const retryInvalid = await isInvalidSessionResponse(retried);
+    if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
+    if (retryInvalid) showAuthOverlay();
     return retried;
   }
 
@@ -5609,13 +5697,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           if (!hasSharedConversationHash()) renderChatHistoryList();
         }
       } else if (event === "SIGNED_OUT") {
-        authSessionPromise = null;
-        authInitialized = false;
+        clearAccountSessionState();
         // 其它窗口别再拿着已作废的会话继续发请求 —— 立刻让它们也弹登录。
         postCrossTabMessage("signed-out");
-        state.userMemories = [];
-        state.userMemoryEnabled = true;
-        renderMemoriesInSettings();
         showAuthOverlay();
         // 通知 claude_ui.js：已登出，档位回到免费 / 「请先登录」。
         try { window.dispatchEvent(new CustomEvent("cancri:auth-changed", { detail: { signedIn: false } })); } catch (_) {}
@@ -5765,7 +5849,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       const cached = JSON.parse(
         localStorage.getItem(CHAT_HISTORY_LIST_CACHE_KEY) || "[]",
       );
-      return Array.isArray(cached) ? cached : [];
+      return cached?.userId === authUserId && Array.isArray(cached.chats) ? cached.chats : [];
     } catch {
       return [];
     }
@@ -5776,7 +5860,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     try {
       localStorage.setItem(
         CHAT_HISTORY_LIST_CACHE_KEY,
-        JSON.stringify(chats.slice(0, 100)),
+        JSON.stringify({ userId: authUserId, chats: chats.slice(0, 100) }),
       );
     } catch {
       // localStorage may be full or disabled; server state remains authoritative.
@@ -6227,6 +6311,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   async function loadChat(chatId, { silent = false, skipSkeleton = false } = {}) {
     const seq = ++loadChatSeq;
     const isStale = () => seq !== loadChatSeq;
+    stopVoiceRecognition();
+    if (!hasActiveGeneration() && state.activeRequestController) {
+      state.activeRequestController.abort(createAbortError("已切换会话。"));
+      state.activeRequestController = null;
+    }
     // 离开当前对话前记下阅读位置，回来时还原。
     rememberChatScroll(currentChatId);
     exitSharedConversationMode();
@@ -6236,6 +6325,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     // 不必等服务端（增量保存最多落后 ~1.5s）。
     const liveGen = getGenerationByChatId(chatId);
     if (liveGen) {
+      liveGen.visible = true;
       currentChatId = chatId;
       loadedChatModel = String(liveGen.modelId || "").trim();
       conversationHistory = genCurrentMessages(liveGen);
@@ -6321,6 +6411,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
   // 新建聊天
   function newChat() {
+    loadChatSeq += 1;
+    stopVoiceRecognition();
+    if (!hasActiveGeneration() && state.activeRequestController) {
+      state.activeRequestController.abort(createAbortError("已切换会话。"));
+      state.activeRequestController = null;
+    }
     exitSharedConversationMode();
     // 后台生成不中断，但先把它的服务端行建出来，否则侧栏不会出现这一项，
     // 用户再也回不到那轮还在生成的对话。
@@ -7263,60 +7359,44 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
   
   async function saveChatHistory(messages) {
+    const epoch = authSessionEpoch;
+    const navigationSeq = loadChatSeq;
+    const snapshot = snapshotMessages(messages);
+    const model = currentModel;
     try {
-      const response = await proxyFetch(EDGE_FUNCTION_URL, {
-        method: "POST",
-        headers: await proxyHeaders(),
-        body: JSON.stringify({
-          endpoint: "chat_history",
-          action: "create",
-          title: await generateSmartTitle(messages),
-          messages: messages,
-          model: currentModel,
-        }),
-      });
-  
-      if (!response.ok) throw new Error("保存聊天记录失败");
-  
-      const { data } = await response.json();
-      currentChatId = data.id;
+      const title = await generateSmartTitle(snapshot);
+      if (epoch !== authSessionEpoch) return;
+      const data = await createChatHistoryRow(snapshot, model, title);
+      if (epoch !== authSessionEpoch) return;
+      if (navigationSeq === loadChatSeq) currentChatId = data.id;
       upsertCachedChatSummary(data);
       persistSessionNav();
       clearUnsavedNotice();
       return data;
     } catch (error) {
+      if (epoch !== authSessionEpoch) return;
       console.error("保存聊天记录失败:", error);
-      reportUnsavedChange("这个新对话没能保存到云端", () =>
-        saveChatHistory(messages),
-      );
+      reportUnsavedChange("这个新对话没能保存到云端", () => {
+        if (epoch === authSessionEpoch) return createChatHistoryRow(snapshot, model, deriveLocalTitle(snapshot));
+      });
     }
   }
   
   async function updateChatHistory(chatId, messages) {
+    const epoch = authSessionEpoch;
+    const snapshot = snapshotMessages(messages);
     try {
-      const response = await proxyFetch(EDGE_FUNCTION_URL, {
-        method: "POST",
-        headers: await proxyHeaders(),
-        body: JSON.stringify({
-          endpoint: "chat_history",
-          action: "update",
-          id: chatId,
-          messages: messages,
-          // title 不再每次更新：保留创建时的智能标题或手动重命名
-        }),
-      });
-  
-      if (!response.ok) throw new Error("更新聊天记录失败");
-  
-      const { data } = await response.json();
+      const data = await updateChatHistoryRow(chatId, snapshot);
+      if (epoch !== authSessionEpoch) return;
       upsertCachedChatSummary(data);
       clearUnsavedNotice();
       return data;
     } catch (error) {
+      if (epoch !== authSessionEpoch) return;
       console.error("更新聊天记录失败:", error);
-      reportUnsavedChange("这轮对话没能保存到云端", () =>
-        updateChatHistory(chatId, messages),
-      );
+      reportUnsavedChange("这轮对话没能保存到云端", () => {
+        if (epoch === authSessionEpoch) return updateChatHistory(chatId, snapshot);
+      });
     }
   }
   
@@ -7345,6 +7425,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
 
   async function loadChatHistoryList() {
+    const epoch = authSessionEpoch;
     try {
       const response = await proxyFetch(EDGE_FUNCTION_URL, {
         method: "POST",
@@ -7358,10 +7439,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       }
   
       const { data } = await response.json();
+      if (epoch !== authSessionEpoch) return [];
       chatHistoryList = data || [];
       writeCachedChatHistoryList(chatHistoryList);
       return chatHistoryList;
     } catch (error) {
+      if (epoch !== authSessionEpoch) return [];
       console.error("加载聊天记录列表失败:", error);
       const msg =
         error instanceof Error ? error.message : "加载聊天记录列表失败";
@@ -7486,13 +7569,16 @@ import loginIslandHtml from "../claude-login-island.html?raw";
 
   // 2026-05-20：获取用户记忆（从 user-memory edge function）
   async function fetchUserMemories(options = {}) {
+    const epoch = authSessionEpoch;
     const skipAutoSummarize = options.skipAutoSummarize === true;
     try {
       const session = await ensureAuthSession();
+      if (epoch !== authSessionEpoch) return;
       const response = await gatewayFetch(USER_MEMORY_URL, {
         method: "GET",
         headers: userMemoryRequestHeaders(session),
       });
+      if (epoch !== authSessionEpoch) return;
       if (!response.ok) {
         console.warn("[memory] API 响应非 OK:", response.status);
         state.userMemories = [];
@@ -7500,6 +7586,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         return;
       }
       const json = await response.json();
+      if (epoch !== authSessionEpoch) return;
       if (typeof json.memory_enabled === "boolean") {
         state.userMemoryEnabled = json.memory_enabled;
       }
@@ -7516,6 +7603,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         await fetchUserMemories({ skipAutoSummarize: true });
       }
     } catch (e) {
+      if (epoch !== authSessionEpoch) return;
       console.warn("[memory] 获取记忆失败:", e);
       state.userMemories = [];
       renderMemoriesInSettings({ error: "加载记忆失败，请检查网络后重试" });
@@ -9444,6 +9532,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       sessionStorage.setItem(
         SESSION_NAV_STORAGE_KEY,
         JSON.stringify({
+          userId: authUserId,
           view,
           chatting,
           chatId: chatting ? currentChatId || null : null,
@@ -9470,7 +9559,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       const raw = sessionStorage.getItem(SESSION_NAV_STORAGE_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      return parsed && typeof parsed === "object" ? parsed : null;
+      return parsed && typeof parsed === "object" && parsed.userId === authUserId ? parsed : null;
     } catch (_) {
       return null;
     }
@@ -9629,7 +9718,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     }
     if (msg.type === "signed-out") {
       if (!isAuthOverlayVisible()) {
-        stopActiveGeneration("已在另一个窗口退出登录。");
+        clearAccountSessionState();
         showAuthOverlay();
       }
     }
@@ -9668,7 +9757,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       if (text.trim()) {
         sessionStorage.setItem(
           COMPOSER_DRAFT_STORAGE_KEY,
-          JSON.stringify({ chatId: currentChatId || "", text }),
+          JSON.stringify({ userId: authUserId, chatId: currentChatId || "", text }),
         );
       } else {
         sessionStorage.removeItem(COMPOSER_DRAFT_STORAGE_KEY);
@@ -9700,6 +9789,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       const raw = sessionStorage.getItem(COMPOSER_DRAFT_STORAGE_KEY);
       if (!raw) return;
       const saved = JSON.parse(raw);
+      if (!authUserId || saved?.userId !== authUserId) return;
       if (!saved || typeof saved.text !== "string" || !saved.text.trim()) return;
       homeInput.value = saved.text;
       autoResizeComposerInput();
@@ -12839,6 +12929,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     metadata,
     attachments = [],
   ) {
+    const epoch = authSessionEpoch;
+    const navigationSeq = loadChatSeq;
+    const isCurrentTurn = () => epoch === authSessionEpoch && navigationSeq === loadChatSeq;
     const turnUserIndex = conversationHistory.length;
     createUserMessage(query, attachments, turnUserIndex);
     homeInput.value = "";
@@ -12885,6 +12978,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
     try {
       const imageUrl = await generateImageFromPrompt(query, modelId, attachments);
+      if (!isCurrentTurn()) return;
       if (imageUrl) {
         // 先把占位动画卡拆掉，再清空气泡 → 注入真实图片
         if (chatImagePendingLoader && !chatImagePendingLoader.isDestroyed()) {
@@ -12917,6 +13011,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         pushHistory(assistantErrorHistoryMessage(metadata, modelId));
       }
     } catch (error) {
+      if (!isCurrentTurn()) return;
       if (error?.name === "AbortError") {
         updateAssistantMessage(assistantMessageId, {
           answer: "已停止生成。",
@@ -12938,7 +13033,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       if (chatImagePendingLoader && !chatImagePendingLoader.isDestroyed()) {
         chatImagePendingLoader.destroy();
       }
-      setComposerBusy(false);
+      if (isCurrentTurn()) setComposerBusy(false);
     }
   }
   
@@ -13022,10 +13117,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     modelId = "happyhorse-1.0-i2v",
     attachments = [],
   ) {
+    const epoch = authSessionEpoch;
+    const navigationSeq = loadChatSeq;
     const value = String(prompt || "").trim();
     if (!value || state.isImageGenerating) return "";
   
     const media = await buildVideoMediaForModel(modelId, attachments, value);
+    if (epoch !== authSessionEpoch || navigationSeq !== loadChatSeq) throw createAbortError("已切换会话。");
   
     // Track an abort controller for the whole video flow (submit + poll). The
     // global stop button reads `state.activeRequestController` and can now
@@ -13159,6 +13257,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     metadata,
     attachments = [],
   ) {
+    const epoch = authSessionEpoch;
+    const navigationSeq = loadChatSeq;
+    const isCurrentTurn = () => epoch === authSessionEpoch && navigationSeq === loadChatSeq;
     const turnUserIndex = conversationHistory.length;
     createUserMessage(query, attachments, turnUserIndex);
     homeInput.value = "";
@@ -13204,6 +13305,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         modelId,
         attachments,
       );
+      if (!isCurrentTurn()) return;
       if (videoUrl) {
         // 先把占位动画卡拆掉，再清空气泡 → 注入真实视频。
         if (videoPendingLoader && !videoPendingLoader.isDestroyed()) {
@@ -13275,6 +13377,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         pushHistory(assistantErrorHistoryMessage(metadata, modelId));
       }
     } catch (error) {
+      if (!isCurrentTurn()) return;
       if (error?.name === "AbortError") {
         updateAssistantMessage(assistantMessageId, {
           answer: "已停止生成。",
@@ -13296,7 +13399,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       if (videoPendingLoader && !videoPendingLoader.isDestroyed()) {
         videoPendingLoader.destroy();
       }
-      setComposerBusy(false);
+      if (isCurrentTurn()) setComposerBusy(false);
     }
   }
   
@@ -14397,7 +14500,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
   
   function clearConversation() {
+    loadChatSeq += 1;
     exitSharedConversationMode();
+    parkChatlessGeneration();
+    currentChatId = null;
+    loadedChatModel = "";
     stopVoiceRecognition();
     clearPinnedTurnReserve();
     // 2026-06-17：有后台生成在进行时不中断它（转入后台继续 + 侧栏转圈 + 完成通知）；
@@ -14496,6 +14603,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
   
   async function saveOrUpdateChatHistory() {
+    const epoch = authSessionEpoch;
+    const chatIdForRetry = currentChatId;
+    const snapshot = snapshotMessages(conversationHistory);
     try {
       let savedChat = null;
       if (currentChatId) {
@@ -14503,6 +14613,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       } else if (conversationHistory.length > 0) {
         savedChat = await saveChatHistory(conversationHistory);
       }
+      if (epoch !== authSessionEpoch) return;
       if (savedChat) {
         // 刷新聊天记录列表
         renderChatHistoryList();
@@ -14513,21 +14624,25 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         );
       }
     } catch (error) {
+      if (epoch !== authSessionEpoch) return;
       console.error("自动保存聊天记录失败:", error);
-      const chatIdForRetry = currentChatId;
-      const snapshot = snapshotMessages(conversationHistory);
-      reportUnsavedChange("对话没能保存到云端", () =>
-        chatIdForRetry
+      reportUnsavedChange("对话没能保存到云端", () => {
+        if (epoch !== authSessionEpoch) return;
+        return chatIdForRetry
           ? updateChatHistory(chatIdForRetry, snapshot)
-          : saveChatHistory(snapshot),
-      );
+          : saveChatHistory(snapshot);
+      });
     }
   }
   
   async function finalizeConversationTurn() {
+    const epoch = authSessionEpoch;
+    const navigationSeq = loadChatSeq;
+    const attachments = pendingAttachments.slice();
     await saveOrUpdateChatHistory();
+    if (epoch !== authSessionEpoch || navigationSeq !== loadChatSeq) return;
     updateChatShareButtonVisibility();
-    clearPendingAttachments();
+    clearPendingAttachments(attachments);
   }
   
   // 2026-09-19：这里原来会把非多模态模型的图片段替换成「（含 N 张图片）」这种
@@ -15958,7 +16073,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
 
   // 某个生成所属的对话是否正是用户当前看着的对话（用于决定是否同步全局/DOM、是否通知）。
   function isGenVisible(gen) {
-    if (!gen) return false;
+    if (!gen || gen.visible === false) return false;
     if (gen.chatId) return currentChatId === gen.chatId && isChatViewVisible();
     // 新对话还没拿到 id：仅当没切到其它已存对话、且仍在聊天态时算可见。
     return !currentChatId && isChatViewVisible();
@@ -16038,6 +16153,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   // 这里只是把时机提前到「用户真的要走」的那一刻。
   function parkChatlessGeneration() {
     for (const g of activeGenerations.values()) {
+      g.visible = false;
       if (g.status === "streaming" && !g.chatId) void ensureGenChatRow(g);
     }
   }
@@ -16072,9 +16188,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
 
   // 低层持久化：不触碰任何全局（currentChatId / conversationHistory），供后台生成专用。
   async function createChatHistoryRow(messages, model, title) {
+    const epoch = authSessionEpoch;
+    const headers = await proxyHeaders();
+    if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
     const response = await proxyFetch(EDGE_FUNCTION_URL, {
       method: "POST",
-      headers: await proxyHeaders(),
+      headers,
       body: JSON.stringify({
         endpoint: "chat_history",
         action: "create",
@@ -16089,11 +16208,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
 
   async function updateChatHistoryRow(chatId, messages, title) {
+    const epoch = authSessionEpoch;
     const body = { endpoint: "chat_history", action: "update", id: chatId, messages };
     if (typeof title === "string" && title.trim()) body.title = title.trim();
+    const headers = await proxyHeaders();
+    if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
     const response = await proxyFetch(EDGE_FUNCTION_URL, {
       method: "POST",
-      headers: await proxyHeaders(),
+      headers,
       body: JSON.stringify(body),
     });
     if (!response.ok) throw new Error("更新聊天记录失败");
@@ -16118,8 +16240,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     return out;
   }
 
-  function beginGeneration({ modelMetadata, modelId, assistantMessageId, controller, baseMessages, userMessage }) {
+  function beginGeneration({ modelMetadata, modelId, assistantMessageId, controller, baseMessages, userMessage, attachments = [] }) {
     const gen = {
+      authEpoch: authSessionEpoch,
+      attachments,
       tempKey: "gen-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
       chatId: currentChatId || null,
       isNewConversation: !currentChatId,
@@ -16140,6 +16264,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       _savedFingerprint: null,
       _saveTimer: null,
       _saving: false,
+      _savePromise: null,
+      _finalizing: false,
       _rerenderTimer: null,
       _creating: null,
       _titleUpgraded: false,
@@ -16152,6 +16278,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   // 拿到（或惰性创建）服务端 chat_history 行 id。新对话首次增量保存时创建一行，
   // 这样侧栏立即出现该对话 + 转圈，整页刷新也能从服务端恢复已生成内容。
   function ensureGenChatRow(gen) {
+    if (gen.authEpoch !== authSessionEpoch) return Promise.resolve(null);
     if (gen.chatId) return Promise.resolve(gen.chatId);
     if (gen._creating) return gen._creating;
     gen._creating = (async () => {
@@ -16159,6 +16286,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         const msgs = genCurrentMessages(gen);
         gen.localTitle = deriveLocalTitle(msgs);
         const data = await createChatHistoryRow(msgs, gen.modelId, gen.localTitle);
+        if (gen.authEpoch !== authSessionEpoch) return null;
         if (data && data.id) {
           gen.chatId = data.id;
           // 这批消息已随 create 落库，记下指纹，避免紧接着的首次 flush 重写一遍。
@@ -16183,7 +16311,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
 
   function scheduleGenSave(gen) {
-    if (gen.status !== "streaming") return;
+    if (gen.status !== "streaming" || gen._finalizing || gen.authEpoch !== authSessionEpoch) return;
     if (gen._saveTimer) return;
     const wait = Math.max(0, INCREMENTAL_SAVE_INTERVAL_MS - (Date.now() - gen.lastSavedAt));
     gen._saveTimer = setTimeout(() => {
@@ -16210,7 +16338,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
 
   // 卸载期专用的保存：用 keepalive fetch，让请求在文档销毁后仍能发完。
-  // 返回是否已经把请求发出去了（false = 调用方继续走普通路径）。
+  // 同步发出请求、返回确认 Promise；仍活着的页面需等待它，防止晚到覆盖最终保存。
   // 注意不能用 navigator.sendBeacon：它发不了自定义 header，而网关要 apikey。
   const KEEPALIVE_BODY_LIMIT = 60 * 1024;
   function sendGenSaveBeacon(chatId, messages) {
@@ -16225,13 +16353,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         __auth_token: session.access_token,
       });
       if (body.length > KEEPALIVE_BODY_LIMIT) return false;
-      void fetch(EDGE_FUNCTION_URL, {
+      return fetch(EDGE_FUNCTION_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
         body,
         keepalive: true,
-      }).catch(() => {});
-      return true;
+      }).then((response) => response.ok).catch(() => false);
     } catch (_e) {
       return false;
     }
@@ -16244,12 +16371,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     return lastResolvedSession;
   }
 
-  async function flushGenSave(gen, { unloading = false } = {}) {
-    if (gen._saving) return;
+  function flushGenSave(gen, { unloading = false } = {}) {
+    if (gen._savePromise) return gen._savePromise;
+    if (gen._finalizing || gen.authEpoch !== authSessionEpoch) return Promise.resolve();
     gen._saving = true;
+    gen._savePromise = (async () => {
     try {
       const chatId = await ensureGenChatRow(gen);
-      if (chatId && gen.status === "streaming") {
+      if (chatId && gen.status === "streaming" && gen.authEpoch === authSessionEpoch) {
         const messages = genCurrentMessages(gen);
         const fingerprint = fingerprintMessages(messages);
         // 2026-09-18：页面正在卸载时，普通 fetch 会被浏览器直接掐断 ——
@@ -16257,7 +16386,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         // 在文档销毁后仍能发完。它有 64KB 体积上限，超了就退回普通请求
         // （超限的多半是带 base64 图的长对话，那种本来也救不回来）。
         if (unloading) {
-          const saved = sendGenSaveBeacon(chatId, messages);
+          const saved = await sendGenSaveBeacon(chatId, messages);
+          if (gen.authEpoch !== authSessionEpoch) return;
           if (saved) {
             gen._savedFingerprint = fingerprint;
             gen.lastSavedAt = Date.now();
@@ -16276,7 +16406,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       // 增量保存失败不影响生成，下个 chunk 会再排一次
     } finally {
       gen._saving = false;
+      gen._savePromise = null;
     }
+    })();
+    return gen._savePromise;
   }
 
   function scheduleVisibleRerender(gen) {
@@ -16319,6 +16452,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       if (gen._creating) {
         try { await gen._creating; } catch (_) {}
       }
+      if (gen.authEpoch !== authSessionEpoch) { unregisterGeneration(gen); return; }
       if (gen.chatId && history) {
         if (history.length) {
           const saved = await updateChatHistoryRow(gen.chatId, history);
@@ -16340,9 +16474,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
 
   async function commitGeneration(gen, assistantMessage) {
-    gen.status = "done";
+    if (gen.authEpoch !== authSessionEpoch) { unregisterGeneration(gen); return; }
+    gen._finalizing = true;
     clearGenSaveTimer(gen);
     if (gen._rerenderTimer) { clearTimeout(gen._rerenderTimer); gen._rerenderTimer = null; }
+    // 最终写入（含撤回）必须排在已发出的增量写入之后。
+    if (gen._savePromise) await gen._savePromise;
+    if (gen.authEpoch !== authSessionEpoch) { unregisterGeneration(gen); return; }
 
     // 被「撤回输入」丢弃的一轮绝不能按 gen.baseMessages 重建（见 undoUserMessage）。
     if (gen.discarded) {
@@ -16358,21 +16496,29 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     let savedChat = null;
     try {
       if (gen._creating) { try { await gen._creating; } catch (_) {} }
+      if (gen.authEpoch !== authSessionEpoch) { unregisterGeneration(gen); return; }
+      const smartTitle = await maybeUpgradeSmartTitle(gen, finalMessages);
+      if (gen.authEpoch !== authSessionEpoch) { unregisterGeneration(gen); return; }
+      if (gen.discarded) { await discardGeneration(gen); return; }
+      if (smartTitle) gen.localTitle = smartTitle;
       if (gen.chatId) {
-        savedChat = await updateChatHistoryRow(gen.chatId, finalMessages);
+        savedChat = await updateChatHistoryRow(gen.chatId, finalMessages, smartTitle || undefined);
       } else {
         gen.localTitle = gen.localTitle || deriveLocalTitle(finalMessages);
         savedChat = await createChatHistoryRow(finalMessages, gen.modelId, gen.localTitle);
         if (savedChat && savedChat.id) gen.chatId = savedChat.id;
       }
+      if (gen.authEpoch !== authSessionEpoch) { unregisterGeneration(gen); return; }
       if (savedChat) upsertCachedChatSummary(savedChat);
       clearUnsavedNotice();
     } catch (error) {
+      if (gen.authEpoch !== authSessionEpoch) { unregisterGeneration(gen); return; }
       // 这一轮的答案已经在屏幕上了，用户以为存好了。必须让失败可见 + 可重试，
       // 否则刷新之后这条（已计费的）回答就凭空消失。
       console.error("保存对话失败:", error);
       const chatIdForRetry = gen.chatId;
       reportUnsavedChange("这轮回答没能保存到云端", async () => {
+        if (gen.authEpoch !== authSessionEpoch) return;
         if (chatIdForRetry) {
           const saved = await updateChatHistoryRow(chatIdForRetry, finalMessages);
           if (saved) upsertCachedChatSummary(saved);
@@ -16405,9 +16551,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       syncAskUserFromHistory();
     }
 
-    // 与旧版 finalizeConversationTurn 行为一致：分享按钮 + 附件清理始终执行。
+    gen.status = "done";
     updateChatShareButtonVisibility();
-    clearPendingAttachments();
+    if (gen.attachments?.length) clearPendingAttachments(gen.attachments);
     unregisterGeneration(gen);
     refreshSidebarSpinners();
     renderChatHistoryList();
@@ -16422,7 +16568,6 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     // 另一个窗口会每 10s 重载一次同一个对话。
     postCrossTabMessage("chat-updated", { chatId: gen.chatId });
     notifyGenerationComplete(gen, visible);
-    maybeUpgradeSmartTitle(gen, finalMessages);
   }
 
   // 侧栏的「生成中」转圈同时就是停止按钮 —— 用户一旦切去别的对话，这是唯一
@@ -16504,7 +16649,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   // 新对话首轮：调后端 DeepSeek 端点生成简洁标题，替换掉「取首句」的本地快速标题。
   async function maybeUpgradeSmartTitle(gen, finalMessages) {
     try {
-      if (!gen.chatId) return;
+      if (gen.authEpoch !== authSessionEpoch || gen.controller?.signal.aborted) return "";
       if (!gen.isNewConversation) return;
       if (gen.baseMessages.length > 0) return;
       if (gen._titleUpgraded) return;
@@ -16516,19 +16661,19 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         .map((m) => ({ role: m.role, content: extractMessageText(m.content).slice(0, 1500) }))
         .filter((m) => m.content);
       if (!compact.length) return;
-      const response = await proxyFetch(GEN_TITLE_URL, {
+      const headers = await proxyHeaders();
+      if (gen.authEpoch !== authSessionEpoch) return "";
+      const response = await proxyFetchWithTimeout(GEN_TITLE_URL, {
         method: "POST",
-        headers: await proxyHeaders(),
+        headers,
+        signal: gen.controller?.signal,
         body: JSON.stringify({ messages: compact }),
-      });
+      }, 8000, "生成对话标题");
       if (!response.ok) return;
       const { title } = await response.json();
+      if (gen.authEpoch !== authSessionEpoch) return "";
       const clean = String(title || "").trim();
-      if (!clean || clean === gen.localTitle) return;
-      await updateChatHistoryRow(gen.chatId, finalMessages, clean);
-      upsertCachedChatSummary({ id: gen.chatId, title: clean, model: gen.modelId });
-      renderChatHistoryList();
-      dispatchChatTitleUpdated(clean, gen.chatId);
+      return clean;
     } catch (error) {
       // 标题升级失败时保留本地快速标题，不影响其它功能
     }
@@ -16769,6 +16914,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   });
 
   async function sendMessage(content) {
+    const sendAuthEpoch = authSessionEpoch;
     // 检查速率限制
     const rateCheck = checkRateLimit();
     if (!rateCheck.allowed) {
@@ -16898,7 +17044,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           attachmentsForSend,
           turnModelId,
         );
+        if (sendAuthEpoch !== authSessionEpoch) return;
       } catch (error) {
+        if (sendAuthEpoch !== authSessionEpoch) return;
         showToast(normalizeErrorMessage(error, "附件处理失败，请稍后重试。"));
         setComposerBusy(false);
         updateComposerToolStatus();
@@ -16906,6 +17054,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       }
     }
 
+    if (sendAuthEpoch !== authSessionEpoch) return;
     createUserMessage(query || effectiveQuery, attachmentsForSend, turnUserIndex);
     homeInput.value = "";
     autoResizeComposerInput();
@@ -16918,6 +17067,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     if (!isModelAvailable(turnModelId)) {
       await refreshSharedQuota().catch(() => {});
     }
+    if (sendAuthEpoch !== authSessionEpoch) return;
   
     const currentStatus = getModelStatus(turnModelId);
     if (!isModelAvailable(turnModelId)) {
@@ -16966,6 +17116,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       controller,
       baseMessages: snapshotMessages(conversationHistory),
       userMessage: userHistoryMessage,
+      attachments: attachmentsForSend,
     });
     turnGen.turnMessages = turnMessages;
   
@@ -17235,7 +17386,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       if (state.activeRequestController === controller) {
         state.activeRequestController = null;
       }
-      setComposerBusy(false);
+      if (sendAuthEpoch === authSessionEpoch) setComposerBusy(false);
       // 2026-09-18：这里原本会在每次发送后把联网搜索自动关掉。用户的体感是
       // 「开了搜索、问一句、下一句就悄悄不搜了」，而答案照样一本正经 —— 静默
       // 降级比多搜一次危险得多。改成会话内保持开启（与主流产品一致）。

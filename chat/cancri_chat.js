@@ -10082,6 +10082,7 @@
 	var voiceRecognition = null;
 	var voiceListening = false;
 	var voiceBaseText = "";
+	var voiceInputEpoch = 0;
 	var isAppleVoiceDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
 	var isMacSafariBrowser = !isAppleVoiceDevice && /Macintosh|Mac OS X/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/Chrome|Chromium|CriOS|Edg|EdgiOS|FxiOS|Firefox|OPR|OPT/.test(navigator.userAgent);
 	var voiceMediaRecorderOK = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined" && typeof MediaRecorder.isTypeSupported === "function";
@@ -10426,13 +10427,14 @@
 		if (contextMeterValue) contextMeterValue.textContent = formatTokenCount(usedTokens);
 		if (contextMeterText) contextMeterText.textContent = `当前会话上下文约使用 ${formatTokenCount(usedTokens)} tokens（估算）。上下文没有硬性上限，能否装下以所选模型实际支持为准。`;
 	}
-	function clearPendingAttachments() {
+	function clearPendingAttachments(attachments = pendingAttachments.slice()) {
+		const consumed = pendingAttachments.filter((item) => attachments.includes(item));
 		const attachmentService = window.NexusWorkbench?.fileAttachments;
-		if (attachmentService?.cleanupAttachments) attachmentService.cleanupAttachments(pendingAttachments);
-		else pendingAttachments.forEach((item) => {
+		if (attachmentService?.cleanupAttachments) attachmentService.cleanupAttachments(consumed);
+		else consumed.forEach((item) => {
 			if (item?.previewUrl?.startsWith("blob:")) URL.revokeObjectURL(item.previewUrl);
 		});
-		pendingAttachments.length = 0;
+		for (let i = pendingAttachments.length - 1; i >= 0; i -= 1) if (consumed.includes(pendingAttachments[i])) pendingAttachments.splice(i, 1);
 		updateAttachmentPreview();
 	}
 	function updateComposerToolStatus() {
@@ -10546,13 +10548,16 @@
 		voiceRecognition.continuous = false;
 		voiceRecognition.interimResults = true;
 		voiceRecognition.maxAlternatives = 1;
+		const recognition = voiceRecognition;
 		voiceRecognition.onstart = () => {
+			if (voiceRecognition !== recognition) return;
 			voiceListening = true;
 			voiceBaseText = homeInput.value;
 			updateVoiceButtonState();
 			showToast("开始语音输入");
 		};
 		voiceRecognition.onresult = (event) => {
+			if (voiceRecognition !== recognition) return;
 			const transcript = Array.from(event.results).map((result) => String(result?.[0]?.transcript || "")).join("").trim();
 			const nextText = `${voiceBaseText}${voiceBaseText && transcript ? " " : ""}${transcript}`.trim();
 			if (nextText) {
@@ -10561,10 +10566,12 @@
 			}
 		};
 		voiceRecognition.onend = () => {
+			if (voiceRecognition !== recognition) return;
 			voiceListening = false;
 			updateVoiceButtonState();
 		};
 		voiceRecognition.onerror = (event) => {
+			if (voiceRecognition !== recognition) return;
 			voiceListening = false;
 			updateVoiceButtonState();
 			if (event.error === "aborted") return;
@@ -10609,12 +10616,18 @@
 		}
 	}
 	function stopVoiceRecognition() {
-		if (voiceRecognition && voiceListening) try {
-			voiceRecognition.stop();
-		} catch {
-			voiceListening = false;
-		}
-		if (voiceRecording) stopVoiceRecording();
+		voiceInputEpoch++;
+		const recognition = voiceRecognition;
+		voiceRecognition = null;
+		voiceListening = false;
+		if (recognition) try {
+			recognition.abort();
+		} catch {}
+		const recorder = voiceRecorder;
+		cleanupVoiceRecording();
+		if (recorder && recorder.state !== "inactive") try {
+			recorder.stop();
+		} catch {}
 		if (voiceTranscribeAbort) {
 			voiceTranscribeAbort.abort();
 			voiceTranscribeAbort = null;
@@ -10623,6 +10636,10 @@
 		updateVoiceButtonState();
 	}
 	async function startVoiceRecording() {
+		const voiceEpoch = ++voiceInputEpoch;
+		const epoch = authSessionEpoch;
+		const navigationSeq = loadChatSeq;
+		const isCurrentRecording = () => voiceEpoch === voiceInputEpoch && epoch === authSessionEpoch && navigationSeq === loadChatSeq;
 		const mime = pickVoiceRecorderMime();
 		if (!mime) {
 			showToast("当前浏览器不支持语音输入");
@@ -10632,8 +10649,13 @@
 		try {
 			stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 		} catch (err) {
+			if (!isCurrentRecording()) return;
 			const name = err && err.name ? err.name : "";
 			showToast(name === "NotAllowedError" || name === "SecurityError" ? "麦克风权限被拒绝，请在设置中开启" : name === "NotFoundError" || name === "OverconstrainedError" ? "没有找到可用的麦克风" : "无法访问麦克风");
+			return;
+		}
+		if (!isCurrentRecording()) {
+			stream.getTracks().forEach((t) => t.stop());
 			return;
 		}
 		let recorder;
@@ -10649,12 +10671,15 @@
 		voiceRecorderChunks = [];
 		voiceRecording = true;
 		recorder.ondataavailable = (e) => {
+			if (!isCurrentRecording() || voiceRecorder !== recorder) return;
 			if (e.data && e.data.size) voiceRecorderChunks.push(e.data);
 		};
 		recorder.onstop = () => {
+			if (!isCurrentRecording() || voiceRecorder !== recorder) return;
 			finishVoiceRecording();
 		};
 		recorder.onerror = () => {
+			if (!isCurrentRecording() || voiceRecorder !== recorder) return;
 			cleanupVoiceRecording();
 			updateVoiceButtonState();
 			showToast("录音失败，请重试");
@@ -10667,7 +10692,7 @@
 			return;
 		}
 		voiceRecordStopTimer = setTimeout(() => {
-			if (voiceRecording) {
+			if (isCurrentRecording() && voiceRecorder === recorder && voiceRecording) {
 				showToast("已到 60 秒上限，自动停止");
 				stopVoiceRecording();
 			}
@@ -10741,11 +10766,17 @@
 		return "语音识别失败，请重试";
 	}
 	async function transcribeVoiceBlob(blob) {
+		const epoch = authSessionEpoch;
+		const navigationSeq = loadChatSeq;
+		const voiceEpoch = voiceInputEpoch;
+		const controller = new AbortController();
+		const isCurrentTranscription = () => !controller.signal.aborted && voiceTranscribeAbort === controller && voiceEpoch === voiceInputEpoch && epoch === authSessionEpoch && navigationSeq === loadChatSeq;
 		voiceTranscribing = true;
 		updateVoiceButtonState();
-		voiceTranscribeAbort = new AbortController();
+		voiceTranscribeAbort = controller;
 		try {
 			const { data } = await getSupabaseClient().auth.getSession();
+			if (!isCurrentTranscription()) return;
 			const token = data?.session?.access_token;
 			if (!token) {
 				showToast("请先登录后再使用语音输入");
@@ -10757,6 +10788,7 @@
 				return;
 			}
 			const audio = await blobToBase64(blob);
+			if (!isCurrentTranscription()) return;
 			const resp = await gatewayFetch(`${baseUrl}/functions/v1/chat-gateway`, {
 				method: "POST",
 				headers: {
@@ -10770,9 +10802,11 @@
 					mime: blob.type || "",
 					lang: speechToAsrLang()
 				}),
-				signal: voiceTranscribeAbort.signal
+				signal: controller.signal
 			});
+			if (!isCurrentTranscription()) return;
 			const j = await resp.json().catch(() => null);
+			if (!isCurrentTranscription()) return;
 			if (!resp.ok) {
 				showToast(voiceTranscribeErrorMessage(j, resp.status));
 				return;
@@ -10787,12 +10821,15 @@
 			homeInput.dispatchEvent(new Event("input", { bubbles: true }));
 			showToast("语音输入完成");
 		} catch (err) {
+			if (!isCurrentTranscription()) return;
 			if (err && err.name === "AbortError") return;
 			showToast("语音识别网络异常，请检查网络后重试");
 		} finally {
-			voiceTranscribing = false;
-			voiceTranscribeAbort = null;
-			updateVoiceButtonState();
+			if (voiceTranscribeAbort === controller) {
+				voiceTranscribing = false;
+				voiceTranscribeAbort = null;
+				updateVoiceButtonState();
+			}
 		}
 	}
 	function readFileAsDataUrl(file) {
@@ -11146,6 +11183,34 @@
 	var authSessionPromise = null;
 	var authSessionInflight = null;
 	var authInitialized = false;
+	var authSessionEpoch = 0;
+	var authUserId = "";
+	function clearAccountSessionState() {
+		authSessionEpoch += 1;
+		authUserId = "";
+		authSessionPromise = null;
+		authSessionInflight = null;
+		lastResolvedSession = null;
+		authInitialized = false;
+		for (const gen of activeGenerations.values()) {
+			gen.status = "cancelled";
+			gen.controller?.abort(createAbortError("登录账号已改变。"));
+			unregisterGeneration(gen);
+		}
+		clearConversation();
+		clearSessionNav();
+		clearUnsavedNotice();
+		chatHistoryListRenderSeq += 1;
+		chatHistoryList = [];
+		try {
+			localStorage.removeItem(CHAT_HISTORY_LIST_CACHE_KEY);
+		} catch {}
+		const list = document.getElementById("chatHistoryList");
+		if (list) list.innerHTML = "";
+		state.userMemories = [];
+		state.userMemoryEnabled = true;
+		renderMemoriesInSettings();
+	}
 	function getSupabaseClient() {
 		if (supabaseClient) return supabaseClient;
 		if (!SUPABASE_ANON_KEY) throw new Error("Supabase anon key 未配置，无法创建会话。");
@@ -11232,6 +11297,11 @@
 	}
 	function updateAccountInfo(user) {
 		if (!user) return;
+		const userId = String(user.id || "");
+		const userChanged = userId !== authUserId;
+		if (authUserId && userId !== authUserId) clearAccountSessionState();
+		authUserId = userId;
+		if (userChanged) restoreComposerDraft();
 		const email = user.email || "";
 		const displayName = getNickname() || email || (user.id ? `Cancri-${String(user.id).slice(0, 8)}` : "Cancri 用户");
 		const initials = displayName ? displayName.charAt(0).toUpperCase() : "C";
@@ -11245,9 +11315,11 @@
 	}
 	async function ensureAuthSession() {
 		if (authSessionInflight) return authSessionInflight;
+		const epoch = authSessionEpoch;
 		authSessionInflight = (async () => {
 			try {
 				const { data: sessionData, error: sessionError } = await getSupabaseClient().auth.getSession();
+				if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
 				if (sessionError) throw sessionError;
 				if (sessionData?.session?.access_token) {
 					const user = sessionData.session.user;
@@ -11262,6 +11334,7 @@
 				showAuthOverlay();
 				throw new Error("请先登录后再使用。");
 			} catch (error) {
+				if (epoch !== authSessionEpoch) throw error;
 				authSessionPromise = null;
 				const raw = error instanceof Error ? error.message : String(error);
 				if (/assignment to constant|immutable|readonly|cannot assign/i.test(raw)) {
@@ -11270,16 +11343,18 @@
 				}
 				throw error;
 			} finally {
-				authSessionInflight = null;
+				if (epoch === authSessionEpoch) authSessionInflight = null;
 			}
 		})();
 		return authSessionInflight;
 	}
 	async function forceRefreshAuthSession() {
+		const epoch = authSessionEpoch;
 		authSessionPromise = null;
 		authSessionInflight = null;
 		try {
 			const { data, error } = await getSupabaseClient().auth.refreshSession();
+			if (epoch !== authSessionEpoch) return null;
 			if (error) throw error;
 			const session = data?.session || null;
 			if (session?.access_token) {
@@ -11306,15 +11381,25 @@
 		}
 	}
 	async function fetchWithSessionRetry(send) {
-		const response = await send(await ensureAuthSession());
-		if (!await isInvalidSessionResponse(response)) return response;
+		const epoch = authSessionEpoch;
+		const session = await ensureAuthSession();
+		if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
+		const response = await send(session);
+		if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
+		const invalid = await isInvalidSessionResponse(response);
+		if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
+		if (!invalid) return response;
 		const refreshed = await forceRefreshAuthSession();
+		if (epoch !== authSessionEpoch || refreshed && refreshed.user?.id !== session.user?.id) throw createAbortError("登录账号已改变。");
 		if (!refreshed) {
 			showAuthOverlay();
 			return response;
 		}
 		const retried = await send(refreshed);
-		if (await isInvalidSessionResponse(retried)) showAuthOverlay();
+		if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
+		const retryInvalid = await isInvalidSessionResponse(retried);
+		if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
+		if (retryInvalid) showAuthOverlay();
 		return retried;
 	}
 	function getLoginCaptchaToken() {
@@ -11437,12 +11522,8 @@
 					if (!hasSharedConversationHash()) renderChatHistoryList();
 				}
 			} else if (event === "SIGNED_OUT") {
-				authSessionPromise = null;
-				authInitialized = false;
+				clearAccountSessionState();
 				postCrossTabMessage("signed-out");
-				state.userMemories = [];
-				state.userMemoryEnabled = true;
-				renderMemoriesInSettings();
 				showAuthOverlay();
 				try {
 					window.dispatchEvent(new CustomEvent("cancri:auth-changed", { detail: { signedIn: false } }));
@@ -11549,7 +11630,7 @@
 	function readCachedChatHistoryList() {
 		try {
 			const cached = JSON.parse(localStorage.getItem(CHAT_HISTORY_LIST_CACHE_KEY) || "[]");
-			return Array.isArray(cached) ? cached : [];
+			return cached?.userId === authUserId && Array.isArray(cached.chats) ? cached.chats : [];
 		} catch {
 			return [];
 		}
@@ -11557,7 +11638,10 @@
 	function writeCachedChatHistoryList(chats) {
 		if (!Array.isArray(chats)) return;
 		try {
-			localStorage.setItem(CHAT_HISTORY_LIST_CACHE_KEY, JSON.stringify(chats.slice(0, 100)));
+			localStorage.setItem(CHAT_HISTORY_LIST_CACHE_KEY, JSON.stringify({
+				userId: authUserId,
+				chats: chats.slice(0, 100)
+			}));
 		} catch {}
 	}
 	function upsertCachedChatSummary(chat) {
@@ -11918,11 +12002,17 @@
 	async function loadChat(chatId, { silent = false, skipSkeleton = false } = {}) {
 		const seq = ++loadChatSeq;
 		const isStale = () => seq !== loadChatSeq;
+		stopVoiceRecognition();
+		if (!hasActiveGeneration() && state.activeRequestController) {
+			state.activeRequestController.abort(createAbortError("已切换会话。"));
+			state.activeRequestController = null;
+		}
 		rememberChatScroll(currentChatId);
 		exitSharedConversationMode();
 		parkChatlessGeneration();
 		const liveGen = getGenerationByChatId(chatId);
 		if (liveGen) {
+			liveGen.visible = true;
 			currentChatId = chatId;
 			loadedChatModel = String(liveGen.modelId || "").trim();
 			conversationHistory = genCurrentMessages(liveGen);
@@ -11972,6 +12062,12 @@
 		}
 	}
 	function newChat() {
+		loadChatSeq += 1;
+		stopVoiceRecognition();
+		if (!hasActiveGeneration() && state.activeRequestController) {
+			state.activeRequestController.abort(createAbortError("已切换会话。"));
+			state.activeRequestController = null;
+		}
 		exitSharedConversationMode();
 		parkChatlessGeneration();
 		currentChatId = null;
@@ -12673,50 +12769,43 @@
 		}
 	}
 	async function saveChatHistory(messages) {
+		const epoch = authSessionEpoch;
+		const navigationSeq = loadChatSeq;
+		const snapshot = snapshotMessages(messages);
+		const model = currentModel;
 		try {
-			const response = await proxyFetch(EDGE_FUNCTION_URL, {
-				method: "POST",
-				headers: await proxyHeaders(),
-				body: JSON.stringify({
-					endpoint: "chat_history",
-					action: "create",
-					title: await generateSmartTitle(messages),
-					messages,
-					model: currentModel
-				})
-			});
-			if (!response.ok) throw new Error("保存聊天记录失败");
-			const { data } = await response.json();
-			currentChatId = data.id;
+			const title = await generateSmartTitle(snapshot);
+			if (epoch !== authSessionEpoch) return;
+			const data = await createChatHistoryRow(snapshot, model, title);
+			if (epoch !== authSessionEpoch) return;
+			if (navigationSeq === loadChatSeq) currentChatId = data.id;
 			upsertCachedChatSummary(data);
 			persistSessionNav();
 			clearUnsavedNotice();
 			return data;
 		} catch (error) {
+			if (epoch !== authSessionEpoch) return;
 			console.error("保存聊天记录失败:", error);
-			reportUnsavedChange("这个新对话没能保存到云端", () => saveChatHistory(messages));
+			reportUnsavedChange("这个新对话没能保存到云端", () => {
+				if (epoch === authSessionEpoch) return createChatHistoryRow(snapshot, model, deriveLocalTitle(snapshot));
+			});
 		}
 	}
 	async function updateChatHistory(chatId, messages) {
+		const epoch = authSessionEpoch;
+		const snapshot = snapshotMessages(messages);
 		try {
-			const response = await proxyFetch(EDGE_FUNCTION_URL, {
-				method: "POST",
-				headers: await proxyHeaders(),
-				body: JSON.stringify({
-					endpoint: "chat_history",
-					action: "update",
-					id: chatId,
-					messages
-				})
-			});
-			if (!response.ok) throw new Error("更新聊天记录失败");
-			const { data } = await response.json();
+			const data = await updateChatHistoryRow(chatId, snapshot);
+			if (epoch !== authSessionEpoch) return;
 			upsertCachedChatSummary(data);
 			clearUnsavedNotice();
 			return data;
 		} catch (error) {
+			if (epoch !== authSessionEpoch) return;
 			console.error("更新聊天记录失败:", error);
-			reportUnsavedChange("这轮对话没能保存到云端", () => updateChatHistory(chatId, messages));
+			reportUnsavedChange("这轮对话没能保存到云端", () => {
+				if (epoch === authSessionEpoch) return updateChatHistory(chatId, snapshot);
+			});
 		}
 	}
 	async function readProxyFailureMessage(response) {
@@ -12727,6 +12816,7 @@
 		return friendlyMessageFromBackend(parsed, response.status) || `请求失败 (${response.status})`;
 	}
 	async function loadChatHistoryList() {
+		const epoch = authSessionEpoch;
 		try {
 			const response = await proxyFetch(EDGE_FUNCTION_URL, {
 				method: "POST",
@@ -12741,10 +12831,12 @@
 				throw new Error(msg || "加载聊天记录列表失败");
 			}
 			const { data } = await response.json();
+			if (epoch !== authSessionEpoch) return [];
 			chatHistoryList = data || [];
 			writeCachedChatHistoryList(chatHistoryList);
 			return chatHistoryList;
 		} catch (error) {
+			if (epoch !== authSessionEpoch) return [];
 			console.error("加载聊天记录列表失败:", error);
 			const msg = error instanceof Error ? error.message : "加载聊天记录列表失败";
 			if (msg && msg !== "请先登录后再使用。" && !isAuthOverlayVisible()) showToast(msg);
@@ -12843,12 +12935,16 @@
 		}
 	}
 	async function fetchUserMemories(options = {}) {
+		const epoch = authSessionEpoch;
 		const skipAutoSummarize = options.skipAutoSummarize === true;
 		try {
+			const session = await ensureAuthSession();
+			if (epoch !== authSessionEpoch) return;
 			const response = await gatewayFetch(USER_MEMORY_URL, {
 				method: "GET",
-				headers: userMemoryRequestHeaders(await ensureAuthSession())
+				headers: userMemoryRequestHeaders(session)
 			});
+			if (epoch !== authSessionEpoch) return;
 			if (!response.ok) {
 				console.warn("[memory] API 响应非 OK:", response.status);
 				state.userMemories = [];
@@ -12856,6 +12952,7 @@
 				return;
 			}
 			const json = await response.json();
+			if (epoch !== authSessionEpoch) return;
 			if (typeof json.memory_enabled === "boolean") state.userMemoryEnabled = json.memory_enabled;
 			if (Array.isArray(json.memories)) state.userMemories = json.memories.filter((m) => m && typeof m.content === "string" && m.content.trim()).map((m) => ({
 				slot: m.slot_index,
@@ -12868,6 +12965,7 @@
 				await fetchUserMemories({ skipAutoSummarize: true });
 			}
 		} catch (e) {
+			if (epoch !== authSessionEpoch) return;
 			console.warn("[memory] 获取记忆失败:", e);
 			state.userMemories = [];
 			renderMemoriesInSettings({ error: "加载记忆失败，请检查网络后重试" });
@@ -14377,6 +14475,7 @@
 			const view = String(state.currentView || document.body.dataset.view || "home");
 			const chatting = Boolean(homeView?.classList.contains("chatting"));
 			sessionStorage.setItem(SESSION_NAV_STORAGE_KEY, JSON.stringify({
+				userId: authUserId,
 				view,
 				chatting,
 				chatId: chatting ? currentChatId || null : null,
@@ -14397,7 +14496,7 @@
 			const raw = sessionStorage.getItem(SESSION_NAV_STORAGE_KEY);
 			if (!raw) return null;
 			const parsed = JSON.parse(raw);
-			return parsed && typeof parsed === "object" ? parsed : null;
+			return parsed && typeof parsed === "object" && parsed.userId === authUserId ? parsed : null;
 		} catch (_) {
 			return null;
 		}
@@ -14517,7 +14616,7 @@
 		}
 		if (msg.type === "signed-out") {
 			if (!isAuthOverlayVisible()) {
-				stopActiveGeneration("已在另一个窗口退出登录。");
+				clearAccountSessionState();
 				showAuthOverlay();
 			}
 		}
@@ -14545,6 +14644,7 @@
 		try {
 			const text = homeInput?.value || "";
 			if (text.trim()) sessionStorage.setItem(COMPOSER_DRAFT_STORAGE_KEY, JSON.stringify({
+				userId: authUserId,
 				chatId: currentChatId || "",
 				text
 			}));
@@ -14573,6 +14673,7 @@
 			const raw = sessionStorage.getItem(COMPOSER_DRAFT_STORAGE_KEY);
 			if (!raw) return;
 			const saved = JSON.parse(raw);
+			if (!authUserId || saved?.userId !== authUserId) return;
 			if (!saved || typeof saved.text !== "string" || !saved.text.trim()) return;
 			homeInput.value = saved.text;
 			autoResizeComposerInput();
@@ -16590,6 +16691,9 @@
 		return "";
 	}
 	async function sendImageGenerationMessage(query, modelId, metadata, attachments = []) {
+		const epoch = authSessionEpoch;
+		const navigationSeq = loadChatSeq;
+		const isCurrentTurn = () => epoch === authSessionEpoch && navigationSeq === loadChatSeq;
 		const turnUserIndex = conversationHistory.length;
 		createUserMessage(query, attachments, turnUserIndex);
 		homeInput.value = "";
@@ -16624,6 +16728,7 @@
 		setComposerBusy(true);
 		try {
 			const imageUrl = await generateImageFromPrompt(query, modelId, attachments);
+			if (!isCurrentTurn()) return;
 			if (imageUrl) {
 				if (chatImagePendingLoader && !chatImagePendingLoader.isDestroyed()) {
 					chatImagePendingLoader.destroy();
@@ -16647,6 +16752,7 @@
 				pushHistory(assistantErrorHistoryMessage(metadata, modelId));
 			}
 		} catch (error) {
+			if (!isCurrentTurn()) return;
 			if (error?.name === "AbortError") {
 				updateAssistantMessage(assistantMessageId, {
 					answer: "已停止生成。",
@@ -16661,7 +16767,7 @@
 			}
 		} finally {
 			if (chatImagePendingLoader && !chatImagePendingLoader.isDestroyed()) chatImagePendingLoader.destroy();
-			setComposerBusy(false);
+			if (isCurrentTurn()) setComposerBusy(false);
 		}
 	}
 	async function shrinkVideoMediaUrl(url) {
@@ -16717,9 +16823,12 @@
 		return [];
 	}
 	async function generateVideoFromPrompt(prompt, modelId = "happyhorse-1.0-i2v", attachments = []) {
+		const epoch = authSessionEpoch;
+		const navigationSeq = loadChatSeq;
 		const value = String(prompt || "").trim();
 		if (!value || state.isImageGenerating) return "";
 		const media = await buildVideoMediaForModel(modelId, attachments, value);
+		if (epoch !== authSessionEpoch || navigationSeq !== loadChatSeq) throw createAbortError("已切换会话。");
 		const controller = new AbortController();
 		state.activeRequestController = controller;
 		setImageGenerationBusy(true, "正在提交视频生成任务...");
@@ -16810,6 +16919,9 @@
 		}
 	}
 	async function sendVideoGenerationMessage(query, modelId, metadata, attachments = []) {
+		const epoch = authSessionEpoch;
+		const navigationSeq = loadChatSeq;
+		const isCurrentTurn = () => epoch === authSessionEpoch && navigationSeq === loadChatSeq;
 		const turnUserIndex = conversationHistory.length;
 		createUserMessage(query, attachments, turnUserIndex);
 		homeInput.value = "";
@@ -16841,6 +16953,7 @@
 		setComposerBusy(true);
 		try {
 			const videoUrl = await generateVideoFromPrompt(query, modelId, attachments);
+			if (!isCurrentTurn()) return;
 			if (videoUrl) {
 				if (videoPendingLoader && !videoPendingLoader.isDestroyed()) {
 					videoPendingLoader.destroy();
@@ -16899,6 +17012,7 @@
 				pushHistory(assistantErrorHistoryMessage(metadata, modelId));
 			}
 		} catch (error) {
+			if (!isCurrentTurn()) return;
 			if (error?.name === "AbortError") {
 				updateAssistantMessage(assistantMessageId, {
 					answer: "已停止生成。",
@@ -16913,7 +17027,7 @@
 			}
 		} finally {
 			if (videoPendingLoader && !videoPendingLoader.isDestroyed()) videoPendingLoader.destroy();
-			setComposerBusy(false);
+			if (isCurrentTurn()) setComposerBusy(false);
 		}
 	}
 	var PORT_MSG_CLS = {
@@ -17670,7 +17784,11 @@
 		showToast("对话记录已导出");
 	}
 	function clearConversation() {
+		loadChatSeq += 1;
 		exitSharedConversationMode();
+		parkChatlessGeneration();
+		currentChatId = null;
+		loadedChatModel = "";
 		stopVoiceRecognition();
 		clearPinnedTurnReserve();
 		if (!hasActiveGeneration() && state.activeRequestController) {
@@ -17736,10 +17854,14 @@
 		return assistantHistoryMessage(getSafeModelErrorText(modelId), createModelErrorMetadata(metadata));
 	}
 	async function saveOrUpdateChatHistory() {
+		const epoch = authSessionEpoch;
+		const chatIdForRetry = currentChatId;
+		const snapshot = snapshotMessages(conversationHistory);
 		try {
 			let savedChat = null;
 			if (currentChatId) savedChat = await updateChatHistory(currentChatId, conversationHistory);
 			else if (conversationHistory.length > 0) savedChat = await saveChatHistory(conversationHistory);
+			if (epoch !== authSessionEpoch) return;
 			if (savedChat) {
 				renderChatHistoryList();
 				window.dispatchEvent(new CustomEvent("cancri:chat-history-saved", { detail: {
@@ -17748,16 +17870,22 @@
 				} }));
 			}
 		} catch (error) {
+			if (epoch !== authSessionEpoch) return;
 			console.error("自动保存聊天记录失败:", error);
-			const chatIdForRetry = currentChatId;
-			const snapshot = snapshotMessages(conversationHistory);
-			reportUnsavedChange("对话没能保存到云端", () => chatIdForRetry ? updateChatHistory(chatIdForRetry, snapshot) : saveChatHistory(snapshot));
+			reportUnsavedChange("对话没能保存到云端", () => {
+				if (epoch !== authSessionEpoch) return;
+				return chatIdForRetry ? updateChatHistory(chatIdForRetry, snapshot) : saveChatHistory(snapshot);
+			});
 		}
 	}
 	async function finalizeConversationTurn() {
+		const epoch = authSessionEpoch;
+		const navigationSeq = loadChatSeq;
+		const attachments = pendingAttachments.slice();
 		await saveOrUpdateChatHistory();
+		if (epoch !== authSessionEpoch || navigationSeq !== loadChatSeq) return;
 		updateChatShareButtonVisibility();
-		clearPendingAttachments();
+		clearPendingAttachments(attachments);
 	}
 	function normalizeHistoryContentForModel(content, _modelId) {
 		return content;
@@ -18621,7 +18749,7 @@
 		return Boolean(chatMessages && chatMessages.offsetParent !== null && homeView && homeView.classList.contains("chatting"));
 	}
 	function isGenVisible(gen) {
-		if (!gen) return false;
+		if (!gen || gen.visible === false) return false;
 		if (gen.chatId) return currentChatId === gen.chatId && isChatViewVisible();
 		return !currentChatId && isChatViewVisible();
 	}
@@ -18664,7 +18792,10 @@
 		else node.classList.add("is-generating");
 	}
 	function parkChatlessGeneration() {
-		for (const g of activeGenerations.values()) if (g.status === "streaming" && !g.chatId) ensureGenChatRow(g);
+		for (const g of activeGenerations.values()) {
+			g.visible = false;
+			if (g.status === "streaming" && !g.chatId) ensureGenChatRow(g);
+		}
 	}
 	function stopActiveGeneration(reason = "已停止生成。") {
 		const controller = getAnyLiveGeneration()?.controller || state.activeRequestController;
@@ -18692,9 +18823,12 @@
 		activeGenerations.delete(gen.tempKey);
 	}
 	async function createChatHistoryRow(messages, model, title) {
+		const epoch = authSessionEpoch;
+		const headers = await proxyHeaders();
+		if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
 		const response = await proxyFetch(EDGE_FUNCTION_URL, {
 			method: "POST",
-			headers: await proxyHeaders(),
+			headers,
 			body: JSON.stringify({
 				endpoint: "chat_history",
 				action: "create",
@@ -18708,6 +18842,7 @@
 		return data;
 	}
 	async function updateChatHistoryRow(chatId, messages, title) {
+		const epoch = authSessionEpoch;
 		const body = {
 			endpoint: "chat_history",
 			action: "update",
@@ -18715,9 +18850,11 @@
 			messages
 		};
 		if (typeof title === "string" && title.trim()) body.title = title.trim();
+		const headers = await proxyHeaders();
+		if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
 		const response = await proxyFetch(EDGE_FUNCTION_URL, {
 			method: "POST",
-			headers: await proxyHeaders(),
+			headers,
 			body: JSON.stringify(body)
 		});
 		if (!response.ok) throw new Error("更新聊天记录失败");
@@ -18735,8 +18872,10 @@
 		}));
 		return out;
 	}
-	function beginGeneration({ modelMetadata, modelId, assistantMessageId, controller, baseMessages, userMessage }) {
+	function beginGeneration({ modelMetadata, modelId, assistantMessageId, controller, baseMessages, userMessage, attachments = [] }) {
 		const gen = {
+			authEpoch: authSessionEpoch,
+			attachments,
 			tempKey: "gen-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
 			chatId: currentChatId || null,
 			isNewConversation: !currentChatId,
@@ -18757,6 +18896,8 @@
 			_savedFingerprint: null,
 			_saveTimer: null,
 			_saving: false,
+			_savePromise: null,
+			_finalizing: false,
 			_rerenderTimer: null,
 			_creating: null,
 			_titleUpgraded: false
@@ -18766,6 +18907,7 @@
 		return gen;
 	}
 	function ensureGenChatRow(gen) {
+		if (gen.authEpoch !== authSessionEpoch) return Promise.resolve(null);
 		if (gen.chatId) return Promise.resolve(gen.chatId);
 		if (gen._creating) return gen._creating;
 		gen._creating = (async () => {
@@ -18773,6 +18915,7 @@
 				const msgs = genCurrentMessages(gen);
 				gen.localTitle = deriveLocalTitle(msgs);
 				const data = await createChatHistoryRow(msgs, gen.modelId, gen.localTitle);
+				if (gen.authEpoch !== authSessionEpoch) return null;
 				if (data && data.id) {
 					gen.chatId = data.id;
 					gen._savedFingerprint = fingerprintMessages(msgs);
@@ -18793,7 +18936,7 @@
 		return gen._creating;
 	}
 	function scheduleGenSave(gen) {
-		if (gen.status !== "streaming") return;
+		if (gen.status !== "streaming" || gen._finalizing || gen.authEpoch !== authSessionEpoch) return;
 		if (gen._saveTimer) return;
 		const wait = Math.max(0, INCREMENTAL_SAVE_INTERVAL_MS - (Date.now() - gen.lastSavedAt));
 		gen._saveTimer = setTimeout(() => {
@@ -18825,7 +18968,7 @@
 				__auth_token: session.access_token
 			});
 			if (body.length > KEEPALIVE_BODY_LIMIT) return false;
-			fetch(EDGE_FUNCTION_URL, {
+			return fetch(EDGE_FUNCTION_URL, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -18833,8 +18976,7 @@
 				},
 				body,
 				keepalive: true
-			}).catch(() => {});
-			return true;
+			}).then((response) => response.ok).catch(() => false);
 		} catch (_e) {
 			return false;
 		}
@@ -18843,30 +18985,37 @@
 	function authSessionPromiseValue() {
 		return lastResolvedSession;
 	}
-	async function flushGenSave(gen, { unloading = false } = {}) {
-		if (gen._saving) return;
+	function flushGenSave(gen, { unloading = false } = {}) {
+		if (gen._savePromise) return gen._savePromise;
+		if (gen._finalizing || gen.authEpoch !== authSessionEpoch) return Promise.resolve();
 		gen._saving = true;
-		try {
-			const chatId = await ensureGenChatRow(gen);
-			if (chatId && gen.status === "streaming") {
-				const messages = genCurrentMessages(gen);
-				const fingerprint = fingerprintMessages(messages);
-				if (unloading) {
-					if (sendGenSaveBeacon(chatId, messages)) {
-						gen._savedFingerprint = fingerprint;
-						gen.lastSavedAt = Date.now();
-						return;
+		gen._savePromise = (async () => {
+			try {
+				const chatId = await ensureGenChatRow(gen);
+				if (chatId && gen.status === "streaming" && gen.authEpoch === authSessionEpoch) {
+					const messages = genCurrentMessages(gen);
+					const fingerprint = fingerprintMessages(messages);
+					if (unloading) {
+						const saved = await sendGenSaveBeacon(chatId, messages);
+						if (gen.authEpoch !== authSessionEpoch) return;
+						if (saved) {
+							gen._savedFingerprint = fingerprint;
+							gen.lastSavedAt = Date.now();
+							return;
+						}
 					}
+					if (fingerprint === null || fingerprint !== gen._savedFingerprint) {
+						await updateChatHistoryRow(chatId, messages);
+						gen._savedFingerprint = fingerprint;
+					}
+					gen.lastSavedAt = Date.now();
 				}
-				if (fingerprint === null || fingerprint !== gen._savedFingerprint) {
-					await updateChatHistoryRow(chatId, messages);
-					gen._savedFingerprint = fingerprint;
-				}
-				gen.lastSavedAt = Date.now();
+			} catch (error) {} finally {
+				gen._saving = false;
+				gen._savePromise = null;
 			}
-		} catch (error) {} finally {
-			gen._saving = false;
-		}
+		})();
+		return gen._savePromise;
 	}
 	function scheduleVisibleRerender(gen) {
 		if (gen._rerenderTimer) return;
@@ -18892,6 +19041,10 @@
 			if (gen._creating) try {
 				await gen._creating;
 			} catch (_) {}
+			if (gen.authEpoch !== authSessionEpoch) {
+				unregisterGeneration(gen);
+				return;
+			}
 			if (gen.chatId && history) if (history.length) {
 				const saved = await updateChatHistoryRow(gen.chatId, history);
 				if (saved) upsertCachedChatSummary(saved);
@@ -18906,11 +19059,20 @@
 		postCrossTabMessage("history-changed");
 	}
 	async function commitGeneration(gen, assistantMessage) {
-		gen.status = "done";
+		if (gen.authEpoch !== authSessionEpoch) {
+			unregisterGeneration(gen);
+			return;
+		}
+		gen._finalizing = true;
 		clearGenSaveTimer(gen);
 		if (gen._rerenderTimer) {
 			clearTimeout(gen._rerenderTimer);
 			gen._rerenderTimer = null;
+		}
+		if (gen._savePromise) await gen._savePromise;
+		if (gen.authEpoch !== authSessionEpoch) {
+			unregisterGeneration(gen);
+			return;
 		}
 		if (gen.discarded) {
 			await discardGeneration(gen);
@@ -18925,18 +19087,41 @@
 			if (gen._creating) try {
 				await gen._creating;
 			} catch (_) {}
-			if (gen.chatId) savedChat = await updateChatHistoryRow(gen.chatId, finalMessages);
+			if (gen.authEpoch !== authSessionEpoch) {
+				unregisterGeneration(gen);
+				return;
+			}
+			const smartTitle = await maybeUpgradeSmartTitle(gen, finalMessages);
+			if (gen.authEpoch !== authSessionEpoch) {
+				unregisterGeneration(gen);
+				return;
+			}
+			if (gen.discarded) {
+				await discardGeneration(gen);
+				return;
+			}
+			if (smartTitle) gen.localTitle = smartTitle;
+			if (gen.chatId) savedChat = await updateChatHistoryRow(gen.chatId, finalMessages, smartTitle || void 0);
 			else {
 				gen.localTitle = gen.localTitle || deriveLocalTitle(finalMessages);
 				savedChat = await createChatHistoryRow(finalMessages, gen.modelId, gen.localTitle);
 				if (savedChat && savedChat.id) gen.chatId = savedChat.id;
 			}
+			if (gen.authEpoch !== authSessionEpoch) {
+				unregisterGeneration(gen);
+				return;
+			}
 			if (savedChat) upsertCachedChatSummary(savedChat);
 			clearUnsavedNotice();
 		} catch (error) {
+			if (gen.authEpoch !== authSessionEpoch) {
+				unregisterGeneration(gen);
+				return;
+			}
 			console.error("保存对话失败:", error);
 			const chatIdForRetry = gen.chatId;
 			reportUnsavedChange("这轮回答没能保存到云端", async () => {
+				if (gen.authEpoch !== authSessionEpoch) return;
 				if (chatIdForRetry) {
 					const saved = await updateChatHistoryRow(chatIdForRetry, finalMessages);
 					if (saved) upsertCachedChatSummary(saved);
@@ -18961,8 +19146,9 @@
 			persistSessionNav();
 			syncAskUserFromHistory();
 		}
+		gen.status = "done";
 		updateChatShareButtonVisibility();
-		clearPendingAttachments();
+		if (gen.attachments?.length) clearPendingAttachments(gen.attachments);
 		unregisterGeneration(gen);
 		refreshSidebarSpinners();
 		renderChatHistoryList();
@@ -18974,7 +19160,6 @@
 		} catch (_) {}
 		postCrossTabMessage("chat-updated", { chatId: gen.chatId });
 		notifyGenerationComplete(gen, visible);
-		maybeUpgradeSmartTitle(gen, finalMessages);
 	}
 	function createRecentItemSpinner() {
 		const spinner = document.createElement("span");
@@ -19047,7 +19232,7 @@
 	}
 	async function maybeUpgradeSmartTitle(gen, finalMessages) {
 		try {
-			if (!gen.chatId) return;
+			if (gen.authEpoch !== authSessionEpoch || gen.controller?.signal.aborted) return "";
 			if (!gen.isNewConversation) return;
 			if (gen.baseMessages.length > 0) return;
 			if (gen._titleUpgraded) return;
@@ -19057,23 +19242,18 @@
 				content: extractMessageText(m.content).slice(0, 1500)
 			})).filter((m) => m.content);
 			if (!compact.length) return;
-			const response = await proxyFetch(GEN_TITLE_URL, {
+			const headers = await proxyHeaders();
+			if (gen.authEpoch !== authSessionEpoch) return "";
+			const response = await proxyFetchWithTimeout(GEN_TITLE_URL, {
 				method: "POST",
-				headers: await proxyHeaders(),
+				headers,
+				signal: gen.controller?.signal,
 				body: JSON.stringify({ messages: compact })
-			});
+			}, 8e3, "生成对话标题");
 			if (!response.ok) return;
 			const { title } = await response.json();
-			const clean = String(title || "").trim();
-			if (!clean || clean === gen.localTitle) return;
-			await updateChatHistoryRow(gen.chatId, finalMessages, clean);
-			upsertCachedChatSummary({
-				id: gen.chatId,
-				title: clean,
-				model: gen.modelId
-			});
-			renderChatHistoryList();
-			dispatchChatTitleUpdated(clean, gen.chatId);
+			if (gen.authEpoch !== authSessionEpoch) return "";
+			return String(title || "").trim();
 		} catch (error) {}
 	}
 	var ASK_USER_OPEN_TAG = "<ask_user>";
@@ -19254,6 +19434,7 @@
 		}
 	});
 	async function sendMessage(content) {
+		const sendAuthEpoch = authSessionEpoch;
 		const rateCheck = checkRateLimit();
 		if (!rateCheck.allowed) {
 			showToast(rateCheck.message);
@@ -19309,12 +19490,15 @@
 		if (attachmentsForSend.length) try {
 			setComposerBusy(true);
 			userContent = await buildUserContentForModel(effectiveQuery, attachmentsForSend, turnModelId);
+			if (sendAuthEpoch !== authSessionEpoch) return;
 		} catch (error) {
+			if (sendAuthEpoch !== authSessionEpoch) return;
 			showToast(normalizeErrorMessage(error, "附件处理失败，请稍后重试。"));
 			setComposerBusy(false);
 			updateComposerToolStatus();
 			return;
 		}
+		if (sendAuthEpoch !== authSessionEpoch) return;
 		createUserMessage(query || effectiveQuery, attachmentsForSend, turnUserIndex);
 		homeInput.value = "";
 		autoResizeComposerInput();
@@ -19324,6 +19508,7 @@
 			content: userContent
 		};
 		if (!isModelAvailable(turnModelId)) await refreshSharedQuota().catch(() => {});
+		if (sendAuthEpoch !== authSessionEpoch) return;
 		const currentStatus = getModelStatus(turnModelId);
 		if (!isModelAvailable(turnModelId)) {
 			getQuotaLockMessage(turnModelId) || currentStatus.quotaRemaining !== null && currentStatus.quotaRemaining;
@@ -19348,7 +19533,8 @@
 			assistantMessageId,
 			controller,
 			baseMessages: snapshotMessages(conversationHistory),
-			userMessage: userHistoryMessage
+			userMessage: userHistoryMessage,
+			attachments: attachmentsForSend
 		});
 		turnGen.turnMessages = turnMessages;
 		try {
@@ -19500,7 +19686,7 @@
 		} finally {
 			clearTurnTimeout();
 			if (state.activeRequestController === controller) state.activeRequestController = null;
-			setComposerBusy(false);
+			if (sendAuthEpoch === authSessionEpoch) setComposerBusy(false);
 		}
 	}
 	async function handleHomeSubmit() {
