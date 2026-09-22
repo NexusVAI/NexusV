@@ -174,6 +174,9 @@
     "gpt-6-astra-pro": "gpt6-astra.png",
     // 2026-09-21: Pro5x 分组（moyuu）并进同一张卡，同样登记一份。
     "gpt-6-astra-pro5x": "gpt6-astra.png",
+    // 2026-09-22: MiMo V2.6 两张卡共用 Logo/mimo.png → assets/oai.logo/mimo.png。
+    "mimo-v2.6-flash": "mimo.png",
+    "mimo-v2.6-pro": "mimo.png",
   };
 
   var HIDE_IDS = {
