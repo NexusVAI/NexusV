@@ -67,6 +67,8 @@
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
+    // 2026-09-22: monkeycode-ai 免费线 grok-4.7（¥0/¥0，无截止日期）。
+    "grok-4.7",
     // 2026-09-22: MiMo V2.6 Flash 限时免费至 09-26（今日 ¥0；到期后改价，模型仍在售）。
     // union-alpha 同日硬下架，从免费区删除。
     "mimo-v2.6-flash",
