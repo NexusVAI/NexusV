@@ -37,6 +37,8 @@
     // （DB model_catalog.group_id='gpt-6-astra'）折叠成一张卡，代表是 gpt-6-astra，
     // 所以这里只钉代表 id —— 再钉 Pro 那条会被 seenTop 去重，属多余。
     "gpt-6-astra",
+    // 2026-09-22: MiMo V2.6 Pro（api.tokenrouter.com，¥0.43/¥0.87）。不分组，钉的就是自己。
+    "mimo-v2.6-pro",
     "glm-5.3",
     "gpt-5.6-sol",
     "claude-opus-5",
@@ -65,8 +67,9 @@
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
-    // 2026-09-17: api.tokenrouter.com 免费线 union-alpha（¥0/¥0），上游 wire=stealth/union-alpha。
-    "union-alpha",
+    // 2026-09-22: MiMo V2.6 Flash 限时免费至 09-26（今日 ¥0；到期后改价，模型仍在售）。
+    // union-alpha 同日硬下架，从免费区删除。
+    "mimo-v2.6-flash",
     // 2026-09-14: api.gemai.cc 限时免费 kimi-k3-fp8-block-free（至 09-18），上游 wire=[free]kimi-k3。
     "kimi-k3-fp8-block-free",
     // 2026-09-14: api.gemai.cc 限时免费 glm-5.3-fp8-free（至 09-18），上游 wire=[free]GLM-5.3。
@@ -127,6 +130,7 @@
     // MODEL_ACCESS_END_MS（必须同日）——改日期时三处一起改，否则卡片写着还没到期、
     // 后端已经把模型摘掉了。
     // 2026-09-06: hy3 / glm-5.3-flash / qwen3.8-flash 延到 09-10；mimo / vision-exp 不延。
+    "mimo-v2.6-flash": "09-26结束免费期限",
     "glm-5.3-fp8-free": "09-18结束免费期限",
     "kimi-k3-fp8-block-free": "09-18结束免费期限",
     "glm-5.3-flash-free": "09-10结束免费期限",
