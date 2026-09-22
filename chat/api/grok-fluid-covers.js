@@ -268,8 +268,83 @@
     return val;
   }
 
+  function hashId(id) {
+    var h = 2166136261;
+    for (var i = 0; i < id.length; i++) {
+      h ^= id.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0;
+      seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function hslHex(h, s, l) {
+    var c = (1 - Math.abs(2 * l - 1)) * s;
+    var hp = ((h % 360) + 360) % 360 / 60;
+    var x = c * (1 - Math.abs(hp % 2 - 1));
+    var r = 0, g = 0, b = 0;
+    if (hp < 1) { r = c; g = x; }
+    else if (hp < 2) { r = x; g = c; }
+    else if (hp < 3) { g = c; b = x; }
+    else if (hp < 4) { g = x; b = c; }
+    else if (hp < 5) { r = x; b = c; }
+    else { r = c; b = x; }
+    var m = l - c / 2;
+    function hex(v) {
+      var n = Math.max(0, Math.min(255, Math.round((v + m) * 255)));
+      return n.toString(16).padStart(2, "0");
+    }
+    return "#" + hex(r) + hex(g) + hex(b);
+  }
+
+  var seededPresets = {};
+
+  function presetForId(id) {
+    if (seededPresets[id]) return seededPresets[id];
+    var rnd = mulberry32(hashId(id));
+    var hue = rnd() * 360;
+    var shift = 16 + rnd() * 48;
+    var p = {
+      colors: [
+        hslHex(hue, 0.1 + rnd() * 0.22, 0.22 + rnd() * 0.16),
+        hslHex(hue, 0.12 + rnd() * 0.28, 0.05 + rnd() * 0.07),
+        hslHex(hue + shift, 0.06 + rnd() * 0.16, 0.68 + rnd() * 0.2),
+        hslHex(hue, 0.04 + rnd() * 0.1, 0.02 + rnd() * 0.04),
+        hslHex(hue + shift * 0.45, 0.08 + rnd() * 0.22, 0.38 + rnd() * 0.22)
+      ],
+      positions: 6 + rnd() * 16,
+      waveX: 0.28 + rnd() * 0.48,
+      waveY: 0.28 + rnd() * 0.48,
+      waveXShift: rnd(),
+      waveYShift: rnd(),
+      mixing: 0.42 + rnd() * 0.3,
+      grainMixer: 0.1 + rnd() * 0.28,
+      grainOverlay: 0.05 + rnd() * 0.12,
+      rotation: rnd() * 360,
+      scale: 1.05 + rnd() * 0.4,
+      offsetX: -0.18 + rnd() * 0.42,
+      offsetY: -0.18 + rnd() * 0.42,
+      speed: 0.55 + rnd() * 0.85,
+      phase: rnd()
+    };
+    seededPresets[id] = p;
+    return p;
+  }
+
   function drawPreset(key, m) {
-    var p = PRESETS[key];
+    var p = PRESETS[key] || presetForId(key);
+    var speed = p.speed || 1;
+    var phase = p.phase || 0;
+    m = (m * speed + phase) % 1;
     var colors = new Float32Array(40);
     for (var i = 0; i < 10; i++) {
       var rgba = i < p.colors.length ? hexToRgba(p.colors[i]) : [0, 0, 0, 1];
@@ -323,22 +398,32 @@
     }
   }
 
+  function presetKey(id) {
+    id = String(id || "").toLowerCase();
+    if (!id) return "";
+    return ID_PRESET[id] || ("id:" + id);
+  }
+
+  function onScreen(el) {
+    var r = el.getBoundingClientRect();
+    return r.bottom > -160 && r.top < window.innerHeight + 160 && r.right > 0 && r.left < window.innerWidth;
+  }
+
+  function pushTarget(found, id, host) {
+    if (!host || host.getAttribute("data-cover") === "fixed") return;
+    var preset = presetKey(id);
+    if (!preset || preset === "id:") return;
+    found.push({ preset: preset, canvas: ensureCanvas(host), host: host });
+  }
+
   function collect() {
     var found = [];
     document.querySelectorAll("[data-model-id]").forEach(function (card) {
-      var preset = ID_PRESET[String(card.getAttribute("data-model-id") || "").toLowerCase()];
-      if (!preset) return;
-      var host = card.querySelector(".cancri-thumb");
-      if (!host) return;
-      found.push({ preset: preset, canvas: ensureCanvas(host), host: host });
+      pushTarget(found, card.getAttribute("data-model-id"), card.querySelector(".cancri-thumb"));
     });
     document.querySelectorAll("a[href^='#model-']").forEach(function (link) {
-      var id = decodeURIComponent(String(link.getAttribute("href") || "").slice(7)).toLowerCase();
-      var preset = ID_PRESET[id];
-      if (!preset) return;
-      var host = link.querySelector(".cancri-thumb-sm");
-      if (!host) return;
-      found.push({ preset: preset, canvas: ensureCanvas(host), host: host });
+      var id = decodeURIComponent(String(link.getAttribute("href") || "").slice(7));
+      pushTarget(found, id, link.querySelector(".cancri-thumb-sm"));
     });
     targets = found;
   }
@@ -347,21 +432,21 @@
     raf = requestAnimationFrame(frame);
     if (!gl || !targets.length || document.hidden) return;
     var m = (((now - started) / 1000) % period) / period;
-    var byPreset = { grok47: [], grok46: [], grok45: [] };
+    var groups = {};
     for (var i = 0; i < targets.length; i++) {
-      if (!targets[i].host.isConnected) continue;
-      byPreset[targets[i].preset].push(targets[i]);
+      var item = targets[i];
+      if (!item.host.isConnected || !onScreen(item.host)) continue;
+      if (!groups[item.preset]) groups[item.preset] = [];
+      groups[item.preset].push(item);
     }
-    Object.keys(byPreset).forEach(function (key) {
-      var list = byPreset[key];
-      if (!list.length) return;
+    Object.keys(groups).forEach(function (key) {
+      var list = groups[key];
       drawPreset(key, m);
       for (var j = 0; j < list.length; j++) {
-        var item = list[j];
-        if (item.host.clientWidth < 2) continue;
-        resize(item.canvas, item.host);
-        var ctx = item.canvas.getContext("2d");
-        ctx.drawImage(glCanvas, 0, 0, item.canvas.width, item.canvas.height);
+        var card = list[j];
+        if (card.host.clientWidth < 2) continue;
+        resize(card.canvas, card.host);
+        card.canvas.getContext("2d").drawImage(glCanvas, 0, 0, card.canvas.width, card.canvas.height);
       }
     });
   }

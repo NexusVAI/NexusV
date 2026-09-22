@@ -503,7 +503,8 @@
     return (
       '<div class="flex flex-col text-emphasis"' + idAttr + ' data-model-id="' + escAttr(id) + '"' + groupIdsAttr + ' role="link" tabindex="0" style="cursor:pointer">' +
         '<div class="w-full" style="height:230px">' +
-          '<div class="cancri-thumb flex h-full w-full flex-1 flex-row items-center justify-center gap-4 rounded-lg" ' +
+          '<div class="cancri-thumb flex h-full w-full flex-1 flex-row items-center justify-center gap-4 rounded-lg"' +
+               (ART_OVERRIDE[id] ? ' data-cover="fixed"' : '') +
                'style="background-image:url(\'' + escAttr(opts.art || (ART_OVERRIDE[id] ? artBase() + ART_OVERRIDE[id] : artBase() + ART_POOL[0])) + '\')">' +
             '<span class="cancri-thumb__name">' + esc(name) + "</span>" +
           "</div>" +
@@ -546,7 +547,8 @@
     return (
       '<a href="#model-' + escAttr(id) + '" class="flex h-full flex-col gap-4 text-emphasis hover:text-emphasis">' +
         '<div class="group flex h-full w-full cursor-pointer flex-row items-center gap-4 rounded-lg p-2 hover:bg-primary-soft">' +
-          '<div class="cancri-thumb-sm flex shrink-0 overflow-hidden rounded-lg" ' +
+          '<div class="cancri-thumb-sm flex shrink-0 overflow-hidden rounded-lg"' +
+               (ART_OVERRIDE[id] ? ' data-cover="fixed"' : '') +
                'style="background-image:url(\'' + escAttr(art) + '\')"></div>' +
           '<div class="flex flex-col min-w-0">' +
             '<div class="flex items-center gap-2">' +
