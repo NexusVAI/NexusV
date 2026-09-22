@@ -870,6 +870,7 @@
     // 对 API 用户来说能发的 id 有多少才是有用信息。
     var counters = document.querySelectorAll("[data-cancri-count]");
     counters.forEach(function (el) { el.textContent = String(rawModels.length); });
+    if (window.CancriGrokFluid) window.CancriGrokFluid.sync();
   }
 
   function locateHashModel(models, repId) {

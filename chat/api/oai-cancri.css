@@ -264,6 +264,11 @@ samp {
   background: rgba(0, 0, 0, 0.18);
   border-radius: inherit;
 }
+.cancri-thumb:has(.cancri-grok-fluid)::before,
+.cancri-thumb-sm:has(.cancri-grok-fluid)::before {
+  z-index: 1;
+}
+
 
 /* ── model title search + full-screen model search ───────────────── */
 .cancri-models-title-row {
