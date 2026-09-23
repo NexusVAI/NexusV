@@ -37,6 +37,7 @@
     // （DB model_catalog.group_id='gpt-6-astra'）折叠成一张卡，代表是 gpt-6-astra，
     // 所以这里只钉代表 id —— 再钉 Pro 那条会被 seenTop 去重，属多余。
     "gpt-6-astra",
+    "gpt-6-sol",
     // 2026-09-22: MiMo V2.6 Pro（api.tokenrouter.com，¥0.43/¥0.87）。不分组，钉的就是自己。
     "mimo-v2.6-pro",
     "glm-5.3",
@@ -67,6 +68,7 @@
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
+    "gpt-6-luna",
     // 2026-09-22: monkeycode 免费线 qwen-3.8-27b（wire cerebras/qwen-3.8-27b，¥0/¥0，无截止日期）。
     "qwen-3.8-27b",
     // 2026-09-22: monkeycode-ai 免费线 grok-4.7（¥0/¥0，无截止日期）。
@@ -173,10 +175,10 @@
     "kimi-k3": "kimik3.jpg",
     "kimi-k3-high": "kimik3.jpg",
     // 2026-09-05: GPT-6 Astra 专用卡面（Logo/Astragpt-6.png → assets/oai.logo/gpt6-astra.png）。
-    // 两条线折叠成一张卡，代表是 gpt-6-astra；Pro 分组也登记一份，免得日后换代表后卡面掉回随机图。
+    // 2026-09-21 起是**三**条线折叠成一张卡，代表是 gpt-6-astra；
+    // 其余两条也各登记一份，免得日后换代表后卡面掉回随机图。
     "gpt-6-astra": "gpt6-astra.png",
     "gpt-6-astra-pro": "gpt6-astra.png",
-    // 2026-09-21: Pro5x 分组（moyuu）并进同一张卡，同样登记一份。
     "gpt-6-astra-pro5x": "gpt6-astra.png",
     // 2026-09-22: MiMo V2.6 两张卡共用 Logo/mimo.png → assets/oai.logo/mimo.png。
     "mimo-v2.6-flash": "mimo.png",
@@ -507,7 +509,7 @@
         '<div class="w-full" style="height:230px">' +
           '<div class="cancri-thumb flex h-full w-full flex-1 flex-row items-center justify-center gap-4 rounded-lg"' +
                (ART_OVERRIDE[id] ? ' data-cover="fixed"' : '') +
-               'style="background-image:url(\'' + escAttr(opts.art || (ART_OVERRIDE[id] ? artBase() + ART_OVERRIDE[id] : artBase() + ART_POOL[0])) + '\')">' +
+               ' style="background-image:url(\'' + escAttr(opts.art || (ART_OVERRIDE[id] ? artBase() + ART_OVERRIDE[id] : artBase() + ART_POOL[0])) + '\')">' +
             '<span class="cancri-thumb__name">' + esc(name) + "</span>" +
           "</div>" +
         "</div>" +
@@ -551,7 +553,7 @@
         '<div class="group flex h-full w-full cursor-pointer flex-row items-center gap-4 rounded-lg p-2 hover:bg-primary-soft">' +
           '<div class="cancri-thumb-sm flex shrink-0 overflow-hidden rounded-lg"' +
                (ART_OVERRIDE[id] ? ' data-cover="fixed"' : '') +
-               'style="background-image:url(\'' + escAttr(art) + '\')"></div>' +
+               ' style="background-image:url(\'' + escAttr(art) + '\')"></div>' +
           '<div class="flex flex-col min-w-0">' +
             '<div class="flex items-center gap-2">' +
               '<div class="font-semibold truncate">' + esc(name) + '</div>' + freeTag +
