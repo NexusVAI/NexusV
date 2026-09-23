@@ -378,6 +378,9 @@
 
   /** 卡片要看的 id 集合：折叠卡看全组成员，普通卡只看自己。 */
   function uptimeIdsOf(card) {
+    // 胶囊选中了某条线 → 只看那条线自己的状态。
+    var active = card ? card.getAttribute("data-active-id") : "";
+    if (active) return [active];
     var raw = card ? card.getAttribute("data-group-ids") : "";
     if (raw) return raw.split(",").filter(Boolean);
     var one = card ? card.getAttribute("data-model-id") : "";
@@ -462,23 +465,56 @@
     });
   }
 
-  // 分组行：折叠卡才有。列出组内各分组标签（标准 / XHigh 普惠 / Max …），
-  // 让用户在广场就看得出这张卡背后有几条线；具体各分组价格在详情页的分组表里。
+  // 分组行：折叠卡才有。组内各分组标签（标准 / XHigh 普惠 / Max …）做成胶囊，
+  // 点一下就把本卡的 Model ID / 状态条 / 价格换成那条线的；再点一次回到组汇总
+  // （代表 id + 组内最低价 + 组内最好状态）。见 pickVariant。
   function groupRowHtml(m) {
     var gi = m && m.groupInfo;
     if (!gi || !gi.variants || gi.variants.length < 2) return "";
-    var labels = gi.variants.map(function (v) { return v.variant; }).filter(Boolean);
-    var shown = labels.slice(0, 3);
-    var more = labels.length - shown.length;
-    var text = shown.join(" · ") + (more > 0 ? " +" + more : "");
+    var pills = gi.variants.map(function (v) {
+      return '<button type="button" class="cancri-variant" data-variant-pick="' + escAttr(v.id) +
+        '" aria-pressed="false" title="' + escAttr(v.id) + '">' + esc(v.variant || v.id) + "</button>";
+    }).join("");
     return (
-      '<div class="cancri-spec__row">' +
+      '<div class="cancri-spec__row cancri-spec__row--variants">' +
         '<span class="cancri-spec__key">分组</span>' +
-        '<span class="cancri-spec__val" title="' + escAttr(labels.join(" · ")) + '">' +
-          esc(text) +
-        "</span>" +
+        '<span class="cancri-variants" role="group" aria-label="切换分组">' + pills + "</span>" +
       "</div>"
     );
+  }
+
+  // 胶囊切换用：render() 时登记。modelById = 未折叠原始目录，cardById = 折叠后的卡片。
+  var modelById = {};
+  var cardById = {};
+
+  function pickVariant(btn) {
+    var card = btn.closest("[data-model-id]");
+    if (!card) return;
+    var repId = card.getAttribute("data-model-id");
+    var id = btn.getAttribute("data-variant-pick");
+    var off = btn.getAttribute("aria-pressed") === "true";
+    var mem = off ? null : modelById[id];
+    var rep = cardById[repId];
+    if (!mem && !rep) return;
+    var pills = card.querySelectorAll("[data-variant-pick]");
+    for (var i = 0; i < pills.length; i++) {
+      pills[i].setAttribute("aria-pressed", mem && pills[i] === btn ? "true" : "false");
+    }
+    var showId = mem ? id : repId;
+    if (mem) card.setAttribute("data-active-id", id);
+    else card.removeAttribute("data-active-id");
+    var idBtn = card.querySelector(".cancri-id");
+    if (idBtn) {
+      idBtn.setAttribute("data-copy", showId);
+      var txt = idBtn.querySelector(".cancri-id__text");
+      if (txt) txt.textContent = showId;
+    }
+    var price = card.querySelector(".cancri-price");
+    if (price) price.innerHTML = mem ? priceHtml(mem) : cardPriceHtml(rep);
+    var up = card.querySelector(".cancri-spec__row--uptime");
+    if (up && up.getAttribute("data-uptime-slot") == null) {
+      up.innerHTML = uptimeHtml(bestHourlyFor(uptimeIdsOf(card)));
+    }
   }
 
   function cardDescription(m) {
@@ -782,6 +818,10 @@
   function render(models, rawModels) {
     rawModels = Array.isArray(rawModels) ? rawModels : models;
     var groupIdx = MG.indexModels(rawModels);
+    modelById = {};
+    rawModels.forEach(function (m) { modelById[MG.modelId(m)] = m; });
+    cardById = {};
+    models.forEach(function (m) { cardById[MG.modelId(m)] = m; });
     // 成员 id → 代表卡 id。广场上只有代表卡带 `#model-<id>` 锚点，所以按 id 找卡
     // 的地方（旗舰名单 / 专项小卡锚点 / hash 定位 / 搜索）都要先过这张表。
     function repId(id) {
@@ -876,7 +916,202 @@
     // 对 API 用户来说能发的 id 有多少才是有用信息。
     var counters = document.querySelectorAll("[data-cancri-count]");
     counters.forEach(function (el) { el.textContent = String(rawModels.length); });
+    renderFilterPanel(models, rawModels);
     if (window.CancriGrokFluid) window.CancriGrokFluid.sync();
+  }
+
+  /* ── 右侧筛选栏（2026-09-23）──────────────────────────────────────────────
+   * 供应商 = m.brand；分组 = m.group.variant（标准 / XHigh 普惠 / Max / Pro 分组 …，
+   * 与卡片上的分组胶囊同一个字段）。
+   *   选了分组 → 该分组下每条线各出一张卡（**不折叠**），直接看到 id / 状态 / 价格；
+   *   只选供应商 → 该供应商的折叠卡（卡上胶囊可切线）。
+   * 有筛选时隐藏浏览区块（[data-cancri-browse]），只留 #cancri-filter-results。
+   * 栏宽 ≥1024px 时推开主内容（body[data-cancri-filter-open]），更窄时浮在上面。 */
+  var FILTER_OPEN_KEY = "cancri.models.filterOpen";
+  var filterState = { brand: "", variant: "" };
+  var filterData = { cards: [], raw: [] };
+
+  var ICON_SLIDERS =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">' +
+    '<line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="17" x2="20" y2="17"></line>' +
+    '<circle cx="9" cy="7" r="2.2" fill="currentColor"></circle><circle cx="15" cy="17" r="2.2" fill="currentColor"></circle></svg>';
+  var ICON_RESET =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg>';
+  var ICON_PANEL =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>';
+  var ICON_CHEVRON =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<polyline points="6 9 12 15 18 9"></polyline></svg>';
+
+  function brandOf(m) { return (m && m.brand) || "其他"; }
+  function brandLabel(b) { return BRAND_LABELS[b] || b; }
+  function isWideLayout() { return window.matchMedia("(min-width: 1024px)").matches; }
+
+  function setFilterOpen(open) {
+    document.body.toggleAttribute("data-cancri-filter-open", !!open);
+    var panel = document.getElementById("cancri-filter");
+    if (panel) panel.inert = !open;
+    var toggles = document.querySelectorAll("[data-filter-toggle]");
+    for (var i = 0; i < toggles.length; i++) toggles[i].setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function filterSectionHtml(title, list) {
+    return (
+      '<details class="cancri-filter__sec" open>' +
+        "<summary>" + esc(title) + ICON_CHEVRON + "</summary>" +
+        '<div class="cancri-chips" data-filter-list="' + list + '">' +
+          skelLine("cancri-skel-line--md") + skelLine("cancri-skel-line--sm") +
+        "</div>" +
+      "</details>"
+    );
+  }
+
+  function mountFilterPanel() {
+    if (document.getElementById("cancri-filter") || !document.getElementById("cancri-filter-results")) return;
+    var aside = document.createElement("aside");
+    aside.id = "cancri-filter";
+    aside.className = "cancri-filter";
+    aside.setAttribute("aria-label", "模型筛选");
+    aside.innerHTML =
+      '<div class="cancri-filter__head">' +
+        '<span class="cancri-filter__title">' + ICON_SLIDERS + "筛选</span>" +
+        '<button type="button" class="cancri-filter__btn" data-filter-reset>' + ICON_RESET + "重置</button>" +
+        '<button type="button" class="cancri-filter__btn" data-filter-toggle aria-controls="cancri-filter" aria-label="收起筛选栏" title="收起">' + ICON_PANEL + "</button>" +
+      "</div>" +
+      '<div class="cancri-filter__body">' +
+        filterSectionHtml("供应商", "brand") +
+        filterSectionHtml("分组", "variant") +
+      "</div>";
+    var tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "cancri-filter-tab";
+    tab.setAttribute("data-filter-toggle", "");
+    tab.setAttribute("aria-controls", "cancri-filter");
+    tab.setAttribute("aria-label", "展开筛选栏");
+    tab.innerHTML = ICON_SLIDERS + "<span>筛选</span>";
+    document.body.appendChild(aside);
+    document.body.appendChild(tab);
+
+    // 宽屏默认展开并记住用户的选择；窄屏每次都默认收起（它是浮层，会挡内容）。
+    var stored = null;
+    try { stored = localStorage.getItem(FILTER_OPEN_KEY); } catch (_) { /* 隐私模式 */ }
+    setFilterOpen(isWideLayout() && stored !== "0");
+    // 首帧之后才开过渡，否则刷新页面时主内容会从中间「滑」到左边。
+    afterFirstPaint(function () { document.body.setAttribute("data-cancri-filter-ready", ""); });
+
+    document.addEventListener("click", function (e) {
+      var t = e.target.closest && e.target.closest("[data-filter-toggle],[data-filter-reset],[data-filter-brand],[data-filter-variant]");
+      if (!t) return;
+      if (t.hasAttribute("data-filter-toggle")) {
+        var open = !document.body.hasAttribute("data-cancri-filter-open");
+        setFilterOpen(open);
+        if (isWideLayout()) {
+          try { localStorage.setItem(FILTER_OPEN_KEY, open ? "1" : "0"); } catch (_) { /* 隐私模式 */ }
+        }
+        return;
+      }
+      if (t.hasAttribute("data-filter-reset")) {
+        filterState.brand = "";
+        filterState.variant = "";
+      } else if (t.hasAttribute("data-filter-brand")) {
+        filterState.brand = t.getAttribute("data-filter-brand") || "";
+      } else {
+        filterState.variant = t.getAttribute("data-filter-variant") || "";
+      }
+      applyFilter(true);
+      if (!isWideLayout() && !t.hasAttribute("data-filter-reset")) setFilterOpen(false);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !isWideLayout() && document.body.hasAttribute("data-cancri-filter-open")) setFilterOpen(false);
+    });
+  }
+
+  function chipHtml(attr, value, label, count) {
+    return (
+      '<button type="button" class="cancri-chip" ' + attr + '="' + escAttr(value) + '" aria-pressed="false">' +
+        '<span class="cancri-chip__label">' + esc(label) + "</span>" +
+        (count != null ? '<span class="cancri-chip__count">' + count + "</span>" : "") +
+      "</button>"
+    );
+  }
+
+  /** 计数 + 排序（多的在前，同数按名字）。keyFn 返回空串的不计。 */
+  function countBy(list, keyFn) {
+    var map = {};
+    var order = [];
+    list.forEach(function (m) {
+      var k = keyFn(m);
+      if (!k) return;
+      if (map[k] == null) { map[k] = 0; order.push(k); }
+      map[k]++;
+    });
+    order.sort(function (a, b) { return map[b] - map[a] || (a < b ? -1 : a > b ? 1 : 0); });
+    return { map: map, order: order };
+  }
+
+  function variantKey(m) { return MG.groupIdOf(m) ? MG.variantOf(m) : ""; }
+
+  function renderFilterPanel(cards, raw) {
+    filterData.cards = cards;
+    filterData.raw = raw;
+    var brandList = document.querySelector('[data-filter-list="brand"]');
+    var variantList = document.querySelector('[data-filter-list="variant"]');
+    if (!brandList || !variantList) return;
+    var brands = countBy(cards, brandOf);
+    var variants = countBy(raw, variantKey);
+    // 目录刷新后选中项可能已不存在（模型下架），清掉免得停在空结果上。
+    if (filterState.brand && brands.map[filterState.brand] == null) filterState.brand = "";
+    if (filterState.variant && variants.map[filterState.variant] == null) filterState.variant = "";
+    brandList.innerHTML = chipHtml("data-filter-brand", "", "所有供应商", cards.length) +
+      brands.order.map(function (b) { return chipHtml("data-filter-brand", b, brandLabel(b), brands.map[b]); }).join("");
+    variantList.innerHTML = chipHtml("data-filter-variant", "", "所有分组", null) +
+      variants.order.map(function (v) { return chipHtml("data-filter-variant", v, v, variants.map[v]); }).join("");
+    applyFilter(false);
+  }
+
+  function applyFilter(scroll) {
+    var box = document.getElementById("cancri-filter-results");
+    var grid = document.getElementById("cancri-filter-grid");
+    if (!box || !grid) return;
+    var chips = document.querySelectorAll("[data-filter-brand],[data-filter-variant]");
+    for (var i = 0; i < chips.length; i++) {
+      var c = chips[i];
+      var isBrand = c.hasAttribute("data-filter-brand");
+      var val = c.getAttribute(isBrand ? "data-filter-brand" : "data-filter-variant") || "";
+      c.setAttribute("aria-pressed", val === (isBrand ? filterState.brand : filterState.variant) ? "true" : "false");
+    }
+    var on = !!(filterState.brand || filterState.variant);
+    document.body.toggleAttribute("data-cancri-filtering", on);
+    if (!on) {
+      box.setAttribute("data-cancri-hidden", "");
+      grid.innerHTML = "";
+      if (window.CancriGrokFluid) window.CancriGrokFluid.sync();
+      return;
+    }
+    var list = filterState.variant
+      ? filterData.raw.filter(function (m) {
+          return variantKey(m) === filterState.variant && (!filterState.brand || brandOf(m) === filterState.brand);
+        })
+      : filterData.cards.filter(function (m) { return brandOf(m) === filterState.brand; });
+    var parts = [];
+    if (filterState.brand) parts.push(brandLabel(filterState.brand));
+    if (filterState.variant) parts.push(filterState.variant);
+    var title = box.querySelector("[data-cancri-filter-title]");
+    var sub = box.querySelector("[data-cancri-filter-sub]");
+    if (title) title.textContent = parts.join(" · ");
+    if (sub) sub.textContent = list.length ? "共 " + list.length + " 个模型" : "";
+    var pick = makeArtPicker();
+    grid.innerHTML = list.length
+      ? list.map(function (m) {
+          return cardHtml(m, { flagshipBadge: true, anchor: false, art: pick(MG.modelId(m)) });
+        }).join("")
+      : '<div class="text-sm text-secondary py-6">没有符合条件的模型</div>';
+    box.removeAttribute("data-cancri-hidden");
+    observeUptimeSlots();
+    if (window.CancriGrokFluid) window.CancriGrokFluid.sync();
+    if (scroll && box.getBoundingClientRect().top < 64) box.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function locateHashModel(models, repId) {
@@ -950,11 +1185,17 @@
   function bindCardNav() {
     if (__cardNavBound) return;
     __cardNavBound = true;
+    // 胶囊选中某条线时，点卡片进那条线的详情页。
+    function cardTargetId(card) {
+      return card.getAttribute("data-active-id") || card.getAttribute("data-model-id");
+    }
     function go(e) {
+      var pick = e.target.closest("[data-variant-pick]");
+      if (pick) { pickVariant(pick); return; }
       if (e.target.closest("[data-copy]") || e.target.closest("a")) return;
       var card = e.target.closest("[data-model-id]");
       if (!card) return;
-      var id = card.getAttribute("data-model-id");
+      var id = cardTargetId(card);
       if (!id) return;
       window.location.href = detailUrl(id);
     }
@@ -962,9 +1203,9 @@
     document.addEventListener("keydown", function (e) {
       if (e.key !== "Enter" && e.key !== " ") return;
       var card = e.target.closest && e.target.closest("[data-model-id]");
-      if (!card || e.target.closest("[data-copy]")) return;
+      if (!card || e.target.closest("[data-copy]") || e.target.closest("[data-variant-pick]")) return;
       e.preventDefault();
-      var id = card.getAttribute("data-model-id");
+      var id = cardTargetId(card);
       if (id) window.location.href = detailUrl(id);
     });
   }
@@ -1139,6 +1380,7 @@
     var loading = document.getElementById("cancri-loading");
     var err = document.getElementById("cancri-error");
     if (err) err.setAttribute("data-cancri-hidden", "");
+    mountFilterPanel();
     showLoadingSkeletons();
     try {
       if (!window.__SUPABASE_URL__ || !ANON) throw new Error("站点配置未就绪，请刷新页面");

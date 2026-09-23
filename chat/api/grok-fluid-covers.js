@@ -195,6 +195,7 @@
   var started = 0;
   var raf = 0;
   var period = 8 / 0.52;
+  var PHI = 1.6180339887;
 
   function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
 
@@ -264,7 +265,8 @@
       return useCos ? Math.cos(angle) : Math.sin(angle);
     }
     var val = conf.amp * fn(conf.harmonic, conf.phase, conf.useCos);
-    if (conf.harmonic2 != null) val += conf.amp * (conf.mix2 || 0.35) * fn(conf.harmonic2, 1.618 * conf.phase, false);
+    // 第二谐波乘黄金比（无理数）：与主谐波永不同相 → 整体准周期，画面一直流动、不会「播完重来」。
+    if (conf.harmonic2 != null) val += conf.amp * (conf.mix2 || 0.35) * fn(conf.harmonic2 * PHI, 1.618 * conf.phase, false);
     return val;
   }
 
@@ -344,7 +346,8 @@
     var p = PRESETS[key] || presetForId(key);
     var speed = p.speed || 1;
     var phase = p.phase || 0;
-    m = (m * speed + phase) % 1;
+    // m 是连续时间（单位：周期数），不取模 —— 以前 `% 1` 配上非整数 speed 会在每轮末尾跳帧。
+    m = m * speed + phase;
     var colors = new Float32Array(40);
     for (var i = 0; i < 10; i++) {
       var rgba = i < p.colors.length ? hexToRgba(p.colors[i]) : [0, 0, 0, 1];
@@ -431,7 +434,7 @@
   function frame(now) {
     raf = requestAnimationFrame(frame);
     if (!gl || !targets.length || document.hidden) return;
-    var m = (((now - started) / 1000) % period) / period;
+    var m = (now - started) / 1000 / period;
     var groups = {};
     for (var i = 0; i < targets.length; i++) {
       var item = targets[i];

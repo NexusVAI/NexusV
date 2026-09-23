@@ -269,7 +269,6 @@ samp {
   z-index: 1;
 }
 
-
 /* ── model title search + full-screen model search ───────────────── */
 .cancri-models-title-row {
   display: flex;
@@ -706,3 +705,250 @@ body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] 
 #drawer.active .cnc-sidebar--mobile > * > *:nth-child(4) { transition-delay: 120ms; }
 #drawer.active .cnc-sidebar--mobile > * > *:nth-child(5) { transition-delay: 160ms; }
 #drawer.active .cnc-sidebar--mobile > * > *:nth-child(n+6) { transition-delay: 200ms; }
+/* ── 2026-09-23 模型页：左栏发丝线 + 右侧筛选栏 + 卡片分组胶囊 ─────── */
+body[data-oai-page="models"] #oai-mount-sidebar {
+  border-right: 1px solid var(--color-border-primary-surface);
+}
+
+/* 有筛选时只留结果区（oai-models.js applyFilter 切 body[data-cancri-filtering]） */
+body[data-cancri-filtering] [data-cancri-browse] {
+  display: none !important;
+}
+
+.cancri-filter {
+  position: fixed;
+  top: 4rem;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  max-width: 88vw;
+  background: #fff;
+  border-left: 1px solid var(--color-border-primary-surface);
+  transform: translateX(100%);
+  visibility: hidden;
+}
+:root[data-theme="dark"] .cancri-filter {
+  background: #000;
+}
+body[data-cancri-filter-open] .cancri-filter {
+  transform: none;
+  visibility: visible;
+}
+/* 收起时 visibility 等滑出动画结束再切，展开时立即可见 */
+body[data-cancri-filter-ready] .cancri-filter {
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.32s;
+}
+body[data-cancri-filter-ready][data-cancri-filter-open] .cancri-filter {
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s;
+}
+@media (max-width: 1023px) {
+  body[data-cancri-filter-open] .cancri-filter {
+    box-shadow: -16px 0 40px rgba(0, 0, 0, 0.18);
+  }
+}
+/* 宽屏：展开时推开主内容（居中容器随之左移），收起后回到居中 */
+@media (min-width: 1024px) {
+  body[data-oai-page="models"][data-cancri-filter-ready] main {
+    transition: padding-right 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  body[data-oai-page="models"][data-cancri-filter-open] main {
+    padding-right: 320px;
+  }
+  body[data-cancri-filter-open] #cancri-free,
+  body[data-cancri-filter-open] #cancri-frontier,
+  body[data-cancri-filter-open] .cancri-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}
+
+.cancri-filter__head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 12px 12px 20px;
+  border-bottom: 1px solid var(--color-border-primary-surface);
+}
+.cancri-filter__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-emphasis);
+}
+.cancri-filter__title svg,
+.cancri-filter-tab svg {
+  width: 16px;
+  height: 16px;
+}
+.cancri-filter__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.cancri-filter__btn:hover,
+.cancri-filter__btn:focus-visible {
+  background: var(--color-background-primary-soft);
+  color: var(--color-text-emphasis);
+  outline: none;
+}
+.cancri-filter__btn svg {
+  width: 15px;
+  height: 15px;
+}
+.cancri-filter__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 20px 28px;
+}
+.cancri-filter__sec {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border-primary-surface);
+}
+.cancri-filter__sec:last-child {
+  border-bottom: 0;
+}
+.cancri-filter__sec > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  list-style: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-emphasis);
+  cursor: pointer;
+  user-select: none;
+}
+.cancri-filter__sec > summary::-webkit-details-marker {
+  display: none;
+}
+.cancri-filter__sec > summary svg {
+  width: 15px;
+  height: 15px;
+  color: var(--color-text-secondary);
+  transform: rotate(180deg);
+  transition: transform 0.2s ease;
+}
+.cancri-filter__sec:not([open]) > summary svg {
+  transform: none;
+}
+.cancri-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.cancri-chips > .cancri-skel-line {
+  width: 100%;
+}
+
+/* 筛选胶囊 & 卡片分组胶囊共用的选中态：反色实底 */
+.cancri-chip,
+.cancri-variant {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-emphasis);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.cancri-chip {
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+.cancri-chip:hover,
+.cancri-variant:hover {
+  background: var(--color-background-primary-soft);
+}
+.cancri-chip[aria-pressed="true"],
+.cancri-variant[aria-pressed="true"] {
+  background: var(--color-background-primary-solid);
+  border-color: transparent;
+  color: var(--color-text-inverse);
+}
+.cancri-chip__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cancri-chip__count {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+.cancri-chip[aria-pressed="true"] .cancri-chip__count {
+  color: inherit;
+  opacity: 0.7;
+}
+
+/* 收起后留在右上角的「筛选」按钮 */
+.cancri-filter-tab {
+  position: fixed;
+  top: calc(4rem + 16px);
+  right: 16px;
+  z-index: 44;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-primary-surface);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-text-emphasis);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.15s ease;
+}
+:root[data-theme="dark"] .cancri-filter-tab {
+  background: #000;
+}
+.cancri-filter-tab:hover {
+  background: var(--color-background-primary-soft);
+}
+body[data-cancri-filter-open] .cancri-filter-tab {
+  opacity: 0;
+  transform: translateX(8px);
+  pointer-events: none;
+}
+
+/* 卡片「分组」行：胶囊可点，切换本卡的 Model ID / 状态 / 价格 */
+.cancri-spec__row--variants {
+  align-items: flex-start;
+}
+.cancri-spec__row--variants > .cancri-spec__key {
+  padding-top: 3px;
+}
+.cancri-variants {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+.cancri-variant {
+  padding: 3px 10px;
+  font-size: 12px;
+  line-height: 1.3;
+}
