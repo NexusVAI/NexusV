@@ -13,6 +13,7 @@
  *
  * Container hooks (any subset may exist on a page):
  *   #cancri-frontier  — featured (flagship) cards, OpenAI 3-up grid
+ *   #cancri-pareto    — 帕累托前沿（能力/价格综合挑选的一组线），旗舰区下方
  *   #cancri-grid      — full catalog grid
  *   #cancri-loading / #cancri-error — state（loading = 流光骨架，不再显示文案）
  *   [data-cancri-count] — text node updated with model count
@@ -64,6 +65,23 @@
     var key = String(id || "").toLowerCase();
     return FEATURED_RANK[key] != null || FEATURED_REP_RANK[key] != null;
   }
+
+  // 2026-09-24: 帕累托前沿 —— 能力/价格综合挑选的一组线，渲染在旗舰区下方。
+  // 与 FEATURED_ORDER 同一套机制：名单只钉 id，折叠后经 repId 折算成代表卡再查表
+  // （MiniMax-M2.7 属 minimax-m2.7 组，页面上落到代表卡 minimax-m2.7）。
+  // 顺序 = 运营方给定顺序。名单外禁止补位（同旗舰区：曾冒出 gemini-3.1-flash-lite）。
+  var PARETO_ORDER = [
+    "claude-opus-4-6-thinking",
+    "claude-sonnet-4-6-thinking",
+    "gpt-6-sol",
+    "kimi-k3",
+    "glm-5.3",
+    "composer-2.5-fast",
+    "doubao-seed-2-0-lite-260428",
+    "doubao-seed-2-0-mini-260215",
+    "MiniMax-M2.7",
+    "deepseek-v4.1-flash",
+  ];
 
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
@@ -875,6 +893,35 @@
             return cardHtml(m, { flagshipBadge: true, anchor: frontierAnchor, art: pickFrontier(m.id || m.canonicalId || "") });
           }).join("")
         : '<div class="text-sm text-secondary py-6">暂无旗舰模型</div>';
+    }
+
+    // 2026-09-24: 帕累托前沿区（旗舰区下方）。与旗舰区同一套机制：
+    // 名单只钉 id → repId 折算成代表卡 → 去重 → 只展示命中项，名单外不补位。
+    var pareto = document.getElementById("cancri-pareto");
+    if (pareto) {
+      var byIdPareto = {};
+      models.forEach(function (m) {
+        var mid = String(m.id || m.canonicalId || "").toLowerCase();
+        if (mid) byIdPareto[mid] = m;
+      });
+      var seenPareto = {};
+      var picks = PARETO_ORDER.map(function (id) {
+        var rid = repId(id).toLowerCase();
+        if (seenPareto[rid]) return null;
+        var hit = byIdPareto[rid];
+        if (!hit) return null;
+        seenPareto[rid] = true;
+        return hit;
+      }).filter(Boolean);
+      var pn = parseInt(pareto.getAttribute("data-cancri-limit") || "12", 10);
+      if (pn > 0) picks = picks.slice(0, pn);
+      var paretoAnchor = !document.getElementById("cancri-grid");
+      var pickPareto = makeArtPicker();
+      pareto.innerHTML = picks.length
+        ? picks.map(function (m) {
+            return cardHtml(m, { flagshipBadge: true, anchor: paretoAnchor, art: pickPareto(m.id || m.canonicalId || "") });
+          }).join("")
+        : '<div class="text-sm text-secondary py-6">暂无帕累托前沿模型</div>';
     }
 
     var free = document.getElementById("cancri-free");
