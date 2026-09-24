@@ -109,6 +109,18 @@
                 <div id="cancri-frontier" data-cancri-limit="12" class="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-x-10 xl:grid-cols-3"></div>
               </div>
 
+              <!-- ─── 帕累托前沿（2026-09-24）：能力/价格综合挑选的一组线，钉在旗舰区下方。
+                   名单在 api/oai-models.js 的 PARETO_ORDER；折叠卡与旗舰区同机制。 ─── -->
+              <div data-cancri-browse class="mb-7 flex w-full flex-col gap-7">
+                <div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                  <div class="flex max-w-[980px] flex-col gap-1 pr-2">
+                    <h2 class="text-3xl font-semibold tracking-tight">帕累托前沿</h2>
+                    <div class="text-secondary text-sm">综合能力与价格挑选的高性价比模型。</div>
+                  </div>
+                </div>
+                <div id="cancri-pareto" data-cancri-limit="12" class="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-x-10 xl:grid-cols-3"></div>
+              </div>
+
               <div data-cancri-browse class="h-px w-full bg-primary-soft"></div>
 
               <!-- ─── 专项模型（按提供商分类）─── -->
@@ -162,6 +174,6 @@
     <script src="./cancri_config.js?v=2026-05-13e"></script>
     <!-- 分组折叠在 oai-models.js 内部完成；分组配置来自 DB model_catalog，见文件头注释 -->
     <script src="./api/grok-fluid-covers.js?v=20260923-seamless"></script>
-    <script src="./api/oai-models.js?v=20260923-filter-rail"></script>
+    <script src="./api/oai-models.js?v=20260924-pareto"></script>
   </body>
 </html>
