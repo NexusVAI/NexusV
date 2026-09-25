@@ -3034,8 +3034,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     "gpt-5.5-b": DEFAULT_MODEL_ID,
     "gpt-5.5-c": DEFAULT_MODEL_ID,
     "claude-opus-4-6-thinking-medium": DEFAULT_MODEL_ID,
-    "claude-opus-4-6-thinking": DEFAULT_MODEL_ID,
-    "claude-sonnet-4-6-thinking": DEFAULT_MODEL_ID,
+    // 2026-09-25: claude-opus-4-6-thinking / claude-sonnet-4-6-thinking 已重新上架
+    // （09-24 aipm9527 线），在售 id 不得作迁移来源——否则老用户的有效选择被静默重置。
     "image-precise": DEFAULT_MODEL_ID,
     "image-fast": DEFAULT_MODEL_ID,
     "wan2.7-image-pro": DEFAULT_MODEL_ID,

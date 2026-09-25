@@ -9631,8 +9631,6 @@
 		"gpt-5.5-b": DEFAULT_MODEL_ID,
 		"gpt-5.5-c": DEFAULT_MODEL_ID,
 		"claude-opus-4-6-thinking-medium": DEFAULT_MODEL_ID,
-		"claude-opus-4-6-thinking": DEFAULT_MODEL_ID,
-		"claude-sonnet-4-6-thinking": DEFAULT_MODEL_ID,
 		"image-precise": DEFAULT_MODEL_ID,
 		"image-fast": DEFAULT_MODEL_ID,
 		"wan2.7-image-pro": DEFAULT_MODEL_ID,
