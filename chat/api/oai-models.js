@@ -1098,7 +1098,13 @@
     return { map: map, order: order };
   }
 
-  function variantKey(m) { return MG.groupIdOf(m) ? MG.variantOf(m) : ""; }
+  // 2026-09-25: 「免费线」= 所有免费模型（含未分组的、组内叫「限时免费」的），
+  // 免得免费模型散落在各分组里、或因为没分组根本进不了筛选。
+  var FREE_VARIANT = "免费线";
+  function variantKey(m) {
+    if (isFreeTierModel(m)) return FREE_VARIANT;
+    return MG.groupIdOf(m) ? MG.variantOf(m) : "";
+  }
 
   function renderFilterPanel(cards, raw) {
     filterData.cards = cards;
