@@ -12190,3 +12190,29 @@ html[data-theme="dark"] .model-current svg {
         right: -8px;
     }
 }
+
+/* ───────────────────────────────────────────────────────────
+   §44. 发送/语音钮位置收口（2026-09-25）
+
+   1) 发送钮比语音钮右偏 8px、贴死卡片右沿（看着"歪"）：
+      .composer-send-slot 同时带 .composer-actions，吃到上面
+      `#homeView .composer .composer-actions{gap:8px !important}`。
+      槽里 voice/send 互换时隐藏的那个只收成 width:0，仍是 flex 子项，
+      于是 0 宽 + 8px gap 把可见的 send 推出 32px 槽 8px。
+      voice 在前、send 在后，所以只有 send 偏；两态都有。
+      槽内只会同时显示一个钮，gap 归零即可（同特异性 (1,2,0)、本条更靠后）。
+   2) 多行时钮停在输入区垂直中间：§37 注释本意"多行时贴底"，但 11634
+      align-items:center 与 12148 align-self:center 让它居中。改为贴底；
+      单行时 textarea 与槽同高 32，位置不变。
+   ─────────────────────────────────────────────────────────── */
+#homeView .composer .composer-send-slot,
+.composer[data-workbench-composer] .composer-send-slot {
+    gap: 0 !important;
+}
+.composer-input-row {
+    align-items: flex-end;
+}
+.composer-input-row .composer-send-slot,
+.composer-input-row .composer-send-slot .send-btn {
+    align-self: flex-end;
+}

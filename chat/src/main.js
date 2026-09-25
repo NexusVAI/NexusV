@@ -12465,11 +12465,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     // 空输入态由 claude.css `:placeholder-shown{height:auto}` 直接钉 28.4，不走这里。
     // 首页态仍用 36：那边 CSS 另有 min-height:48（claude.css:1405，对应 Claude
     // welcome 的 min-h-[3rem]），JS 下限不参与决胜，改它没有意义也不该改。
+    // 2026-09-25：对话态不再区分移动端。原先 ≤640px 一律 44，打第一个字就把单行
+    // 输入区撑到 44（卡片 48→60），文字贴顶、比发送钮高 6px；对话态 CSS 下限本就
+    // 是 32（claude.css 对话态 .composer-input），移动端同样交给它。
     const chatting = Boolean(homeView?.classList.contains("chatting"));
-    const minHeight = window.matchMedia("(max-width: 640px)").matches
-      ? 44
-      : chatting
-        ? 24
+    const minHeight = chatting
+      ? 24
+      : window.matchMedia("(max-width: 640px)").matches
+        ? 44
         : 36;
     const maxHeight = getComposerResizeMaxHeight();
   
