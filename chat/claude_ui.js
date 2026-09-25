@@ -3156,7 +3156,8 @@
         // 原有 cascade 交互。判定按 location.pathname：含 claude.html 才走折叠路径。
         // ⛔ 禁改：去掉此守卫会让 index.html 主 chat 页桌面端只剩 1 个 active 模型，
         // 其余 63 个被 .claude-collapsed-models 的 display:none 折叠（用户报"只显示一个模型"）。
-        if (!/claude\.html(\?|#|$)/i.test(location.pathname)) {
+        // 2026-09-25: 地址栏会被 js/clean-url.js 去掉 .html，/chat/claude 也要命中。
+        if (!/\/claude(\.html)?$/i.test(location.pathname)) {
             return;
         }
 

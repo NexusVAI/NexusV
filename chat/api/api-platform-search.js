@@ -167,9 +167,14 @@
     });
   }
 
+  // 2026-09-25 地址栏会被 js/clean-url.js 去掉 .html，比较页面时两种写法都要认。
+  function stripHtml(u) {
+    return String(u || "").replace(/\/index\.html$/i, "/").replace(/\.html$/i, "");
+  }
+
   function buildLocalPageIndex() {
     var label = document.title.split("·")[0].trim() || "当前页";
-    var path = location.pathname.split("/").pop() || "index.html";
+    var path = (stripHtml(location.pathname).split("/").pop() || "index") + ".html";
     if (/\/api\/?$/.test(location.pathname)) {
       return indexGenericPage(document, chatRootPrefix() + "api/", "概览");
     }
@@ -184,7 +189,7 @@
     indexLoading = true;
     var pages = platformPages();
     var jobs = pages.map(function (page) {
-      if (page.url === location.href.split("#")[0]) {
+      if (stripHtml(page.url) === stripHtml(location.href.split("#")[0].split("?")[0])) {
         return Promise.resolve({ page: page, html: null, local: true });
       }
       return fetch(page.url, { credentials: "same-origin" })
@@ -523,7 +528,7 @@
 
   function init() {
     if (!document.querySelector(".topbar")) return;
-    if (/\/api\/admin(?:_|\.html)/.test(location.pathname || "")) return;
+    if (/\/api\/admin(?:_|\.html|$)/.test(location.pathname || "")) return;
 
     injectTopbarTrigger();
 

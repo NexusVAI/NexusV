@@ -394,7 +394,12 @@ function initMobileMenu() {
 
 function initActiveNavItem() {
     var navItems = document.querySelectorAll('.nav-item');
-    var currentPath = window.location.pathname.replace(/\/$/, '/index.html');
+    // 2026-09-25: 地址栏会被 js/clean-url.js 去掉 .html，两边都归一成「带 .html」再比。
+    var toHtml = function (p) {
+        p = p.replace(/\/$/, '/index.html');
+        return /\.html$/i.test(p) ? p : p + '.html';
+    };
+    var currentPath = toHtml(window.location.pathname);
 
     navItems.forEach(function(item) {
         item.classList.remove('current-page');
@@ -402,7 +407,7 @@ function initActiveNavItem() {
         if (href) {
             try {
                 var url = new URL(href, window.location.href);
-                var targetPath = url.pathname.replace(/\/$/, '/index.html');
+                var targetPath = toHtml(url.pathname);
                 // 纯锚点跳转（同页面 + hash）不算 current-page
                 if (targetPath === currentPath && url.hash && url.hash !== '#') return;
                 if (targetPath === currentPath) {

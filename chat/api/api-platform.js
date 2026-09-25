@@ -214,7 +214,7 @@
 
   function isAdminShellPage() {
     var p = location.pathname || "";
-    return /\/api\/admin(?:_|\.html)/.test(p);
+    return /\/api\/admin(?:_|\.html|$)/.test(p);
   }
 
   function injectAdminThemeToggle() {
@@ -774,7 +774,9 @@
 
   function injectAdminMobileDock() {
     if (document.querySelector(".admin-mobile-dock")) return;
+    // 地址栏可能已被 js/clean-url.js 去掉 .html，补回来再和 match 比。
     var path = location.pathname.split("/").pop() || "";
+    if (path && !/\.html$/i.test(path)) path += ".html";
     var items = [
       { href: "./admin_dashboard.html", label: "仪表盘", icon: "📊", match: "admin_dashboard.html" },
       { href: "./admin_orders.html", label: "卡密", icon: "💳", match: "admin_orders.html" },
@@ -929,8 +931,8 @@
     consoleLink.className = "topbar__console-btn";
     consoleLink.href = root + "api/console.html";
     consoleLink.textContent = "Console";
-    if (/\/api\/(?:console|keys|usage|logs)\.html/i.test(location.pathname || "") ||
-        /api_keys\.html/i.test(location.pathname || "")) {
+    if (/\/api\/(?:console|keys|usage|logs)(?:\.html)?$/i.test(location.pathname || "") ||
+        /api_keys(?:\.html)?$/i.test(location.pathname || "")) {
       consoleLink.classList.add("is-active");
     }
     actions.appendChild(consoleLink);
