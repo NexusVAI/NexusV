@@ -16478,8 +16478,7 @@
 	function autoResizeComposerInput() {
 		if (!homeInput) return;
 		const composer = homeInput.closest("[data-workbench-composer], .composer");
-		const chatting = Boolean(homeView?.classList.contains("chatting"));
-		const minHeight = window.matchMedia("(max-width: 640px)").matches ? 44 : chatting ? 24 : 36;
+		const minHeight = Boolean(homeView?.classList.contains("chatting")) ? 24 : window.matchMedia("(max-width: 640px)").matches ? 44 : 36;
 		const maxHeight = getComposerResizeMaxHeight();
 		homeInput.style.height = "0px";
 		const next = Math.max(minHeight, Math.min(homeInput.scrollHeight, maxHeight));
