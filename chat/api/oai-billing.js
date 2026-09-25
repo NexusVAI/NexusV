@@ -462,10 +462,15 @@
         setRedeemMsg("套餐已开通，有效期 30 天。下方「套餐」页签可以看到最新状态。", "ok");
       } else {
         var face = Number(res && res.face_cny);
+        // 2026-09-25：限时加赠由 cancri_card_redeem 在同一事务里发放，结果随 result 带回。
+        var bonus = Number(res && res.result && res.result.promo_bonus_cny);
+        var bonusText = isFinite(bonus) && bonus > 0
+          ? "，" + ((res.result.promo_name) || "活动") + "另加赠 " + fmtCny(bonus)
+          : "";
         setRedeemMsg(
           isFinite(face) && face > 0
-            ? "兑换成功，" + fmtCny(face) + " 已进入 API 额度余额。"
-            : "兑换成功，额度已到账。",
+            ? "兑换成功，" + fmtCny(face) + " 已进入 API 额度余额" + bonusText + "。"
+            : "兑换成功，额度已到账" + bonusText + "。",
           "ok",
         );
       }
@@ -483,6 +488,12 @@
   }
 
   function bindRedeem() {
+    // 限时活动卡片过了 data-promo-until 就不再展示（发放侧由 DB 的活动窗口独立判定）。
+    var promos = document.querySelectorAll("[data-promo-until]");
+    for (var i = 0; i < promos.length; i++) {
+      var until = Date.parse(promos[i].getAttribute("data-promo-until"));
+      if (isFinite(until) && Date.now() >= until) promos[i].hidden = true;
+    }
     var btn = $("redeem-btn");
     var input = $("redeem-input");
     if (btn) btn.addEventListener("click", function () { doRedeem(); });
