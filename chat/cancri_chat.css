@@ -2811,6 +2811,10 @@ html[data-theme="light"] .claude-accent-dot {
     font-size: 10px;
     color: #fff;
     text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+    /* 2026-09-25：浅色/白底缩略图上白字看不清，垫半透明深底 */
+    background: rgba(0, 0, 0, 0.45);
+    border-radius: 4px;
+    padding: 1px 5px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

@@ -12098,8 +12098,8 @@ html[data-theme="dark"] .model-current svg {
     max-width: 100%;
     max-height: none;
     min-height: 0;
-    margin: -2px 0 2px;
-    padding: 2px 2px 0;
+    margin: -2px 0 0;
+    padding: 2px;
     gap: 12px;
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -12148,4 +12148,45 @@ html[data-theme="dark"] .model-current svg {
 .composer-input-row .composer-send-slot,
 .composer-input-row .composer-send-slot .send-btn {
     align-self: center;
+}
+
+/* ───────────────────────────────────────────────────────────
+   §43. composer 浮层两处收口（2026-09-25）
+
+   1) 空态卡片偏高 / 输入行偏下：附件预览区带 hidden 仍占 ~10px。
+      上面 12094 的 `.composer-card > .attachment-preview{display:flex}`
+      与 cancri_chat.css `.attachment-preview[hidden]{display:none}`、
+      styles/component-composer.css 同名规则同为 (0,2,0)，本文件最后
+      加载 → display:flex 反杀 display:none。补一条 !important 恢复
+      hidden 语义。
+   2) 输入卡 / chin 行背后透出正文：§39 把整个 dock（.home-center）
+      改透明浮层是给提问卡用的，输入卡和 chin 不该跟着透明。不动
+      .home-center 的 transparent（动了提问卡周围又露页面底色），
+      改在卡片底下垫一层 ::before：从卡片顶 -8px 渐隐起始，向下盖住
+      chin 行直到视口底；z-index:-1 落在 .home-center(z5) 层叠上下文
+      最底层、仍在正文之上；pointer-events:none 不吃滚轮。 */
+.composer-card > .attachment-preview[hidden] {
+    display: none !important;
+}
+
+#homeView.chatting .composer-card {
+    position: relative;
+}
+#homeView.chatting .composer-card::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+    left: -20px;    /* = .home-center 左右 padding（§2288 附近 8px 20px） */
+    right: -20px;
+    top: -8px;      /* = .home-center 上 padding 8 */
+    bottom: -200px; /* 向下盖住 chin 行直到视口底 */
+    background: linear-gradient(to bottom, transparent 0, var(--c-bg) 8px);
+}
+@media (max-width: 768px) {
+    /* 移动端 .home-center 左右 padding 8（§36 媒体查询） */
+    #homeView.chatting .composer-card::before {
+        left: -8px;
+        right: -8px;
+    }
 }
