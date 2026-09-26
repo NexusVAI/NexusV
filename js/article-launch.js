@@ -11,11 +11,11 @@
 (function () {
     'use strict';
 
-    // 内部评测（2026-09）：同一组 5 道题，模型 deepseek-flash，按低谷时段价格计费。
-    // 三个档位各跑一遍，15 次全部解决。Medium 本轮未测。
+    // 内部评测（2026-09）：SWE-bench 5 题，模型 DeepSeek-V4.1-Flash（deepseek-flash），
+    // 低谷时段价格。数据源 results_gui/summary.csv；耗时为各题 wall_s 之和。
     var EVAL = {
         Low: { cost: 0.24, total: 1.18, input: '13.6M', output: '185K', cache: '98.7%', minutes: 34 },
-        High: { cost: 0.32, total: 1.60, input: '23.8M', output: '228K', cache: '99.1%', minutes: 57 },
+        High: { cost: 0.32, total: 1.60, input: '23.8M', output: '228K', cache: '99.1%', minutes: 61 },
         Ultracode: { cost: 0.36, total: 1.82, input: '27.0M', output: '256K', cache: '99.1%', minutes: 65 }
     };
 
@@ -70,7 +70,7 @@
                     { t: 'p', html: '第二，最严格的档位会在对话进行到第四轮时自动"瘦身"。Ultracode 的完整标准只在前三轮原样给出，之后换成精简版：骨架全在，措辞更短。前三轮用来把标准立住，后面每一轮再重复一遍完整文本，只是在替你多付 token。' },
 
                     { t: 'h2', id: 'evaluation', text: '我们跑了一轮' },
-                    { t: 'p', html: '档位到底值不值那份钱，与其讲道理，不如跑一遍。我们挑了 5 道题，用同一个模型（deepseek-flash），让 Low、High、Ultracode 三个档位各自从头做一遍，按评分脚本判定是否解决。' },
+                    { t: 'p', html: '档位到底值不值那份钱，与其讲道理，不如跑一遍。我们从 SWE-bench 里挑了 5 道题——每道都是开源项目里一个真实的 GitHub issue，配着这个项目自己的测试——用同一个模型（DeepSeek-V4.1-Flash），让 Low、High、Ultracode 三个档位各自从头做一遍，再逐题评测是否解决。' },
                     { t: 'grid', title: '同一组 5 道题，三个档位', subject: 0, columns: ['Low', 'High', 'Ultracode'], rows: [
                         { label: '解决', sub: '5 道题', cells: ['5/5', '5/5', '5/5'], win: [0, 1, 2] },
                         { label: '每题均价', sub: '人民币', cells: ['0.24 元', '0.32 元', '0.36 元'], win: [0] },
@@ -78,10 +78,17 @@
                         { label: '输入 token', sub: '含缓存读取', cells: ['13.6M', '23.8M', '27.0M'], win: [0] },
                         { label: '输出 token', cells: ['185K', '228K', '256K'], win: [0] },
                         { label: '缓存命中率', cells: ['98.7%', '99.1%', '99.1%'], win: [1, 2] },
-                        { label: '总耗时', sub: '5 题合计', cells: ['34 分钟', '57 分钟', '65 分钟'], win: [0] }
-                    ], caption: '模型 deepseek-flash，价格按低谷时段计。High 档第 4 题在评分时模型仍在做收尾验证，补丁已完成并通过评分，计为解决。默认档 Medium 本轮未测。' },
-                    { t: 'chart', title: '解决率 vs 每题成本', subtitle: '同一模型，三个努力档位', xLabel: '每题成本（元）', yLabel: '解决率（%）', xTicks: [0.2, 0.25, 0.3, 0.35, 0.4], xFixed: 2,yMax: 100, yStep: 20, series: evalSeries('Cancri Code 3 · deepseek-flash'), note: '三个档位都解决了全部 5 道题；档位越高，每题成本越高。在这组题的难度上，Low 是成本最低的那个点。' },
-                    { t: 'p', html: '结果很朴素：三个档位全部 5/5。区别在账单和时间上——从 Low 到 Ultracode，每题成本从 0.24 元涨到 0.36 元，多了一半；总耗时从 34 分钟拉长到 65 分钟，将近翻倍；输入 token 也翻了一倍，多出来的基本都是反复读代码、反复验证。' },
+                        { label: '总耗时', sub: '5 题合计', cells: ['34 分钟', '61 分钟', '65 分钟'], win: [0] }
+                    ], caption: '模型 DeepSeek-V4.1-Flash，按 DeepSeek 官网低谷时段价格计费。' },
+                    { t: 'grid', title: '逐题：每题成本 · 耗时', subject: 0, columns: ['Low', 'High', 'Ultracode'], rows: [
+                        { label: 'pytest', sub: 'pytest-dev__pytest-10051', cells: ['0.08 元 · 5 分钟', '0.03 元 · 1 分钟', '0.04 元 · 1 分钟'], win: [1] },
+                        { label: 'pylint', sub: 'pylint-dev__pylint-6386', cells: ['0.24 元 · 6 分钟', '0.32 元 · 13 分钟', '0.74 元 · 20 分钟'], win: [0] },
+                        { label: 'sympy', sub: 'sympy__sympy-12489', cells: ['0.16 元 · 5 分钟', '0.28 元 · 12 分钟', '0.26 元 · 7 分钟'], win: [0] },
+                        { label: 'django', sub: 'django__django-15554', cells: ['0.26 元 · 7 分钟', '0.58 元 · 22 分钟', '0.43 元 · 29 分钟'], win: [0] },
+                        { label: 'django', sub: 'django__django-11885', cells: ['0.44 元 · 12 分钟', '0.39 元 · 13 分钟', '0.35 元 · 8 分钟'], win: [2] }
+                    ], caption: '题目来自 SWE-bench，标注为 SWE-bench 实例编号。每格为该档位在这道题上的花费与耗时，高亮为该题最省的档位。' },
+                    { t: 'chart', title: '解决率 vs 每题成本', subtitle: '同一模型，三个努力档位', xLabel: '每题成本（元）', yLabel: '解决率（%）', xTicks: [0.2, 0.25, 0.3, 0.35, 0.4], xFixed: 2,yMax: 100, yStep: 20, series: evalSeries('Cancri Code 3 · DeepSeek-V4.1-Flash'), note: '三个档位都解决了全部 5 道题；档位越高，每题成本越高。在这组题的难度上，Low 是成本最低的那个点。' },
+                    { t: 'p', html: '结果很朴素：三个档位全部 5/5。区别在账单和时间上——从 Low 到 Ultracode，每题成本从 0.24 元涨到 0.36 元，多了一半；总耗时从 34 分钟拉长到 65 分钟，将近翻倍；输入 token 也翻了一倍，多出来的基本都是反复读代码、反复验证。逐题看并不整齐：简单的 pytest 那道，高档位反而一分钟就收工，比 Low 还省；真正拉开差距的是 pylint 和 django 这类需要来回翻代码的题。' },
                     { t: 'p', html: '有两点值得说清楚。第一，成本能压得这么低，靠的是缓存：三个档位的缓存命中率都在 99% 上下，绝大部分输入是按缓存价计的。第二，这组题 Low 就能做完，所以高档位多花的钱在这里没有换来更高的解决率——它换来的是更多的取证和更长的核对。在更难、更容易出错的任务上，这笔钱才会开始体现价值，而那需要更大的题集去证明，我们会继续跑。' },
                     { t: 'p', html: '5 道题是个小样本，我们不打算用它下什么大结论。它能说明的只有一件事：档位是一个真实的取舍，不是营销话术——你能从账单上看见它。' },
 
@@ -160,7 +167,7 @@
                     { t: 'p', html: 'Second, the strictest level slims itself down from the fourth turn. Ultracode gives its full standard verbatim for the first three turns and then switches to a condensed version: the same skeleton in fewer words. The first three turns establish the standard; repeating the full text every turn after that would just be spending your tokens.' },
 
                     { t: 'h2', id: 'evaluation', text: 'We ran it' },
-                    { t: 'p', html: 'Rather than argue whether the levels are worth the money, we ran them. We picked 5 tasks and one model (deepseek-flash), had Low, High and Ultracode each work through them from scratch, and used a grading script to decide whether each was solved.' },
+                    { t: 'p', html: 'Rather than argue whether the levels are worth the money, we ran them. We picked 5 tasks from SWE-bench, each a real GitHub issue from an open-source project paired with that project\'s own tests, used one model (DeepSeek-V4.1-Flash), had Low, High and Ultracode each work through them from scratch, and then evaluated every task for whether it was solved.' },
                     { t: 'grid', title: 'The same 5 tasks, three levels', subject: 0, columns: ['Low', 'High', 'Ultracode'], rows: [
                         { label: 'Solved', sub: 'out of 5', cells: ['5/5', '5/5', '5/5'], win: [0, 1, 2] },
                         { label: 'Cost per task', sub: 'CNY', cells: ['¥0.24', '¥0.32', '¥0.36'], win: [0] },
@@ -168,10 +175,17 @@
                         { label: 'Input tokens', sub: 'incl. cache reads', cells: ['13.6M', '23.8M', '27.0M'], win: [0] },
                         { label: 'Output tokens', cells: ['185K', '228K', '256K'], win: [0] },
                         { label: 'Cache hit rate', cells: ['98.7%', '99.1%', '99.1%'], win: [1, 2] },
-                        { label: 'Total time', sub: 'all 5 tasks', cells: ['34 min', '57 min', '65 min'], win: [0] }
-                    ], caption: 'Model: deepseek-flash, priced at off-peak rates. On High, task 4 was still running its final verification when graded; the patch was complete and passed grading, so it counts as solved. The default level, Medium, was not part of this run.' },
-                    { t: 'chart', title: 'Solve rate vs cost per task', subtitle: 'One model, three effort levels', xLabel: 'Cost per task (CNY)', yLabel: 'Solve rate (%)', xTicks: [0.2, 0.25, 0.3, 0.35, 0.4], xFixed: 2,yMax: 100, yStep: 20, series: evalSeries('Cancri Code 3 · deepseek-flash'), note: 'All three levels solved all 5 tasks; higher levels cost more per task. At this difficulty, Low is the cheapest point.' },
-                    { t: 'p', html: 'The result is plain: all three levels went 5 for 5. The differences are in the bill and the clock. From Low to Ultracode, cost per task rose from ¥0.24 to ¥0.36, half again as much; total time went from 34 to 65 minutes, nearly double; input tokens doubled too, almost all of it spent re-reading code and re-checking work.' },
+                        { label: 'Total time', sub: 'all 5 tasks', cells: ['34 min', '61 min', '65 min'], win: [0] }
+                    ], caption: 'Model: DeepSeek-V4.1-Flash, billed at DeepSeek\'s published off-peak rates.' },
+                    { t: 'grid', title: 'Per task: cost · time', subject: 0, columns: ['Low', 'High', 'Ultracode'], rows: [
+                        { label: 'pytest', sub: 'pytest-dev__pytest-10051', cells: ['¥0.08 · 5 min', '¥0.03 · 1 min', '¥0.04 · 1 min'], win: [1] },
+                        { label: 'pylint', sub: 'pylint-dev__pylint-6386', cells: ['¥0.24 · 6 min', '¥0.32 · 13 min', '¥0.74 · 20 min'], win: [0] },
+                        { label: 'sympy', sub: 'sympy__sympy-12489', cells: ['¥0.16 · 5 min', '¥0.28 · 12 min', '¥0.26 · 7 min'], win: [0] },
+                        { label: 'django', sub: 'django__django-15554', cells: ['¥0.26 · 7 min', '¥0.58 · 22 min', '¥0.43 · 29 min'], win: [0] },
+                        { label: 'django', sub: 'django__django-11885', cells: ['¥0.44 · 12 min', '¥0.39 · 13 min', '¥0.35 · 8 min'], win: [2] }
+                    ], caption: 'Tasks are from SWE-bench, labeled by instance ID. Each cell is that level\'s cost and time on the task; the highlight marks the cheapest level for each task.' },
+                    { t: 'chart', title: 'Solve rate vs cost per task', subtitle: 'One model, three effort levels', xLabel: 'Cost per task (CNY)', yLabel: 'Solve rate (%)', xTicks: [0.2, 0.25, 0.3, 0.35, 0.4], xFixed: 2,yMax: 100, yStep: 20, series: evalSeries('Cancri Code 3 · DeepSeek-V4.1-Flash'), note: 'All three levels solved all 5 tasks; higher levels cost more per task. At this difficulty, Low is the cheapest point.' },
+                    { t: 'p', html: 'The result is plain: all three levels went 5 for 5. The differences are in the bill and the clock. From Low to Ultracode, cost per task rose from ¥0.24 to ¥0.36, half again as much; total time went from 34 to 65 minutes, nearly double; input tokens doubled too, almost all of it spent re-reading code and re-checking work. Task by task it is less tidy: on the easy pytest issue, the higher levels were done in a minute and cost less than Low. The gap really opens on tasks like pylint and django that require going back and forth through the code.' },
                     { t: 'p', html: 'Two things are worth being clear about. First, costs stay this low because of caching: all three levels hit the cache about 99% of the time, so most input is billed at the cache rate. Second, Low could already finish this set, so the extra spend at higher levels did not buy a higher solve rate here. It bought more evidence and longer checking. That spend starts to pay off on harder, more error-prone work, and proving it takes a bigger task set. We will keep running.' },
                     { t: 'p', html: 'Five tasks is a small sample and we are not drawing big conclusions from it. It shows one thing: the effort level is a real trade-off, not marketing. You can see it on the bill.' },
 
