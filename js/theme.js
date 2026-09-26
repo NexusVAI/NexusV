@@ -48,23 +48,28 @@ function setTheme(theme) {
     }
 }
 
+// 2026-09-26：默认改为浅色。旧版 initTheme 会把默认的 warm 写进 localStorage，
+// 所以「有没有存 theme」分不清是用户选的还是被默认值固化的——只有用户亲手切换过
+// （theme_user=1）才沿用已存主题，否则一律浅色。各页 <head> 内联脚本用同一判据。
+function resolveTheme() {
+    try {
+        if (localStorage.getItem('theme_user') === '1') return localStorage.getItem('theme') || 'light';
+    } catch (e) {}
+    return 'light';
+}
+
 function toggleTheme() {
-    // 2026-08-27：fallback 改为 warm，与各页 <head> 内联脚本的默认保持一致。
-    const currentTheme = localStorage.getItem('theme') || 'warm';
+    const currentTheme = resolveTheme();
     const themeOrder = ['light', 'dark', 'warm', 'blue'];
     const currentIndex = themeOrder.indexOf(currentTheme);
     const nextIndex = (currentIndex + 1) % themeOrder.length;
     const nextTheme = themeOrder[nextIndex];
+    try { localStorage.setItem('theme_user', '1'); } catch (e) {}
     setTheme(nextTheme);
 }
 
 function initTheme() {
-    const savedTheme = localStorage.getItem('theme');
-    // 2026-08-27：原默认为 'light'，但各页 <head> 内联脚本先加的是 warm-theme，
-    // 于是首次访问会「warm 闪一下 → 被 setTheme('light') 改掉」，并且 setTheme
-    // 顺手把 light 写进 localStorage 永久固化。两处默认统一为 warm 后闪烁消失。
-    const theme = savedTheme || 'warm';
-    setTheme(theme);
+    setTheme(resolveTheme());
 }
 
 window.setTheme = setTheme;

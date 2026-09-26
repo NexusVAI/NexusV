@@ -15,8 +15,8 @@
     <meta property="og:image" content="https://www.nexusvai.xyz/Logo/JJ1.webp">
     <script>
         (() => {
-            let theme = 'warm';
-            try { theme = localStorage.getItem('theme') || 'warm'; } catch (e) {}
+            let theme = 'light';
+            try { theme = (localStorage.getItem('theme_user') === '1' && localStorage.getItem('theme')) || 'light'; } catch (e) {}
             if (theme === 'light') document.documentElement.classList.add('light-theme');
             if (theme === 'warm') document.documentElement.classList.add('warm-theme');
             if (theme === 'blue') document.documentElement.classList.add('blue-theme');

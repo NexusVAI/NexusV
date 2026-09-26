@@ -1453,6 +1453,29 @@ const articleData = {
             ]
         }
     },
+    cancriCode3: {
+        overlay: 'Cancri Code 3',
+        layout: 'launch',
+        media: { type: 'image', src: 'Logo/CancriCode3-0.webp', alt: 'Cancri Code 3' },
+        zh: {
+            title: 'Cancri Code 3：见识一下你的软件工程师',
+            date: '2026年9月26日',
+            category: '产品',
+            readTime: '18 分钟阅读',
+            paragraphs: [
+                '今天我们发布 Cancri Code 3。它读得懂你的整个项目，在一台隔离的云端机器上动手，改完先验证，再交给你。这一版最大的变化只有一句话：动手的那一部分，从你的电脑搬到了云上。'
+            ]
+        },
+        en: {
+            title: 'Cancri Code 3: Meet Your Software Engineer',
+            date: 'September 26, 2026',
+            category: 'Product',
+            readTime: '18 min read',
+            paragraphs: [
+                'Today we are releasing Cancri Code 3. It understands your whole project, does the work on an isolated cloud machine, and verifies before it hands anything back. The biggest change fits in one sentence: the hands-on part has moved from your computer to the cloud.'
+            ]
+        }
+    },
     ccAcademy: {
         overlay: 'CancriCode Academy',
         media: { type: 'image', src: 'Logo/CCODE3.0.png', alt: 'CancriCode Academy' },
@@ -1477,6 +1500,29 @@ const articleData = {
                 '学完这五课，你已经比大多数人更会用 AI 写代码了。如果想看我们自己是怎么用的，去读《最佳实践教程》；如果想知道它适合做什么、不适合做什么，去读《典型应用场景》。',
                 '欢迎来到 Cancri Code。',
                 '—— Cancri Code 联合创始人'
+            ]
+        },
+        en: {
+            title: 'CancriCode Academy: From Your First Conversation to Your First Delivery',
+            date: 'September 26, 2026',
+            category: 'Academy',
+            readTime: '8 min read',
+            paragraphs: [
+                'Most people open Cancri Code for the first time the way they would open a chat window: ask a question, wait for an answer. Nothing wrong with that, but it uses about a tenth of what the product can do. The Academy exists to help you swap that habit for a different one: handing a piece of work over.',
+                '<strong>Lesson one: give it the project first</strong>',
+                'After installing and signing in, open the folder you are actually working on. There is no environment to configure and no project brief to write. Cancri Code reads the directory structure, finds the entry points and looks at the dependencies on its own, the same way a new colleague spends their first morning. Your job is to answer the occasional question it asks.',
+                '<strong>Lesson two: describe the outcome, not the steps</strong>',
+                '"Change line 42 to xxx" is directing a pen. "The login page hangs on a slow network, find out why and fix it" is handing over a job. With the first you already need to know the answer; the second is the reason Cancri Code exists. Describe the result you want and how you will judge that it is done, then let it investigate, try and verify.',
+                '<strong>Lesson three: learn to read its work</strong>',
+                'Every file it reads, every search, every command and every edit shows up in the conversation as it happens. You do not need to review each one, but build one habit: when it is about to write a file or run something with side effects, glance at what it intends to do. Approval is not overhead. It is your last checkpoint on your own codebase.',
+                '<strong>Lesson four: put risky work in the cloud sandbox</strong>',
+                'Load tests, unfamiliar scripts, a pile of dependencies you do not want on your machine, a real browser clicking through a flow: send these to a cloud sandbox. Each task gets its own isolated machine, which is reclaimed when the work is done and never touches your computer. Together with PPIO we made it start on demand and pause itself when idle, so you only pay for the time you actually use.',
+                '<strong>Lesson five: pick the right effort level</strong>',
+                'Not every task deserves a long think. Changing a label or finding where a function lives: use a low level, fast and cheap. A cross-module refactor or a strange concurrency bug: raise the level and let it think and verify more. The effort level is your trade-off between speed and depth, and you are the one who knows which matters today.',
+                '<strong>What next</strong>',
+                'After these five lessons you already use AI for code better than most people do. To see how we use it ourselves, read Best Practices. To learn what it is good at and where it is not, read Typical Use Cases.',
+                'Welcome to Cancri Code.',
+                '— Co-founder, Cancri Code'
             ]
         }
     },
@@ -1507,6 +1553,31 @@ const articleData = {
                 '这些做法没有一条是复杂的。真正的差别在于：你是把 Cancri Code 当成一个会写代码的输入法，还是当成一位可以托付事情的同事。',
                 '—— Cancri Code 联合创始人'
             ]
+        },
+        en: {
+            title: 'Best Practices: How We Use Cancri Code Ourselves',
+            date: 'September 26, 2026',
+            category: 'Tutorial',
+            readTime: '10 min read',
+            paragraphs: [
+                'Most of the code in Cancri Code was written with Cancri Code. That is not a slogan; it is how our days go. The practices below survived a lot of our own mistakes. They will not suit everyone, but they will probably save you a few detours.',
+                '<strong>1. Let it read before it writes</strong>',
+                'Before giving a task, ask "how does this part of the code work?" Have the model read the relevant files and explain the call paths before touching anything. The code it writes afterwards fits the project noticeably better, because it has actually looked instead of guessing.',
+                '<strong>2. Define "done"</strong>',
+                '"Fix this bug" is a vague target. "After the fix this test passes and the other two pages are unaffected" is a target that can be checked. The more concrete your acceptance criteria, the closer the result lands to what you wanted.',
+                '<strong>3. Plan the big ones first</strong>',
+                'For changes that span several modules, switch on plan mode and have it lay out the approach, the scope of edits and the risks. Two minutes reading a plan saves twenty minutes of rework. Once you agree with the plan, let it execute.',
+                '<strong>4. One task, one conversation</strong>',
+                'Do not stack five unrelated requests in the same thread. The context gets noisy and the model\'s attention thins out. Finish one thing, start a new conversation; for work that should run in parallel, use subtasks or separate worktrees so they do not step on each other.',
+                '<strong>5. Side effects go to the cloud sandbox</strong>',
+                'We have an unwritten rule: any command in the "let us run it and see what happens" category does not run on a laptop. A cloud sandbox is isolated, clean and disposable. Your development machine should stay yours.',
+                '<strong>6. Trust evidence, not "I fixed it"</strong>',
+                'Any AI can say "done" without having verified anything. Cancri Code is built to run the tests, read the output and compare results on its own, but you should still get into the habit of looking at the evidence it gives you, not just the conclusion.',
+                '<strong>7. Write your rules down</strong>',
+                'Files that must not be touched, naming conventions, historical baggage: put them in project rules and memory. You say it once, it remembers, and it follows the rule in every task after that.',
+                'None of this is complicated. The real difference is whether you treat Cancri Code as an input method that happens to write code, or as a colleague you can hand work to.',
+                '— Co-founder, Cancri Code'
+            ]
         }
     },
     ccUseCases: {
@@ -1534,6 +1605,30 @@ const articleData = {
                 '<strong>什么时候不该用</strong>',
                 '需要你自己做判断的产品决策、没有任何上下文的一句话需求、以及你自己都说不清"做成什么样算好"的事——这些时候，先想清楚，再交给它。Cancri Code 很能干，但它替代不了你的判断。',
                 '—— Cancri Code 联合创始人'
+            ]
+        },
+        en: {
+            title: 'Typical Use Cases: When to Hand the Work to Cancri Code',
+            date: 'September 26, 2026',
+            category: 'Use Cases',
+            readTime: '9 min read',
+            paragraphs: [
+                'We are often asked what Cancri Code is actually good for. Rather than a feature list, here are a few situations where we and our users rely on it.',
+                '<strong>Taking over an unfamiliar codebase</strong>',
+                'A new job, an inherited contractor project, code you have not opened in six months: the painful part is not changing it but understanding it. Let Cancri Code walk the project first: where the entry points are, how data flows, which modules are fragile. An afternoon of orientation shrinks to the length of a coffee.',
+                '<strong>Fixing the bug that only shows up sometimes</strong>',
+                'Hard bugs rarely reveal themselves at a glance. Cancri Code tries to reproduce first, narrows the scope, adds logging, runs tests, and only then changes code, leaving behind a test that keeps the bug from returning. It does not edit a line just because it "looks like the culprit".',
+                '<strong>Refactors and migrations</strong>',
+                'Upgrading a framework, moving from an old interface to a new one, unifying the same pattern across dozens of files: large, repetitive and unforgiving work. Cancri Code keeps the change consistent across files and checks that the project still runs after each step.',
+                '<strong>Load and security testing before launch</strong>',
+                'Load tests and penetration tests used to mean running them on your own machine or requesting a server. Now Cancri Code can start an isolated environment in a PPIO elastic cloud sandbox, deploy, apply load, collect results and hand the machine back. Neither your laptop nor your production environment is involved.',
+                '<strong>Letting it click through the browser for you</strong>',
+                'Some problems only appear in a real browser: a button that will not respond, a flow that stalls at one step. Choose a cloud sandbox with a browser and Cancri Code opens the page, operates it, takes screenshots and pins down the problem while you watch.',
+                '<strong>Several projects at once</strong>',
+                'With worktrees and subtasks, one project can be fixing a bug while another gets a new feature and a third runs its tests. You stop being the person switching windows and become the person setting priorities.',
+                '<strong>When not to use it</strong>',
+                'Product decisions that need your judgment, one-line requests with no context, and tasks where you cannot say what "good" looks like. In those cases, think first and delegate second. Cancri Code is capable, but it does not replace your judgment.',
+                '— Co-founder, Cancri Code'
             ]
         }
     },
@@ -1563,6 +1658,30 @@ const articleData = {
                 '云端会话、周期任务、让智能体在你关机之后继续工作——这些都在路上。我们会继续用同样的原则去做它们：先证明它可靠，再交到你手上。',
                 '—— Cancri Code 联合创始人'
             ]
+        },
+        en: {
+            title: 'Engineering at CancriCode: Building an AI Engineer You Can Trust',
+            date: 'September 26, 2026',
+            category: 'Engineering',
+            readTime: '11 min read',
+            paragraphs: [
+                'Making an AI that can write code is not hard. Making one you are willing to hand your code to is. This piece is not about which technologies we use; it is about the few principles we keep in mind whenever we make a decision.',
+                '<strong>Evidence before conclusions</strong>',
+                'Our core requirement for Cancri Code fits in one line: nothing counts as done until it has been verified. It should read code before judging, reproduce a problem before changing anything, and run the result for you afterwards. The principle makes it a little slower, and in return you do not have to check its work a second time.',
+                '<strong>Keep people in the loop</strong>',
+                'Automation is not loss of control. Actions without side effects, like reading files and searching, it can take on its own. Actions with consequences, like writing files, running commands or reaching the network, need your confirmation or are confined to a place where nothing can hurt you. Every step is recorded and can be reviewed later.',
+                '<strong>From a local virtual machine to an elastic cloud sandbox</strong>',
+                'Early on we tried letting Cancri Code manage a virtual machine on your computer. It worked, but the experience was poor: a heavy install, real resource usage, hardware requirements, and when something went wrong, it went wrong on your own machine.',
+                'So we made a decision: move the hands-on part to the cloud. Today Cancri Code runs its risky operations in elastic cloud sandbox containers we operate together with PPIO. Each task gets an isolated machine that starts on demand, pauses when idle and is reclaimed when finished. Your computer handles the conversation; the dirty work happens in the cloud.',
+                'The reasoning is plain: the safest isolation is not being on the same machine at all.',
+                '<strong>No lock-in, everything replaceable</strong>',
+                'We did not fork an existing editor; we picked proven parts from the open-source world and assembled our own. Models work the same way: Cancri Code does not bet on a single vendor, and you can switch models per task. We want you to stay because it is good, not because you cannot leave.',
+                '<strong>Security is not a feature</strong>',
+                'We do not train general-purpose models on your private code. Credentials never appear on your machine or in the context the model can see. You will not see any of this in the interface, but these are questions we ask in every code review.',
+                '<strong>Still on the way</strong>',
+                'Cloud sessions, scheduled tasks, agents that keep working after you close your laptop: these are coming. We will build them with the same principles: prove it is reliable, then put it in your hands.',
+                '— Co-founder, Cancri Code'
+            ]
         }
     },
     ccAbout: {
@@ -1588,6 +1707,27 @@ const articleData = {
                 '如果你愿意，下载它，交给它一件你一直拖着没做的事。然后告诉我们，它做得怎么样。',
                 '—— Cancri Code 联合创始人'
             ]
+        },
+        en: {
+            title: 'About CancriCode: A Letter to Every Developer',
+            date: 'September 26, 2026',
+            category: 'Company',
+            readTime: '6 min read',
+            paragraphs: [
+                'Hello, I am a co-founder of Cancri Code.',
+                'We started Cancri Code for a simple reason: we were fed up. Fed up with copying and pasting between a chat window and an editor, fed up with an AI confidently saying "fixed" when nothing had been run, fed up with wrecking our own machines to try out a script.',
+                'What we wanted was an engineer who actually does the work. One that understands the whole project instead of the few dozen lines you paste in; one that investigates, edits and verifies on its own instead of handing back something half-finished; one that does dangerous things in a safe place instead of gambling on your computer.',
+                'That is Cancri Code.',
+                '<strong>What we believe</strong>',
+                'We believe the next step for AI coding tools is not writing faster but delivering more reliably. An unverified line of code, however quickly written, is just new work for you.',
+                'We believe developers should always have the final say. AI can propose and it can execute, but what gets changed and what stays untouched is your call.',
+                'We believe security and privacy should not be paid add-ons. Your code is yours and it will not be used to train someone else\'s model.',
+                '<strong>Who we are</strong>',
+                'We are a small team at NexusV. We have built AI characters in games, trained our own small models, and run a platform serving many large models. That work gave us a concrete feel for what AI can do in the real world and where it breaks, and it made us much clearer about what Cancri Code should be.',
+                'We work with PPIO to make the cloud sandbox solid, and with every user willing to send us feedback to refine the product one release at a time.',
+                'If you are willing, download it and give it a task you have been putting off. Then tell us how it did.',
+                '— Co-founder, Cancri Code'
+            ]
         }
     },
     ccJoin: {
@@ -1611,6 +1751,26 @@ const articleData = {
                 '<strong>怎么联系我们</strong>',
                 '最直接的方式，是先用一段时间 Cancri Code，然后带着你觉得它最该改进的地方来找我们。你可以在 Discord（discord.gg/BD9M6VMu） 上找到我们，也可以关注我们的 GitHub（github.com/NexusVAI）。一段真诚的反馈，比一份漂亮的简历更能打动我们。',
                 '—— Cancri Code 联合创始人'
+            ]
+        },
+        en: {
+            title: 'Join CancriCode: Help Us Define the AI Engineer',
+            date: 'September 26, 2026',
+            category: 'Careers',
+            readTime: '5 min read',
+            paragraphs: [
+                'We are looking for people to work on something that has no standard answer yet: making AI a software engineer that can genuinely be trusted.',
+                '<strong>What kind of team we are</strong>',
+                'The team is small, which means every decision you make lands directly in front of users. We have no long approval chains, but we are close to stubborn about quality: no conclusion without evidence, no "done" without verification. We ask that of Cancri Code and of ourselves.',
+                'We use what we build every day. Most of the code you write will be used by you first.',
+                '<strong>Who we are looking for</strong>',
+                'Engineers genuinely interested in AI agents: not just calling an API, but caring why agents make mistakes and how to make them make fewer.',
+                'People with taste for the things developers touch every day, like desktop apps, editors and terminals. The difference between tools is often hidden in details nobody notices.',
+                'People with experience in cloud infrastructure, isolation and security. We moved the most dangerous operations to the cloud, and someone has to make that fast and steady.',
+                'And whatever your specialty, if you have your own view on whether AI can really do the job well, come and talk to us.',
+                '<strong>How to reach us</strong>',
+                'The most direct route is to use Cancri Code for a while, then come to us with what you think it most needs to improve. You can find us on Discord (discord.gg/BD9M6VMu) or follow our GitHub (github.com/NexusVAI). Honest feedback impresses us more than a polished résumé.',
+                '— Co-founder, Cancri Code'
             ]
         }
     },
@@ -1636,6 +1796,27 @@ const articleData = {
                 '现在就可以在官网下载 Cancri Code 3.0（Windows 10 / 11，64 位）。macOS 与 Linux 版本仍在适配中。',
                 '感谢每一位一路陪我们走过来的用户。',
                 '—— Cancri Code 联合创始人'
+            ]
+        },
+        en: {
+            title: 'Latest: Cancri Code 3.0 Moves the Hands-On Work to the Cloud',
+            date: 'September 26, 2026',
+            category: 'News',
+            readTime: '6 min read',
+            paragraphs: [
+                'Today we are releasing Cancri Code 3.0. It is the largest change we have shipped so far, and the most important part fits in one sentence: the hands-on part of Cancri Code has moved to the cloud.',
+                '<strong>Goodbye, local virtual machine</strong>',
+                'In earlier versions, load tests, unfamiliar scripts and security tests relied on a virtual machine running on your computer. It worked, but it was heavy, slow and picky about hardware, and the risk always stayed on your own machine.',
+                'From 3.0 on, all of that runs in elastic cloud sandbox containers we operate together with PPIO. Each task gets an isolated machine that starts on demand, pauses automatically when idle and is reclaimed when the task ends. You do not install any virtualization software, and you do not pay for a machine sitting idle.',
+                '<strong>It writes code, and it opens a browser</strong>',
+                'Cloud sandboxes come in two kinds: one for running code and one with a real browser. With the second, Cancri Code opens pages, clicks, fills in forms and takes screenshots, bringing problems that only show up in a browser into its scope. You can watch it work in real time.',
+                '<strong>More reliable delivery</strong>',
+                '3.0 also brings a set of improvements we have polished internally for a long time: steadier multi-file editing, a clearer view of the work as it happens, and better plan mode and subtask coordination. They are less visible, but they remove a lot of "why is it doing that again" moments in daily use.',
+                '<strong>What comes next</strong>',
+                'We are working on letting cloud agents keep going after you close your laptop: long-lived cloud sessions, scheduled tasks, and delivering the files they produce straight to you. They will arrive as each one is ready.',
+                'Cancri Code 3.0 is available to download from the website now (Windows 10 / 11, 64-bit). macOS and Linux versions are still in progress.',
+                'Thank you to every user who has come this far with us.',
+                '— Co-founder, Cancri Code'
             ]
         }
     },
@@ -3001,7 +3182,11 @@ function initArticlePage() {
             if (year) authorPill.textContent = `${year[0]} ${lang === 'en' ? '' : '年'}`;
         }
 
-        if (bodyEl) {
+        // 发布稿版式（js/article-launch.js）：接管 Hero 与正文，其余（标题、继续阅读）照常。
+        const launched = item.layout === 'launch' && typeof window.renderLaunchArticle === 'function'
+            && window.renderLaunchArticle(id, item, lang, articleRoot);
+
+        if (bodyEl && !launched) {
             bodyEl.replaceChildren();
             (data.paragraphs || []).forEach(t => {
                 if (typeof t === 'string' && t.startsWith('__FIGURE__|')) {

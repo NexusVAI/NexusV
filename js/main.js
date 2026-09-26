@@ -88,6 +88,7 @@ function bindGlobalToggles() {
         langToggle.dataset.bound = '1';
         langToggle.addEventListener('click', () => {
             const current = localStorage.getItem('lang') || 'zh';
+            try { localStorage.setItem('lang_user', '1'); } catch (e) {}
             if (window.setLanguage) window.setLanguage(current === 'zh' ? 'en' : 'zh');
         });
     }
@@ -96,13 +97,13 @@ function bindGlobalToggles() {
 
 async function initPageContent() {
     if (isArticlePage()) {
-        if (!window.initArticlePage) await loadScriptOnce('js/article.js?v=2026-08-30-tactfr3');
+        if (!window.initArticlePage) await loadScriptOnce('js/article.js?v=2026-09-26-cc3');
         if (window.initArticlePage) window.initArticlePage();
         return;
     }
 
     if (isIndexPage()) {
-        if (!window.initIndexPage) await loadScriptOnce('js/article.js?v=2026-08-30-tactfr3');
+        if (!window.initIndexPage) await loadScriptOnce('js/article.js?v=2026-09-26-cc3');
         if (window.initIndexPage) window.initIndexPage();
     }
 }

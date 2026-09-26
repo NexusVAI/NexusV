@@ -12,19 +12,9 @@ var menuConfig = {
         ],
         latest: [
             { href: 'article.html?id=tactfr630', i18n: 'menu.research.tactfr630' },
-            { href: 'article.html?id=tactfr629', i18n: 'menu.research.tactfr629' },
-            { href: 'article.html?id=tactfr628', i18n: 'menu.research.tactfr628' },
-            { href: 'article.html?id=tactfr627', i18n: 'menu.research.tactfr627' },
-            { href: 'article.html?id=tactfr626', i18n: 'menu.research.tactfr626' },
-            { href: 'article.html?id=tactfr625', i18n: 'menu.research.tactfr625' },
-            { href: 'article.html?id=tactfr600', i18n: 'menu.research.tactfr60_beta2' },
             { href: 'article.html?id=sentienceV52mens', i18n: 'menu.research.sentienceV52' },
-            { href: 'article.html?id=sentienceV4ob', i18n: 'menu.research.sentienceV4C' },
             { href: 'article.html?id=hero', i18n: 'menu.research.hero0524' },
-            { href: 'article.html?id=sentienceV4C', i18n: 'menu.research.sentienceV4C_v4' },
-            { href: 'article.html?id=n1', i18n: 'menu.research.sentience31' },
-            { href: 'article.html?id=news7', i18n: 'menu.research.sentience3' },
-            { href: 'article.html?id=n4', i18n: 'menu.research.tactfr4' }
+            { href: 'article.html?id=n1', i18n: 'menu.research.sentience31' }
         ]
     },
     safety: {

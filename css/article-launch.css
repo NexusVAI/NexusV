@@ -1,0 +1,430 @@
+/* ============================================================================
+ * article-launch.css — 发布稿版式（js/article-launch.js 渲染）
+ * 版式、配色与网格参考 Anthropic 模型发布页：封面 Hero + 编号点线目录、
+ * 640px 衬线阅读栏、880px 媒体栏、1px 墨线对比网格、描边图表面板。
+ * 只作用于 .lx-page，不影响其他文章。
+ * ========================================================================== */
+
+.lx-page {
+    --lx-paper: #faf9f5;
+    --lx-paper-2: #f0eee6;
+    --lx-ink: #141413;
+    --lx-ink-2: #30302e;
+    --lx-muted: #5e5d59;
+    --lx-rule: #d1cfc5;
+    --lx-grid: #d1cfc5;
+    --lx-hi: #ebc9b7;
+    --lx-edge: #d97757;
+    --lx-serif: 'Newsreader', 'Source Serif 4', var(--font-cjk, 'Noto Sans SC'), Georgia, serif;
+    --lx-sans: var(--font-main, 'Inter'), var(--font-cjk, 'Noto Sans SC'), system-ui, sans-serif;
+    --lx-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+    max-width: none !important;
+    padding: 54px 0 40px !important;
+    background: var(--lx-paper);
+    color: var(--lx-ink);
+}
+
+:root.dark-theme .lx-page,
+:root.warm-theme .lx-page,
+:root.blue-theme .lx-page {
+    --lx-paper: var(--bg-color);
+    --lx-paper-2: var(--bg-card);
+    --lx-ink: var(--text-color);
+    --lx-ink-2: var(--text-color);
+    --lx-muted: color-mix(in srgb, var(--text-color) 62%, transparent);
+    --lx-rule: var(--border-color);
+    --lx-grid: var(--border-color);
+    --lx-hi: rgba(217, 119, 87, 0.26);
+}
+
+/* 默认文章头部由 Hero 取代 */
+.lx-page .article-top-meta,
+.lx-page .article-title,
+.lx-page .article-rule,
+.lx-page .article-meta-row { display: none; }
+
+.lx-page .article-wrap { max-width: none; padding: 0 24px; }
+.lx-page .continue-reading-section,
+.lx-page .article-author-box { max-width: 880px; margin-left: auto; margin-right: auto; }
+
+.lx-visually-hidden {
+    position: absolute !important;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0);
+    white-space: nowrap; border: 0;
+}
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+.lx-hero {
+    position: relative;
+    background: #141413;
+    margin-bottom: 0;
+}
+
+.lx-stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1913 / 822;
+    max-height: calc(100svh - 54px);
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.lx-cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 40%;
+    display: block;
+}
+
+.lx-landing {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.lx-eyebrow {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 21%;
+    margin: 0;
+    font: 500 14px/1 var(--lx-sans);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: center;
+    color: #141413;
+}
+
+.lx-toc-nav {
+    position: absolute;
+    left: 50%;
+    top: 61%;
+    transform: translateX(-50%);
+    width: min(300px, calc(100vw - 48px));
+    padding: 12px 18px;
+    border-radius: 12px;
+    background: rgba(20, 20, 19, 0.62);
+    -webkit-backdrop-filter: blur(14px) saturate(1.1);
+    backdrop-filter: blur(14px) saturate(1.1);
+    color: #faf9f5;
+    z-index: 2;
+}
+
+.lx-toc {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font: 400 14px/1 var(--lx-serif);
+}
+
+.lx-toc a {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 6px 0;
+    color: inherit;
+    text-decoration: none;
+    transition: opacity 0.25s;
+}
+
+.lx-toc:has(a:hover, a:focus-visible) a:not(:hover, :focus-visible) { opacity: 0.5; }
+
+.lx-n { font-family: var(--lx-mono); font-size: 11px; }
+
+.lx-dots {
+    flex: 1;
+    border-bottom: 1px dotted;
+    opacity: 0.45;
+    transform: translateY(-3px);
+}
+
+@media (max-width: 720px) {
+    .lx-eyebrow { top: 12%; font-size: 11px; }
+    .lx-toc-nav {
+        position: static;
+        transform: none;
+        width: auto;
+        margin: 0;
+        padding: 20px 24px 24px;
+        border-radius: 0;
+        background: #141413;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}
+
+/* ── 正文 ─────────────────────────────────────────────────────────────── */
+.lx-body.article-body {
+    max-width: none;
+    margin: 0;
+    padding: 72px 0 24px;
+    font-family: var(--lx-serif);
+    font-size: 17px;
+    line-height: 1.55;
+    letter-spacing: 0;
+    color: var(--lx-ink);
+    font-feature-settings: "pnum" on, "lnum" on, "liga" on;
+}
+
+.lx-col {
+    max-width: 640px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.lx-anchor { display: block; position: relative; top: -72px; }
+
+.lx-title {
+    font-family: var(--lx-serif);
+    font-size: clamp(30px, 4.2vw, 44px);
+    line-height: 1.15;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin-bottom: 28px !important;
+}
+
+.lx-body p.lx-summary {
+    font-family: var(--lx-serif);
+    font-size: 22px;
+    line-height: 30px;
+    margin-bottom: 48px;
+    color: var(--lx-ink);
+}
+
+@media (min-width: 900px) {
+    .lx-body p.lx-summary { font-size: 28px; line-height: 36px; }
+}
+
+.lx-body p.lx-text { margin-bottom: 1rem; }
+.lx-body p.lx-text + p.lx-text { margin-top: 1rem; }
+/* article.css 把"只含一个 <strong> 子元素"的段落当小标题放大；:only-child 不计文本
+   节点，所以"<strong>引语。</strong>正文"也会被命中。发布稿里的粗体一律是行内引语。 */
+.lx-body p.lx-text:has(> strong:only-child) { margin-top: 1rem; margin-bottom: 1rem; }
+.lx-body p.lx-text strong,
+.lx-body p.lx-text:has(> strong:only-child) > strong {
+    display: inline;
+    font-size: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    font-weight: 600;
+    color: inherit;
+}
+
+.lx-body a:not([class]) {
+    color: var(--lx-ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.15s;
+}
+.lx-body a:not([class]):hover { color: var(--lx-muted); }
+
+.lx-heading {
+    font-family: var(--lx-serif);
+    font-size: clamp(25px, 2.6vw, 32px);
+    line-height: 1.2;
+    font-weight: 500;
+    margin-top: 4rem;
+    margin-bottom: 2rem;
+    scroll-margin-top: 88px;
+    text-wrap: pretty;
+}
+
+.lx-sign { margin-top: 2.5rem; color: var(--lx-muted); }
+
+.lx-cta-row { margin: 1.75rem auto 2rem !important; }
+
+.lx-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    background: var(--lx-ink);
+    color: var(--lx-paper) !important;
+    font: 500 15px/1 var(--lx-sans);
+    text-decoration: none !important;
+    transition: background 0.2s;
+}
+.lx-cta:hover { background: var(--lx-ink-2); }
+
+/* ── 媒体栏 ───────────────────────────────────────────────────────────── */
+.lx-media { max-width: 880px; margin: 2.5em auto; }
+.lx-media.is-inline { max-width: 640px; }
+
+.lx-media-title {
+    font: 600 17px/1.4 var(--lx-sans);
+    margin: 0 0 12px;
+}
+
+/* 对比网格（BenchmarkGrid 同款：1px 墨线、主角列描边 + 高亮） */
+.lx-grid { margin: 0; }
+.lx-grid-scroll { overflow-x: auto; }
+
+.lx-grid-table {
+    width: 100%;
+    min-width: 640px;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+    font: 400 14px/1.4 var(--lx-sans);
+    color: var(--lx-ink);
+    background: var(--lx-paper);
+}
+
+.lx-grid-table th,
+.lx-grid-table td {
+    box-sizing: border-box;
+    height: 64px;
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+    font-weight: 400;
+    border-bottom: 1px solid var(--lx-ink);
+    border-left: 1px solid var(--lx-ink);
+}
+
+.lx-grid-table tr > :last-child { border-right: 1px solid var(--lx-ink); }
+
+.lx-grid-table thead th,
+.lx-grid-table thead td {
+    height: 46px;
+    vertical-align: baseline;
+    white-space: nowrap;
+    font-weight: 600;
+    border-top: 1px solid var(--lx-ink);
+}
+
+.lx-grid-corner { width: 220px; }
+
+.lx-grid-cat { display: block; font-weight: 600; }
+.lx-grid-sub { display: block; margin-top: 4px; color: var(--lx-muted); line-height: 1.25; }
+.lx-grid-value { display: block; white-space: nowrap; }
+.lx-grid-value.is-bold { font-weight: 600; }
+
+.lx-grid-table .is-subject { position: relative; }
+.lx-grid-table .is-subject::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-left: 3px solid var(--lx-edge);
+    border-right: 3px solid var(--lx-edge);
+    pointer-events: none;
+}
+.lx-grid-table thead .is-subject { box-shadow: inset 0 2px 0 var(--lx-edge); }
+.lx-grid-table tr.is-last .is-subject { box-shadow: inset 0 -2px 0 var(--lx-edge); }
+.lx-grid-table td.is-win { background: var(--lx-hi); }
+
+.lx-grid-caption {
+    max-width: 640px;
+    margin: 24px auto 0;
+    font: 400 14px/1.4 var(--lx-sans);
+    color: var(--lx-muted);
+    text-align: center;
+    text-wrap: pretty;
+}
+
+@media (max-width: 720px) {
+    .lx-grid-corner { width: 148px; }
+    .lx-grid-sub { font-size: 11px; margin-top: 2px; }
+}
+
+/* 简表（Pricing 表同款：细分隔线、第二列加粗） */
+.lx-table-title { font: 600 23px/1.2 var(--lx-sans); margin: 0 0 12px; }
+
+.lx-table table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font: 400 15px/1.4 var(--lx-sans);
+}
+
+.lx-table th,
+.lx-table td {
+    padding: 10px 12px 10px 0;
+    text-align: left;
+    vertical-align: text-top;
+    font-weight: 400;
+    border-bottom: 1px solid var(--lx-rule);
+    text-wrap: balance;
+}
+
+.lx-table tr:last-child td { border-bottom: none; }
+.lx-table th:first-child,
+.lx-table td:first-child { color: var(--lx-muted); width: 26%; }
+.lx-table strong { font-weight: 600; }
+
+/* 图表面板 */
+.lx-chart { margin: 0; }
+
+.lx-chart-panel {
+    padding: 24px;
+    border: 1px solid var(--lx-ink);
+    background: var(--lx-paper);
+}
+
+.lx-chart-caption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px 16px;
+    margin-bottom: 12px;
+    font-family: var(--lx-sans);
+}
+
+.lx-chart-title { font-size: 17px; font-weight: 600; line-height: 1.4; }
+.lx-chart-subtitle { font-size: 15px; color: var(--lx-muted); line-height: 1.4; }
+
+.lx-chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px 20px;
+    margin: 0 0 24px;
+    padding: 0;
+    list-style: none;
+    font: 400 15px/1.4 var(--lx-sans);
+}
+
+.lx-chart-legend li { display: inline-flex; align-items: center; gap: 8px; }
+.lx-chart-legend strong { font-weight: 600; }
+
+.lx-chart-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.lx-gridline { stroke: var(--lx-grid); stroke-width: 1; }
+.lx-axis { stroke: var(--lx-ink); stroke-width: 1; }
+.lx-tick { fill: var(--lx-muted); font: 400 13px var(--lx-sans); }
+.lx-axis-label { fill: var(--lx-ink); font: 400 14px var(--lx-sans); }
+.lx-line { fill: none; stroke-width: 3; stroke-linejoin: round; }
+.lx-line.is-emphasis { stroke-width: 3.5; }
+.lx-chart-mark { stroke: var(--lx-ink); stroke-width: 1; }
+.lx-point-label {
+    fill: var(--lx-ink);
+    font: 400 12px var(--lx-sans);
+    paint-order: stroke;
+    stroke: var(--lx-paper);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+}
+
+.lx-chart-note {
+    max-width: 640px;
+    margin: 16px auto 0;
+    font: 400 14px/1.4 var(--lx-sans);
+    color: var(--lx-muted);
+    text-align: center;
+    text-wrap: pretty;
+}
+
+@media (max-width: 720px) {
+    .lx-chart-panel { padding: 16px; }
+    .lx-chart-legend { justify-content: flex-start; font-size: 13px; gap: 8px 16px; margin-bottom: 12px; }
+    .lx-tick { font-size: 16px; }
+    .lx-axis-label { font-size: 17px; }
+    .lx-point-label { font-size: 15px; }
+}

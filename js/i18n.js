@@ -9,11 +9,11 @@ const translations = {
         'nav.login': '登录',
         'nav.try': '使用 NexusV <span class="arrow-icon">↗</span>',
         'search.placeholder': '关于 NexusV',
-        'hero.overlay': 'TACTFR Beta 3',
-        'hero.title': 'TACTFR Beta 3:随宏大目标灵活扩展的Mod',
-        'hero.author': 'TACTFR 开发团队',
+        'hero.overlay': 'Cancri Code 3',
+        'hero.title': 'Cancri Code 3：见识一下你的软件工程师',
+        'hero.author': 'Cancri Code 团队',
         'hero.category': '产品',
-        'hero.time': '16 分钟阅读',
+        'hero.time': '18 分钟阅读',
 
         // AI Hero
         'ai.hero.title': '有什么可以帮你的？',
@@ -89,7 +89,7 @@ const translations = {
         'menu.research.tactfr60_beta2': 'TACTFR 6.0.0 Beta.2',
         'menu.research.tactfr60': 'TACTFR 6.0.0',
         'menu.research.label': '前沿进展',
-        'menu.research.sentience31': 'Cancri 研究报告',
+        'menu.research.sentience31': '跨检查点的隐状态接力机制',
         'menu.research.sentience3': 'Sentience V3',
         'menu.research.tactfr5': 'TACTFR V5',
         'menu.research.tactfr55': 'TACTFR 5.5.0',
@@ -249,11 +249,11 @@ const translations = {
         'nav.login': 'Log in',
         'nav.try': 'Try NexusV <span class="arrow-icon">↗</span>',
         'search.placeholder': 'About NexusV',
-        'hero.overlay': 'TACTFR Beta 3',
-        'hero.title': 'TACTFR Beta 3: A Mod That Grows With Grand Ambitions',
-        'hero.author': 'TACTFR Development Team',
+        'hero.overlay': 'Cancri Code 3',
+        'hero.title': 'Cancri Code 3: Meet Your Software Engineer',
+        'hero.author': 'Cancri Code Team',
         'hero.category': 'Product',
-        'hero.time': '16 min read',
+        'hero.time': '18 min read',
 
         // AI Hero
         'ai.hero.title': 'How can I help?',
@@ -330,7 +330,7 @@ const translations = {
         'menu.research.tactfr60_beta2': 'TACTFR 6.0.0 Beta.2',
         'menu.research.tactfr60': 'TACTFR 6.0.0',
         'menu.research.label': 'Frontier Progress',
-        'menu.research.sentience31': 'Cancri Research',
+        'menu.research.sentience31': 'Latent Relay Across Checkpoints',
         'menu.research.sentience3': 'Sentience V3',
         'menu.research.tactfr5': 'TACTFR V5',
         'menu.research.tactfr55': 'TACTFR 5.5.0',
@@ -602,7 +602,10 @@ function setLanguage(lang) {
 }
 
 async function initLanguage() {
-    const savedLang = localStorage.getItem('lang');
+    // 2026-09-26：setLanguage 会把自动识别出的语言也写进 localStorage，旧逻辑下
+    // 首次识别的结果被永久固化、之后再也不跟随浏览器。只有用户亲手切换过
+    // （lang_user=1，见 main.js 的语言按钮）才沿用已存语言。
+    const savedLang = localStorage.getItem('lang_user') === '1' ? localStorage.getItem('lang') : null;
     if (savedLang) {
         setLanguage(savedLang);
         return;

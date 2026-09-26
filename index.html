@@ -16,8 +16,8 @@
     <meta name="twitter:card" content="summary_large_image">
     <script>
         (() => {
-            let theme = 'warm';
-            try { theme = localStorage.getItem('theme') || 'warm'; } catch (e) {}
+            let theme = 'light';
+            try { theme = (localStorage.getItem('theme_user') === '1' && localStorage.getItem('theme')) || 'light'; } catch (e) {}
             if (theme === 'light') document.documentElement.classList.add('light-theme');
             if (theme === 'warm') document.documentElement.classList.add('warm-theme');
             if (theme === 'blue') document.documentElement.classList.add('blue-theme');
@@ -130,13 +130,13 @@
         <div class="content-grid">
             <!-- 左侧大卡片 (Sticky) -->
             <div class="left-column sticky-container">
-                <a href="article.html?id=tactfr630" class="card-link hero-card">
+                <a href="article.html?id=cancriCode3" class="card-link hero-card">
                     <div class="image-wrapper hero-image">
-                        <img src="Logo/Beta3tactfr.png" alt="TACTFR Beta 3" data-fallback-src="Logo/TACTFR6.0.0.png">
+                        <img src="Logo/CancriCode3-0.webp" alt="Cancri Code 3" data-fallback-src="Logo/CCODE3.0.png">
                     </div>
                     <div class="card-text">
-                        <h3 class="card-title" data-i18n="hero.title">TACTFR Beta 3:随宏大目标灵活扩展的Mod</h3>
-                        <p class="card-meta"><span data-i18n="hero.category">产品</span> <span class="meta-time" data-i18n="hero.time">16 分钟阅读</span></p>
+                        <h3 class="card-title" data-i18n="hero.title">Cancri Code 3：见识一下你的软件工程师</h3>
+                        <p class="card-meta"><span data-i18n="hero.category">产品</span> <span class="meta-time" data-i18n="hero.time">18 分钟阅读</span></p>
                     </div>
                 </a>
             </div>

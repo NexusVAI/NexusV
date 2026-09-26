@@ -16,8 +16,8 @@
     <meta name="twitter:card" content="summary_large_image">
     <script>
         (() => {
-            let theme = 'warm';
-            try { theme = localStorage.getItem('theme') || 'warm'; } catch (e) {}
+            let theme = 'light';
+            try { theme = (localStorage.getItem('theme_user') === '1' && localStorage.getItem('theme')) || 'light'; } catch (e) {}
             if (theme === 'light') document.documentElement.classList.add('light-theme');
             if (theme === 'warm') document.documentElement.classList.add('warm-theme');
             if (theme === 'blue') document.documentElement.classList.add('blue-theme');
@@ -40,6 +40,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/display-fonts.css?v=2026-08-30-cjk">
+    <link rel="stylesheet" href="css/article-launch.css?v=2026-09-26">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -131,7 +132,8 @@
     <script src="js/cancri_site_config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous"></script>
     <script src="js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
-    <script src="js/article.js?v=2026-08-30-tactfr3" defer></script>
+    <script src="js/article-launch.js?v=2026-09-26" defer></script>
+    <script src="js/article.js?v=2026-09-26-cc3" defer></script>
     <script src="js/charts.js" defer></script>
     <script src="js/main.js?v=2026-08-30-tactfr3" defer></script>
     <script src="js/search.js" defer></script>
