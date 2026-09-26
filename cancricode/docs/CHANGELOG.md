@@ -177,3 +177,5 @@
 - 2026-09-26：下载按钮（顶栏移动端「下载 CancriCode」×2、下载卡「下载 Windows 版」）改为直链 `dl.nexusvai.xyz/cancri-code/3.0.0/Cancri-Code_3.0.0_x64-setup.exe?build=20260926b`。
 - 2026-09-26：叙事由「本地虚拟机 / 真机」改为「派欧云（PPIO）弹性云沙箱」：Hero 标题、核心难题区副标题与两个节点、Codex 工作流两段、Windows 下载卡、安全 FAQ、meta 描述。
 - 2026-09-26：「帮助文档 / 关于团队」下拉 8 项（桌面 + 移动各一份）接到博客站 `www.nexusvai.xyz/article.html?id=cc*`（新文章写在 `A.CancriCode/GitHub/js/article.js`）；「开发者 API 文档」指向已有的 `chat/api_docs.html`。
+- 2026-09-27：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.0.2/Cancri-Code_3.0.2_x64-setup.exe`（3 处）。
+- 2026-09-27：核心难题区「了解工作原理」按钮补上链接（沿用 `g_clickable_wrap` 覆盖层写法），新标签页打开博客发布稿 `article.html?id=cancriCode3`。
