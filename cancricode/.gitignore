@@ -1,0 +1,13 @@
+node_modules/
+
+# 调试产物：截图、一次性脚本、无头浏览器缓存。不要提交，也不要留在根目录。
+.puppeteer-tmp/
+_tmp_*
+*.bak
+*.zip
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,95 @@
+/* CancriCode hero collage — devin.ai-style drifting screenshot wall.
+   Two absolutely-positioned .cancri-collage layers inside <header.hero_wrap>:
+   back layer = small tiles + blur(6px) + opacity .6 (far), front layer =
+   larger tiles + faster durations (near). Each .cancri-collage-box pans
+   left→right forever via the shared keyframes; per-box inline style sets
+   size, vertical fraction, duration and (mostly negative) delay. */
+
+.hero_wrap {
+  position: relative;
+  overflow-x: clip; /* horizontal only — let tiles bleed past top/bottom edges */
+  /* lengthen the container AND pull the next section up by the card's own
+     margin-top (60px) so hero bottom edge == card top edge: no white strip.
+     margin-top is GSAP-animated on the card itself, so it can't be touched —
+     this negative margin cancels it geometrically. */
+  padding-bottom: var(--_spacing---section-space--small);
+  margin-bottom: calc(-1 * var(--_spacing---section-space--small));
+}
+
+.cancri-collage {
+  pointer-events: none;
+  position: absolute;
+  left: calc(50% - 50vw);
+  width: 100vw;
+  top: -60px;
+  bottom: -4.5rem; /* below the CTA card's top edge -> clip hides behind the card */
+  overflow: hidden;
+  /* soft fade near the bottom so tiles in the gutters beside the card
+     dissolve instead of hard-clipping on a horizontal line */
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 5rem), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 5rem), transparent 100%);
+  z-index: 0;
+  --cancri-collage-scale: 0.85;
+  --cancri-collage-offset: 260px;
+  --cancri-collage-track: 1900px;
+}
+@media (min-width: 1024px) {
+  .cancri-collage { --cancri-collage-scale: 1; }
+}
+
+.cancri-collage-box {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 6px;
+  mix-blend-mode: multiply;
+  will-change: transform;
+  animation: linear infinite cancri-collage-pan;
+}
+.cancri-collage-box img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1.8s ease-out 0.4s;
+}
+.cancri-collage-box img.is-loaded { opacity: 1; }
+
+/* The hard line is the top edge of the next section: its opaque bg paints
+   over the collage. Feather that seam from the section side — a band that
+   sits just above it, blurs the tiles behind and fades into the section bg.
+   z-index 0 + later DOM order: above the collage, below hero copy (z 1). */
+[data-cancri-section="engineering-problems"]::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 7rem;
+  z-index: 0;
+  background: linear-gradient(to bottom, transparent, var(--cancri-bg));
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 85%);
+  mask-image: linear-gradient(to bottom, transparent, #000 85%);
+}
+
+/* keep hero copy above the collage */
+.hero_wrap > .u-container { z-index: 1; }
+
+@keyframes cancri-collage-pan {
+  to {
+    transform: translateX(calc(max(100vw, var(--cancri-collage-track)) + var(--cancri-collage-offset)));
+  }
+}
+
+/* dark theme: multiply tiles disappear on dark bg, flip to screen */
+html[data-cancri-theme="dark"] .cancri-collage-box { mix-blend-mode: screen; }
+html[data-cancri-theme="dark"] .cancri-collage.is-back { opacity: 0.45; }
+html[data-cancri-theme="dark"] .cancri-collage.is-front { opacity: 0.8; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cancri-collage-box { animation-play-state: paused; }
+}
