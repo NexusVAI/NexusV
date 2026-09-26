@@ -179,3 +179,4 @@
 - 2026-09-26：「帮助文档 / 关于团队」下拉 8 项（桌面 + 移动各一份）接到博客站 `www.nexusvai.xyz/article.html?id=cc*`（新文章写在 `A.CancriCode/GitHub/js/article.js`）；「开发者 API 文档」指向已有的 `chat/api_docs.html`。
 - 2026-09-27：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.0.2/Cancri-Code_3.0.2_x64-setup.exe`（3 处）。
 - 2026-09-27：核心难题区「了解工作原理」按钮补上链接（沿用 `g_clickable_wrap` 覆盖层写法），新标签页打开博客发布稿 `article.html?id=cancriCode3`。
+- 2026-09-27：核心难题区大卡片覆盖链接由 `/path-to-hope` 改为 `https://www.nexusvai.xyz/article?id=cancriCode3`。
