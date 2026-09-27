@@ -13,7 +13,7 @@
     <nav class="navbar">
         <div class="navbar-inner">
             <div class="nav-left">
-                <a href="${base}/index.html" class="logo"><img src="${base}/Logo/NexusV New.svg" alt="NexusV" style="height: 42px; width: auto; display: block;"></a>
+                <a href="${base}/index.html" class="logo"><img src="${base}/Logo/NexusV New.svg" alt="NexusV" style="height: 28px; width: auto; display: block;"></a>
                 <div class="nav-links">
                     <div class="nav-item has-dropdown" data-menu="research" data-i18n="nav.research">研究</div>
                     <div class="nav-item has-dropdown" data-menu="safety" data-i18n="nav.safety">安全</div>
