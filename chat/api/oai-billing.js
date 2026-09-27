@@ -464,9 +464,13 @@
         var face = Number(res && res.face_cny);
         // 2026-09-25：限时加赠由 cancri_card_redeem 在同一事务里发放，结果随 result 带回。
         var bonus = Number(res && res.result && res.result.promo_bonus_cny);
+        // 2026-09-27：每人每天只能参与一次，当天再兑只入主额度，result 带 promo_skipped。
+        var skipped = res && res.result && res.result.promo_skipped === "daily_limit";
         var bonusText = isFinite(bonus) && bonus > 0
           ? "，" + ((res.result.promo_name) || "活动") + "另加赠 " + fmtCny(bonus)
-          : "";
+          : skipped
+            ? "（" + ((res.result.promo_name) || "活动") + "每天限参与一次，你今天已参与过，本次不加赠）"
+            : "";
         setRedeemMsg(
           isFinite(face) && face > 0
             ? "兑换成功，" + fmtCny(face) + " 已进入 API 额度余额" + bonusText + "。"

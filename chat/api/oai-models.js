@@ -318,6 +318,21 @@
     return tag + priceHtml(cheap);
   }
 
+  /* ── 缓存命中单价（2026-09-27）─────────────────────────────────────────
+   * token 计价的卡片在「输入 · 输出」后补「缓存」= 输入价 × 缓存命中系数。
+   * 系数权威在 DB model_pricing.cached_input_factor，全站锁定 0.1（模型运维总纲 §10.1，
+   * 有自查 SQL 保证无例外）；catalog 不下发该列，这里按同一口径实时算。
+   * ⛔ 改系数时这里要一起改，否则广场标的缓存价与实际扣费对不上。
+   * -------------------------------------------------------------------- */
+  var CACHE_READ_FACTOR = 0.1;
+  function withCachePrice(display, m) {
+    var inP = tokenPriceOf(m);
+    var unit = " ￥/M";
+    if (inP == null || inP <= 0 || display.slice(-unit.length) !== unit) return display;
+    var cache = String(Number((inP * CACHE_READ_FACTOR).toFixed(6)));
+    return display.slice(0, -unit.length) + " · 缓存 " + cache + unit;
+  }
+
   function priceHtml(m) {
     // backend may later supply a ready-to-show price string; prefer it.
     if (isFreeTierModel(m)) {
@@ -325,7 +340,7 @@
         '<span class="cancri-price__tag cancri-price__tag--free">Free</span>';
     }
     if (m && typeof m.priceDisplay === "string" && m.priceDisplay) {
-      return '<span class="cancri-price__num">' + esc(m.priceDisplay) + "</span>";
+      return '<span class="cancri-price__num">' + esc(withCachePrice(m.priceDisplay, m)) + "</span>";
     }
     var mult = getCostMultiplier(m);
     return '<span class="cancri-price__num">' + esc(fmtMult(mult)) +
