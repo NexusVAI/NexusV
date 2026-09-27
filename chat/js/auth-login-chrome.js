@@ -578,6 +578,21 @@
         socials.replaceChildren(existing.X, discord, existing.GitHub, existing.HuggingFace, existing.Bilibili);
     }
 
+    var DESKTOP_DOWNLOAD_URL = "https://www.nexusvai.xyz/cancricode/";
+
+    function applyDesktopDownloadButton(doc) {
+        var button = doc.querySelector('[data-testid="download-desktop-app"]');
+        if (!button || button.dataset.cancriDownloadBound === "1") return;
+        button.dataset.cancriDownloadBound = "1";
+        button.disabled = false;
+        button.removeAttribute("disabled");
+        button.removeAttribute("aria-disabled");
+        button.removeAttribute("tabindex");
+        button.addEventListener("click", function () {
+            window.open(DESKTOP_DOWNLOAD_URL, "_blank", "noopener");
+        });
+    }
+
     function applyExperienceStyles(doc) {
         if (doc.getElementById("cancri-auth-experience-styles")) return;
         var style = doc.createElement("style");
@@ -593,6 +608,7 @@
         applyPlanContent(doc);
         applyFaqContent(doc);
         applyFooterContent(doc);
+        applyDesktopDownloadButton(doc);
         doc.documentElement.dataset.cancriLoginExperience = "20260820";
         return true;
     }
