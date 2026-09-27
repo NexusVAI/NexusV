@@ -271,10 +271,43 @@
                 blocks: [
                     { t: 'anchor', id: 'introduction' },
                     { t: 'summary', text: '今天我们发布 Cancri 2.5 Flash 预览版：一个 0.44B 的从零训练小模型，换上数字逐位切分的词表，再走完约 70 亿 token 的增量预训练。它很小，也不完美——发布它，是为了让你能亲手跑起这条架构链路。' },
-                    { t: 'p', html: 'Cancri 不是任何开源模型的微调。它从零预训练起步，这一代仍是同一套血统：在 2.1 的底座上换词表、再增量预训练约 70 亿 token，最后用 10.6 万条新整理的指令数据完成 SFT，累计约 200 亿 token。预训练、增量训练、SFT 全部跑在 AMD GPU 与 ROCm 上。' },
-                    { t: 'p', html: '先把边界说清楚。它是一个 439,371,264 参数的因果语言模型，采用段递归黑板架构；权重 878MB，推理代码自包含，普通电脑的 CPU 也能跑。它不是一个知识库——0.44B 装不下世界知识，数字、附带细节、多步推理和代码逻辑都会出错。这是一个预览版：训练已经完成、推理链路已经跑通，但系统化评测还没有做。' },
+                    { t: 'p', html: '先交代出身：Cancri 不是任何开源模型的微调——它从随机初始化开始预训练，这条血统一直没断过。这一代做的事说起来也简单：在 2.1 的底座上换一套词表，再增量预训练约 70 亿 token，最后拿 10.6 万条新整理的指令数据做 SFT，累计约 200 亿 token。从预训练到 SFT，全程都在 AMD GPU 和 ROCm 上跑。' },
+                    { t: 'p', html: '丑话也说在前面：它只有 439,371,264 个参数，权重 878MB，推理代码自包含，普通电脑的 CPU 就能跑起来——但它不是知识库。0.44B 装不下世界知识，数字、细节、多步推理和代码逻辑都会出错。预览版的意思是：训练跑完了，链路打通了，系统化评测还没做。' },
+                    { t: 'p', html: '那不如先让它自己开口。下面四段对话，是发布后我们在一台普通电脑的 CPU 上实跑录的——文字没动过，长回答做了节录，开头的 <code>&lt;think&gt;</code> 思考块一律略去。' },
+                    { t: 'compare', tab: '问答 · 列表去重', replayLabel: '重播回复动画', prompt: '写一个 Python 函数：列表去重，但保持原来的顺序。',
+                        sides: [
+                            { label: 'Cancri 2.5 Flash 预览版', toggleLabel: '回复', response: [
+                                { code: 'def unique_dict(data):\n    """\n    对任意可迭代对象返回去重后的列表。\n\n    参数:\n        data (list/tuple): 可迭代对象\n\n    返回:\n        list: 去重后保持原始顺序的列表\n    """\n    seen = set()\n    result = []\n    for item in data:\n        if item not in seen:\n            seen.add(item)\n            result.append(item)\n    return result' },
+                                { p: '（网页注：后面的说明文字有虚构，已节去。）' }
+                            ] }
+                        ],
+                    },
+                    { t: 'compare', tab: '问答 · 一句话安慰', replayLabel: '重播回复动画', prompt: '用一句话安慰一个加班到很晚的朋友。',
+                        sides: [
+                            { label: 'Cancri 2.5 Flash 预览版', toggleLabel: '回复', response: [
+                                { p: '"加班到很晚，真的很不容易。"' },
+                                { p: '可以这样说：加班到很晚确实让人累，但它也是一种难得的休息和收获。你已经在为自己的目标努力了，这本身就是一种值得骄傲的成就。' },
+                                { p: '如果需要更具体的情绪支持，也可以告诉我你的感受，我会帮你想想怎么表达。' }
+                            ] }
+                        ] },
+                    { t: 'compare', tab: '问答 · 什么是死锁', replayLabel: '重播回复动画', prompt: '什么是死锁？两三句话说清楚。',
+                        sides: [
+                            { label: 'Cancri 2.5 Flash 预览版', toggleLabel: '回复', response: [
+                                { p: '<strong>死锁（Dead-Lock）</strong>是指在并发系统中，两个或多个线程因争夺同一资源而相互等待对方释放的状态。它会导致程序无法继续执行，甚至可能崩溃。' },
+                                { p: '（网页注：回答随后还展开了一大段分类清单，其中专有名词有编造，已节去。）' }
+                            ] }
+                        ] },
+                    { t: 'compare', tab: '问答 · 露营清单', replayLabel: '重播回复动画', prompt: '给我列三样周末露营容易忘带的东西，每个一句话。',
+                        sides: [
+                            { label: 'Cancri 2.5 Flash 预览版', toggleLabel: '回复', response: [
+                                { p: '1. <strong>便携帐篷</strong>——防水防风的防水袋或折叠式帐篷（带拉链或拉杆）；防潮垫或折叠垫，防止雨水渗入。' },
+                                { p: '2. <strong>防潮垫/防潮地毯</strong>——厚实的地毯或羊毛毯，铺在帐篷边缘，防止地面潮湿；防滑地垫或地毯垫，保持地面干燥。' },
+                                { p: '3. <strong>备用电池或充电宝</strong>——手机或笔记本电量不足时，带一个小型应急充电器或充电宝；便携的电池盒或快充头，随时补充电量。' }
+                            ] }
+                        ],
+                        caption: '以上对话录自 Cancri 2.5 Flash 预览版实机对话 裁去了部分内容 文字本身没有变化' },
                     { t: 'h2', id: 'whats-new', text: '这一版改了什么' },
-                    { t: 'p', html: '相比 2.1，架构与参数量不变，改动集中在数据链路上。' },
+                    { t: 'p', html: '和 2.1 比，架构和参数量都没动，力气全花在数据链路上。' },
                     { t: 'grid', title: '相比 2.1 改了什么', subject: 1, columns: ['2.1-Flash', '2.5-Flash 预览版'], rows: [
                         { label: '架构 / 参数', sub: 'BRP', cells: ['439,371,264', '不变'] },
                         { label: '词表', sub: '32k BPE', cells: ['多位数整块切分', '数字逐位切分，ID 全不动'] },
@@ -282,18 +315,18 @@
                         { label: 'SFT', sub: '指令微调', cells: ['103,548 条 · 3 epoch', '106,523 + 128 条 · 2 epoch'] },
                         { label: '推理代码', cells: ['cancri_model.py / chat.py', '逐字节相同，新增本地网页界面'] }
                     ], caption: '词表只加了一条"数字单独成 token"的预切分规则，代价是数字密集文本的 token 数约 +7.9%。' },
-                    { t: 'p', html: '为什么要改词表：旧词表对 0–9999 有 8 种切法（<code>1147</code> 可能被切成 <code>11</code> 和 <code>47</code>），同一个数在不同上下文里长得不一样，对小模型学算术很不友好。现在数字一律逐位切分：<code>1234567890 3.14</code> 会稳定地变成 <code>1 2 3 4 5 6 7 8 9 0 . 3 1 4</code>。词表与所有 ID 保持不变，但必须配套使用仓库里的 <code>tokenizer.json</code>——拿 2.1 的词表跑 2.5 的权重不会报错，输出会悄悄变差。' },
-                    { t: 'p', html: '增量预训练从 2.1 底座起步，35,500 步、每步 196,608 token，合计约 70 亿 token，配比里加入了中英 Ultra-FineWeb L3、UltraData-Math、CCI4.0 高质量代码与跨段长文；退火段的留出困惑度从 3.576 降到 3.100。SFT 用了 106,523 条训练样本（另留 128 条做留出），2 epoch、4,084 步，留出集 masked 困惑度从 13.23 降到 6.792。' },
-                    { t: 'p', html: '有一件事需要说明：换了词表和留出集之后，困惑度不能跨代比较。2.5 的 3.100 和 6.792，与 2.1 的 12.62 和 11.854 不是同一把尺子——数字变小不代表模型强了这么多。' },
+                    { t: 'p', html: '词表为什么要动：旧的 BPE 对 0–9999 有八种切法，<code>1147</code> 这回被切成 <code>11</code> 和 <code>47</code>，换个上下文又换一副模样——同一个数长得不稳定，小模型学算术很吃亏。2.5 里数字一律逐位拆开：<code>1234567890 3.14</code> 会稳定地变成 <code>1 2 3 4 5 6 7 8 9 0 . 3 1 4</code>。词表和所有 ID 都没变，但得配仓库里的 <code>tokenizer.json</code> 一起用——拿 2.1 的词表去跑 2.5 的权重不会报错，输出只会悄悄变差。' },
+                    { t: 'p', html: '增量预训练还是从 2.1 的底座起步：35,500 步、每步 196,608 token，合计约 70 亿；配比里新加了中英 Ultra-FineWeb L3、UltraData-Math、CCI4.0 高质量代码和跨段长文，退火段留出困惑度从 3.576 降到 3.100。之后的 SFT 用了 106,523 条样本（另留 128 条做留出），两个 epoch、4,084 步，留出集 masked 困惑度从 13.23 降到 6.792。' },
+                    { t: 'p', html: '这组数字里有个陷阱得点破：词表换了、留出集也换了，困惑度没法跨代比。2.5 的 3.100 和 6.792，跟 2.1 的 12.62 和 11.854 不是同一把尺子——数字小了，不等于模型强了这么多。' },
                     { t: 'h2', id: 'architecture', text: '架构：段递归与黑板交接' },
-                    { t: 'p', html: 'Cancri 的架构不是标准解码器。一次前向的序列是三段拼接：传入黑板（32 槽）、512 个 token 的片段、32 个写查询位；段末写位的隐状态，就是下一段的黑板。段与段之间不靠更长的注意力窗口，而是靠这 32×1536 的激活交接。' },
+                    { t: 'p', html: 'Cancri 的架构不是标准解码器。一次前向里，序列是三段的拼接：进来的黑板（32 槽）、512 个 token 的片段、32 个写查询位；段末写位的隐状态，就是下一段的黑板。段和段之间不靠更长的注意力窗口传话，靠的是这块 32×1536 的激活交接。' },
                     { t: 'p', html: '直接后果是显存。KV cache 恒定覆盖 576 个位置，恒占约 54MB，与生成长度无关；同样 token 数走朴素全注意力，8k 要 768MB，32k 要 3GB，128k 要 12GB。' },
                     { t: 'p', html: '黑板也确实在被使用：在增量训练结束时的 8 段长窗留出上，第 2–8 段接上一段黑板时困惑度 3.100；不接黑板、只给初始板时是 3.677。' },
                     { t: 'quote', html: '离散通道保存需要精确复用的结果；连续通道为后续计算提供状态表示。两条通道由同一个子任务产生，但具有不同的更新与验证规则。……字段语义由干预下的行为定义，而非由槽位名称定义。', source: '——《Cancri：面向可验证协作的双通道黑板架构》' },
-                    { t: 'p', html: '需要说清楚边界：这次发布的是单个通用模型。黑板的设计用途是多专家之间的通信与工作记忆，而多专家分叉与板通信仍在研究阶段，我们不对它做任何能力主张。' },
+                    { t: 'p', html: '边界再画一条：这次发布的是单个通用模型。黑板本来是为多专家之间的通信和工作记忆设计的，但多专家分叉和板通信还在研究阶段——这部分我们不做任何能力主张。' },
                     { t: 'h2', id: 'availability', text: '现在可用' },
-                    { t: 'p', html: 'Cancri 2.5 Flash 预览版已在 <a href="https://www.modelscope.cn/models/guxingyu88730882/Cancri-2.5-Flash-Preview-0.5B">ModelScope</a> 发布，Apache 2.0 许可。仓库自带推理代码与本地网页界面：<code>chat.py</code> 做命令行对话，<code>server.py</code> 起一个只监听本机的网页聊天页，Windows 下双击 <code>启动 Cancri.vbs</code> 即可；除 torch、tokenizers、safetensors 外没有依赖。' },
-                    { t: 'p', html: '它跑得动普通电脑：纯 CPU（8 线程、fp32）约占 1.8GB 内存，装载约 11 秒，生成 2–8 token/s，有 GPU 会快得多。注意它不能用 <code>transformers.AutoModel</code> 加载——架构不是标准解码器，请使用仓库里的代码。另外两条实测出来的规矩：别发 system 块（训练数据里没有）；给够输出长度——57.9% 的 SFT 样本带 <code>&lt;think&gt;</code>，回答常常先写一段很长的思考。' },
+                    { t: 'p', html: 'Cancri 2.5 Flash 预览版已经在 <a href="https://www.modelscope.cn/models/guxingyu88730882/Cancri-2.5-Flash-Preview-0.5B">ModelScope</a> 上架，Apache 2.0 许可。仓库自带推理代码和一个本地网页界面：<code>chat.py</code> 是命令行对话，<code>server.py</code> 起一个只监听本机的聊天页，Windows 下双击 <code>启动 Cancri.vbs</code> 就行；除 torch、tokenizers、safetensors 外没有别的依赖。' },
+                    { t: 'p', html: '普通电脑跑得动：纯 CPU（8 线程、fp32）占约 1.8GB 内存，装载约 11 秒，生成 2–8 token/s，有 GPU 会快很多。有一点要留意——它不能用 <code>transformers.AutoModel</code> 加载，架构不是标准解码器，请用仓库里的代码。另外两条是我们实测出来的规矩：别发 system 块（训练数据里一条都没有）；输出长度给够——57.9% 的 SFT 样本带 <code>&lt;think&gt;</code>，它回答前常常先写一段挺长的思考。' },
                     { t: 'p', html: '最后是我们一贯的做法：把不体面的输出也放在明面上。发布前的冒烟测试只有 4 道题、每题采样 1 次，没有挑选：' },
                     { t: 'table', title: '发布前冒烟测试（未挑选，每题 1 次采样）', head: ['提问', '模型输出（节选）', '判定'], rows: [
                         ['你是谁？', '"Cancri，NexusVAI 训练的。"', '身份正确，收尾干净'],
@@ -321,8 +354,41 @@
                 blocks: [
                     { t: 'anchor', id: 'introduction' },
                     { t: 'summary', text: 'Today we are releasing Cancri 2.5 Flash Preview: a 0.44B model trained from scratch, with a digit-splitting tokenizer and another ~7B tokens of continued pretraining. It is small, and it is not perfect — we are releasing it so you can run the architecture yourself.' },
-                    { t: 'p', html: 'Cancri is not a fine-tune of any open model. It starts from scratch pretraining, and this generation keeps the same lineage: on the 2.1 base we swap the tokenizer, add roughly 7 billion more tokens of continued pretraining, and finish with SFT on 106k freshly cleaned instructions — about 20B tokens in total. Pretraining, continued training and SFT all ran on AMD GPUs with ROCm.' },
-                    { t: 'p', html: 'First, the boundaries. It is a 439,371,264-parameter causal language model with a segment-recursive blackboard architecture; the weights are 878 MB, the inference code is self-contained, and an ordinary computer can run it on CPU. It is not a knowledge base: 0.44B cannot store world knowledge, and numbers, supporting details, multi-step reasoning and code logic will be wrong. This is a preview — training is finished and the inference path works, but no systematic evaluation has been run yet.' },
+                    { t: 'p', html: 'First, the lineage: Cancri is not a fine-tune of any open model — it is pretrained from random initialization, and that bloodline has never been broken. What this generation does is simple to state: on the 2.1 base we swap in a new tokenizer, continue pretraining for about 7 billion more tokens, then run SFT on 106k freshly cleaned instructions — roughly 20B tokens in total. Pretraining, continued training and SFT all ran on AMD GPUs under ROCm.' },
+                    { t: 'p', html: 'The caveats first, because they matter: it has 439,371,264 parameters, the weights are 878 MB, the inference code is self-contained, and an ordinary CPU runs it — but it is not a knowledge base. 0.44B cannot hold world knowledge; numbers, details, multi-step reasoning and code logic will all go wrong. "Preview" means exactly this: training is finished, the pipeline works end to end, and systematic evaluation has not happened yet.' },
+                    { t: 'p', html: 'So let it speak for itself. The four conversations below were recorded on an ordinary computer\'s CPU after release — they ran in Chinese, the model\'s first language; no wording was touched, long answers are excerpted, and the model\'s own <code>&lt;think&gt;</code> block is trimmed throughout.' },
+                    { t: 'compare', tab: 'Q&A · dedupe a list', replayLabel: 'Replay the responses', prompt: '写一个 Python 函数：列表去重，但保持原来的顺序。',
+                        sides: [
+                            { label: 'Cancri 2.5 Flash Preview', toggleLabel: 'Reply', response: [
+                                { code: 'def unique_dict(data):\n    """\n    对任意可迭代对象返回去重后的列表。\n\n    参数:\n        data (list/tuple): 可迭代对象\n\n    返回:\n        list: 去重后保持原始顺序的列表\n    """\n    seen = set()\n    result = []\n    for item in data:\n        if item not in seen:\n            seen.add(item)\n            result.append(item)\n    return result' },
+                                { p: '(Ed.: the code above is verbatim; the explanatory tail was cut for fabrication.)' }
+                            ] }
+                        ],
+                    },
+                    { t: 'compare', tab: 'Q&A · one-line comfort', replayLabel: 'Replay the responses', prompt: '用一句话安慰一个加班到很晚的朋友。',
+                        sides: [
+                            { label: 'Cancri 2.5 Flash Preview', toggleLabel: 'Reply', response: [
+                                { p: '"加班到很晚，真的很不容易。"' },
+                                { p: '可以这样说：加班到很晚确实让人累，但它也是一种难得的休息和收获。你已经在为自己的目标努力了，这本身就是一种值得骄傲的成就。' },
+                                { p: '如果需要更具体的情绪支持，也可以告诉我你的感受，我会帮你想想怎么表达。' }
+                            ] }
+                        ] },
+                    { t: 'compare', tab: 'Q&A · what is a deadlock', replayLabel: 'Replay the responses', prompt: '什么是死锁？两三句话说清楚。',
+                        sides: [
+                            { label: 'Cancri 2.5 Flash Preview', toggleLabel: 'Reply', response: [
+                                { p: '<strong>死锁（Dead-Lock）</strong>是指在并发系统中，两个或多个线程因争夺同一资源而相互等待对方释放的状态。它会导致程序无法继续执行，甚至可能崩溃。' },
+                                { p: '(Ed.: the answer went on with a long classification list whose named terms were invented; trimmed.)' }
+                            ] }
+                        ] },
+                    { t: 'compare', tab: 'Q&A · camping checklist', replayLabel: 'Replay the responses', prompt: '给我列三样周末露营容易忘带的东西，每个一句话。',
+                        sides: [
+                            { label: 'Cancri 2.5 Flash Preview', toggleLabel: 'Reply', response: [
+                                { p: '1. <strong>便携帐篷</strong>——防水防风的防水袋或折叠式帐篷（带拉链或拉杆）；防潮垫或折叠垫，防止雨水渗入。' },
+                                { p: '2. <strong>防潮垫/防潮地毯</strong>——厚实的地毯或羊毛毯，铺在帐篷边缘，防止地面潮湿；防滑地垫或地毯垫，保持地面干燥。' },
+                                { p: '3. <strong>备用电池或充电宝</strong>——手机或笔记本电量不足时，带一个小型应急充电器或充电宝；便携的电池盒或快充头，随时补充电量。' }
+                            ] }
+                        ],
+                        caption: 'Conversations recorded live with Cancri 2.5 Flash Preview · partially excerpted · answer text unchanged' },
                     { t: 'h2', id: 'whats-new', text: "What's new" },
                     { t: 'p', html: 'Architecture and parameter count are unchanged from 2.1; the work went into the data pipeline.' },
                     { t: 'grid', title: 'What changed since 2.1', subject: 1, columns: ['2.1-Flash', '2.5-Flash Preview'], rows: [
@@ -332,18 +398,18 @@
                         { label: 'SFT', sub: 'instruction tuning', cells: ['103,548 samples · 3 epochs', '106,523 + 128 held-out · 2 epochs'] },
                         { label: 'Inference code', cells: ['cancri_model.py / chat.py', 'byte-identical, plus a local web UI'] }
                     ], caption: 'The tokenizer gains exactly one rule — digits stand alone; the cost is roughly +7.9% tokens on digit-heavy text.' },
-                    { t: 'p', html: 'Why touch the tokenizer: the old vocabulary could split 0–9999 in eight different ways (<code>1147</code> might become <code>11</code> and <code>47</code>), so the same number looked different depending on context — hard on a small model learning arithmetic. Now digits are split one by one: <code>1234567890 3.14</code> always becomes <code>1 2 3 4 5 6 7 8 9 0 . 3 1 4</code>. The vocabulary and every ID are unchanged, but you must use the <code>tokenizer.json</code> from this repository — running 2.5 weights with the 2.1 tokenizer raises no error and silently degrades the output.' },
-                    { t: 'p', html: 'Continued pretraining starts from the 2.1 base: 35,500 steps at 196,608 tokens per step, roughly 7 billion tokens, with zh/en Ultra-FineWeb L3, UltraData-Math, CCI4.0 high-quality code and cross-segment long documents in the mix; held-out perplexity in the annealing phase falls from 3.576 to 3.100. SFT then uses 106,523 training samples (plus 128 held out), 2 epochs and 4,084 steps, with held-out masked perplexity dropping from 13.23 to 6.792.' },
-                    { t: 'p', html: 'One caveat: with a new tokenizer and a new held-out set, perplexity cannot be compared across generations. The 3.100 and 6.792 of 2.5 and the 12.62 and 11.854 of 2.1 are not the same yardstick — a smaller number does not mean the model improved by that much.' },
+                    { t: 'p', html: 'Why touch the tokenizer: the old BPE had eight ways of splitting 0–9999 — <code>1147</code> becomes <code>11</code> and <code>47</code> in one context, something else in another. An unstable shape is hard on a small model learning arithmetic. In 2.5, digits are always split one by one: <code>1234567890 3.14</code> reliably becomes <code>1 2 3 4 5 6 7 8 9 0 . 3 1 4</code>. The vocabulary and every ID are unchanged, but it has to be paired with the <code>tokenizer.json</code> in this repository — running 2.5 weights on the 2.1 tokenizer raises no error; the output just quietly gets worse.' },
+                    { t: 'p', html: 'Continued pretraining still starts from the 2.1 base: 35,500 steps at 196,608 tokens per step, about 7 billion tokens in total; the mix adds zh/en Ultra-FineWeb L3, UltraData-Math, CCI4.0 high-quality code and cross-segment long documents, and held-out perplexity in the annealing phase falls from 3.576 to 3.100. SFT then uses 106,523 samples (with 128 held out), two epochs and 4,084 steps, taking held-out masked perplexity from 13.23 to 6.792.' },
+                    { t: 'p', html: 'There is a trap in these numbers worth pointing out: the tokenizer changed, and so did the held-out set, so perplexity cannot be compared across generations. The 3.100 and 6.792 of 2.5 and the 12.62 and 11.854 of 2.1 are not the same yardstick — a smaller number does not mean the model improved by that much.' },
                     { t: 'h2', id: 'architecture', text: 'Architecture: segment recurrence and blackboard handoff' },
-                    { t: 'p', html: 'Cancri is not a standard decoder. One forward pass concatenates three parts: the incoming board (32 slots), a 512-token segment, and 32 write-query slots; the hidden state at the write slots becomes the next segment\'s board. Segments hand state to each other through this 32×1536 activation instead of a longer attention window.' },
+                    { t: 'p', html: 'Cancri is not a standard decoder. One forward pass is a concatenation of three parts: the incoming board (32 slots), a 512-token segment, and 32 write-query slots; the hidden state at the write slots becomes the next segment\'s board. Segments pass state to each other through this 32×1536 activation rather than through a longer attention window.' },
                     { t: 'p', html: 'The direct consequence is memory. The KV cache covers a constant 576 positions — about 54 MB, independent of generation length. The same number of tokens through naive full attention: 768 MB at 8k, 3 GB at 32k, 12 GB at 128k.' },
                     { t: 'p', html: 'The board is also actually being used: on 8-segment held-out windows at the end of continued training, segments 2–8 score 3.100 perplexity when they receive the previous board, versus 3.677 when the board is not connected and only the initial board is given.' },
                     { t: 'quote', html: 'The discrete channel stores results that must be reused exactly; the continuous channel carries state for later computation. Both are produced by the same sub-task, but they follow different update and verification rules. … Field semantics are defined by behavior under intervention, not by slot names.', source: '— Cancri: A Dual-Channel Blackboard Architecture for Verifiable Collaboration' },
-                    { t: 'p', html: 'One boundary to state clearly: what ships today is a single general-purpose model. The board was designed for communication and working memory between experts, and multi-expert forking and board communication remain at the research stage — we make no capability claims about them here.' },
+                    { t: 'p', html: 'One more boundary to draw: what ships today is a single general-purpose model. The board was designed for communication and working memory between experts, and multi-expert forking and board communication remain at the research stage — we make no capability claims about them here.' },
                     { t: 'h2', id: 'availability', text: 'Availability' },
-                    { t: 'p', html: 'Cancri 2.5 Flash Preview is available on <a href="https://www.modelscope.cn/models/guxingyu88730882/Cancri-2.5-Flash-Preview-0.5B">ModelScope</a> under Apache 2.0. The repository ships its own inference code and a local web UI: <code>chat.py</code> for command-line conversations, <code>server.py</code> for a chat page bound to localhost only, and on Windows a double-click on <code>启动 Cancri.vbs</code>. Nothing beyond torch, tokenizers and safetensors is required.' },
-                    { t: 'p', html: 'It runs on ordinary machines: pure CPU (8 threads, fp32) takes about 1.8 GB of memory, loads in roughly 11 seconds and generates 2–8 tokens/s; a GPU is much faster. Note that it cannot be loaded with <code>transformers.AutoModel</code> — the architecture is not a standard decoder; use the code in the repository. Two rules from testing: do not send a system block (the training data has none), and give it enough output budget — 57.9% of SFT samples use <code>&lt;think&gt;</code>, so answers often open with a long stretch of thinking.' },
+                    { t: 'p', html: 'Cancri 2.5 Flash Preview is up on <a href="https://www.modelscope.cn/models/guxingyu88730882/Cancri-2.5-Flash-Preview-0.5B">ModelScope</a> under Apache 2.0. The repository ships its own inference code and a local web UI: <code>chat.py</code> for command-line conversations, <code>server.py</code> for a chat page bound to localhost only, and on Windows a double-click on <code>启动 Cancri.vbs</code>. Nothing beyond torch, tokenizers and safetensors is required.' },
+                    { t: 'p', html: 'Ordinary machines run it: pure CPU (8 threads, fp32) takes about 1.8 GB of memory, loads in roughly 11 seconds and generates 2–8 tokens/s; a GPU is much faster. One thing to note — it cannot be loaded with <code>transformers.AutoModel</code>, since the architecture is not a standard decoder; use the code in the repository. Two rules we learned the hard way: do not send a system block (the training data contains none), and give it enough output budget — 57.9% of SFT samples use <code>&lt;think&gt;</code>, so answers often open with a long stretch of thinking.' },
                     { t: 'p', html: 'And in our usual style, the unflattering outputs are on the table too. The pre-release smoke test was four questions, one sample each, nothing cherry-picked:' },
                     { t: 'table', title: 'Pre-release smoke test (not cherry-picked, one sample each)', head: ['Prompt', 'Model output (excerpt)', 'Verdict'], rows: [
                         ['Who are you?', '"Cancri, trained by NexusVAI."', 'Identity correct, clean ending'],

@@ -206,6 +206,46 @@ body.light-theme .share-link-btn:hover {
     color: var(--text-color);
 }
 
+/* Legal long-form headings & blocks (article.js appendLegalBlock) */
+.article-body .article-h2 {
+    font-size: var(--type-h3-size, 1.5rem);
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    margin: 2.2em 0 0.7em;
+    color: var(--text-color);
+}
+
+.article-body .article-h3 {
+    font-size: 1.12rem;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 1.8em 0 0.4em;
+    color: var(--text-color);
+}
+
+.article-body .article-h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.45;
+    margin: 1.4em 0 0.25em;
+    color: var(--text-color);
+}
+
+.article-body .article-notice {
+    background: var(--pill-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 1em 1.2em;
+    font-size: 0.95em;
+}
+
+.article-body .article-meta-line {
+    color: var(--text-muted, rgba(128, 128, 128, 0.9));
+    font-size: 0.9em;
+    margin-bottom: 0.8em;
+}
+
 /* Inline <code> in article body */
 .article-body code {
     font-family: var(--font-mono);

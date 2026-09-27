@@ -8,7 +8,7 @@ const articleData = {
             category: '技术',
             readTime: '12 分钟阅读',
             paragraphs: [
-                '摘要：今天我们公开一份内部技术报告，详细记录我们在 NexusV 网关中关闭的一个 P0 级别成本规避漏洞。该漏洞允许攻击者通过中途断开流式连接来逃避为已生成 token 付费，从而无限制地消耗后端推理资源。本次修复已部署至 <code>api-gateway v337</code> 与 <code>chat-gateway v551</code>，全部五项端到端测试通过。',
+                '摘要：今天我们公开一份内部技术报告，详细记录我们在 NexusVAI 网关中关闭的一个 P0 级别成本规避漏洞。该漏洞允许攻击者通过中途断开流式连接来逃避为已生成 token 付费，从而无限制地消耗后端推理资源。本次修复已部署至 <code>api-gateway v337</code> 与 <code>chat-gateway v551</code>，全部五项端到端测试通过。',
                 '<strong>背景：流式 API 的特殊性</strong>',
                 '当客户端通过 stream:true 发起对话请求时，网关会与上游模型之间建立一条 SSE（Server-Sent Events）长连接，并将每个 token 实时转发给客户端。这种模式提供了打字机式的流畅体验，却也引入了普通 JSON API 所没有的复杂性：响应"完成"的时间点、客户端"断开"的时间点、网关"停止读取上游"的时间点，三者完全可以分离。',
                 '在我们之前的实现里，token 计费逻辑只在 SSE 流自然结束时触发——具体而言，是在 <code>TransformStream.flush</code> 回调中。这是一个看起来合理的位置：所有 token 都已经流出，最后一帧 usage 数据也已经被解析。但这个设计有一个致命假设：它假设客户端会读到流末。',
@@ -34,7 +34,7 @@ const articleData = {
                 '<strong>上游 abort 的传播</strong>',
                 'api-gateway 的 <code>forwardToProxy</code> 与 chat-gateway 的 <code>fetchWithTimeout</code> 都新增了一个可选的 <code>clientSignal</code> 参数。当客户端 signal 触发 abort 时，内部的 AbortController 也会触发 abort，从而立即关闭上游 fetch。监控侧我们区分了两种 AbortError：client-disconnect（响应 HTTP 499，客户端主动断开，无需当作错误处理）与 upstream timeout（响应 HTTP 504，上游真的没有在窗口内返回首字节）。这一区分让线上面板可以正确地把"用户主动取消"与"上游异常"分桶统计。',
                 '<strong>部署</strong>',
-                '本次修复涉及 NexusV 网关的两个边缘函数。',
+                '本次修复涉及 NexusVAI 网关的两个边缘函数。',
                 'api-gateway 部署为 v337，状态 ACTIVE。影响范围覆盖三条 OpenAI 兼容路由：<code>POST /v1/chat/completions</code>、<code>POST /v1/messages</code>（Anthropic Messages 协议）、<code>POST /v1/responses</code>（OpenAI Responses 协议）。',
                 'chat-gateway 部署为 v551，状态 ACTIVE。影响范围覆盖 <code>wrapResponseForQuotaRecording</code> 包装的所有 chat 流式调用，即站内 NexusVAI 用户走的全部模型对话路径。',
                 '部署通过 Supabase Management API 的 multipart 上传端点完成，每个函数一次原子部署。整个改动不涉及 git 工作流——所有源代码修改均通过 IDE 直接编辑，部署后 HTTP 201 的响应携带新版本号与 ezbr 校验和，作为版本追踪凭证。',
@@ -61,7 +61,7 @@ const articleData = {
             category: 'Technical',
             readTime: '12 min read',
             paragraphs: [
-                'Abstract: Today we publish an internal technical report documenting a P0 cost-evasion vulnerability we recently closed in the NexusV gateway. The vulnerability allowed an adversary to evade payment for already-generated tokens by abruptly disconnecting a streaming connection, enabling effectively unlimited consumption of backend inference resources. The fix has been deployed as <code>api-gateway v337</code> and <code>chat-gateway v551</code>, and all five end-to-end tests passed.',
+                'Abstract: Today we publish an internal technical report documenting a P0 cost-evasion vulnerability we recently closed in the NexusVAI gateway. The vulnerability allowed an adversary to evade payment for already-generated tokens by abruptly disconnecting a streaming connection, enabling effectively unlimited consumption of backend inference resources. The fix has been deployed as <code>api-gateway v337</code> and <code>chat-gateway v551</code>, and all five end-to-end tests passed.',
                 '<strong>Background: Why streaming APIs are different</strong>',
                 'When a client opens a chat request with stream:true, the gateway establishes a long-lived Server-Sent Events (SSE) connection to the upstream model and forwards each token to the client in real time. This provides a fluid typewriter experience, but it also introduces complexity absent from ordinary JSON APIs: the moment a response is "complete", the moment a client "disconnects", and the moment the gateway "stops reading the upstream" are three distinct points in time.',
                 'In our previous implementation, token-billing logic fired only when the SSE stream ended gracefully — specifically inside the <code>TransformStream.flush</code> callback. That placement seemed reasonable: every token had already flowed out, and the final usage frame had been parsed. But the design carried a fatal assumption — it assumed the client would read to the end of the stream.',
@@ -87,7 +87,7 @@ const articleData = {
                 '<strong>Propagating abort to the upstream</strong>',
                 'Both <code>forwardToProxy</code> in api-gateway and <code>fetchWithTimeout</code> in chat-gateway gained an optional <code>clientSignal</code> parameter. When the client signal fires, the internal AbortController also fires, closing the upstream fetch immediately. We also took the opportunity to disambiguate two flavors of AbortError in the error handler: client-disconnect (HTTP 499; the client walked away, not an error) versus upstream timeout (HTTP 504; the upstream genuinely failed to return a first byte in time). This lets our monitoring panel bucket "user cancelled" separately from "upstream failure".',
                 '<strong>Deployment</strong>',
-                'The fix spans two edge functions in the NexusV gateway.',
+                'The fix spans two edge functions in the NexusVAI gateway.',
                 'api-gateway was deployed as v337, ACTIVE. It covers three OpenAI-compatible routes: <code>POST /v1/chat/completions</code>, <code>POST /v1/messages</code> (Anthropic Messages protocol), and <code>POST /v1/responses</code> (OpenAI Responses protocol).',
                 'chat-gateway was deployed as v551, ACTIVE. It covers every streaming chat call routed through <code>wrapResponseForQuotaRecording</code>, which is the entire model-conversation path used by NexusVAI users in the web UI.',
                 'Deployment used the Supabase Management API multipart endpoint, one atomic upload per function. The change touched no git workflow — all source modifications were performed via direct IDE edits, and the HTTP 201 deployment responses (carrying the new version number and ezbr checksum) serve as our deployment receipts.',
@@ -2380,6 +2380,7 @@ const articleData = {
         }
     },
     news3: {
+        legal: true,
         media: { type: 'image', src: 'Logo/OAI_Systems_Blog_Card.webp', alt: '使用协议' },
         zh: {
             title: 'NexusV套件 使用协议、隐私政策与免责声明',
@@ -2394,11 +2395,11 @@ const articleData = {
                 '游戏模组部分为单机娱乐模组，严禁用于违法用途或商业行为。',
                 '使用本套件任一产品即视为您已阅读并同意本协议全部内容。',
                 '',
-                '更新日期：2026 年 5 月 26 日',
-                '本协议自 2026 年 5 月 26 日起生效。先前版本以其原生效规则处理。本次更新主要修正 NexusVAI 服务隐私说明（第 4.6 节），以如实反映当前已上线的数据处理实践。',
+                '更新日期：2026 年 9 月 27 日',
+                '本协议自 2026 年 5 月 26 日起生效。先前版本以其原生效规则处理。本次更新修订了 NexusVAI 服务基础设施与隐私说明（第 3.4、4.5、4.6 节）、付费与退款条款（第 7.6 节）等表述，以如实反映当前已上线的数据处理实践与套餐结构，并对全文排版进行了整理。',
                 '本使用协议（以下简称"本协议"）主要规范 NexusV 套件各模块的许可范围、使用限制、风险告知与责任边界；涉及个人信息与数据流转的说明适用于本套件当前已提供的功能，不构成对未来未上线云服务的承诺。',
                 '1. 定义与产品说明',
-                '1.1 "本套件"指由开发者发布的 NexusV 系列内容，当前包括：（1）TACTFR：用于 GTA V 单机离线环境的警务玩法增强模组；（2）NexusV 修改器：用于 GTA V 单机离线环境的数值与体验调整工具；（3）Sentience：用于 GTA V 游戏内 NPC 对话生成与互动增强的 AI 模组；（4）NexusVAI：面向用户的 AI 聚合对话服务平台（以下简称"NexusVAI 服务"），提供免费与付费（Pro / Pro+ / Pro Max 订阅及加油包）两种使用方式。',
+                '1.1 "本套件"指由开发者发布的 NexusV 系列内容，当前包括：（1）TACTFR：用于 GTA V 单机离线环境的警务玩法增强模组；（2）NexusV 修改器：用于 GTA V 单机离线环境的数值与体验调整工具；（3）Sentience：用于 GTA V 游戏内 NPC 对话生成与互动增强的 AI 模组；（4）NexusVAI：面向用户的 AI 聚合对话服务平台（以下简称"NexusVAI 服务"），提供免费档位与付费档位（Go / Plus / Pro 月度订阅、加油包，以及面向开发者的 API 按量充值）两种使用方式。',
                 '1.2 Sentience 当前版本主要提供 AI 对话生成功能，支持本地模型推理及由用户自行配置的第三方云端模型接口。除非后续版本另有明确说明，当前版本不直接实现对 NPC 自主行为、移动、战斗或任务执行的实时控制。',
                 '1.3 本套件为第三方非官方模组，与 Rockstar Games、Take-Two Interactive 及《Grand Theft Auto V》原权利人不存在授权、认可、合作或联名关系。本套件仅为技术演示与娱乐用途，不构成上述任何方的官方扩展或联名产品。',
                 '1.4 本套件采用混合授权结构：Sentience 源代码中明确以 MIT 许可证发布的部分适用 MIT 许可证；TACTFR 与 NexusV 修改器当前版本及本套件内其他明确标注为闭源的程序、资源、UI 设计、安装器与配置内容，适用本协议约定的限制；第三方组件、模型权重及相关资源适用其各自原始许可。',
@@ -2416,29 +2417,29 @@ const articleData = {
                 '3.1 游戏模组部分：本套件使用 ScriptHookV（不随包分发，请用户自行官网下载）、ScriptHookVDotNet、NAudio、Newtonsoft.Json。本套件仅作为脚本补丁运行，不包含、不修改、不分发任何原游戏（GTA V）的核心二进制文件或任何受版权保护的游戏资源（包括但不限于模型、纹理、音频、动画数据等）。本套件仅包含第三方逻辑脚本及开发者原创的配置文件。用户需自行承担因安装 ScriptHookV 等第三方注入工具导致的软件冲突或系统不稳定风险。',
                 '3.2 Sentience默认模型为基于 Qwen 系列模型的 SFT 微调权重（如 Qwen2.5/Qwen3）。相关基础模型、微调权重及衍生权重的使用、分发与再利用，应遵守模型文件夹内附带的许可文件及其上游官方许可要求。',
                 '3.3 游戏模组云端模式需用户自备：OpenAI API、DeepSeek API 等，使用即视为您已同意其服务条款与AUP。LM Studio为可选本地工具。',
-                '3.4 NexusVAI 服务第三方组件：NexusVAI 服务后端依赖以下第三方服务：（1）Supabase（supabase.com）：提供用户认证、数据库托管及存储服务，其数据处理受 Supabase 隐私政策（supabase.com/privacy）约束，服务器位于新加坡；（2）Cloudflare：通过 Workers 域名 chat.nexusvai.xyz 承载 chat-gateway 与 api-gateway 流式推理网关，并提供 Turnstile 登录人机验证，其数据处理受 Cloudflare 隐私政策（cloudflare.com/privacypolicy）约束；（3）第三方 AI 模型服务商：提供实际推理服务，详见第 4.6 节第（9）项。开发者不对上述第三方的数据处理行为承担责任。',
+                '3.4 NexusVAI 服务第三方组件：NexusVAI 服务后端依赖以下类别的第三方服务（供应商名称可能随更换而变化，本节仅列类别）：（1）云计算与边缘网络服务商：承载 chat.nexusvai.xyz 接入、chat-gateway 与 api-gateway 流式推理网关，并提供登录人机验证；（2）托管数据库服务商：存储账号、对话历史、用量与计费等业务数据（PostgreSQL，节点位于中国境外）；（3）电子邮件服务商：发送登录验证码与通知邮件；（4）第三方 AI 模型服务商：提供实际推理服务，详见第 4.6 节第（9）项。开发者不对上述第三方的数据处理行为承担责任，各类别服务商的隐私政策以其届时有效版本为准。',
                 '4. 隐私与数据说明',
                 '4.1 默认本地推理模式：Sentience 默认优先使用本地部署的 SFT 微调 Qwen 模型进行推理。在默认本地推理模式下，与 NPC 对话相关的上下文和玩家输入原则上不经过开发者运营的服务器。在本套件当前版本的默认设计下，开发者不主动收集用户的游戏对话内容、个人身份信息或用户自行配置的第三方 API Key。',
                 '4.2 用户主动启用的第三方云端模式：如用户主动在本地配置第三方模型服务商的 API Key 并启用云端模式，则相关对话数据将由用户设备直接发送至其所选服务商（如 OpenAI、DeepSeek 等），开发者不提供该等请求的中转、托管或代付服务。云端模式产生的网络通信、费用、账号风控及服务可用性风险，由用户自行承担。用户需遵守所选API服务商的服务条款与隐私政策。',
                 '4.3 本地配置文件与 API Key：用户自行配置的 API Key 可能以明文形式保存在本地配置文件中。用户应自行妥善保管该文件，不应在公共设备、共享设备或公开仓库中泄露相关信息。请勿分享配置文件或上传至公开仓库，强烈建议优先使用本地模式以避免任何数据传输和费用风险。',
                 '4.4 用户输入内容提示：用户不应在与 Sentience 的对话中输入真实姓名、身份证号、银行卡信息、家庭住址、电话号码、支付凭证、账号密码等高度敏感信息；因自行输入敏感信息导致的信息泄露、第三方处理风险、账号风险或其他法律后果，由用户自行承担。',
-                '4.5 已上线云端服务说明：NexusVAI 服务已上线由开发者运营的云端推理网关（chat-gateway）、账号系统（基于 Supabase Auth，使用邮箱验证码登录）及付费订阅系统（Pro / Pro+ / Pro Max 三档月度订阅 + 加油包）。该等服务的具体数据处理实践详见第 4.6 节。用户本地日志可自行删除。',
+                '4.5 已上线云端服务说明：NexusVAI 服务已上线由开发者运营的云端推理网关（chat-gateway）、账号系统（邮箱一次性验证码登录）及付费体系（月度订阅档位 + 加油包 + API 按量充值）。该等服务的具体数据处理实践详见第 4.6 节。用户本地日志可自行删除。',
                 '4.6 NexusVAI 服务隐私说明：NexusVAI 服务采用云端处理架构，用户对话请求通过开发者运营的云端网关（chat-gateway）转发至第三方 AI 模型进行推理，推理结果经网关返回用户界面。NexusVAI 服务的具体数据处理实践如下：',
-                '（1）对话内容存储：用户通过 NexusVAI 服务产生的对话历史存储于开发者运营的云端数据库（Supabase），包括对话标题、消息内容、所用模型等信息。对话历史与用户账号关联，用于支持跨设备同步、对话续接及历史回看功能。开发者不会将用户对话内容用于训练 AI 模型。用户可在 NexusVAI 界面中主动删除对话历史，删除后开发者不再持有该等数据。',
+                '（1）对话内容存储：用户通过 NexusVAI 服务产生的对话历史存储于开发者运营的云端托管数据库（PostgreSQL），包括对话标题、消息内容、所用模型等信息。对话历史与用户账号关联，用于支持跨设备同步、对话续接及历史回看功能。默认开启的"模型改进"授权允许将对话数据用于改进 Cancri 模型，您可在设置中随时关闭；关闭后新产生的对话仍会保存以供您查看，但会标记为不参与模型训练。用户可在 NexusVAI 界面中主动删除对话历史，删除后按第（13）项的期限处理。',
                 '（2）用量记录：开发者记录每次 AI 模型调用的用量明细（包括用户 ID、模型 ID、输入/输出 Token 数、调用时间、调用是否成功等），用于配额管控、用量统计及计费结算。用量记录不包含对话原文内容。',
-                '（3）账号与身份信息：使用 NexusVAI 服务需通过邮箱验证码登录（基于 Supabase Auth）。开发者获取并存储用户注册邮箱地址。付费订单处理过程中，开发者获取并存储用户提交的邮箱及 QQ 号，用于订单审核与激活码发放。开发者不要求用户提供手机号、真实姓名或身份证号。',
+                '（3）账号与身份信息：使用 NexusVAI 服务需通过邮箱一次性验证码登录。开发者获取并存储用户注册邮箱地址。付费订单处理过程中，开发者获取并存储用户提交的邮箱及 QQ 号，用于订单审核与激活码发放。开发者不要求用户提供手机号、真实姓名或身份证号。',
                 '（4）设备指纹与反滥用：为防止多账号滥用及保障服务公平性，开发者在用户登录后采集设备/浏览器指纹信息（包括但不限于 Canvas/WebGL/Audio 指纹、WebRTC IP、User-Agent、屏幕分辨率、时区、语言、硬件参数等），综合生成 visitor_id 并存储于服务端，用于跨账号关联检测。开发者同时记录用户 IP 地址及地理信息缓存，用于安全审计与反滥用。',
                 '（5）错误遥测：NexusVAI 服务在用户同意后，采集浏览器端未捕获异常信息（包括 UA、当前 URL、视口尺寸、异常 message 与 stack、最近 10 条 fetch 请求的 URL 与状态码），用于问题排查与产品改进。用户可拒绝遥测，拒绝后不影响正常使用。',
                 '（6）用户记忆功能：NexusVAI 服务提供可选的用户记忆功能，允许用户设置个性化偏好信息（每用户最多 5 条，每条不超过 100 字），该等信息存储于云端数据库，用于在后续对话中为 AI 提供上下文。用户可随时关闭或删除该功能中的记忆内容。',
                 '（7）Arena 竞技场：NexusVAI 服务提供模型对比竞技场功能。用户提交的 prompt 及模型返回的 response 存储于服务端，用于投票统计与模型评估。竞技场数据与用户账号关联。',
                 '（8）加密传输：所有用户与 NexusVAI 服务之间的数据传输均通过 HTTPS 加密通道完成。',
                 '（9）第三方模型：NexusVAI 服务聚合的 AI 模型由第三方提供，开发者通过云端网关将用户对话请求转发至第三方模型服务商进行推理。用户对话内容在推理过程中经由第三方模型服务商的服务器处理，该等处理受第三方服务商各自的隐私政策与服务条款约束。开发者不对第三方模型服务商的数据处理行为承担责任，用户应自行了解并同意相关第三方的服务条款。',
-                '（10）付费系统：NexusVAI 服务提供 Pro / Pro+ / Pro Max 三档月度订阅及加油包购买。订阅状态、月度配额消耗、加油包余额及用量流水存储于服务端，用于计费与权益管理。付费通过人工订单审核 + 激活码兑换方式完成，开发者不直接处理支付信息。',
+                '（10）付费体系：NexusVAI 服务提供月度订阅档位及加油包，并提供面向开发者的 API 按量充值。订阅状态、配额消耗、加油包余额及用量流水存储于服务端，用于计费与权益管理。付费通过人工核验订单或第三方卡密渠道发放激活码的方式完成，开发者不直接处理支付信息。',
                 '（11）封禁与申诉：如用户违反本协议或被系统检测为滥用，开发者有权封禁账号。被封禁用户可通过申诉流程提交申诉请求，申诉信息存储于服务端。',
                 '（12）敏感信息提示：用户不应在与 NexusVAI 服务的对话中输入真实姓名、身份证号、银行卡信息、家庭住址、电话号码、支付凭证、账号密码等高度敏感信息；因自行输入敏感信息导致的信息泄露或法律后果，由用户自行承担。',
-                '（13）数据保留期限：对话历史在用户主动删除前持续保留；用户删除对话后，开发者将在 30 日内从生产数据库移除，备份系统中的副本将在 90 日内清除。用量记录保留至对应订阅周期结束后 12 个月，用于账务核对与争议处理。设备指纹数据在用户最后一次登录后保留 180 日。封禁记录与申诉记录保留至解封后 12 个月。法律法规要求更长期限保留的，从其规定。',
-                '（14）跨境传输：NexusVAI 服务后端数据库托管于 Supabase（服务器位于新加坡）。用户数据在传输至新加坡的过程中受到 HTTPS 加密保护。开发者已评估该等跨境传输的必要性，并确认 Supabase 提供的数据安全保障措施符合适用法律要求。如用户所在地的强制性法律对数据出境有额外要求，以该等强制性法律规定为准。',
-                '（15）Cookie 与本地存储：NexusVAI 服务在用户浏览器中使用以下本地存储机制：（a）Supabase Auth 会话令牌（localStorage 键名 cancri_supabase_auth），用于维持登录状态，用户关闭浏览器或主动登出后失效；（b）匿名标识符（localStorage 键名 cancri_anon_id），用于遥测与指纹关联；（c）遥测同意状态（localStorage 键名 cancri_telemetry_consent），记录用户是否同意错误回传；（d）用户偏好设置（localStorage 键名 theme、lang 等），用于保存主题与语言偏好。NexusVAI 服务不使用追踪型 Cookie。用户可随时通过浏览器设置清除上述本地数据。',
+                '（13）数据保留期限：对话历史保存至您主动删除；您删除对话后，开发者将尽快从活跃数据库中移除，因备份、审计或法律要求无法立即删除的，将在实现删除目的所需的最短合理期限内完成删除或匿名化。用量与计费记录按法律法规要求的最低期限保留，用于账务核对与争议处理。设备指纹数据在实现账户安全与反欺诈目的所需期限内保存，账户注销后解除关联。封禁与申诉记录在处理完毕后按合理期限保留。法律法规要求更长期限保留的，从其规定。',
+                '（14）跨境传输：NexusVAI 服务的数据存储与请求转发涉及中国境外的托管数据库、边缘节点及第三方模型服务商，该等跨境传输为提供服务的必要条件，传输过程受 HTTPS 加密保护。开发者已评估该等跨境传输的必要性；如用户所在地的强制性法律对数据出境有额外要求，以该等强制性法律规定为准。',
+                '（15）Cookie 与本地存储：NexusVAI 服务在用户浏览器中仅使用 localStorage / sessionStorage 保存以下类别的信息：登录态令牌（access / refresh token）、匿名标识符、遥测同意状态、设备指纹上报节流标记，以及主题、语言等偏好设置。NexusVAI 服务不使用追踪型 Cookie，不在本地存储中保存聊天内容；人机验证服务商可能为维护验证会话设置其自有 Cookie。用户可随时通过浏览器设置清除上述本地数据，但禁用可能导致登录态无法保持或部分功能不可用。',
                 '5. AI 生成内容与用户责任',
                 '5.1 游戏模组（Sentience）工具属性说明：Sentience 在当前版本中主要作为本地运行的 AI 对话增强工具提供。对于用户自行配置并调用的第三方云端模型服务，开发者仅提供本地接口集成，不参与第三方模型服务的实际运营。如适用法律将本套件的特定功能认定为生成式人工智能相关服务的一部分，开发者将在法律要求的范围内履行相应义务。用户在使用本套件生成内容时，应自行遵守所在国家及地区的相关法律法规（包括但不限于《互联网信息服务深度合成管理规定》等）。',
                 '5.2 NexusVAI 服务生成式AI合规：NexusVAI 服务作为生成式人工智能聚合平台，其输出内容由第三方 AI 模型基于用户输入自动生成。开发者运营云端网关进行请求转发、配额管控与用量记录，不参与 AI 模型的实际推理过程，不对任何特定输出内容拥有著作权或编辑控制权。依据《生成式人工智能服务管理暂行办法》，开发者履行以下义务：（1）提供内容标注：NexusVAI 界面中 AI 生成的内容均带有明确标识，以区分人工内容与机器生成内容；（2）建立举报机制：用户可通过 NexusVAI 界面或第 10 节提供的联系方式举报违法或不当 AI 输出，开发者将在合理时间内处理；（3）用户生成内容管理：用户使用 NexusVAI 服务生成的内容，应自行判断其合法性、准确性与适用性，并自行承担因使用该等内容所产生的法律后果。用户不得利用 NexusVAI 服务生成违反当地法律法规的内容，包括但不限于虚假信息、侵权内容、违法有害信息等。开发者保留在发现违法违规使用行为时采取内容过滤、限制或终止用户访问 NexusVAI 服务的权利。',
@@ -2463,7 +2464,7 @@ const articleData = {
                 '7.3 风险自负：在适用法律允许的最大范围内，除因开发者故意或重大过失造成的损害外，开发者不对用户因下载、安装、配置或使用本套件所遭受的间接损失、附带损失、后果性损失、利润损失、账号风险（包括但不限于被官方封禁）、存档损坏或第三方服务不可用承担责任。法律明确禁止排除或限制的责任，不因本协议而排除。',
                 '7.4 非官方渠道获取风险：本套件仅在开发者指定的官方渠道（如 Github、指定模组论坛等）免费发布。对于用户从非开发者公布的官方渠道获取的安装包、整合包、镜像文件、网盘转载或二次封装版本，开发者无法保证其真实性、完整性、安全性与可用性。用户因此遭受的账号风险、财产损失、恶意软件感染或数据泄露风险，由用户自行判断并承担相应后果。',
                 '7.5 责任限额：在适用法律允许的最大范围内，除因开发者故意或重大过失造成的损害外，开发者对因本套件引起或与之相关的任何间接损害、特殊损害、惩罚性损害或后果性损害不承担责任。对于 NexusVAI 付费用户，开发者因本套件所导致的可归因特定责任的直接损害，最高赔偿以用户最近 12 个月内向开发者实际支付的订阅费用为限；对于免费用户，最高赔偿不超过 100 元人民币或法律规定的最低赔偿下限，取其中较高者。若某一司法管辖区法律不允许完全排除责任，则开发者的责任范围以该法律允许限制的最大范围为限，但不影响法律规定不得排除或限制的责任。',
-                '7.6 NexusVAI 付费订阅退款政策：NexusVAI 订阅采用激活码兑换方式，激活后立即生效，未使用的剩余配额不作现金退还。如订阅周期内服务因开发者原因出现严重缺陷（单次连续中断超过 72 小时且开发者未提供补偿），用户可向开发者申请按剩余天数比例补偿。加油包一经激活消耗即不可退还；如全新未使用，可在激活后 7 日内向开发者申请退还。法律强制性规定的维权权利，不受本政策限制。',
+                '7.6 NexusVAI 付费与退款政策：除法律法规另有规定或本协议另有约定外，已激活的订阅、加油包及 API 充值概不退款；未使用的剩余配额不作现金退还。用户仅可在以下情形申请退款：（1）支付后未提交订单或未领取激活码；（2）因开发者原因导致的重大服务故障（指核心入口在同一连续时段内完全不可用，且经服务端日志确认），致使付费权益期间超过 50% 无法使用。法律强制性规定的维权权利，不受本政策限制。',
                 '7.7 安装器与安全软件拦截：本套件可能包含用于部署本地模型、依赖组件或运行环境的安装器/启动器。该工具仅用于简化本地部署流程，不改变用户对第三方组件、模型许可及游戏环境风险的自行判断义务。由于安装器、脚本注入、模型部署或目录写入行为可能被安全软件误报、被系统权限机制拦截，用户应在使用前自行备份相关目录并确认来源安全。"一键安装器"及脚本注入功能可能会被部分杀毒软件（如 Windows Defender 等）误报为风险文件。此为无数字签名的独立游戏补丁的常见现象。用户需自行判断并决定是否添加信任。在适用法律允许的最大范围内，除因开发者故意或重大过失造成的损害外，因安装器运行、权限不足或被杀毒软件误杀导致的游戏无法启动、文件损坏，开发者不承担责任。强烈建议在使用安装器前备份您的 GTA V 游戏根目录。如安装器需联网下载模型或依赖文件，相关网络请求仅用于获取用户主动选择安装的资源。',
                 '7.8 API 密钥安全：为了方便用户在不同 AI 工具间迁移配置，本套件采用了通用的明文配置文件格式。用户一旦将 API Key 写入该文件，即视为接受该等存储方式的公开性，并承诺自行采取加密磁盘、限制文件权限等措施保护其私钥。请勿分享该文件，不要在公共电脑或多人共用的设备上配置云端API功能。在当前版本已提供功能范围内，开发者不通过自建服务器接收、转存或查看该等 Key，但无法阻止您自行泄露。因泄露、被盗刷产生的费用由您全责承担。',
                 '7.9 本节责任限制及免责并不旨在规避对因故意或重大过失所导致的法定不可免除责任。',
@@ -2513,11 +2514,11 @@ const articleData = {
                 'Game mod components are for single-player entertainment only, strictly prohibited for illegal or commercial use.',
                 'Using any component of this Suite means you have read and agreed to all terms of this Agreement.',
                 '',
-                'Last Updated: May 26, 2026',
-                'This Agreement is effective as of May 26, 2026. Previous versions shall be governed by their original effective terms. This update primarily corrects the NexusVAI Service privacy section (Section 4.6) to accurately reflect currently deployed data processing practices.',
+                'Last Updated: September 27, 2026',
+                'This Agreement is effective as of May 26, 2026. Previous versions shall be governed by their original effective terms. This update revises the NexusVAI Service infrastructure and privacy statements (Sections 3.4, 4.5, 4.6) and the paid subscription and refund terms (Section 7.6) to reflect currently deployed practices and plan structure, and reorganizes the document layout.',
                 'This Terms of Use Agreement ("Agreement") primarily governs the license scope, usage restrictions, risk notifications, and liability boundaries of each module of the NexusV Suite; descriptions related to personal information and data flow apply to the currently provided functions of this Suite and do not constitute commitments to future unreleased cloud services.',
                 '1. Definitions & Product Description',
-                '1.1 "Suite" refers to the NexusV series content published by Developer, currently including: (1) TACTFR: A police gameplay enhancement mod for GTA V single-player offline environment; (2) NexusV Modifier: A numerical and experience adjustment tool for GTA V single-player offline environment; (3) Sentience: An AI mod for NPC dialogue generation and interaction enhancement within GTA V gameplay; (4) NexusVAI: An AI aggregation dialogue service platform for users (hereinafter "NexusVAI Service"), offering both free and paid tiers (Pro / Pro+ / Pro Max subscriptions and top-up credits).',
+                '1.1 "Suite" refers to the NexusV series content published by Developer, currently including: (1) TACTFR: A police gameplay enhancement mod for GTA V single-player offline environment; (2) NexusV Modifier: A numerical and experience adjustment tool for GTA V single-player offline environment; (3) Sentience: An AI mod for NPC dialogue generation and interaction enhancement within GTA V gameplay; (4) NexusVAI: An AI aggregation dialogue service platform for users (hereinafter "NexusVAI Service"), offering free and paid tiers (Go / Plus / Pro monthly subscriptions, top-up credits, and metered API recharge for developers).',
                 '1.2 The current version of Sentience primarily provides AI dialogue generation functionality, supporting local model inference and third-party cloud model interfaces configured by users themselves. Unless otherwise explicitly stated in subsequent versions, the current version does not directly implement real-time control of NPC autonomous behavior, movement, combat, or task execution.',
                 '1.3 This Suite is an unofficial third-party mod, with no authorization, recognition, cooperation, or co-branding relationship with Rockstar Games, Take-Two Interactive, or the original rights holders of Grand Theft Auto V. This Suite is provided solely for technical demonstration and entertainment purposes, and does not constitute an official extension or co-branded product of any of the aforementioned parties.',
                 '1.4 This Suite adopts a hybrid licensing structure: Parts of Sentience source code explicitly released under MIT License are subject to MIT License; TACTFR and NexusV Modifier current versions and other clearly marked closed-source programs, resources, UI designs, installers, and configuration content within this Suite are subject to the restrictions set forth in this Agreement; third-party components, model weights, and related resources are subject to their respective original licenses.',
@@ -2536,17 +2537,29 @@ const articleData = {
                 '3.1 Game mod components: The Suite uses ScriptHookV (NOT included in package, please download from official website), ScriptHookVDotNet, NAudio, Newtonsoft.Json. The Suite only runs as a script patch, does NOT include, modify, or distribute any core binary files of the original game (GTA V) or any copyrighted game assets. Users bear full responsibility for any software conflicts or system instability caused by installing third-party injection tools such as ScriptHookV.',
                 '3.2 Sentience default model: SFT fine-tuned Qwen series weights (such as Qwen2.5/Qwen3), subject to original model license (see LICENSE in model folder), using means you agree to that license.',
                 '3.3 Game mod cloud mode requires user-provided: OpenAI API, DeepSeek API, etc., using means you agree to their Terms of Service and AUP. LM Studio is an optional local tool.',
-                '3.4 NexusVAI Service third-party components: NexusVAI Service backend depends on: (1) Supabase (supabase.com): provides user authentication, database hosting and storage; data processing is governed by Supabase Privacy Policy (supabase.com/privacy); servers located in Singapore. (2) Cloudflare: Workers at chat.nexusvai.xyz host chat-gateway and api-gateway streaming inference, plus Turnstile login CAPTCHA; governed by Cloudflare Privacy Policy (cloudflare.com/privacypolicy). (3) Third-party AI model providers: provide actual inference services; see Section 4.6 item (9). Developer is not responsible for data processing by the above third parties.',
+                '3.4 NexusVAI Service third-party components: NexusVAI Service backend relies on the following categories of third-party services (vendor names may change over time; this section lists categories only): (1) Cloud and edge network provider: hosts chat.nexusvai.xyz access, the chat-gateway and api-gateway streaming inference gateways, and login human-verification; (2) Managed database provider: stores account, conversation history, usage and billing data (PostgreSQL, hosted outside mainland China); (3) Email delivery provider: sends login codes and notification emails; (4) Third-party AI model providers: provide actual inference services — see Section 4.6 item (9). Developer is not responsible for data processing by the above third parties; each provider\'s own privacy policy applies.',
                 '4. Privacy & Data Processing',
                 '4.1 Default Local Mode (Strongly Recommended): Sentience uses built-in SFT fine-tuned Qwen model, all inference runs on your PC locally, does NOT send any game data or player input to any third party. Developer does not collect any personal data.',
                 '4.2 Cloud API Mode (Requires User Initiative): After you enter your own API Key in local config.ini, the Suite sends NPC dialogue context directly to your designated service provider. Developer does NOT intercept, store, or view your API Key or dialogue content. API Key is stored in plain text in locally accessible config file, do NOT share this file or upload to public repositories, strongly recommend using local mode to avoid data transmission and cost risks. When using cloud mode, your IP address and device info will be sent directly to your chosen API service provider by your PC, governed by their privacy policy.',
                 '4.3 Data Minimization: Only sends necessary context, will NOT intentionally send real name, ID number, payment info or other sensitive personal information. Users should avoid inputting highly sensitive personal information such as real name, ID number, address, phone number, payment info, etc. in conversations with Sentience; any consequences arising from user\'s voluntary input (including but not limited to information leakage, model memorization, legal risks, etc.) shall be borne by the user.',
-                '4.4 Data Processing Role Definition: This Suite is essentially a locally running client tool software. Developer has NOT established, nor operates any cloud server for processing mod data. Therefore, Developer is NOT a personal information processor under the Personal Information Protection Law (PIPL). When you use local models, data does NOT leave your local device; when using cloud APIs, data is transmitted directly from your local device to third-party service providers (such as OpenAI, DeepSeek) end-to-end. If subsequent versions of this Suite provide Developer-operated cloud services, a separate Privacy Policy will be published and users will be required to check and agree before use. This Agreement does not cover such services not currently provided. Local logs on your PC can be deleted by yourself.',
-                '4.5 Deployed Cloud Services Notice: NexusVAI Service has deployed Developer-operated cloud inference gateway (chat-gateway), account system (based on Supabase Auth, using email OTP login), and paid subscription system (Pro / Pro+ / Pro Max monthly subscriptions + top-up credits). Specific data processing practices for these services are detailed in Section 4.6. Users may delete local logs on their own devices.',
-                '4.6 NexusVAI Service Privacy: NexusVAI Service uses a cloud processing architecture. User conversation requests are forwarded through Developer-operated cloud gateway (chat-gateway) to third-party AI models for inference, with results returned to the user interface via the gateway. Specific data processing practices: (1) Conversation content storage: User conversation history generated through NexusVAI Service is stored in Developer-operated cloud database (Supabase), including conversation titles, message content, and model used. Conversation history is associated with user accounts to support cross-device sync, conversation continuation, and history review. Developer does not use user conversation content for training AI models. Users can proactively delete conversation history in the NexusVAI interface; once deleted, Developer no longer retains such data. (2) Usage records: Developer records usage details for each AI model call (including user ID, model ID, input/output token counts, call time, and whether the call succeeded), used for quota management, usage statistics, and billing settlement. Usage records do not contain original conversation content. (3) Account and identity information: Using NexusVAI Service requires email OTP login (based on Supabase Auth). Developer obtains and stores user registration email addresses. During paid order processing, Developer obtains and stores user-submitted email and QQ number for order review and activation code delivery. Developer does not require phone numbers, real names, or ID numbers. (4) Device fingerprinting and anti-abuse: To prevent multi-account abuse and ensure service fairness, Developer collects device/browser fingerprint information after user login (including but not limited to Canvas/WebGL/Audio fingerprints, WebRTC IP, User-Agent, screen resolution, timezone, language, hardware parameters, etc.), generates a composite visitor_id stored server-side for cross-account association detection. Developer also records user IP addresses and caches geolocation information for security auditing and anti-abuse. (5) Error telemetry: With user consent, NexusVAI Service collects uncaught browser exception information (including UA, current URL, viewport dimensions, exception message and stack, URLs and status codes of the last 10 fetch requests) for troubleshooting and product improvement. Users may decline telemetry without affecting normal usage. (6) User memory feature: NexusVAI Service provides an optional user memory feature, allowing users to set personalized preference information (up to 5 entries per user, each no more than 100 characters), stored in the cloud database to provide context for AI in subsequent conversations. Users may disable or delete memory content at any time. (7) Arena: NexusVAI Service provides a model comparison arena feature. User-submitted prompts and model responses are stored server-side for vote tallying and model evaluation. Arena data is associated with user accounts. (8) Encrypted transmission: All data transmission between users and NexusVAI Service is completed through HTTPS encrypted channels. (9) Third-party models: AI models aggregated by NexusVAI are provided by third parties; Developer forwards user conversation requests to third-party model service providers via cloud gateway for inference. User conversation content is processed by third-party model service provider servers during inference, governed by their respective privacy policies and terms of service. Developer does not assume responsibility for third-party data processing practices; users should independently understand and agree to relevant third-party terms. (10) Paid system: NexusVAI Service offers Pro / Pro+ / Pro Max monthly subscriptions and top-up credit purchases. Subscription status, monthly quota consumption, top-up credit balance, and usage ledger are stored server-side for billing and entitlement management. Payment is processed via manual order review + activation code redemption; Developer does not directly process payment information. (11) Bans and appeals: If users violate this Agreement or are detected as abusers by the system, Developer reserves the right to ban accounts. Banned users may submit appeal requests through the appeal process; appeal information is stored server-side. (12) Sensitive information: Users should not input real names, ID numbers, bank card information, addresses, phone numbers, payment credentials, passwords, or other highly sensitive information in NexusVAI conversations; consequences arising from voluntarily inputting sensitive information shall be borne by the user.',
-                '(13) Data retention: Conversation history is retained until proactively deleted by the user; once deleted, Developer will remove it from production databases within 30 days and purge backup copies within 90 days. Usage records are retained for 12 months after the corresponding subscription period ends, for billing reconciliation and dispute resolution. Device fingerprint data is retained for 180 days after the user\'s last login. Ban and appeal records are retained for 12 months after the ban is lifted. Longer retention periods required by applicable law shall prevail.',
-                '(14) Cross-border transfer: NexusVAI Service backend database is hosted on Supabase with servers in Singapore. User data transmitted to Singapore is protected by HTTPS encryption. Developer has assessed the necessity of such cross-border transfers and confirmed that Supabase\'s data security measures meet applicable legal requirements.',
-                '(15) Cookies and local storage: NexusVAI Service uses the following local storage in your browser: (a) Supabase Auth session token (localStorage key: cancri_supabase_auth), to maintain login state; (b) Anonymous identifier (localStorage key: cancri_anon_id), for telemetry and fingerprint association; (c) Telemetry consent status (localStorage key: cancri_telemetry_consent); (d) User preferences (localStorage keys: theme, lang, etc.). NexusVAI Service does NOT use tracking cookies. You may clear this local data via browser settings at any time.',
+                '4.4 Data Processing Role Definition: For the game mod components, this Suite is essentially a locally running client tool; Developer does not operate cloud servers processing mod data. For NexusVAI Service, Developer acts as the personal information processor under applicable law and processes data as described in Section 4.6. When you use local models in the mods, data does NOT leave your local device; when using cloud APIs in the mods, data is transmitted directly from your local device to your chosen third-party provider. Local logs on your PC can be deleted by yourself.',
+                '4.5 Deployed Cloud Services Notice: NexusVAI Service has deployed Developer-operated cloud inference gateway (chat-gateway), an account system (email one-time-code login), and a paid system (monthly subscription tiers + top-up credits + metered API recharge). Specific data processing practices for these services are detailed in Section 4.6. Users may delete local logs on their own devices.',
+                '4.6 NexusVAI Service Privacy: NexusVAI Service uses a cloud processing architecture. User conversation requests are forwarded through the Developer-operated cloud gateway (chat-gateway) to third-party AI models for inference, with results returned to the user interface via the gateway. Specific data processing practices:',
+                '(1) Conversation storage: Conversation history generated through NexusVAI Service is stored in a Developer-operated managed database (PostgreSQL), including conversation titles, message content, and the model used. History is associated with your account to support cross-device sync, continuation, and review. The on-by-default model-improvement consent allows conversation data to be used to improve Cancri models; you can turn it off in Settings at any time — new conversations are still saved for your review but marked as excluded from training. You can delete conversation history in the NexusVAI interface; deleted data is then handled per item (13).',
+                '(2) Usage records: Developer records usage details for each AI model call (including user ID, model ID, input/output token counts, call time, and whether the call succeeded), used for quota management, usage statistics, and billing settlement. Usage records do not contain original conversation content.',
+                '(3) Account and identity information: Using NexusVAI Service requires email one-time-code login. Developer obtains and stores user registration email addresses. During paid order processing, Developer obtains and stores user-submitted email and QQ number for order review and activation code delivery. Developer does not require phone numbers, real names, or ID numbers.',
+                '(4) Device fingerprinting and anti-abuse: To prevent multi-account abuse and ensure service fairness, Developer collects device/browser fingerprint information after user login (including but not limited to Canvas/WebGL/Audio fingerprints, WebRTC IP, User-Agent, screen resolution, timezone, language, hardware parameters, etc.), generates a composite visitor_id stored server-side for cross-account association detection. Developer also records user IP addresses and caches geolocation information for security auditing and anti-abuse.',
+                '(5) Error telemetry: With user consent, NexusVAI Service collects uncaught browser exception information (including UA, current URL, viewport dimensions, exception message and stack, URLs and status codes of the last 10 fetch requests) for troubleshooting and product improvement. Users may decline telemetry without affecting normal usage.',
+                '(6) User memory feature: NexusVAI Service provides an optional user memory feature, allowing users to set personalized preference information (up to 5 entries per user, each no more than 100 characters), stored in the cloud database to provide context for AI in subsequent conversations. Users may disable or delete memory content at any time.',
+                '(7) Arena: NexusVAI Service provides a model comparison arena feature. User-submitted prompts and model responses are stored server-side for vote tallying and model evaluation. Arena data is associated with user accounts.',
+                '(8) Encrypted transmission: All data transmission between users and NexusVAI Service is completed through HTTPS encrypted channels.',
+                '(9) Third-party models: AI models aggregated by NexusVAI are provided by third parties; Developer forwards user conversation requests to third-party model service providers via cloud gateway for inference. User conversation content is processed by third-party model service provider servers during inference, governed by their respective privacy policies and terms of service. Developer does not assume responsibility for third-party data processing practices; users should independently understand and agree to relevant third-party terms.',
+                '(10) Paid system: NexusVAI Service offers monthly subscription tiers, top-up credits, and metered API recharge for developers. Subscription status, quota consumption, top-up balance, and usage ledger are stored server-side for billing and entitlement management. Payment is completed via manual order verification or third-party card-code channels issuing activation codes; Developer does not directly process payment information.',
+                '(11) Bans and appeals: If users violate this Agreement or are detected as abusers by the system, Developer reserves the right to ban accounts. Banned users may submit appeal requests through the appeal process; appeal information is stored server-side.',
+                '(12) Sensitive information: Users should not input real names, ID numbers, bank card information, addresses, phone numbers, payment credentials, passwords, or other highly sensitive information in NexusVAI conversations; consequences arising from voluntarily inputting sensitive information shall be borne by the user.',
+                '(13) Data retention: Conversation history is retained until you delete it; after deletion we remove it from the active database as soon as practicable, and where backups, audits, or legal requirements prevent immediate deletion, we complete deletion or anonymization within the shortest reasonable period needed for that purpose. Usage and billing records are retained for the minimum period required by applicable law, for reconciliation and dispute resolution. Device identifier data is kept for the period needed for account security and anti-abuse purposes and is de-linked after account deletion. Ban and appeal records are kept for a reasonable period after resolution. Longer retention periods required by law prevail.',
+                '(14) Cross-border transfer: Data storage and request forwarding in NexusVAI Service involve managed databases, edge nodes, and third-party model providers located outside mainland China; such transfer is necessary to provide the service and is protected by HTTPS encryption in transit. Where mandatory local law imposes additional data-export requirements, that law prevails.',
+                '(15) Cookies and local storage: NexusVAI Service uses only localStorage / sessionStorage for: login tokens (access / refresh), anonymous identifier, telemetry consent status, device-fingerprint reporting throttle flags, and preferences such as theme and language. NexusVAI Service does NOT use tracking cookies and does NOT store chat content locally; the human-verification provider may set its own cookies to maintain verification sessions. You may clear this local data via browser settings, though doing so may break login state or some features.',
                 '5. AI-Generated Content & User Responsibility',
                 '5.1 Game Mod (Sentience) Tool Attribute: This Suite (Sentience module) only provides local model runtime environment and cloud API calling interface. Developer is NOT a "Generative AI Service Provider" for the game mod components. When using this Suite to generate content, users should comply with relevant laws and regulations of their country/region on their own (including but not limited to Provisions on the Management of Deep Synthesis of Internet Information Services, etc.).',
                 '5.2 NexusVAI Service Generative AI Compliance: NexusVAI Service output is automatically generated by third-party AI models based on user input. Developer operates the cloud gateway for request forwarding, quota management, and usage recording, but does not participate in the actual AI inference process, having no copyright or editorial control over any specific output. Developer fulfills the following obligations: (1) Content labeling: AI-generated content in the NexusVAI interface is clearly marked to distinguish it from human-authored content; (2) Reporting mechanism: Users may report illegal or inappropriate AI outputs through the NexusVAI interface or via Section 10 contact methods; Developer will process within a reasonable time; (3) User-generated content management: Users must independently judge the legality, accuracy, and applicability of content generated through NexusVAI, and bear legal consequences arising from such use. Users shall not use NexusVAI to generate content that violates local laws, including but not limited to false information, infringing content, or illegal harmful content. Developer reserves the right to apply content filtering, restrict, or terminate user access to NexusVAI upon discovering illegal or violating usage.',
@@ -3115,6 +3128,58 @@ function renderArticleParagraph(p, html) {
     });
 }
 
+// 法律长文排版（item.legal=true，目前仅 news3 使用）：
+// 按行分类为 章节标题 h2 / 条目 h3 / 子项 h4 / 警示块 / 元信息行 / 普通段落。
+function appendLegalBlock(bodyEl, raw) {
+    String(raw).split('\n').forEach(line => {
+        const t = line.trim();
+        if (!t) return;
+        let m;
+        if (/^⚠️|^【.+】|^\[(Game Mods|NexusVAI)/.test(t)) {
+            const el = document.createElement('p');
+            el.className = 'article-notice';
+            renderArticleParagraph(el, t);
+            bodyEl.appendChild(el);
+        } else if (/^(重要提示|Important Notice)/.test(t)) {
+            const h = document.createElement('h2');
+            h.className = 'article-h2';
+            renderArticleParagraph(h, t);
+            bodyEl.appendChild(h);
+        } else if (/^(更新日期|本协议自|Last Updated|This Agreement is effective)/.test(t)) {
+            const p = document.createElement('p');
+            p.className = 'article-meta-line';
+            renderArticleParagraph(p, t);
+            bodyEl.appendChild(p);
+        } else if (/^\d+\.\s+\S/.test(t) && t.length <= 72 && !/[：:。；;]/.test(t)) {
+            const h = document.createElement('h2');
+            h.className = 'article-h2';
+            renderArticleParagraph(h, t);
+            bodyEl.appendChild(h);
+        } else if ((m = t.match(/^(\d+\.\d+)\s+([^\d，。；：:、《》,]{2,52}?)[：:]\s*(.+)$/s))) {
+            const h = document.createElement('h3');
+            h.className = 'article-h3';
+            renderArticleParagraph(h, `${m[1]} ${m[2]}`);
+            bodyEl.appendChild(h);
+            const p = document.createElement('p');
+            renderArticleParagraph(p, m[3]);
+            bodyEl.appendChild(p);
+        } else if ((m = t.match(/^[（(](\d+)[)）]\s*([^，。；：:]{1,40}?)[：:]\s*(.+)$/s))) {
+            const h = document.createElement('h4');
+            h.className = 'article-h4';
+            const head = /^（/.test(t) ? `（${m[1]}）${m[2]}` : `(${m[1]}) ${m[2]}`;
+            renderArticleParagraph(h, head);
+            bodyEl.appendChild(h);
+            const p = document.createElement('p');
+            renderArticleParagraph(p, m[3]);
+            bodyEl.appendChild(p);
+        } else {
+            const p = document.createElement('p');
+            renderArticleParagraph(p, t);
+            bodyEl.appendChild(p);
+        }
+    });
+}
+
 function initArticlePage() {
     const articleRoot = document.querySelector('.article-page');
     if (!articleRoot) return;
@@ -3257,6 +3322,10 @@ function initArticlePage() {
                     link.textContent = lang === 'en' ? 'Open PDF in new tab ↗' : '在新窗口打开 PDF ↗';
                     wrap.appendChild(link);
                     bodyEl.appendChild(wrap);
+                    return;
+                }
+                if (item.legal && typeof t === 'string') {
+                    appendLegalBlock(bodyEl, t);
                     return;
                 }
                 const p = document.createElement('p');
