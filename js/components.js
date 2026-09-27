@@ -13,11 +13,11 @@
     <nav class="navbar">
         <div class="navbar-inner">
             <div class="nav-left">
-                <a href="${base}/index.html" class="logo"><img src="${base}/chat/assets/nexusv_logo_transparent.svg" alt="NexusV" style="height: 42px; width: auto; display: block;"></a>
+                <a href="${base}/index.html" class="logo"><img src="${base}/Logo/NexusV New.svg" alt="NexusV" style="height: 42px; width: auto; display: block;"></a>
                 <div class="nav-links">
                     <div class="nav-item has-dropdown" data-menu="research" data-i18n="nav.research">研究</div>
                     <div class="nav-item has-dropdown" data-menu="safety" data-i18n="nav.safety">安全</div>
-                    <a href="${base}/chat/api/" class="nav-item" data-i18n="nav.developer">NexusV开放平台</a>
+                    <a href="https://chat.nexusvai.xyz" class="nav-item" data-i18n="nav.developer" target="_blank" rel="noopener noreferrer">前往NexusVAI</a>
                     <a href="${base}/about.html" class="nav-item" data-i18n="nav.company">公司</a>
                     <a href="${base}/index.html#latest-news" class="nav-item" data-i18n="nav.news">新闻</a>
                     <a href="${base}/about.html" class="nav-item" data-i18n="nav.contact">联系我们</a>
@@ -36,7 +36,7 @@
                         <svg class="icon-close" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </div>
                 </div>
-                <a href="https://www.wanjiadongli.com/user/1753255?tab=2" class="btn-pill"><span data-i18n="nav.try">试用 NexusV ↗</span></a>
+                <a href="https://qm.qq.com/q/IT7SUyd2eu" target="_blank" rel="noopener noreferrer" class="btn-pill"><span data-i18n="nav.community">加入交流群 ↗</span></a>
                 <button class="mobile-menu-btn" aria-label="菜单">
                     <span></span><span></span><span></span>
                 </button>

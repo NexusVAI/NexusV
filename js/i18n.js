@@ -2,12 +2,12 @@ const translations = {
     'zh': {
         'nav.research': '研究',
         'nav.safety': '安全',
-        'nav.developer': 'NexusV开放平台',
+        'nav.developer': '前往NexusVAI',
         'nav.company': '公司',
         'nav.news': '新闻',
         'nav.contact': '联系我们',
         'nav.login': '登录',
-        'nav.try': '使用 NexusV <span class="arrow-icon">↗</span>',
+        'nav.community': '加入交流群 <span class="arrow-icon">↗</span>',
         'search.placeholder': '关于 NexusV',
         'hero.overlay': 'Cancri Code 3',
         'hero.title': 'Cancri Code 3：见识一下你的软件工程师',
@@ -103,7 +103,6 @@ const translations = {
 
         // Mobile Actions
         'mobile.login': '登录',
-        'mobile.enter': '进入 Nexus ↗',
 
         // News Section
         'news.latest': '最新动态',
@@ -136,7 +135,7 @@ const translations = {
         'api.home.hero.go_models': '前往模型广场',
         'api.home.hero.go_docs': '前往文档页面',
         'api.home.hero.menu_toggle': '打开菜单',
-        'api.home.nav.developer': 'NexusVAI开放平台',
+        'api.home.nav.developer': '前往NexusVAI',
         'api.home.nav.join_community': '加入NexusVAI社群',
         'api.home.nav.join': '加入 NexusVAI',
         'api.home.trusted_aria': '生态模型品牌',
@@ -242,12 +241,12 @@ const translations = {
     'en': {
         'nav.research': 'Research',
         'nav.safety': 'Safety',
-        'nav.developer': 'NexusV Open Platform',
+        'nav.developer': 'Go to NexusVAI',
         'nav.company': 'Company',
         'nav.news': 'News',
         'nav.contact': 'Contact',
         'nav.login': 'Log in',
-        'nav.try': 'Try NexusV <span class="arrow-icon">↗</span>',
+        'nav.community': 'Join Community <span class="arrow-icon">↗</span>',
         'search.placeholder': 'About NexusV',
         'hero.overlay': 'Cancri Code 3',
         'hero.title': 'Cancri Code 3: Meet Your Software Engineer',
@@ -345,7 +344,6 @@ const translations = {
 
         // Mobile Actions
         'mobile.login': 'Log in',
-        'mobile.enter': 'Enter Nexus ↗',
 
         // News Section
         'news.latest': 'Latest Updates',
@@ -378,7 +376,7 @@ const translations = {
         'api.home.hero.go_models': 'Go to Models',
         'api.home.hero.go_docs': 'Go to Docs',
         'api.home.hero.menu_toggle': 'Open menu',
-        'api.home.nav.developer': 'NexusVAI Open Platform',
+        'api.home.nav.developer': 'Go to NexusVAI',
         'api.home.nav.join_community': 'Join the NexusVAI community',
         'api.home.nav.join': 'Join NexusVAI',
         'api.home.trusted_aria': 'Ecosystem model brands',

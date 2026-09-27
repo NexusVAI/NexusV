@@ -29,7 +29,7 @@ var menuConfig = {
 var navMenuConfig = [
     { key: 'research', i18n: 'nav.research', submenu: true },
     { key: 'safety', i18n: 'nav.safety', submenu: true },
-    { i18n: 'nav.developer', href: 'chat/api/' },
+    { i18n: 'nav.developer', href: 'https://chat.nexusvai.xyz' },
     { href: 'about.html', i18n: 'nav.company' },
     { href: 'index.html#latest-news', i18n: 'nav.news' },
     { href: 'about.html', i18n: 'nav.contact' }
@@ -332,7 +332,7 @@ function initMobileMenu() {
 
         drawerHTML += '<div class="mobile-actions">';
         drawerHTML += '<a href="about.html" class="mobile-login" data-i18n="mobile.login">登录</a>';
-        drawerHTML += '<a href="https://www.wanjiadongli.com/user/1753255?tab=2" class="mobile-cta" data-i18n="mobile.enter">进入 Nexus ↗</a>';
+        drawerHTML += '<a href="https://qm.qq.com/q/IT7SUyd2eu" target="_blank" rel="noopener noreferrer" class="mobile-cta" data-i18n="nav.community">加入交流群 ↗</a>';
         drawerHTML += '</div>';
 
         drawer.innerHTML = drawerHTML;

@@ -97,13 +97,13 @@ function bindGlobalToggles() {
 
 async function initPageContent() {
     if (isArticlePage()) {
-        if (!window.initArticlePage) await loadScriptOnce('js/article.js?v=2026-09-26-cc3');
+        if (!window.initArticlePage) await loadScriptOnce('js/article.js?v=2026-09-27-nav1');
         if (window.initArticlePage) window.initArticlePage();
         return;
     }
 
     if (isIndexPage()) {
-        if (!window.initIndexPage) await loadScriptOnce('js/article.js?v=2026-09-26-cc3');
+        if (!window.initIndexPage) await loadScriptOnce('js/article.js?v=2026-09-27-nav1');
         if (window.initIndexPage) window.initIndexPage();
     }
 }

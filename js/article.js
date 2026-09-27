@@ -52,7 +52,7 @@ const articleData = {
                 '2026-05-23 23:30 — api-gateway v337 与 chat-gateway v551 上线。',
                 '2026-05-23 23:45 — 5/5 端到端测试通过，突发攻击测试覆盖额外的上游失败路径。',
                 '2026-05-24 00:10 — 本技术报告发布。',
-                '—— NexusV 安全团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -105,7 +105,7 @@ const articleData = {
                 '2026-05-23 23:30 — api-gateway v337 and chat-gateway v551 went live.',
                 '2026-05-23 23:45 — End-to-end suite passed (5/5); burst test additionally validated the upstream-failure path.',
                 '2026-05-24 00:10 — This technical report published.',
-                '— The NexusV Security Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -182,7 +182,7 @@ const articleData = {
                 '未来展望',
                 'NexusVAI 当前为 Beta 阶段，我们将持续迭代优化。后续计划包括：接入更多 AI 模型、完善视频生成能力、增强 API 与项目协作等。开放 API 已上线，详见 <a href="chat/api_docs.html">API 文档</a>。我们致力于将 NexusVAI 打造为最便捷、最开放的 AI 聚合平台。',
                 '立即体验：打开 NexusVAI 即刻开始与 AI 对话。一个入口，所有模型，统一体验。',
-                '—— NexusV 团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -255,7 +255,7 @@ const articleData = {
                 'Future Outlook',
                 'NexusVAI is in Beta. Upcoming work includes more models, better video generation, and richer API/project collaboration. The OpenAI-compatible API is already live — see <a href="chat/api_docs.html">API docs</a>. We aim to be the most convenient open AI aggregation platform.',
                 'Try it now: Open NexusVAI and start talking to AI immediately. One entry point, all models, one unified experience.',
-                '— The NexusV Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -343,7 +343,7 @@ const articleData = {
                 '未来方向包括：带学习投影层的跨架构接力；三专家黑板调度（A→B→C）；基于输入内容的动态分割点选择；GPU 量化推理验证；以及大规模基准评估。',
                 '结论',
                 '隐状态接力为内存受限硬件上的多专家协作开辟了一条实用路径。我们的结果表明，同架构检查点共享结构上兼容的隐空间，可以被利用来实现低开销的专家组合。这项工作建立了可验证的工程基础，为无需词元空间通信的专家链式调用提供了理论与实践支撑。',
-                '— NexusV 研究团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -381,7 +381,7 @@ const articleData = {
                 'Future directions include: cross-architecture relay with learned projection layers; three-expert blackboard scheduling (A→B→C); dynamic split-point selection conditioned on input content; GPU quantized inference validation; and large-scale benchmark evaluation.',
                 'Conclusion',
                 'Latent relay opens a practical path for multi-expert collaboration on memory-constrained hardware. Our results suggest that same-architecture checkpoints share a structurally compatible latent space that can be exploited for low-overhead expert composition. This work establishes a verifiable engineering foundation, providing both theoretical and practical support for expert chaining without token-space communication.',
-                '— NexusV Research Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -592,7 +592,7 @@ const articleData = {
                 '下一步',
                 'Beta.2 预览版标志着 TACTFR 6.0.0 的又一个里程碑。我们正在继续优化嫌疑人 AI 行为、Sentience AI 集成以及 V6 运行时的完整性。你的反馈对我们至关重要。',
                 '立即下载体验，并在我们的 QQ 群（1079691553/1061632354）分享你的想法。',
-                '—— TACTFR 开发团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -617,7 +617,7 @@ const articleData = {
                 'What Comes Next',
                 'Beta.2 marks another milestone for TACTFR 6.0.0. We are continuing to optimize suspect AI behavior, Sentience AI integration, and V6 runtime completeness. Your feedback is essential to us.',
                 'Download and play now, and share your thoughts in our QQ groups (1079691553 / 1061632354).',
-                '— TACTFR Development Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -663,7 +663,7 @@ const articleData = {
                 '<strong>已知限制</strong>',
                 'V6 运行时默认仍关闭，需单独 smoke test 后再考虑默认开启。拘捕上铐段同步场景与镜头避墙待在实机截图后迭代。Anima LLM 请求失败若本地 5001 未监听，属环境依赖而非代码缺陷。',
                 'TACTFR 6.0.0 Beta.2.7 不是换皮预览，而是把 6.0 主链路上每一个「差一点」焊成「能玩一整局」——从假投降反杀到双嫌上车，从交付语义到统一指挥台 UI。',
-                '—— TACTFR 开发团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -696,7 +696,7 @@ const articleData = {
                 '<strong>Install</strong>',
                 'Drop <code>a.TACTFR.dll</code> into <code>scripts/</code>. Terminal O → option 920 for bank alarm. Start local model on port 5001 or set cloud DeepSeek in <code>config.ini</code>.',
                 'TACTFR 6.0.0 Beta.2.7 welds every “almost there” moment on the 6.0 main path into something you can play start to finish.',
-                '— TACTFR Development Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -733,7 +733,7 @@ const articleData = {
                 '<strong>安装与已知限制</strong>',
                 '将 <code>a.TACTFR.dll</code> 放入 GTA V <code>scripts/</code> 目录，配合 ScriptHookV + ScriptHookVDotNet。终端按 O 打开，选 920 进入银行警报剧情。本地 AI：在 SentienceV5.2 启动器点「启动本地模型」使 5001 有服务；或 <code>config.ini</code> 设 <code>Provider=cloud</code> 填 DeepSeek Key。',
                 '2.8 不扩大玩法边界，而是让 2.7 建立起来的玩法更稳、更可预测。',
-                '—— TACTFR 开发团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -766,7 +766,7 @@ const articleData = {
                 '<strong>Install and known limitations</strong>',
                 'Drop <code>a.TACTFR.dll</code> into GTA V <code>scripts/</code> with ScriptHookV + ScriptHookVDotNet. Press O for the terminal, choose 920 for the bank alarm story. Local AI: start the local model on port 5001 via SentienceV5.2 launcher, or set <code>Provider=cloud</code> and DeepSeek key in <code>config.ini</code>.',
                 '2.8 does not expand gameplay boundaries; it makes the gameplay established in 2.7 more stable and predictable.',
-                '— TACTFR Development Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -807,7 +807,7 @@ const articleData = {
                 '实验运行时与云端对话默认仍然关闭。想试的人可以自己打开，但我们不会再用“默认开启”替你做决定——2.8 已经付过那笔学费。编译警告还在，它们不影响今晚的巡逻，却提醒我们：正式版还有一段要走的路。',
                 '把 a.TACTFR.dll 放进游戏的 scripts 目录，配合脚本钩子即可。第一次进入会看到键位向导；终端里可以接取第四章。QQ 群 1061632354。',
                 'Beta.3 想说的其实只有一句：宏大目标不该把模组撑破，而应该被模组慢慢长出来。公路已经通了。后面的审讯室、证据袋和法庭回执，会沿着今晚修好的这条路到来。',
-                '—— TACTFR 开发团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -844,7 +844,7 @@ const articleData = {
                 'The experimental runtime and cloud dialogue stay off by default. You can turn them on if you want to try, but we will not decide that for you — 2.8 already paid that tuition. Compiler warnings remain. They will not spoil tonight’s patrol. They do remind us that the finished version still has road left.',
                 'Place a.TACTFR.dll in the game’s scripts folder with the script hook. The first launch shows the keybind wizard. Chapter four is on the terminal. QQ group 1061632354.',
                 'Beta.3 is trying to say one thing: grand goals should not split a mod open. They should grow out of it. The highway is open. The interrogation room, the evidence bag, and the court receipt will come down the road we made safe tonight.',
-                '— TACTFR Development Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -871,7 +871,7 @@ const articleData = {
                 '2.9 也收掉一批容易把整晚变成读档的卡死：菜单与案件清理、个别动画残留、嫌疑人句柄在结案后仍占着下一案的位置。它们不改玩法边界，只让 2.8 修好的主链路在更满的工具箱下仍然转得动。',
                 '将 a.TACTFR.dll 放入游戏 scripts 目录，配合脚本钩子使用。终端按 O 打开。QQ 群 1061632354。',
                 '2.9 是 6.0 第一次让“职业”两个字落到手指上。后面的 Beta.3 会沿着这条街，把公路和更长的故事接进来。',
-                '—— TACTFR 开发团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -894,7 +894,7 @@ const articleData = {
                 '2.9 also closes a set of freezes that could turn a whole night into a reload: menus and case cleanup, leftover animations, suspect handles that still occupied the next case after the last one ended. They do not widen the map. They keep the path 2.8 repaired turning under a fuller kit.',
                 'Place a.TACTFR.dll in the game’s scripts folder with the script hook. Press O for the terminal. QQ group 1061632354.',
                 '2.9 is the first time 6.0 puts the word career onto your fingers. Beta.3 will take this street and connect it to the highway and a longer story.',
-                '— TACTFR Development Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -920,7 +920,7 @@ const articleData = {
                 '我们修了终端与菜单连开后焦点丢失、部分车辆被拦停却继续滑行、下班后仍弹出接警提示、以及个别案件结束后短时间内无法接下一条的问题。没有新的架构宣言，只是让 2.5 稳住的那两处，在更碎的街面事件里仍然站得住。',
                 '将 a.TACTFR.dll 放入游戏 scripts 目录即可。QQ 群 1061632354。',
                 '2.6 看起来不大。它的工作是给后面的 2.7、2.9 和 Beta.3 留出一种更日常的警察生活，好让宏大目标有街道可以落脚。',
-                '—— TACTFR 开发团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -942,7 +942,7 @@ const articleData = {
                 'We repaired focus loss after opening the terminal and menus too quickly, cars that kept rolling after a pullover, callouts that still appeared after you clocked out, and a short window after one case where the next would not start. No new architecture speech. Just the two points 2.5 welded, still standing when the street gets more fragmented.',
                 'Place a.TACTFR.dll in the game’s scripts folder. QQ group 1061632354.',
                 '2.6 looks small. Its job is to leave a more ordinary police life for 2.7, 2.9, and Beta.3, so the grand goals have a street to stand on.',
-                '— TACTFR Development Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -965,7 +965,7 @@ const articleData = {
                 '<strong>这一版没有承诺的东西</strong>',
                 '2.5 不包含新的街面工具，也不重画终端。语音对峙、交付语义、后备箱和拖车属于后面的 2.7；警衔与临检属于 2.9；公路与键位向导属于 Beta.3。预览版的工作就是把那两处社区点名的伤口先缝上。',
                 '将 a.TACTFR.dll 放入游戏 scripts 目录。QQ 群 1061632354。如果你在双人上车或逮捕镜头里仍看到异常，请把当时的人数、车型和大致位置发给我们——2.5 是为这些报告而存在的。',
-                '—— TACTFR 开发团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -984,7 +984,7 @@ const articleData = {
                 '<strong>What this build does not promise</strong>',
                 '2.5 does not add a street kit, and it does not redraw the terminal. Voice confrontations, delivery semantics, the trunk, and the tow truck belong to 2.7. Rank and checkpoints belong to 2.9. The highway and the keybind wizard belong to Beta.3. The preview exists to close the two wounds the community named first.',
                 'Place a.TACTFR.dll in the game’s scripts folder. QQ group 1061632354. If you still see a fault in dual boarding or the arrest camera, send us the number of people, the car, and the rough place — 2.5 is here for those reports.',
-                '— TACTFR Development Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -1151,7 +1151,7 @@ const articleData = {
                 'GitHub 源码：https://github.com/NexusVAI/SENTIENCE',
                 '模组反馈群：1061632354',
                 'SentienceV5.2 Mens 不是对 V4.1 的修补，而是 GTA V AI NPC 领域的下一代 Mod 架构——它让洛圣都的每一个路人，都拥有记住你、议论你、因你而改变人格的权利。',
-                '—— NexusV 团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -1188,7 +1188,7 @@ const articleData = {
                 '<strong>Download</strong>',
                 'NexusV: https://nexusvai.github.io/NexusV/ | GitHub: https://github.com/NexusVAI/SENTIENCE | Feedback: 1061632354',
                 'SentienceV5.2 Mens is not a patch on V4.1 — it is the next-generation mod architecture for GTA V AI NPCs. Every passerby in Los Santos now has the dignity of remembering you, gossiping about you, and changing who they are because of you.',
-                '— The NexusV Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -1220,7 +1220,7 @@ const articleData = {
                 '黑板不是 hidden-state 视频编解码器；读者目标比槽位数更重要；retrofit 使 board 对已有强续写先验的读者成为可选项；no-board anchor 移除最直接漂移路径。从零训练应使 board 成为唯一跨段路径——段 t 不应直接看到段 t−1 的 token，只能看到 board_{t−1}。',
                 '本文是 Phase-0 诊断，非成品黑板语言模型：单一 2B 模型族、K=6、100MB 子集、16 窗口中位数。最强证据来自 retrofit 中的 anchoring 干预；下一步需多种子、更大 held-out、额外 split layer，以及无需 retrofit anchoring 即可正 board lift 的从零 recurrent-board 原型。',
                 '__PDF__|Logo/main.pdf|完整论文 PDF（含 Figure 1–5、数据表与附录）',
-                '—— Cancri Project'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -1239,12 +1239,12 @@ const articleData = {
                 '<strong>Discussion</strong>',
                 'A blackboard is a learned note, not a hidden-state codec. The next step is from-scratch pretraining where cross-segment information must flow through the board only.',
                 '__PDF__|Logo/main.pdf|Full paper PDF (Figures 1–5, tables, and appendices)',
-                '— Cancri Project'
+                '— Presented by NexusVAI'
             ]
         }
     },
     cancriV1: {
-        overlay: '黑板中继',
+        overlay: '',
         media: { type: 'image', src: 'Logo/Blackboard.png', alt: '黑板中继' },
         zh: {
             title: '黑板中继：通过压缩隐状态“手传”实现的小型语言模型协作',
@@ -1279,7 +1279,7 @@ const articleData = {
                 '<strong>论文与复现</strong>',
                 '__PDF__|Logo/paper.pdf|完整论文 PDF（含表格、图与附录）',
                 '所有代码与检查点已随论文发布：cancri_relay.py、cancri_relay2.py、cancri_brp_dual.py，以及 expert_understand.ckpt、expert_answer.ckpt。复现脚本基于固定种子生成多线索基准。',
-                '—— Xingyu Gu · Cancri 团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -1310,7 +1310,7 @@ const articleData = {
                 '<strong>Paper and reproducibility</strong>',
                 '__PDF__|Logo/paper.pdf|Full paper PDF (tables, figures, and appendices)',
                 'All scripts and checkpoints are released: cancri_relay.py, cancri_relay2.py, cancri_brp_dual.py, plus expert_understand.ckpt and expert_answer.ckpt. The multi-clue benchmark is generated procedurally with a fixed seed.',
-                '— Xingyu Gu · Cancri Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -1349,7 +1349,7 @@ const articleData = {
                 '必须明确写出边界：512 上下文限制了长文档与多轮工具链；Translation 任务尚未建立有效能力；评测集规模仍属实验性质，尚未覆盖 MMLU、GSM8K、HumanEval 等工业标准全集；0.1B 参数上限决定了它不能替代云端旗舰模型，只能作为本地底座、路由前置或专家池的一员。',
                 '我们发布这篇文档，不是为了宣布「终结大模型」，而是把一次个人可复现的预训练实验摆到台面上：有架构动机、有中间尺度验证、有公开规格、有对照图表、有清醒局限。',
                 '如果你关心的是「没有机构资源的人，还能不能做出有用的 LLM」——CancriV1-0.1B 是我们的第一份答卷。',
-                '—— NexusV 研究团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -1384,7 +1384,7 @@ const articleData = {
                 'State the boundaries plainly: 512 context caps long documents and multi-hop tool chains; Translation is not yet a real capability; benchmark scope is experimental, not full MMLU/GSM8K/HumanEval coverage; 0.1B cannot replace cloud flagship models — only serve as a local base, routing front-end, or one member of an expert pool.',
                 'We publish this not to declare the end of large models, but to put a reproducible individual-scale pretraining run on the table: architectural motive, mid-scale validation, public specs, comparative chart, sober limits.',
                 'If your question is whether a person without institutional resources can still build a useful LLM — CancriV1-0.1B is our first answer.',
-                '— NexusV Research Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -1419,7 +1419,7 @@ const articleData = {
                 '<strong>现状与路线图</strong>',
                 '当前 v1.5.0 已具备：完整 IDE 工作区、Agentic 工具循环、多模型网关、会话归档、Rules/Skills/MCP、后台运行、Windows 桌面打包。后续重点：完善 bash 工具白名单与权限分级、Trajectory replay UI、Android 端远程壳、以及 SDK 化开放给第三方自动化流水线。',
                 'Cancri Code 是我们对"AI 编程助理应该长什么样"的回答——不是云端黑盒，不是 Fork 绑架，而是一个能打开你项目、读懂你代码、在你确认后动手修改的本地搭档。',
-                '—— NexusV 工程团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -1449,7 +1449,30 @@ const articleData = {
                 '<strong>Roadmap</strong>',
                 'v1.5.0 ships: full IDE workspace, agentic loop, multi-model gateway, session archives, Rules/Skills/MCP, background runs, Windows packaging. Next: bash whitelist, trajectory replay UI, Android remote shell, SDK for automation pipelines.',
                 'Cancri Code is our answer to what an AI programming assistant should be — not a cloud black box, not a fork hostage, but a local partner that opens your project, reads your code, and edits with your approval.',
-                '— NexusV Engineering Team'
+                '— Presented by NexusVAI'
+            ]
+        }
+    },
+    cancri25flash: {
+        overlay: '',
+        layout: 'launch',
+        media: { type: 'image', src: 'Logo/Cancri2.5FlashPreview.png', alt: 'Cancri 2.5 Flash Preview' },
+        zh: {
+            title: '隆重推出Cancri 2.5 Flash 预览版',
+            date: '2026年9月25日',
+            category: '产品',
+            readTime: '12 分钟阅读',
+            paragraphs: [
+                '今天我们发布 Cancri 2.5 Flash 预览版：一个 0.44B 的从零训练小模型，换上数字逐位切分的词表，再走完约 70 亿 token 的增量预训练。它很小，也不完美——发布它，是为了让你能亲手跑起这条架构链路。'
+            ]
+        },
+        en: {
+            title: 'Introducing Cancri 2.5 Flash Preview',
+            date: 'September 25, 2026',
+            category: 'Product',
+            readTime: '12 min read',
+            paragraphs: [
+                'Today we are releasing Cancri 2.5 Flash Preview: a 0.44B model trained from scratch, with a digit-splitting tokenizer and another ~7B tokens of continued pretraining. It is small, and it is not perfect — we are releasing it so you can run the architecture yourself.'
             ]
         }
     },
@@ -1499,7 +1522,7 @@ const articleData = {
                 '<strong>接下来</strong>',
                 '学完这五课，你已经比大多数人更会用 AI 写代码了。如果想看我们自己是怎么用的，去读《最佳实践教程》；如果想知道它适合做什么、不适合做什么，去读《典型应用场景》。',
                 '欢迎来到 Cancri Code。',
-                '—— Cancri Code 联合创始人'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -1522,7 +1545,7 @@ const articleData = {
                 '<strong>What next</strong>',
                 'After these five lessons you already use AI for code better than most people do. To see how we use it ourselves, read Best Practices. To learn what it is good at and where it is not, read Typical Use Cases.',
                 'Welcome to Cancri Code.',
-                '— Co-founder, Cancri Code'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -1551,7 +1574,7 @@ const articleData = {
                 '<strong>7. 把你的规矩写下来</strong>',
                 '项目里有哪些不能碰的文件、哪些命名习惯、哪些历史包袱，写进项目规则和记忆里。你只需要说一次，它会记住，并且在之后的每一次任务里遵守。',
                 '这些做法没有一条是复杂的。真正的差别在于：你是把 Cancri Code 当成一个会写代码的输入法，还是当成一位可以托付事情的同事。',
-                '—— Cancri Code 联合创始人'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -1576,7 +1599,7 @@ const articleData = {
                 '<strong>7. Write your rules down</strong>',
                 'Files that must not be touched, naming conventions, historical baggage: put them in project rules and memory. You say it once, it remembers, and it follows the rule in every task after that.',
                 'None of this is complicated. The real difference is whether you treat Cancri Code as an input method that happens to write code, or as a colleague you can hand work to.',
-                '— Co-founder, Cancri Code'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -1604,7 +1627,7 @@ const articleData = {
                 '借助工作树和子任务，一个项目在修 bug，另一个项目在写新功能，第三个在跑测试。你不再是那个在几个窗口之间来回切换的人，而是那个决定优先级的人。',
                 '<strong>什么时候不该用</strong>',
                 '需要你自己做判断的产品决策、没有任何上下文的一句话需求、以及你自己都说不清"做成什么样算好"的事——这些时候，先想清楚，再交给它。Cancri Code 很能干，但它替代不了你的判断。',
-                '—— Cancri Code 联合创始人'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -1628,7 +1651,7 @@ const articleData = {
                 'With worktrees and subtasks, one project can be fixing a bug while another gets a new feature and a third runs its tests. You stop being the person switching windows and become the person setting priorities.',
                 '<strong>When not to use it</strong>',
                 'Product decisions that need your judgment, one-line requests with no context, and tasks where you cannot say what "good" looks like. In those cases, think first and delegate second. Cancri Code is capable, but it does not replace your judgment.',
-                '— Co-founder, Cancri Code'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -1656,7 +1679,7 @@ const articleData = {
                 '我们不会用你的私有代码去训练通用模型。凭据不会出现在你的机器上，也不会出现在模型能看到的上下文里。这些事情你在界面上看不到，但它们是我们每一次代码评审都会问的问题。',
                 '<strong>我们还在路上</strong>',
                 '云端会话、周期任务、让智能体在你关机之后继续工作——这些都在路上。我们会继续用同样的原则去做它们：先证明它可靠，再交到你手上。',
-                '—— Cancri Code 联合创始人'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -1680,7 +1703,7 @@ const articleData = {
                 'We do not train general-purpose models on your private code. Credentials never appear on your machine or in the context the model can see. You will not see any of this in the interface, but these are questions we ask in every code review.',
                 '<strong>Still on the way</strong>',
                 'Cloud sessions, scheduled tasks, agents that keep working after you close your laptop: these are coming. We will build them with the same principles: prove it is reliable, then put it in your hands.',
-                '— Co-founder, Cancri Code'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -1705,7 +1728,7 @@ const articleData = {
                 '我们是 NexusV 的一支小团队。我们做过游戏里的 AI 角色，做过自己的小模型，也做过承载多家大模型的平台。这些经历让我们对"AI 在真实世界里到底能做什么、会在哪里出错"有了很具体的体感，也让我们更清楚 Cancri Code 应该长成什么样。',
                 '我们和派欧云（PPIO）合作，把云端沙箱这件难事做扎实；我们也和每一位愿意给我们反馈的用户一起，把这个产品一版一版地打磨出来。',
                 '如果你愿意，下载它，交给它一件你一直拖着没做的事。然后告诉我们，它做得怎么样。',
-                '—— Cancri Code 联合创始人'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -1726,7 +1749,7 @@ const articleData = {
                 'We are a small team at NexusV. We have built AI characters in games, trained our own small models, and run a platform serving many large models. That work gave us a concrete feel for what AI can do in the real world and where it breaks, and it made us much clearer about what Cancri Code should be.',
                 'We work with PPIO to make the cloud sandbox solid, and with every user willing to send us feedback to refine the product one release at a time.',
                 'If you are willing, download it and give it a task you have been putting off. Then tell us how it did.',
-                '— Co-founder, Cancri Code'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -1750,7 +1773,7 @@ const articleData = {
                 '以及，不管你擅长什么，只要你对"AI 到底能不能把活干好"这个问题有自己的看法，都欢迎来聊聊。',
                 '<strong>怎么联系我们</strong>',
                 '最直接的方式，是先用一段时间 Cancri Code，然后带着你觉得它最该改进的地方来找我们。你可以在 Discord（discord.gg/BD9M6VMu） 上找到我们，也可以关注我们的 GitHub（github.com/NexusVAI）。一段真诚的反馈，比一份漂亮的简历更能打动我们。',
-                '—— Cancri Code 联合创始人'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -1770,7 +1793,7 @@ const articleData = {
                 'And whatever your specialty, if you have your own view on whether AI can really do the job well, come and talk to us.',
                 '<strong>How to reach us</strong>',
                 'The most direct route is to use Cancri Code for a while, then come to us with what you think it most needs to improve. You can find us on Discord (discord.gg/BD9M6VMu) or follow our GitHub (github.com/NexusVAI). Honest feedback impresses us more than a polished résumé.',
-                '— Co-founder, Cancri Code'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -1795,7 +1818,7 @@ const articleData = {
                 '我们正在做的，是让云端的智能体在你合上电脑之后也能继续工作：长期保存的云端会话、定时执行的任务、以及把产出的文件直接交付到你手上。它们会在准备好之后陆续到来。',
                 '现在就可以在官网下载 Cancri Code 3.0（Windows 10 / 11，64 位）。macOS 与 Linux 版本仍在适配中。',
                 '感谢每一位一路陪我们走过来的用户。',
-                '—— Cancri Code 联合创始人'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -1816,7 +1839,7 @@ const articleData = {
                 'We are working on letting cloud agents keep going after you close your laptop: long-lived cloud sessions, scheduled tasks, and delivering the files they produce straight to you. They will arrive as each one is ready.',
                 'Cancri Code 3.0 is available to download from the website now (Windows 10 / 11, 64-bit). macOS and Linux versions are still in progress.',
                 'Thank you to every user who has come this far with us.',
-                '— Co-founder, Cancri Code'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -2069,7 +2092,7 @@ const articleData = {
                 '2. 核心功能：赋予你掌控权 我们整理了玩家最常用的功能矩阵，并确保它们在各种场景下都能稳定触发：物理干预：实时调整重力、摩擦力及时间流速（Slow Motion）。实体调度：快速生成保镖或敌对目标，并能通过逻辑控制其行为。生存覆盖：包括无限耐力、水下呼吸及隐身模式，让你在探索时不再受限。',
                 '3. 消除“操作隔阂” 一个好的工具应该让人感觉不到它的存在。为了消除第三方插件常见的违和感，我们重点优化了交互体验：平滑视角控制：针对自由相机（Free-cam），我们重构了输入算法。通过自定义灵敏度曲线 Sout = f(Imouse, γ)，解决了视角转动时的抖动与卡顿现象，让镜头推移更具电影感。原生级 UI：引入了非线性动画处理，菜单的每一次呼出与切换都力求贴合游戏原生的 HUD 质感。空间定位：整合了瞄准点瞬移技术，将位移逻辑与准星精确对齐，实现“指哪到哪”。',
                 '4. 听取反馈，持续修复 NexusV 的迭代动力来自社区。在最新的版本中，我们重点解决了那些影响心情的“小问题”：规避场景冲突：彻底重构了脚本分发引擎，大幅降低了高负载场景下的崩溃频率。逻辑优化：修复了此前版本中偶尔出现的“掉入地底”问题，并重新梳理了武器分类逻辑，让查找更加直观。',
-                '5. 加入我们 NexusV 已经从一个实验性脚本成长为一套成熟的工具集。它是一个开箱即用的、可靠的虚拟实验室，帮助你更自由地探索游戏的边界。BUG 反馈群：1079691553。获取方式：点击页面右上角“使用 NexusV 即可下载”。',
+                '5. 加入我们 NexusV 已经从一个实验性脚本成长为一套成熟的工具集。它是一个开箱即用的、可靠的虚拟实验室，帮助你更自由地探索游戏的边界。BUG 反馈群：1079691553。获取方式：前往<a href="https://www.wanjiadongli.com/user/1753255?tab=2" target="_blank" rel="noopener noreferrer">玩家动力官网</a>下载。',
                 '每一次按下按键，都应该得到确定的响应。NexusV，让修改回归简单。'
             ]
         },
@@ -2085,7 +2108,7 @@ const articleData = {
                 '2. Core Features: Empowering You with Control We have organized the most commonly used feature matrix for players and ensured they can stably trigger in various scenarios: Physical Intervention: Real-time adjustment of gravity, friction, and time flow (Slow Motion). Entity Summoning: Quickly spawn bodyguards or hostile targets, with logical control over their behavior. Survival Overrides: Including infinite stamina, underwater breathing, and invisibility mode, freeing you from limitations during exploration.',
                 '3. Eliminating the "Operation Gap" A good tool should make itself unnoticeable. To eliminate the common dissonance found in third-party plugins, we have focused on optimizing the interaction experience: Smooth Camera Control: For the free camera (Free-cam), we have rebuilt the input algorithm. Through a custom sensitivity curve Sout = f(Imouse, γ), we have solved the jitter and stuttering during camera rotation, making shot movement more cinematic. Native-Level UI: Introduced non-linear animation processing, making every menu call and switch strive to match the game native HUD texture. Spatial Positioning: Integrated aim-point teleportation technology, aligning displacement logic precisely with the crosshair, achieving "point to arrive."',
                 '4. Listening to Feedback, Continuous Fixes The driving force behind NexusV iteration comes from the community. In the latest version, we have focused on fixing those "small issues" that affect mood: Avoiding Scene Conflicts: Completely restructured the script distribution engine, significantly reducing crash frequency in high-load scenarios. Logic Optimization: Fixed the occasional "falling underground" issue from previous versions and reorganized weapon classification logic for more intuitive searching.',
-                '5. Join Us NexusV has grown from an experimental script into a mature toolkit. It is a ready-to-use, reliable virtual laboratory that helps you explore the boundaries of the game more freely. BUG Feedback Group: 1079691553. How to Get: Click "Use NexusV to Download" in the top right corner of the page.',
+                '5. Join Us NexusV has grown from an experimental script into a mature toolkit. It is a ready-to-use, reliable virtual laboratory that helps you explore the boundaries of the game more freely. BUG Feedback Group: 1079691553. How to get: download from <a href="https://www.wanjiadongli.com/user/1753255?tab=2" target="_blank" rel="noopener noreferrer">wanjiadongli.com</a>.',
                 'Every key press should receive a definite response. NexusV, bringing mods back to simplicity.'
             ]
         }
@@ -2142,11 +2165,11 @@ const articleData = {
                 '<strong>与 V4 的差异</strong>',
                 'NexusV V4 强调 74KB 微内核与基础物理/生存覆盖；V5 在此基础上完成了三件事：UI 渲染层彻底拆分（UIRenderer）、内置 Rockstar Editor 六模块工作流、以及 InnovationLab 创意玩法层。菜单条目从 V4 的「够用」扩展到 200+ 信息节点，但每条菜单都附带功能说明 tooltip，降低学习成本。',
                 '<strong>获取与支持</strong>',
-                '点击页面右上角「使用 NexusV」跳转官方下载页；',
+                '前往<a href="https://www.wanjiadongli.com/user/1753255?tab=2" target="_blank" rel="noopener noreferrer">玩家动力官网</a>下载；',
                 'BUG 反馈群：1079691553；',
                 '请在单机离线环境下使用，使用前完整备份游戏目录与存档。',
                 'NexusV V5 修改器不是外挂式的数值作弊器，而是一套面向创作者的工具平台——每一次按键，都应该得到确定的响应。',
-                '—— NexusV 团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -2175,9 +2198,9 @@ const articleData = {
                 '<strong>vs V4</strong>',
                 'V4 emphasized a 74KB micro-kernel and basic survival overrides. V5 adds: split UIRenderer, six-module Rockstar Editor workflow, and InnovationLab creative layer — 200+ menu nodes, each with a tooltip.',
                 '<strong>Get it</strong>',
-                'Click "Try NexusV" top-right; feedback group 1079691553. Use offline only; back up game and saves first.',
+                'Download from <a href="https://www.wanjiadongli.com/user/1753255?tab=2" target="_blank" rel="noopener noreferrer">wanjiadongli.com</a>; feedback group 1079691553. Use offline only; back up game and saves first.',
                 'NexusV V5 is not a cheat overlay — it is a creator-facing tool platform. Every keypress should get a definite response.',
-                '— The NexusV Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -2680,7 +2703,7 @@ const articleData = {
                 '获取支持与反馈',
                 '如在升级或使用过程中遇到问题、发现内容风险或需要企业级部署建议，请通过邮箱联系我们：nexusv@139.com。我们会在合理时间内回复并协助定位问题。',
                 '感谢社区、测试者与反馈者。接下来我们会把配置文档、示例 config.ini 模板与 TTS 调优指南同步到发布页，方便大家快速上手与复现。欢迎把你的实验与场景分享到仓库 issue，让我们一起把开放世界的虚拟生命做得更真实、更可信。',
-                '— NexusV 团队'
+                '—— NexusVAI 呈献'
             ]
         },
         en: {
@@ -2722,7 +2745,7 @@ const articleData = {
                 'Get Support & Feedback',
                 'If you encounter problems during upgrade or use, discover content risks, or need enterprise-level deployment advice, please contact us via email: nexusv@139.com. We will respond within a reasonable time and assist in locating problems.',
                 'Thanks to the community, testers, and feedback providers. Next, we will synchronize configuration documentation, example config.ini templates, and TTS tuning guides to the release page to facilitate quick start and reproduction. Welcome to share your experiments and scenarios to the repository issue, let us work together to make the virtual life of the open world more real and credible.',
-                '— NexusV Team'
+                '— Presented by NexusVAI'
             ]
         }
     },
@@ -3353,11 +3376,11 @@ function initIndexPage() {
     if (!heroCard && !scrollableList && !newsGrid && !featureStrip) return;
 
     function renderIndex(lang) {
-        // Scrollable List (cancriV1 / 黑板中继 first, then sentienceV52mens, blackboardPhase0)
+        // Scrollable List (cancri25flash first, then sentienceV52mens, cancriV1)
         if (scrollableList) {
             scrollableList.innerHTML = '';
-            const listIds = ['cancriV1', 'sentienceV52mens', 'blackboardPhase0'];
-            const linkTargets = ['cancriV1', 'sentienceV52mens', 'blackboardPhase0'];
+            const listIds = ['cancri25flash', 'sentienceV52mens', 'cancriV1'];
+            const linkTargets = ['cancri25flash', 'sentienceV52mens', 'cancriV1'];
             
             listIds.forEach((id, index) => {
                  const item = articleData[id];
