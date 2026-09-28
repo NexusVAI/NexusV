@@ -36,17 +36,19 @@
 
   // 首页旗舰卡营销展示（仅 UI；不改计费 / model_pricing）
   var HOME_CARD_OVERRIDES = {
-    "claude-opus-5": {
+    "claude-opus-5-5": {
       displayName: "Claude Opus 5.5",
-      inputPricePerM: 0.59,
-      outputPricePerM: 1.99,
+      inputPricePerM: 5,
+      outputPricePerM: 25,
+      cachePricePerM: 0.5,
       ctxZh: "1M 上下文长度 · 32K 最大输出",
       ctxEn: "1M context · 32K max output",
     },
     "gpt-6-sol": {
       displayName: "GPT 6 Sol",
-      inputPricePerM: 0.59,
-      outputPricePerM: 2.99,
+      inputPricePerM: 0.5,
+      outputPricePerM: 2,
+      cachePricePerM: 0.05,
       ctxZh: "1M 上下文长度 · 32K 最大输出",
       ctxEn: "1M context · 32K max output",
     },
@@ -65,12 +67,16 @@
         ? "¥" + fmtYuan(ov.pricePerCall) + " per request"
         : "每次：¥" + fmtYuan(ov.pricePerCall);
     }
+    var cache = ov.cachePricePerM == null
+      ? ""
+      : (en ? " / Cache: ¥" : " / 缓存：¥") + fmtYuan(ov.cachePricePerM);
     if (en) {
       return (
         "Input: ¥" +
         fmtYuan(ov.inputPricePerM) +
         " / Output: ¥" +
         fmtYuan(ov.outputPricePerM) +
+        cache +
         " per 1M tokens"
       );
     }
@@ -79,6 +85,7 @@
       fmtYuan(ov.inputPricePerM) +
       " / 输出：¥" +
       fmtYuan(ov.outputPricePerM) +
+      cache +
       " 每百万标记"
     );
   }

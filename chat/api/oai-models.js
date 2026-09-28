@@ -44,6 +44,7 @@
     "glm-5.3",
     "gpt-5.6-sol",
     "claude-opus-5",
+    "claude-opus-5-5",
     // 2026-09-02: Claude Fable 5.1 上架，钉进旗舰区。它**不分组**（group_id 为空），
     // 所以这里钉的就是它自己的卡 id，不会被折叠到 claude-fable-5 那张卡上。
     "claude-fable-5-1",
@@ -86,7 +87,7 @@
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
-    "gpt-6-luna",
+    "gpt-6-luna-free",
     // 2026-09-22: monkeycode 免费线 qwen-3.8-27b（wire cerebras/qwen-3.8-27b，¥0/¥0，无截止日期）。
     "qwen-3.8-27b",
     // 2026-09-22: monkeycode-ai 免费线 grok-4.7（¥0/¥0，无截止日期）。
@@ -187,6 +188,7 @@
     // 2026-09-02: Claude Fable 5.1 专用卡面（Logo/fable5-1.png → assets/oai.logo/fable5-1.png）
     "claude-fable-5-1": "fable5-1.png",
     "claude-opus-5": "opus5.png",
+    "claude-opus-5-5": "/Logo/Opus5.5.png",
     // 2026-08-18 晚：站内 id 从 c:claude-opus-5 改名（免费期结束）。卡面沿用同一张图。
     "claude-opus-5-thinking": "opus5.png",
     // 2026-07-17: Kimi K3 专用卡面（Logo/kimik3.jpg → assets/oai.logo/kimik3.jpg）
@@ -232,12 +234,18 @@
   function artBase() {
     return document.body.getAttribute("data-cancri-artbase") || "./assets/oai.logo/";
   }
+  function artOverrideUrl(id) {
+    var override = ART_OVERRIDE[id];
+    if (!override) return "";
+    return override.charAt(0) === "/" ? override : artBase() + override;
+  }
   // per-section picker: random, but never repeats any of the last 3 picks
   // (covers the card on the left and the ones directly above in 2/3-col grids).
   function makeArtPicker() {
     var recent = [];
     return function (id) {
-      if (ART_OVERRIDE[id]) return artBase() + ART_OVERRIDE[id];
+      var fixed = artOverrideUrl(id);
+      if (fixed) return fixed;
       var pool = ART_POOL.filter(function (a) { return recent.indexOf(a) === -1; });
       var pick = pool[Math.floor(Math.random() * pool.length)];
       recent.push(pick);
@@ -498,12 +506,19 @@
     });
   }
 
-  // 分组行：折叠卡才有。组内各分组标签（标准 / XHigh 普惠 / Max …）做成胶囊，
-  // 点一下就把本卡的 Model ID / 状态条 / 价格换成那条线的；再点一次回到组汇总
-  // （代表 id + 组内最低价 + 组内最好状态）。见 pickVariant。
-  function groupRowHtml(m) {
+  // 折叠卡提供可切换的组内分组；免费区未折叠卡显示 catalog 原始分组标签。
+  function groupRowHtml(m, includeRawVariant) {
     var gi = m && m.groupInfo;
-    if (!gi || !gi.variants || gi.variants.length < 2) return "";
+    if (!gi || !gi.variants || gi.variants.length < 2) {
+      var variant = includeRawVariant ? MG.variantOf(m) : "";
+      if (!variant) return "";
+      return (
+        '<div class="cancri-spec__row">' +
+          '<span class="cancri-spec__key">分组</span>' +
+          '<span class="cancri-spec__val"><span class="cancri-price__tag cancri-price__tag--group">' + esc(variant) + "</span></span>" +
+        "</div>"
+      );
+    }
     var pills = gi.variants.map(function (v) {
       return '<button type="button" class="cancri-variant" data-variant-pick="' + escAttr(v.id) +
         '" aria-pressed="false" title="' + escAttr(v.id) + '">' + esc(v.variant || v.id) + "</button>";
@@ -561,6 +576,7 @@
     var id = m.id || m.canonicalId || "";
     var name = m.displayName || id;
     var desc = cardDescription(m);
+    var fixedArt = artOverrideUrl(id);
     var featured = isFeaturedId(id);
     var badge = (featured && opts.flagshipBadge)
       ? ' <div class="_Badge_10t5o_1" data-color="success" data-size="md" data-pill data-variant="soft">旗舰</div>'
@@ -577,8 +593,8 @@
       '<div class="flex flex-col text-emphasis"' + idAttr + ' data-model-id="' + escAttr(id) + '"' + groupIdsAttr + ' role="link" tabindex="0" style="cursor:pointer">' +
         '<div class="w-full" style="height:230px">' +
           '<div class="cancri-thumb flex h-full w-full flex-1 flex-row items-center justify-center gap-4 rounded-lg"' +
-               (ART_OVERRIDE[id] ? ' data-cover="fixed"' : '') +
-               ' style="background-image:url(\'' + escAttr(opts.art || (ART_OVERRIDE[id] ? artBase() + ART_OVERRIDE[id] : artBase() + ART_POOL[0])) + '\')">' +
+               (fixedArt ? ' data-cover="fixed"' : '') +
+               ' style="background-image:url(\'' + escAttr(opts.art || fixedArt || artBase() + ART_POOL[0]) + '\')">' +
             '<span class="cancri-thumb__name">' + esc(name) + "</span>" +
           "</div>" +
         "</div>" +
@@ -594,7 +610,7 @@
                 '<span class="cancri-id__text">' + esc(id) + "</span>" + COPY_SVG +
               "</button>" +
             "</div>" +
-            groupRowHtml(m) +
+            groupRowHtml(m, opts.showRawGroupVariant) +
             '<div class="cancri-spec__row cancri-spec__row--uptime" data-uptime-slot></div>' +
             '<div class="cancri-spec__row">' +
               '<span class="cancri-spec__key">价格</span>' +
@@ -956,7 +972,7 @@
       var pickFree = makeArtPicker();
       free.innerHTML = freeList.length
         ? freeList.map(function (m) {
-            return cardHtml(m, { flagshipBadge: false, anchor: freeAnchor, art: pickFree(m.id || m.canonicalId || "") });
+            return cardHtml(m, { flagshipBadge: false, anchor: freeAnchor, art: pickFree(m.id || m.canonicalId || ""), showRawGroupVariant: true });
           }).join("")
         : '<div class="text-sm text-secondary py-6">暂无免费模型</div>';
     }
