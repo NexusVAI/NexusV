@@ -1052,9 +1052,11 @@
     var b = rangeBounds(def);
     var calls = [];
     var toks = [];
+    var spend = [];
     for (var i = 0; i < b.n; i++) {
       calls.push(0);
       toks.push(0);
+      spend.push(0);
     }
     (rows || []).forEach(function (r) {
       var ts = new Date(r.created_at).getTime();
@@ -1063,8 +1065,9 @@
       if (idx < 0 || idx >= b.n) return;
       calls[idx] += 1;
       toks[idx] += (Number(r.tokens_in) || 0) + (Number(r.tokens_out) || 0);
+      spend[idx] += Number(r.charged_micro) || 0;
     });
-    return { calls: calls, tokens: toks };
+    return { calls: calls, tokens: toks, spend: spend };
   }
 
   function aggregate(rows) {
@@ -1254,10 +1257,14 @@
   var __lastDaily = null;
   var __usageRows = [];
   var __rangeKey = "all";
+  // api_my_usage 自 2026-09-28 起返回 spend{total_micro,month_micro}；
+  // 老响应没有该键 → null → 金额卡回退 "—" 占位，部署间隙不会画出假 ¥0。
+  var __spendMeta = null;
 
-  function drawCharts(rows) {
+  function drawCharts(rows, spendMeta) {
     if (PAGE !== "overview" && PAGE !== "usage") return;
     __usageRows = rows || [];
+    __spendMeta = spendMeta || null;
     applyUsageRange();
     // 同上：只裁外层容器，别碰 .recharts-wrapper 和 svg
     document
@@ -1280,8 +1287,43 @@
     if (PAGE === "overview") {
       setValueNearLabels(LABELS.responses, nf(agg.totalRequests));
     }
+    applySpendCards(rows);
     fillUsageCapabilityCard(agg);
     redrawCharts();
+  }
+
+  /**
+   * 金额两张卡：「总消耗」= 当前时间档内 charged_micro 合计（与相邻统计卡同口径）；
+   * 「本月消耗」= 后端按 Asia/Shanghai 自然月算好的 spend.month_micro，不随时间档变。
+   * charged_micro 来自 api_usage.call_id ↔ chat_model_usage 孪生行；
+   * 无 call_id 的行是 exact-cache 命中（零计费），后端记 0。
+   */
+  function applySpendCards(rows) {
+    if (!__spendMeta) {
+      applySpendPlaceholder();
+      return;
+    }
+    var rangeMicro = 0;
+    (rows || []).forEach(function (r) {
+      var v = Number(r.charged_micro);
+      if (isFinite(v)) rangeMicro += v;
+    });
+    // 写内层 .px-3 而不是 .text-xl.font-semibold 本身，保住卡片缩进
+    findTextNodes("Total Spend")
+      .concat(findTextNodes("总消耗"))
+      .forEach(function (tn) {
+        var wrap = tn.parentElement && tn.parentElement.parentElement;
+        if (!wrap) return;
+        var val = wrap.querySelector(".text-xl.font-semibold div, .text-xl.font-semibold");
+        if (val) val.textContent = fmtMoney(rangeMicro / 1e6);
+      });
+    document
+      .querySelectorAll(
+        '[data-testid="organization-spend-summary-section"] .text-lg.font-semibold'
+      )
+      .forEach(function (el) {
+        el.textContent = fmtMoney(Number(__spendMeta.month_micro || 0) / 1e6);
+      });
   }
 
   function redrawCharts() {
@@ -1290,6 +1332,71 @@
     updateSparklineAuto(findChartHost(LABELS.requests), __lastDaily.calls);
     updateSparklineAuto(findChartHost(LABELS.tokens), __lastDaily.tokens);
     updateSparklineAuto(findChartHost(LABELS.responses), __lastDaily.calls);
+    // 旧响应没有 spend：全零序列只会画一条贴底的假线，不如留空轴
+    if (__spendMeta)
+      updateSpendChart(findChartHost(LABELS.spend), __lastDaily.spend);
+  }
+
+  /**
+   * 「总消耗」大图：快照里只有空坐标轴，没有数据层。按 clipPath 围出的
+   * 绘图区注入一条消耗折线 + 浅填充。带 .recharts-line-curve 的 sparkline
+   * 形态不归这里管（updateSparklineAuto 已覆盖）。
+   */
+  function updateSpendChart(host, micros) {
+    if (!host || !micros || !micros.length) return;
+    var svg = host.querySelector("svg.recharts-surface");
+    if (!svg || svg.querySelector(".recharts-line-curve")) return;
+    var W = parseFloat(svg.getAttribute("width")) || 0;
+    var H = parseFloat(svg.getAttribute("height")) || 0;
+    if (!W || !H) return;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    var clip = svg.querySelector("clipPath rect");
+    var px = clip ? parseFloat(clip.getAttribute("x")) || 10 : 10;
+    var py = clip ? parseFloat(clip.getAttribute("y")) || 20 : 20;
+    var pw = clip ? parseFloat(clip.getAttribute("width")) || W - 20 : W - 20;
+    var ph = clip ? parseFloat(clip.getAttribute("height")) || H - 50 : H - 50;
+    var max = 0;
+    for (var i = 0; i < micros.length; i++) {
+      if (micros[i] > max) max = micros[i];
+    }
+    var n = micros.length;
+    var pts = [];
+    for (i = 0; i < n; i++) {
+      pts.push({
+        x: px + (n <= 1 ? pw / 2 : (i / (n - 1)) * pw),
+        y: py + ph - (max > 0 ? (micros[i] / max) * ph : 0),
+      });
+    }
+    var line = "M" + pts
+      .map(function (p) {
+        return p.x.toFixed(1) + "," + p.y.toFixed(1);
+      })
+      .join("L");
+    var area =
+      line +
+      "L" + pts[pts.length - 1].x.toFixed(1) + "," + (py + ph) +
+      "L" + pts[0].x.toFixed(1) + "," + (py + ph) + "Z";
+    Array.prototype.forEach.call(
+      svg.querySelectorAll("g.cnc-spend-series"),
+      function (g) {
+        g.remove();
+      }
+    );
+    var NS = "http://www.w3.org/2000/svg";
+    var g = document.createElementNS(NS, "g");
+    g.setAttribute("class", "cnc-spend-series");
+    var a = document.createElementNS(NS, "path");
+    a.setAttribute("d", area);
+    a.setAttribute("fill", "#E36E30");
+    a.setAttribute("fill-opacity", "0.12");
+    var l = document.createElementNS(NS, "path");
+    l.setAttribute("d", line);
+    l.setAttribute("fill", "none");
+    l.setAttribute("stroke", "#E36E30");
+    l.setAttribute("stroke-width", "2");
+    g.appendChild(a);
+    g.appendChild(l);
+    svg.appendChild(g);
   }
 
   /**
@@ -3104,7 +3211,7 @@
       if (PAGE === "overview" || PAGE === "usage") {
         // 统计卡数字与三张迷你图都由 applyUsageRange 按当前时间档统一填，
         // drawCharts 内部会调它一次；wireUsageRangeControl 的 select(0) 再刷一遍。
-        drawCharts(usage);
+        drawCharts(usage, usageRes && usageRes.spend);
         wireUsageRangeControl();
       } else {
         var agg = aggregate(usage);
