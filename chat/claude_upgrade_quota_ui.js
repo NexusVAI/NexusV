@@ -25,8 +25,8 @@
       title: "CancriCode",
       desc: "用自然语言描述需求，在 IDE 里构建、调试与交付。",
       imgKey: 1,
-      // chat/code/ 目录不存在（404）；与 index.html 下载入口一致改指网盘（提取码: Nexu）
-      href: "https://pan.baidu.com/s/1Q9mm9CnwjtB0tlusgaYlSw",
+      // 与 index.html 下载入口一致，指向官方直链安装包
+      href: "https://dl.nexusvai.xyz/cancri-code/3.0.5/Cancri-Code_3.0.5_x64-setup.exe",
     },
     {
       title: "Microsoft Office",

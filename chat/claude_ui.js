@@ -20,9 +20,8 @@
     // runOnboardingAction 的 'open-cancri-code' 分支与 openCancriCodeDownload() 都保留着没删。
     var ONBOARDING_TASK_IDS = ['importMemory', 'community'];
     var COMMUNITY_URL = 'https://qm.qq.com/q/RNgltzNsSQ';
-    var CANCRI_CODE_URL = 'https://pan.baidu.com/s/1f65FMHdo2TenrwG7gBWQhg';
+    var CANCRI_CODE_URL = 'https://dl.nexusvai.xyz/cancri-code/3.0.5/Cancri-Code_3.0.5_x64-setup.exe';
     var SERVICE_STATUS_URL = 'https://nexusvai.github.io/ChatAI-status/status.html';
-    var CANCRI_CODE_PAN_CODE = 'Nexu';
     var MEMORY_IMPORT_TEXT_LIMIT = 12000;
     var memoryImportCandidates = [];
     var latestTierSubscription = null;
@@ -1052,7 +1051,6 @@
     // runOnboardingAction 里的 'open-cancri-code' 分支同理。若确定不再恢复，两处一起删。
     function openCancriCodeDownload() {
         window.open(CANCRI_CODE_URL, '_blank', 'noopener');
-        showToast('百度网盘提取码：' + CANCRI_CODE_PAN_CODE);
     }
 
     function renderOnboardingState(card, done) {
@@ -1415,12 +1413,6 @@
     }
 
     function bindExternalSidebarLinks() {
-        var codeNav = document.getElementById('claudeCancriCodeNavBtn');
-        if (codeNav) {
-            codeNav.addEventListener('click', function () {
-                showToast('百度网盘提取码：' + CANCRI_CODE_PAN_CODE);
-            });
-        }
         var statusNav = document.getElementById('claudeServiceStatusNavBtn');
         if (statusNav && !statusNav.getAttribute('href')) {
             statusNav.setAttribute('href', SERVICE_STATUS_URL);
@@ -1431,7 +1423,6 @@
                 // 原内联 onclick="event.stopPropagation()" 被页面 CSP（script-src 无
                 // 'unsafe-inline'）拦截，点击下载会连带切换账户弹层，故在此阻断冒泡。
                 e.stopPropagation();
-                showToast('百度网盘提取码：' + CANCRI_CODE_PAN_CODE);
             });
         }
     }
