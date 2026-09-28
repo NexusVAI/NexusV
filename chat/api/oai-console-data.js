@@ -808,22 +808,21 @@
   }
 
   /**
-   * 「用 Cancri Code 开始构建」暂时不可用：变淡 + 完全不可交互。
-   * 只加 pointer-events:none 挡不住键盘 —— <a href> 仍然能被 Tab 选中并回车打开，
-   * 所以这里把 href 一起摘掉；文字选中由 CSS 的 user-select:none 管。
+   * 「用 Cancri Code 开始构建」卡片现已开放：恢复链接与键盘交互。
+   * 旧 DOM 快照可能残留禁用属性，运行时同时清除 class、aria-disabled 与 tabindex。
+   * 外链在新标签页打开，保留 API 控制台当前页面。
    */
-  function dimComingSoonCards() {
+  function linkCancriCodeCard() {
     if (PAGE !== "overview") return;
     document.querySelectorAll("a.fSPaI").forEach(function (a) {
       if (!/Cancri Code|用 Codex 开始构建/.test(a.textContent || "")) return;
-      if (a.dataset.cncDisabled === "1") return;
-      a.dataset.cncDisabled = "1";
-      a.classList.add("cnc-card-disabled");
-      a.removeAttribute("href");
-      a.removeAttribute("target");
-      a.removeAttribute("rel");
-      a.setAttribute("aria-disabled", "true");
-      a.tabIndex = -1;
+      a.href = "https://www.nexusvai.xyz/cancricode/";
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.classList.remove("cnc-card-disabled");
+      a.removeAttribute("aria-disabled");
+      a.removeAttribute("tabindex");
+      delete a.dataset.cncDisabled;
     });
   }
 
@@ -3064,7 +3063,7 @@
     applyPageLocale();
     patchBuildWithCards();
     stripQuickStartClose();
-    dimComingSoonCards();
+    linkCancriCodeCard();
     patchActionCtasEverywhere();
     try {
       if (!window.PlatformAuth) throw new Error("supabase_not_loaded");
@@ -3144,7 +3143,7 @@
       applyPageLocale();
       patchBuildWithCards();
       stripQuickStartClose();
-      dimComingSoonCards();
+      linkCancriCodeCard();
       patchActionCtasEverywhere();
       // locale may recreate English CTA leftovers — re-assert featured cards
       patchFeaturedModels();

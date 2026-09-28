@@ -77,9 +77,33 @@
     observer.observe(title);
   }
 
+  function initNavCta() {
+    document.querySelectorAll('[data-cancri-role="nav-cta"]').forEach(function (cta) {
+      if (cta.dataset.cancriNavCtaReady === 'true') return;
+      cta.dataset.cancriNavCtaReady = 'true';
+      if (cta.tagName === 'A') cta.setAttribute('href', '#downloads');
+      cta.addEventListener(
+        'click',
+        function (event) {
+          var target = document.getElementById('downloads');
+          if (!target) return;
+          event.preventDefault();
+          event.stopPropagation();
+          var nav = document.querySelector('.nav_wrap');
+          var offset = nav ? nav.getBoundingClientRect().height + 16 : 72;
+          var y =
+            target.getBoundingClientRect().top + (window.scrollY || 0) - offset;
+          window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+        },
+        true
+      );
+    });
+  }
+
   function init() {
     initFaq();
     initHeroCtas();
+    initNavCta();
   }
 
   if (document.readyState === 'loading') {

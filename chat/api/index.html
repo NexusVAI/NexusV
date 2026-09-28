@@ -117,14 +117,14 @@
       <!-- 价格/上下文：禁止 data-i18n（i18n.translate 会覆盖 HTML，曾把 1.6/5 刷成 6/27）。
            首屏 HTML 为 Neon 当前价兜底；oai-home.js 再从 model_public_catalog 灌真实价。 -->
       <div class="models-row" id="home-models-row">
-        <!-- 2026-07-22: 首页旗舰卡固定展示 XHigh 低价线，勿绑高价主线 id -->
-        <a class="model-card" data-model-id="claude-opus-4-8-xhigh" href="chat/api_models.html#model-claude-opus-4-8-xhigh" style="background-image:url('chat/img/api-model-0.png')">
+        <!-- 首页卡片绑定可用模型 ID；营销展示名、价格与上下文由 oai-home.js 覆盖 -->
+        <a class="model-card" data-model-id="claude-opus-5" href="chat/api_models.html#model-claude-opus-5" style="background-image:url('chat/img/api-model-0.png')">
           <div class="model-card__body">
             <div class="model-card__slide">
-              <div class="model-card__name">Claude Opus 4.8 XHigh</div>
+              <div class="model-card__name">Claude Opus 5.5</div>
               <ul class="model-card__specs">
-                <li data-slot="price">输入：¥0.99 / 输出：¥4.00 每百万标记</li>
-                <li data-slot="ctx">20万 上下文长度 · 3.2万 最大输出</li>
+                <li data-slot="price">输入：¥0.59 / 输出：¥1.99 每百万标记</li>
+                <li data-slot="ctx">1M 上下文长度 · 32K 最大输出</li>
                 <li data-slot="cutoff">知识截止日期：2026年1月</li>
               </ul>
               <span class="model-card__cta"><span data-i18n="api.home.model.learn_more">了解更多</span>
@@ -133,13 +133,13 @@
             </div>
           </div>
         </a>
-        <a class="model-card" data-model-id="gpt-5.6-sol-xhigh" href="chat/api_models.html#model-gpt-5.6-sol-xhigh" style="background-image:url('chat/img/api-model-sf30.png')">
+        <a class="model-card" data-model-id="gpt-6-sol" href="chat/api_models.html#model-gpt-6-sol" style="background-image:url('chat/img/api-model-sf30.png')">
           <div class="model-card__body">
             <div class="model-card__slide">
-              <div class="model-card__name">GPT-5.6 Sol XHigh</div>
+              <div class="model-card__name">GPT 6 Sol</div>
               <ul class="model-card__specs">
-                <li data-slot="price">输入：¥0.30 / 输出：¥1.79 每百万标记</li>
-                <li data-slot="ctx">100万 上下文长度 · 3.2万 最大输出</li>
+                <li data-slot="price">输入：¥0.59 / 输出：¥2.99 每百万标记</li>
+                <li data-slot="ctx">1M 上下文长度 · 32K 最大输出</li>
                 <li data-slot="cutoff">知识截止日期：2025年12月</li>
               </ul>
               <span class="model-card__cta"><span data-i18n="api.home.model.learn_more">了解更多</span>
@@ -148,13 +148,13 @@
             </div>
           </div>
         </a>
-        <a class="model-card" data-model-id="grok-4.5-xhigh" href="chat/api_models.html#model-grok-4.5-xhigh" style="background-image:url('chat/img/api-model-sf30.png')">
+        <a class="model-card" data-model-id="grok-4.7" href="chat/api_models.html#model-grok-4.7" style="background-image:url('chat/img/api-model-sf30.png')">
           <div class="model-card__body">
             <div class="model-card__slide">
-              <div class="model-card__name">Grok 4.5 XHigh</div>
+              <div class="model-card__name">Grok 4.7</div>
               <ul class="model-card__specs">
-                <li data-slot="price">输入：¥0.18 / 输出：¥0.51 每百万标记</li>
-                <li data-slot="ctx">20万 上下文长度 · 3.2万 最大输出</li>
+                <li data-slot="price">免费</li>
+                <li data-slot="ctx">500K 上下文长度 · 32K 最大输出</li>
                 <li data-slot="cutoff">知识截止日期：2025年12月</li>
               </ul>
               <span class="model-card__cta"><span data-i18n="api.home.model.learn_more">了解更多</span>
@@ -448,15 +448,15 @@
 
   <div data-page-footer></div>
 
-  <script src="js/components.js" defer></script>
-  <script src="js/i18n.js?v=2026-09-27-brand1" defer></script>
+  <script src="js/components.js?v=2026-09-28-api-nav" defer></script>
+  <script src="js/i18n.js?v=2026-09-28-api-nav" defer></script>
   <script src="js/theme.js" defer></script>
   <script src="js/main.js?v=20260917-sb-blur" defer></script>
-  <script src="js/menu.js?v=2026-09-27-brand1" defer></script>
+  <script src="js/menu.js?v=2026-09-28-api-nav" defer></script>
   <script src="chat/cancri_config.js?v=2026-05-13e"></script>
   <script src="cancricode/js/cornerkit.js?v=ck-1.3.1" defer></script>
   <script src="chat/api/oai-trusted-logos.js?v=20260817-logos-cap2" defer></script>
-  <script src="chat/api/oai-home.js?v=20260830-menu-scale" defer></script>
+  <script src="chat/api/oai-home.js?v=20260928-model-cards-nav" defer></script>
   <script src="chat/model_launch_modal.js?v=20260809-f5lm2" defer></script>
   <script src="chat/glm52_fp8_launch_modal.js?v=20260814-ext0820" defer></script>
   <script>document.addEventListener('DOMContentLoaded', function () { if (window.injectComponents) injectComponents({}); });</script>

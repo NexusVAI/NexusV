@@ -41,6 +41,7 @@ for (const file of requiredFiles) {
 
 const html = await readFile(resolve(root, 'index.html'), 'utf8');
 const css = await readFile(resolve(root, 'css/cancri-theme.css'), 'utf8');
+const site = await readFile(resolve(root, 'js/cancri-site.js'), 'utf8');
 
 for (const hook of ['hero', 'engineering-problems', 'codex-workflow', 'downloads', 'faq', 'footer']) {
   if (!html.includes(`data-cancri-section="${hook}"`)) {
@@ -49,6 +50,11 @@ for (const hook of ['hero', 'engineering-problems', 'codex-workflow', 'downloads
 }
 
 if (!html.includes('data-cancri-role="nav-cta"')) failures.push('missing nav CTA hook');
+if (!site.includes('function initNavCta()')) failures.push('missing nav CTA click behavior');
+if (!site.includes("document.querySelectorAll('[data-cancri-role=\"nav-cta\"]')")) failures.push('nav CTA selector is missing');
+if (!site.includes("cta.setAttribute('href', '#downloads')")) failures.push('nav CTA does not link to downloads');
+if (!site.includes("document.getElementById('downloads')")) failures.push('nav CTA download target is missing');
+if (!site.includes("window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' })")) failures.push('nav CTA smooth scrolling is missing');
 if (!html.includes('data-cancri-role="theme-toggle"')) failures.push('missing theme toggle hook');
 if ((html.match(/<footer\b/g) || []).length !== 1) failures.push('expected exactly one footer');
 if (!html.includes('./css/cancri-theme.css')) failures.push('custom theme stylesheet is not linked');

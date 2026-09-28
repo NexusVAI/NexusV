@@ -36,29 +36,30 @@
 
   // 首页旗舰卡营销展示（仅 UI；不改计费 / model_pricing）
   var HOME_CARD_OVERRIDES = {
-    "claude-opus-4-8-xhigh": {
-      displayName: "Claude Opus 5",
+    "claude-opus-5": {
+      displayName: "Claude Opus 5.5",
       inputPricePerM: 0.59,
       outputPricePerM: 1.99,
       ctxZh: "1M 上下文长度 · 32K 最大输出",
       ctxEn: "1M context · 32K max output",
     },
-    "gpt-5.6-sol-xhigh": {
-      displayName: "GPT 5.6 Sol",
+    "gpt-6-sol": {
+      displayName: "GPT 6 Sol",
       inputPricePerM: 0.59,
       outputPricePerM: 2.99,
-      ctxZh: "100万 上下文长度 · 3.2万 最大输出",
+      ctxZh: "1M 上下文长度 · 32K 最大输出",
       ctxEn: "1M context · 32K max output",
     },
-    "grok-4.5-xhigh": {
-      displayName: "Grok 4.5",
-      pricePerCall: 0.05,
+    "grok-4.7": {
+      displayName: "Grok 4.7",
+      free: true,
       ctxZh: "500K 上下文长度 · 32K 最大输出",
       ctxEn: "500K context · 32K max output",
     },
   };
 
   function marketingPriceLine(ov, en) {
+    if (ov.free) return en ? "Free" : "免费";
     if (ov.pricePerCall != null) {
       return en
         ? "¥" + fmtYuan(ov.pricePerCall) + " per request"
@@ -229,6 +230,7 @@
 
   // ── 仅本页顶栏：社群按钮 + NexusVAI 开放平台文案（不改 components.js）──
   var QQ_GROUP_URL = "https://qm.qq.com/q/bjNIz8USbu";
+  var NEXUSV_HOME_URL = "https://www.nexusvai.xyz/";
 
   function patchApiHomeNav() {
     var pill = document.querySelector(".navbar a.btn-pill");
@@ -244,6 +246,9 @@
     document.querySelectorAll("a.nav-item, a.mobile-nav-item").forEach(function (el) {
       var key = el.getAttribute("data-i18n");
       if (key === "nav.developer" || key === "api.home.nav.developer") {
+        el.href = NEXUSV_HOME_URL;
+        el.removeAttribute("target");
+        el.removeAttribute("rel");
         el.setAttribute("data-i18n", "api.home.nav.developer");
       }
     });
