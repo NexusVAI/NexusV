@@ -131,7 +131,7 @@ main .prose{width:100%;max-width:100%}
 </style>
 <link rel="stylesheet" href="./api/oai-cancri.css?v=20260917-mobile-nav" />
 <link rel="stylesheet" href="./api/oai-cjk-fonts.css?v=20260921-local-fonts" />
-<script src="./api/oai-shell-nav.js?v=20260917-mobile-nav"></script>
+<script src="./api/oai-shell-nav.js?v=20260929-balance"></script>
 <script src="./api/oai-platform.js?v=20260917-ping-warmup"></script>
 </head>
 <body data-oai-page="docs" class="bg-surface text-default overflow-x-hidden">
@@ -254,7 +254,7 @@ main .prose{width:100%;max-width:100%}
             <li>按您的 SDK 设置 Base URL 和 Key，发送第一条请求。</li>
           </ol>
           <div class="cnc-alert cnc-alert--info">
-            <b>连通性测试：</b><code>GET /v1/models</code> 列出公开模型、不消耗额度，也<strong>不校验</strong>您的 Key。要验证 Key，请发一条极短的 <code>/v1/chat/completions</code> 或 <code>/v1/messages</code>。
+            <b>连通性测试：</b><code>GET /v1/models</code> 列出公开模型、不消耗额度，也<strong>不校验</strong>您的 Key。要验证 Key，请调用 <a href="#balance"><code>GET /v1/balance</code></a>：它会校验 Key 并返回余额，不计费。
           </div>
           <div class="cnc-code-block">
             <div class="cnc-code-tabs">
@@ -434,6 +434,90 @@ r = client.chat.completions.create(
             完整模型列表（含品牌、价格档位、能力标签）请到
             <a href="./api_models.html">模型广场</a> 查看。
           </p>
+        </section>
+
+        <section id="balance">
+          <h2>查询余额与用量</h2>
+          <div class="cnc-endpoint">
+            <span class="cnc-method cnc-method--get">GET</span>
+            <span>/v1/balance</span>
+          </div>
+          <p>
+            返回账户钱包余额、当前 Key 的额度上限，以及当前 Key 最近的调用记录。本接口不计费，
+            也不占用推理接口的并发与请求频次额度。认证方式与推理接口相同，支持
+            <code>Authorization: Bearer</code> 与 <code>x-api-key</code> 两种请求头。
+          </p>
+          <div class="cnc-code-block">
+            <div class="cnc-code-tabs">
+              <button class="cnc-code-tab active" data-grp="bal" data-lang="req">
+                请求
+              </button>
+              <button class="cnc-code-tab" data-grp="bal" data-lang="resp">
+                响应
+              </button>
+            </div>
+            <button class="cnc-copy-icon" data-copy-grp="bal">复制</button>
+            <pre class="cnc-lang active" data-grp="bal" data-lang="req">curl <span class="s">"https://cn.nexusvai.xyz/v1/balance?limit=20"</span> \
+  -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span></pre>
+            <pre class="cnc-lang" data-grp="bal" data-lang="resp">{
+  <span class="s">"object"</span>: <span class="s">"balance"</span>,
+  <span class="s">"currency"</span>: <span class="s">"CNY"</span>,
+  <span class="s">"balance"</span>: <span class="n">332.0632</span>,
+  <span class="s">"debt"</span>: <span class="n">0</span>,
+  <span class="s">"key_limits"</span>: {
+    <span class="s">"max_total_tokens"</span>: <span class="k">null</span>,
+    <span class="s">"used_total_tokens"</span>: <span class="n">1176</span>,
+    <span class="s">"remaining_total_tokens"</span>: <span class="k">null</span>,
+    <span class="s">"max_request_count"</span>: <span class="k">null</span>,
+    <span class="s">"used_request_count"</span>: <span class="n">3</span>,
+    <span class="s">"remaining_request_count"</span>: <span class="k">null</span>
+  },
+  <span class="s">"recent_usage"</span>: {
+    <span class="s">"object"</span>: <span class="s">"list"</span>,
+    <span class="s">"data"</span>: [
+      {
+        <span class="s">"model"</span>: <span class="s">"doubao-seed-2-0-mini-260215"</span>,
+        <span class="s">"prompt_tokens"</span>: <span class="n">50</span>,
+        <span class="s">"completion_tokens"</span>: <span class="n">390</span>,
+        <span class="s">"status_code"</span>: <span class="n">200</span>,
+        <span class="s">"cost"</span>: <span class="n">0.000044</span>,
+        <span class="s">"created_at"</span>: <span class="s">"2026-09-29T08:24:08.424Z"</span>
+      }
+      <span class="c">// ... 按时间倒序</span>
+    ]
+  }
+}</pre>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>参数</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>limit</code></td><td>可选，返回最近调用记录的条数，取值为 0–100 的整数，默认 20。传 <code>0</code> 时只返回余额，不返回调用记录。超出范围返回 <code>400 invalid_limit</code>。</td></tr>
+            </tbody>
+          </table>
+          <table>
+            <thead>
+              <tr>
+                <th>字段</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>balance</code></td><td>账户钱包可用余额，单位为元。网页版与该账户下所有 API Key 共用同一个钱包。</td></tr>
+              <tr><td><code>debt</code></td><td>账户欠费金额，单位为元，通常为 0。</td></tr>
+              <tr><td><code>key_limits</code></td><td>当前 Key 在 Keys 管理页设置的总 token 上限与总请求数上限，以及已用量和剩余量。未设置上限的项返回 <code>null</code>。未设上限时，已用量最多有约 60 秒延迟。</td></tr>
+              <tr><td><code>recent_usage.data</code></td><td>当前 Key 最近的调用记录，按时间倒序。只包含这一个 Key 的记录，不包含同账户其他 Key 的记录。</td></tr>
+              <tr><td><code>cost</code></td><td>该次调用的实际扣费，单位为元。免费模型为 <code>0</code>；请求仍在结算中时为 <code>null</code>。</td></tr>
+            </tbody>
+          </table>
+          <div class="cnc-alert cnc-alert--info">
+            <b>注意：</b>持有 Key 就能查询账户余额。请勿把 Key 分享给不应看到账户余额的人。
+            本接口按账户限流，每分钟最多 30 次，超出后返回 <code>429 rate_limit_exceeded</code>。
+          </div>
         </section>
 
         <section id="chat">
@@ -1315,8 +1399,8 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
 
           <h3 id="check-balance">余额怎么看</h3>
           <p>
-            公开 API 没有专门的余额查询接口，请在网页版设置页查看。
-            日常可以通过每次响应里的 <code>usage</code> 字段，以及错误码来判断消费情况。
+            调用 <a href="#balance"><code>GET /v1/balance</code></a> 可以查询账户余额、当前 Key 的额度上限，以及当前 Key 最近的调用记录和每次扣费金额。
+            也可以登录网页版在设置页查看。每次响应里的 <code>usage</code> 字段给出该次调用的 token 用量。
           </p>
         </section>
 
@@ -1630,6 +1714,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
             <li>Codex CLI 及其他默认使用 Responses 协议的客户端，使用 <a href="#responses">/v1/responses</a>。</li>
             <li>Claude Code、Anthropic SDK、OpenClaw 使用 <a href="#messages">/v1/messages</a>。</li>
             <li>Claude Code 会自动调用 <code>/v1/messages/count_tokens</code> 估算上下文长度。该端点不计费，无需手动配置。</li>
+            <li>查询余额和最近的扣费记录，使用 <a href="#balance">/v1/balance</a>。该端点不计费。</li>
           </ul>
           <h3 id="图像生成怎么没了">图像与视频生成</h3>
           <p>

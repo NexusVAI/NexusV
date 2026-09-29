@@ -234,6 +234,7 @@
           item("migration", "迁移支持") +
           item("auth", "认证") +
           item("models", "列出模型") +
+          item("balance", "查询余额与用量") +
           item("sdk", "SDK"),
       ) +
       group(
