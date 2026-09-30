@@ -34,6 +34,10 @@
   // 只能钉在免费区，禁止再放进这张名单（否则会从免费区「掉」到下面的旗舰区）。
   // 禁止非名单补位（曾冒出 gemini-3.1-flash-lite）。
   var FEATURED_ORDER = [
+    // 2026-09-30: GPT-6.1 Sol 上架（moyuu，¥0.5 / ¥2），钉到旗舰区首位。它不分组，钉的就是自己的卡。
+    // 同批的 claude-opus-5-5-kiro（Kiro 分组，¥1 / ¥5）与下面已钉的 claude-opus-5-5（Max 分组）
+    // 同 group_id 折叠成一张卡，代表仍是 claude-opus-5-5 —— 不用再钉，钉了也会被 seenTop 去重。
+    "gpt-6.1-sol",
     // 2026-09-05: GPT-6 Astra 上架，钉到旗舰区首位。普通分组与 Pro 分组同 group_id
     // （DB model_catalog.group_id='gpt-6-astra'）折叠成一张卡，代表是 gpt-6-astra，
     // 所以这里只钉代表 id —— 再钉 Pro 那条会被 seenTop 去重，属多余。
@@ -190,6 +194,9 @@
     "claude-fable-5-1": "fable5-1.png",
     "claude-opus-5": "opus5.png",
     "claude-opus-5-5": "/Logo/Opus5.5.png",
+    // 2026-09-30: Kiro 分组与 Max 分组折叠成一张卡（代表是 claude-opus-5-5）；
+    // 也登记一份，免得日后换代表后卡面掉回随机图。
+    "claude-opus-5-5-kiro": "/Logo/Opus5.5.png",
     // 2026-08-18 晚：站内 id 从 c:claude-opus-5 改名（免费期结束）。卡面沿用同一张图。
     "claude-opus-5-thinking": "opus5.png",
     // 2026-07-17: Kimi K3 专用卡面（Logo/kimik3.jpg → assets/oai.logo/kimik3.jpg）
