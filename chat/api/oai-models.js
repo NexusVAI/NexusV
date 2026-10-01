@@ -44,8 +44,8 @@
     "gpt-6-astra",
     "gpt-6-sol",
     // 2026-09-28: 移除 MiMo V2.6 Pro / glm-5.3 —— 两条随 api.tokenrouter.com 上游整体退役
-    // （实测近 4 天 0 成功、全 5xx，DB visible/enabled=false）。站内 GLM-5.3 由免费区的
-    // glm-5.3-fp8-free 承接。⛔ 别把免费线钉进本名单（会从免费区「掉」到旗舰区）。
+    // （实测近 4 天 0 成功、全 5xx，DB visible/enabled=false）。站内 GLM-5.3 曾由
+    // glm-5.3-fp8-free 承接，该线 2026-10-01 也已下架。⛔ 别把免费线钉进本名单（会从免费区「掉」到旗舰区）。
     "gpt-5.6-sol",
     "claude-opus-5",
     "claude-opus-5-5",
@@ -91,13 +91,9 @@
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
-    // 2026-09-28: api.gemai.cc [free] 池三条免费线，钉在免费区首位（运营方指定）。
-    // 上游 wire 带 [free] 前缀（proxy 的 toGemaiModelId 映射），与 glm-5.3-fp8-free 同池同 key。
-    // ⛔ 别把它们放进 FEATURED_ORDER —— 免费卡进了旗舰区会从免费区「掉」下去。
-    "deepseek-v4-pro-0813-free",
-    "qwen-3.8-max",
-    // 2026-09-14 首上、09-18 到期被摘；2026-09-28 重新上架并**取消截止日**。
-    "glm-5.3-fp8-free",
+    // 2026-09-28: api.gemai.cc [free] 池三条免费线曾钉在免费区首位；2026-10-01 按运营方
+    // 指令全部下架（deepseek-v4-pro-0813-free / qwen-3.8-max / glm-5.3-fp8-free），
+    // DB enabled=false + proxy 墓碑，条目删除。⛔ 免费线也别放进 FEATURED_ORDER。
     // 2026-09-22: monkeycode-ai 免费线 grok-4.7（¥0/¥0，无截止日期）。
     "grok-4.7",
     // 2026-09-28: gpt-6-luna-free / qwen-3.8-27b / mimo-v2.6-flash 三条已随各自上游退役
@@ -119,8 +115,8 @@
     // 2026-09-28: glm-5.3-fp4-free（tokenrouter 限免）随该上游退役，条目删除。
     // 2026-08-28: 限时免费卡钉在免费区前排。不要放进 FEATURED_ORDER，
     // 也不要排到 data-cancri-limit=12 之后，否则会从免费区消失、只剩底下旗舰区。
-    // 2026-08-29: qwen-3.8-max 曾硬下架；2026-09-28 改挂 gemai [free] 池后重新上架，
-    // 已挪到本名单**首位**（见上方 2026-09-28 段）。
+    // 2026-08-29: qwen-3.8-max 曾硬下架；2026-09-28 改挂 gemai [free] 池重新上架，
+    // 2026-10-01 再随本批下架（条目已删）。
     "grok-4.6-free",
     // 2026-08-28: 免费区补 DeepSeek V4 Flash 主线（sensenova）。
     // 0731 / 0813 都是付费快照，禁止再钉进免费区。
@@ -161,7 +157,7 @@
     // 后端已经把模型摘掉了。
     // 2026-09-06: hy3 / glm-5.3-flash / qwen3.8-flash 延到 09-10；mimo / vision-exp 不延。
     // 2026-09-28: mimo-v2.6-flash 随 tokenrouter 退役（条目删除）；
-    // glm-5.3-fp8-free 重新上架且**不再有截止日**（条目删除，卡片走品牌兜底文案）。
+    // glm-5.3-fp8-free 重新上架且无截止日；2026-10-01 又随本批下架。
     "kimi-k3-fp8-block-free": "09-18结束免费期限",
     "glm-5.3-flash-free": "09-10结束免费期限",
     "hy3-free": "09-10结束免费期限",
@@ -170,7 +166,7 @@
     "claude-sonnet-5-free": "09-19结束免费期限",
     "deepseek-v4-flash-vision-exp-free": "09-05结束免费期限",
     "mimo-v2.5-free": "09-05结束免费期限",
-    // 2026-09-28: qwen-3.8-max 改挂 gemai 后重新上架（无截止日，走品牌兜底文案）；
+    // 2026-09-28: qwen-3.8-max 改挂 gemai 后重新上架；2026-10-01 再下架；
     // glm-5.3-fp4-free 随 tokenrouter 退役，文案条目随之删除。
     "claude-opus-4.8-free": "08-19结束免费期限",
   };
