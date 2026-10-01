@@ -97,13 +97,13 @@ function bindGlobalToggles() {
 
 async function initPageContent() {
     if (isArticlePage()) {
-        if (!window.initArticlePage) await loadScriptOnce('js/article.js?v=2026-09-27-legal');
+        if (!window.initArticlePage) await loadScriptOnce('js/article.js?v=20261001-discord');
         if (window.initArticlePage) window.initArticlePage();
         return;
     }
 
     if (isIndexPage()) {
-        if (!window.initIndexPage) await loadScriptOnce('js/article.js?v=2026-09-27-legal');
+        if (!window.initIndexPage) await loadScriptOnce('js/article.js?v=20261001-discord');
         if (window.initIndexPage) window.initIndexPage();
     }
 }
