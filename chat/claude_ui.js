@@ -20,7 +20,7 @@
     // runOnboardingAction 的 'open-cancri-code' 分支与 openCancriCodeDownload() 都保留着没删。
     var ONBOARDING_TASK_IDS = ['importMemory', 'community'];
     var COMMUNITY_URL = 'https://qm.qq.com/q/RNgltzNsSQ';
-    var CANCRI_CODE_URL = 'https://dl.nexusvai.xyz/cancri-code/3.0.5/Cancri-Code_3.0.5_x64-setup.exe';
+    var CANCRI_CODE_URL = 'https://dl.nexusvai.xyz/cancri-code/3.0.8/Cancri-Code_3.0.8_x64-setup.exe';
     var SERVICE_STATUS_URL = 'https://nexusvai.github.io/ChatAI-status/status.html';
     var MEMORY_IMPORT_TEXT_LIMIT = 12000;
     var memoryImportCandidates = [];

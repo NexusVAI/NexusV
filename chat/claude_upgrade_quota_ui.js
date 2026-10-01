@@ -26,7 +26,7 @@
       desc: "用自然语言描述需求，在 IDE 里构建、调试与交付。",
       imgKey: 1,
       // 与 index.html 下载入口一致，指向官方直链安装包
-      href: "https://dl.nexusvai.xyz/cancri-code/3.0.5/Cancri-Code_3.0.5_x64-setup.exe",
+      href: "https://dl.nexusvai.xyz/cancri-code/3.0.8/Cancri-Code_3.0.8_x64-setup.exe",
     },
     {
       title: "Microsoft Office",

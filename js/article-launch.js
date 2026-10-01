@@ -28,7 +28,7 @@
         }];
     }
 
-    var DOWNLOAD_URL = 'https://dl.nexusvai.xyz/cancri-code/3.0.5/Cancri-Code_3.0.5_x64-setup.exe';
+    var DOWNLOAD_URL = 'https://dl.nexusvai.xyz/cancri-code/3.0.8/Cancri-Code_3.0.8_x64-setup.exe';
 
     var LAUNCH_CONTENT = {
         cancriCode3: {
