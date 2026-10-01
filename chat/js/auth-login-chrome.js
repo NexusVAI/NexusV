@@ -568,7 +568,7 @@
             existing[link.getAttribute("aria-label")] = link;
         });
         var discord = doc.createElement("a");
-        discord.href = "https://discord.gg/fAfvyhjHJP";
+        discord.href = "https://discord.gg/DHz9BfmkGQ";
         discord.target = "_blank";
         discord.rel = "noopener noreferrer";
         discord.setAttribute("aria-label", "Discord");

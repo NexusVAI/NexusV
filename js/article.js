@@ -1772,7 +1772,7 @@ const articleData = {
                 '对云端基础设施、隔离与安全有经验的人。我们把最危险的操作放在了云上，这件事需要有人把它做得又快又稳。',
                 '以及，不管你擅长什么，只要你对"AI 到底能不能把活干好"这个问题有自己的看法，都欢迎来聊聊。',
                 '<strong>怎么联系我们</strong>',
-                '最直接的方式，是先用一段时间 Cancri Code，然后带着你觉得它最该改进的地方来找我们。你可以在 Discord（discord.gg/BD9M6VMu） 上找到我们，也可以关注我们的 GitHub（github.com/NexusVAI）。一段真诚的反馈，比一份漂亮的简历更能打动我们。',
+                '最直接的方式，是先用一段时间 Cancri Code，然后带着你觉得它最该改进的地方来找我们。你可以在 Discord（discord.gg/DHz9BfmkGQ） 上找到我们，也可以关注我们的 GitHub（github.com/NexusVAI）。一段真诚的反馈，比一份漂亮的简历更能打动我们。',
                 '—— NexusVAI 呈献'
             ]
         },
@@ -1792,7 +1792,7 @@ const articleData = {
                 'People with experience in cloud infrastructure, isolation and security. We moved the most dangerous operations to the cloud, and someone has to make that fast and steady.',
                 'And whatever your specialty, if you have your own view on whether AI can really do the job well, come and talk to us.',
                 '<strong>How to reach us</strong>',
-                'The most direct route is to use Cancri Code for a while, then come to us with what you think it most needs to improve. You can find us on Discord (discord.gg/BD9M6VMu) or follow our GitHub (github.com/NexusVAI). Honest feedback impresses us more than a polished résumé.',
+                'The most direct route is to use Cancri Code for a while, then come to us with what you think it most needs to improve. You can find us on Discord (discord.gg/DHz9BfmkGQ) or follow our GitHub (github.com/NexusVAI). Honest feedback impresses us more than a polished résumé.',
                 '— Presented by NexusVAI'
             ]
         }
