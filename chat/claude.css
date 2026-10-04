@@ -12216,3 +12216,35 @@ html[data-theme="dark"] .model-current svg {
 .composer-input-row .composer-send-slot .send-btn {
     align-self: flex-end;
 }
+
+/* ───────────────────────────────────────────────────────────
+   §45. 移动端整页被拖动 / 底部滑不到底（2026-10-04）
+   现象：对话区上下滑时整页跟着动（顶部 header 被推出屏幕、输入区下方露出一截
+   页面外底色），消息列表也滑不到最后一条。
+   根因（iOS Safari）：布局视口会被地址栏伸缩 / 软键盘 / 输入框聚焦偏移；
+   html/body 的 overflow:hidden 挡不住这种偏移，且 .app / #homeView 的高度
+   用的是 100dvh 减 --header-h 的 calc —— 一旦视口偏移或 header 实高与
+   --header-h 不一致，#homeView 底部就被 .main{overflow:hidden} 裁掉一截。
+   修：
+   1) 移动端 body 钉死（position:fixed），整页不再有可平移的文档；
+   2) .app 高度跟随 JS 写入的 --app-vh（= visualViewport.height），
+      #homeView 在对话态改为 flex 吃满 header 以外的剩余高度，不再手算。
+   3) html/body 关掉 overscroll 链式传导，兜住消息区边界处的橡皮筋。 */
+html, body {
+    overscroll-behavior: none;
+}
+@media (max-width: 768px) {
+    body {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+    }
+    .app {
+        height: calc(var(--app-vh, 100dvh) - var(--top-site-banner-h, 0px));
+    }
+    body.is-chatting #homeView.chatting {
+        height: auto;
+        flex: 1 1 0;
+        min-height: 0;
+    }
+}
