@@ -880,7 +880,7 @@
 			"costTier": "free",
 			"lineLabel": "aiping"
 		},
-				{
+		{
 			"id": "kimi-k3-fp8-block-free",
 			"name": "Kimi K3 FP8 Free",
 			"brand": "Moonshot",
@@ -890,6 +890,17 @@
 			"tools": true,
 			"costTier": "free",
 			"lineLabel": "gemai.cc"
+		},
+		{
+			"id": "claude-sonnet-5-5",
+			"name": "Claude Sonnet 5.5",
+			"brand": "Anthropic",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal",
+			"lineLabel": "prorisehub"
 		}
 	];
 	//#endregion
@@ -20852,6 +20863,25 @@
 		syncComposerHeightVar();
 	}).observe(homeCenter);
 	syncComposerHeightVar();
+	(function bindVisualViewportSync() {
+		const vv = window.visualViewport;
+		if (!vv) return;
+		const root = document.documentElement;
+		const sync = () => {
+			if (!window.matchMedia("(max-width: 768px)").matches) {
+				root.style.removeProperty("--app-vh");
+				return;
+			}
+			root.style.setProperty("--app-vh", `${Math.round(vv.height)}px`);
+			if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
+			if (homeView?.classList.contains("chatting")) clampChatMessagesScroll();
+		};
+		vv.addEventListener("resize", sync);
+		vv.addEventListener("scroll", sync);
+		window.addEventListener("orientationchange", () => setTimeout(sync, 300));
+		document.addEventListener("focusout", () => setTimeout(sync, 150));
+		sync();
+	})();
 	window.addEventListener("resize", syncScrollToBottomAnchor);
 	if (currentModelName) currentModelName.textContent = getModelDisplayName(currentModel);
 	if (compareModelName) compareModelName.textContent = getModelDisplayName(compareModel);
