@@ -12248,3 +12248,16 @@ html, body {
         min-height: 0;
     }
 }
+
+/* §45.1 长对话滑不到底（2026-10-04）
+   消息区是 10000px+ 的滚动容器，却同时挂着 mask-image 和 contain:paint ——
+   iOS WebKit 会把整个滚动层当成一张被遮罩的合成层，长内容下滚动会卡死在半途。
+   顶部渐隐已由 .main-header::after（72px/移动端 56px 渐变）提供，遮罩纯属重复，
+   移动端撤掉；contain 同理（overflow 本身已经裁剪）。 */
+@media (max-width: 768px) {
+    body.is-chatting #homeView.chatting .chat-messages.active {
+        -webkit-mask-image: none !important;
+        mask-image: none !important;
+        contain: none !important;
+    }
+}
