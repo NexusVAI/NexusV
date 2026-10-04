@@ -18200,7 +18200,6 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       }
     }, { passive: true });
     chatMessages.addEventListener("scroll", () => {
-      clampChatMessagesScroll();
       if (isChatNearBottom(48)) resetChatAutoScrollLock();
       updateScrollToBottomButton();
     }, { passive: true });
@@ -19168,7 +19167,6 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       }
       root.style.setProperty("--app-vh", `${Math.round(vv.height)}px`);
       if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
-      if (homeView?.classList.contains("chatting")) clampChatMessagesScroll();
     };
     vv.addEventListener("resize", sync);
     vv.addEventListener("scroll", sync);
