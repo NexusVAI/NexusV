@@ -19155,6 +19155,27 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     composerHeightObserver.observe(homeCenter);
   }
   syncComposerHeightVar();
+  // 移动端：.app 高度跟随可视视口（claude.css §45），并把 iOS 因地址栏/键盘/聚焦
+  // 造成的整页偏移归零，否则对话页会整页被拖动、底部滑不到底。
+  (function bindVisualViewportSync() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const root = document.documentElement;
+    const sync = () => {
+      if (!window.matchMedia("(max-width: 768px)").matches) {
+        root.style.removeProperty("--app-vh");
+        return;
+      }
+      root.style.setProperty("--app-vh", `${Math.round(vv.height)}px`);
+      if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
+      if (homeView?.classList.contains("chatting")) clampChatMessagesScroll();
+    };
+    vv.addEventListener("resize", sync);
+    vv.addEventListener("scroll", sync);
+    window.addEventListener("orientationchange", () => setTimeout(sync, 300));
+    document.addEventListener("focusout", () => setTimeout(sync, 150));
+    sync();
+  })();
   window.addEventListener("resize", syncScrollToBottomAnchor);
   
   // 设置当前模型显示
