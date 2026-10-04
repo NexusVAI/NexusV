@@ -49,6 +49,9 @@
     "gpt-5.6-sol",
     "claude-opus-5",
     "claude-opus-5-5",
+    // 2026-10-02: Claude Sonnet 5.5 上架（prorisehub，¥1 / ¥5）。自建单卡组
+    // （group_id='claude-sonnet-5-5'，唯一成员），钉的就是自己的卡。
+    "claude-sonnet-5-5",
     // 2026-09-02: Claude Fable 5.1 上架，钉进旗舰区。它**不分组**（group_id 为空），
     // 所以这里钉的就是它自己的卡 id，不会被折叠到 claude-fable-5 那张卡上。
     "claude-fable-5-1",
@@ -94,8 +97,7 @@
     // 2026-09-28: api.gemai.cc [free] 池三条免费线曾钉在免费区首位；2026-10-01 按运营方
     // 指令全部下架（deepseek-v4-pro-0813-free / qwen-3.8-max / glm-5.3-fp8-free），
     // DB enabled=false + proxy 墓碑，条目删除。⛔ 免费线也别放进 FEATURED_ORDER。
-    // 2026-09-22: monkeycode-ai 免费线 grok-4.7（¥0/¥0，无截止日期）。
-    "grok-4.7",
+    // 2026-10-04: grok-4.7 终止免费（改付费 输入0.5/输出1.5），按运营方指令从免费区下架，条目删除。
     // 2026-09-28: gpt-6-luna-free / qwen-3.8-27b / mimo-v2.6-flash 三条已随各自上游退役
     // （tokenrouter 整体下架 / monkeycode 全 502 / tokenrouter），从免费区删除。
     // 2026-09-14: api.gemai.cc 限时免费 kimi-k3-fp8-block-free（至 09-18），上游 wire=[free]kimi-k3。
