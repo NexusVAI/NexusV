@@ -3481,14 +3481,41 @@ import loginIslandHtml from "../claude-login-island.html?raw";
 
   rebuildModelCatalogDerived();
   
+  // 桌面端（Cancri Code）独立聊天互通过来的会话：自定义模型以 `custom:<上游模型名>` 记录，
+  // 只有名字没有配置。按名字猜品牌，用本地图标显示（不接受外部图标 URL）。
+  const CUSTOM_MODEL_BRAND_RULES = [
+    ["OpenAI", /gpt|openai|\bo[134]\b|chatgpt/],
+    ["Anthropic", /claude|anthropic/],
+    ["Google", /gemini|gemma|google/],
+    ["DeepSeek", /deepseek/],
+    ["Qwen", /qwen|qwq|通义/],
+    ["Moonshot", /kimi|moonshot/],
+    ["Zhipu", /glm|zhipu|智谱/],
+    ["MiniMax", /minimax|abab/],
+    ["xAI", /grok|xai/],
+    ["Doubao", /doubao|seed-|豆包/],
+    ["Mistral", /mistral|mixtral/],
+    ["Meta", /llama/],
+    ["小米 MiMo", /mimo/],
+  ];
+  function inferBrandFromModelName(name) {
+    const hay = String(name || "").toLowerCase();
+    const hit = CUSTOM_MODEL_BRAND_RULES.find(([, re]) => re.test(hay));
+    return hit ? hit[0] : "Other";
+  }
+
   function getModelMeta(modelId) {
     const cached = MODEL_META_MAP.get(modelId);
     if (cached) return cached;
+    const customName = String(modelId || "").startsWith("custom:")
+      ? String(modelId).slice("custom:".length)
+      : "";
+    const customBrand = customName ? inferBrandFromModelName(customName) : "Other";
     return {
       id: modelId,
       canonicalId: modelId,
-      displayName: modelId,
-      brand: "Other",
+      displayName: customName || modelId,
+      brand: customBrand,
       lineLabel: "",
       tags: [],
       multimodal: false,
@@ -3497,7 +3524,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       available: true,
       unavailableMessage: "",
       disabled: false,
-      iconPath: "./openai.svg",
+      iconPath: BRAND_ICON_MAP[customBrand] || "./openai.svg",
       kind: "chat",
       costTier: "normal",
     };
@@ -5262,6 +5289,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     clearUnsavedNotice();
     chatHistoryListRenderSeq += 1;
     chatHistoryList = [];
+    chatRowVersions.clear();
+    chatRowRedirects.clear();
     try { localStorage.removeItem(CHAT_HISTORY_LIST_CACHE_KEY); } catch {}
     const list = document.getElementById("chatHistoryList");
     if (list) list.innerHTML = "";
@@ -5828,6 +5857,32 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   // 聊天记录管理
   let currentChatId = null;
   let chatHistoryList = [];
+
+  // ── chat_history 行版本 / 冲突分叉 / 写串行化 ─────────────────────
+  // chatRowVersions: 每行最后一次被本端确认过的 updated_at（毫秒 ISO）。
+  // 只从 create / update 响应与 GET-by-id 灌 —— 刻意不从 list 灌：
+  // expected_updated_at 必须逐行精确，列表摘要不保证与行本体同拍。
+  const chatRowVersions = new Map();
+  // 409 冲突分叉：旧 id → 冲突副本 id。之后仍拿旧 id 写的调用方全部改道副本，
+  // 绝不覆盖另一个写入方（桌面端 / 另一标签页）的行。
+  const chatRowRedirects = new Map();
+  // 同一行的写串行化：增量保存 / 最终保存 / 失败重试 / 撤回 可能并发打同一行，
+  // 串起来保证每个写都读前一写落定后的版本 —— 自己跟自己不产生伪冲突。
+  const chatRowWriteChains = new Map();
+
+  function resolveChatRowId(chatId) {
+    let id = chatId;
+    const seen = new Set();
+    while (chatRowRedirects.has(id) && !seen.has(id)) {
+      seen.add(id);
+      id = chatRowRedirects.get(id);
+    }
+    return id;
+  }
+
+  function noteChatRowVersion(row) {
+    if (row?.id && row.updated_at) chatRowVersions.set(row.id, row.updated_at);
+  }
   let chatHistoryListRenderSeq = 0;
 
   // 2026-06-17 后台生成追踪：让对话在「页内切换其他对话 / 回首页 / 进设置」时
@@ -6028,26 +6083,28 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
   async function renameChatHistory(chatId, newTitle) {
     try {
-      const chat = await loadChatHistory(chatId);
-      if (!chat) return;
+      // 纯改名：只发 title —— 不再 GET 全量消息再回写（那会把没拉过正文的行
+      // 用空 messages 覆盖掉，也平白多一次跨洋往返）。也不带 expected_updated_at：
+      // 标题改与不改都不丢任何人的正文。
       const response = await proxyFetch(EDGE_FUNCTION_URL, {
         method: "POST",
         headers: await proxyHeaders(),
         body: JSON.stringify({
           endpoint: "chat_history",
           action: "update",
-          id: chatId,
-          messages: chat.messages || [],
+          id: resolveChatRowId(chatId),
           title: newTitle,
         }),
       });
       if (!response.ok) throw new Error("重命名失败");
       const { data } = await response.json().catch(() => ({}));
       if (data) {
+        noteChatRowVersion({ ...data, id: data.id || resolveChatRowId(chatId) });
         upsertCachedChatSummary(data);
       }
-      if (currentChatId === chatId) {
-        dispatchChatTitleUpdated(newTitle, chatId);
+      const resolvedId = resolveChatRowId(chatId);
+      if (currentChatId === chatId || currentChatId === resolvedId) {
+        dispatchChatTitleUpdated(newTitle, resolvedId);
       }
       renderChatHistoryList();
       postCrossTabMessage("history-changed");
@@ -7363,10 +7420,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     const navigationSeq = loadChatSeq;
     const snapshot = snapshotMessages(messages);
     const model = currentModel;
+    // 同一个逻辑建行只用一个 id：失败重试走服务端幂等回放，不会复制出第二行。
+    const createId = crypto.randomUUID();
     try {
       const title = await generateSmartTitle(snapshot);
       if (epoch !== authSessionEpoch) return;
-      const data = await createChatHistoryRow(snapshot, model, title);
+      const data = await createChatHistoryRow(snapshot, model, title, createId);
       if (epoch !== authSessionEpoch) return;
       if (navigationSeq === loadChatSeq) currentChatId = data.id;
       upsertCachedChatSummary(data);
@@ -7377,7 +7436,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       if (epoch !== authSessionEpoch) return;
       console.error("保存聊天记录失败:", error);
       reportUnsavedChange("这个新对话没能保存到云端", () => {
-        if (epoch === authSessionEpoch) return createChatHistoryRow(snapshot, model, deriveLocalTitle(snapshot));
+        if (epoch === authSessionEpoch) return createChatHistoryRow(snapshot, model, deriveLocalTitle(snapshot), createId);
       });
     }
   }
@@ -7480,6 +7539,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       }
 
       const { data } = await response.json();
+      noteChatRowVersion(data);
       return data;
     } catch (error) {
       console.error("加载聊天记录失败:", error);
@@ -7489,13 +7549,16 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
   async function deleteChatHistory(chatId) {
     try {
+      // 该 id 若已因 409 分叉改道到副本，删除也要落到副本上，
+      // 否则会把另一写入方的原行删掉、副本变孤儿。
+      const id = resolveChatRowId(chatId);
       const response = await proxyFetch(EDGE_FUNCTION_URL, {
         method: "POST",
         headers: await proxyHeaders(),
         body: JSON.stringify({
           endpoint: "chat_history",
           action: "delete",
-          id: chatId,
+          id,
         }),
       });
   
@@ -7514,7 +7577,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         return { success: false, message: detail || "删除聊天记录失败" };
       }
   
+      chatRowVersions.delete(id);
+      chatRowRedirects.delete(chatId);
       removeCachedChatSummary(chatId);
+      if (id !== chatId) removeCachedChatSummary(id);
       postCrossTabMessage("chat-deleted", { chatId });
       return { success: true, message: detail || "已删除" };
     } catch (error) {
@@ -13789,7 +13855,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       modelId: base.modelId || fallback,
       modelName:
         base.modelName || getModelDisplayName(base.modelId || fallback) || "未知模型",
-      iconPath: base.iconPath || getModelIconPath(base.modelId || fallback),
+      // 桌面端互通的消息只带 brand 不带 iconPath：按品牌取本地图标。
+      // （原先这里把 modelId 当 brand 传进 getModelIconPath，缺 iconPath 时一律落成 OpenAI 图标。）
+      iconPath:
+        base.iconPath ||
+        getModelIconPath(
+          base.brand || getModelMeta(base.modelId || fallback).brand,
+          base.modelId || fallback,
+        ),
       brand: base.brand || getModelMeta(base.modelId || fallback).brand,
       errorCard: Boolean(base.errorCard),
       retryable: Boolean(base.retryable),
@@ -16190,7 +16263,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
 
   // 低层持久化：不触碰任何全局（currentChatId / conversationHistory），供后台生成专用。
-  async function createChatHistoryRow(messages, model, title) {
+  // id 由调用方生成并随请求上送：建行响应丢失后的重试用同一个 id，服务端按 id 幂等
+  // 回放已存在的行（23505 → 200），不会每重试一次就多出一行重复会话。
+  async function createChatHistoryRow(messages, model, title, id = crypto.randomUUID()) {
     const epoch = authSessionEpoch;
     const headers = await proxyHeaders();
     if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
@@ -16200,6 +16275,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       body: JSON.stringify({
         endpoint: "chat_history",
         action: "create",
+        id,
         title: title || deriveLocalTitle(messages),
         messages,
         model: model || currentModel,
@@ -16207,13 +16283,43 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     });
     if (!response.ok) throw new Error("创建聊天记录失败");
     const { data } = await response.json();
+    noteChatRowVersion(data);
     return data;
   }
 
-  async function updateChatHistoryRow(chatId, messages, title) {
+  // 409 冲突分叉：另一个写入方（桌面端 / 另一标签页）先动过这一行。
+  // 本端这一版原样另存「冲突副本」一行，旧 id 登记改道 —— 还拿着旧 id 的
+  // 增量保存 / 最终保存 / 撤回路径全部写去副本，原行一个字节不碰。
+  async function forkChatHistoryRow(chatId, messages, title, conflictRow) {
+    const baseTitle =
+      String(title || "").trim() ||
+      String(conflictRow?.title || "").trim() ||
+      resolveChatTitleForDisplay(chatId, "");
+    const fork = await createChatHistoryRow(
+      messages,
+      currentModel || conflictRow?.model || undefined,
+      `${baseTitle || "新对话"}（冲突副本）`,
+    );
+    if (!fork?.id) throw new Error("更新聊天记录失败");
+    chatRowRedirects.set(chatId, fork.id);
+    if (currentChatId === chatId) {
+      currentChatId = fork.id;
+      persistSessionNav();
+    }
+    upsertCachedChatSummary(fork);
+    renderChatHistoryList();
+    postCrossTabMessage("history-changed");
+    return fork;
+  }
+
+  async function doUpdateChatHistoryRow(chatId, messages, title) {
     const epoch = authSessionEpoch;
-    const body = { endpoint: "chat_history", action: "update", id: chatId, messages };
+    const id = resolveChatRowId(chatId);
+    const body = { endpoint: "chat_history", action: "update", id, messages };
     if (typeof title === "string" && title.trim()) body.title = title.trim();
+    // 乐观锁：只覆盖本端读过的那一版；没版本（旧行 / 没拉过）就不带，维持旧行为。
+    const expected = chatRowVersions.get(id);
+    if (expected) body.expected_updated_at = expected;
     const headers = await proxyHeaders();
     if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
     const response = await proxyFetch(EDGE_FUNCTION_URL, {
@@ -16221,9 +16327,27 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       headers,
       body: JSON.stringify(body),
     });
+    if (response.status === 409) {
+      const payload = await response.json().catch(() => null);
+      if (payload?.code === "conflict") {
+        return forkChatHistoryRow(id, messages, title, payload.data);
+      }
+    }
     if (!response.ok) throw new Error("更新聊天记录失败");
     const { data } = await response.json();
+    noteChatRowVersion(data);
     return data;
+  }
+
+  // 同一行的写串行起来（增量 / 最终 / 重试 / 撤回都可能并发发起），
+  // 每个写读到的 expected_updated_at 都是前一写落定后的版本。
+  function updateChatHistoryRow(chatId, messages, title) {
+    const key = resolveChatRowId(chatId);
+    const run = (chatRowWriteChains.get(key) || Promise.resolve()).then(
+      () => doUpdateChatHistoryRow(chatId, messages, title),
+    );
+    chatRowWriteChains.set(key, run.catch(() => {}));
+    return run;
   }
 
   // 当前这轮的完整消息快照（基础历史 + 本轮 user + 工具消息 + 当前 assistant 部分内容）。
@@ -16271,6 +16395,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       _finalizing: false,
       _rerenderTimer: null,
       _creating: null,
+      _createId: null,
       _titleUpgraded: false,
     };
     activeGenerations.set(gen.tempKey, gen);
@@ -16284,11 +16409,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     if (gen.authEpoch !== authSessionEpoch) return Promise.resolve(null);
     if (gen.chatId) return Promise.resolve(gen.chatId);
     if (gen._creating) return gen._creating;
+    // 建行 id 跨重试稳定：响应丢在半路时服务端可能已建行，重发同一个 id 走幂等回放，
+    // 而不是再建一行。失败后 _creating 归零，下一次 flush 会拿同一个 _createId 再来。
+    if (!gen._createId) gen._createId = crypto.randomUUID();
     gen._creating = (async () => {
       try {
         const msgs = genCurrentMessages(gen);
         gen.localTitle = deriveLocalTitle(msgs);
-        const data = await createChatHistoryRow(msgs, gen.modelId, gen.localTitle);
+        const data = await createChatHistoryRow(msgs, gen.modelId, gen.localTitle, gen._createId);
         if (gen.authEpoch !== authSessionEpoch) return null;
         if (data && data.id) {
           gen.chatId = data.id;
@@ -16304,9 +16432,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           if (isGenVisible(gen)) {
             dispatchChatTitleUpdated(gen.localTitle, gen.chatId);
           }
+        } else {
+          gen._creating = null;
         }
       } catch (error) {
         console.error("后台创建聊天记录失败:", error);
+        gen._creating = null;
       }
       return gen.chatId;
     })();
@@ -16348,11 +16479,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     try {
       const session = authSessionPromiseValue();
       if (!session?.access_token) return false;
+      const id = resolveChatRowId(chatId);
+      const expected = chatRowVersions.get(id);
       const body = JSON.stringify({
         endpoint: "chat_history",
         action: "update",
-        id: chatId,
+        id,
         messages,
+        ...(expected ? { expected_updated_at: expected } : {}),
         __auth_token: session.access_token,
       });
       if (body.length > KEEPALIVE_BODY_LIMIT) return false;
@@ -16508,7 +16642,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         savedChat = await updateChatHistoryRow(gen.chatId, finalMessages, smartTitle || undefined);
       } else {
         gen.localTitle = gen.localTitle || deriveLocalTitle(finalMessages);
-        savedChat = await createChatHistoryRow(finalMessages, gen.modelId, gen.localTitle);
+        // 与 ensureGenChatRow 共用一个 _createId：懒建行响应丢失的场景下，
+        // 最终保存/重试用的是同一个 id —— 服务端回放，不产生第二行。
+        gen._createId ||= crypto.randomUUID();
+        savedChat = await createChatHistoryRow(finalMessages, gen.modelId, gen.localTitle, gen._createId);
         if (savedChat && savedChat.id) gen.chatId = savedChat.id;
       }
       if (gen.authEpoch !== authSessionEpoch) { unregisterGeneration(gen); return; }
@@ -16531,6 +16668,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           finalMessages,
           gen.modelId,
           gen.localTitle || deriveLocalTitle(finalMessages),
+          gen._createId || undefined,
         );
         if (created?.id) {
           gen.chatId = created.id;

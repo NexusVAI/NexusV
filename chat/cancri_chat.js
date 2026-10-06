@@ -9968,14 +9968,36 @@
 		ARENA_MODELS = SELECTABLE_MODELS.filter((m) => !m.imageOnly && !m.videoOnly && m.kind === "chat").map((m) => m.id);
 	}
 	rebuildModelCatalogDerived();
+	var CUSTOM_MODEL_BRAND_RULES = [
+		["OpenAI", /gpt|openai|\bo[134]\b|chatgpt/],
+		["Anthropic", /claude|anthropic/],
+		["Google", /gemini|gemma|google/],
+		["DeepSeek", /deepseek/],
+		["Qwen", /qwen|qwq|通义/],
+		["Moonshot", /kimi|moonshot/],
+		["Zhipu", /glm|zhipu|智谱/],
+		["MiniMax", /minimax|abab/],
+		["xAI", /grok|xai/],
+		["Doubao", /doubao|seed-|豆包/],
+		["Mistral", /mistral|mixtral/],
+		["Meta", /llama/],
+		["小米 MiMo", /mimo/]
+	];
+	function inferBrandFromModelName(name) {
+		const hay = String(name || "").toLowerCase();
+		const hit = CUSTOM_MODEL_BRAND_RULES.find(([, re]) => re.test(hay));
+		return hit ? hit[0] : "Other";
+	}
 	function getModelMeta(modelId) {
 		const cached = MODEL_META_MAP.get(modelId);
 		if (cached) return cached;
+		const customName = String(modelId || "").startsWith("custom:") ? String(modelId).slice(7) : "";
+		const customBrand = customName ? inferBrandFromModelName(customName) : "Other";
 		return {
 			id: modelId,
 			canonicalId: modelId,
-			displayName: modelId,
-			brand: "Other",
+			displayName: customName || modelId,
+			brand: customBrand,
 			lineLabel: "",
 			tags: [],
 			multimodal: false,
@@ -9984,7 +10006,7 @@
 			available: true,
 			unavailableMessage: "",
 			disabled: false,
-			iconPath: "./openai.svg",
+			iconPath: BRAND_ICON_MAP[customBrand] || "./openai.svg",
 			kind: "chat",
 			costTier: "normal"
 		};
@@ -11200,6 +11222,8 @@
 		clearUnsavedNotice();
 		chatHistoryListRenderSeq += 1;
 		chatHistoryList = [];
+		chatRowVersions.clear();
+		chatRowRedirects.clear();
 		try {
 			localStorage.removeItem(CHAT_HISTORY_LIST_CACHE_KEY);
 		} catch {}
@@ -11619,6 +11643,21 @@
 	}
 	var currentChatId = null;
 	var chatHistoryList = [];
+	var chatRowVersions = /* @__PURE__ */ new Map();
+	var chatRowRedirects = /* @__PURE__ */ new Map();
+	var chatRowWriteChains = /* @__PURE__ */ new Map();
+	function resolveChatRowId(chatId) {
+		let id = chatId;
+		const seen = /* @__PURE__ */ new Set();
+		while (chatRowRedirects.has(id) && !seen.has(id)) {
+			seen.add(id);
+			id = chatRowRedirects.get(id);
+		}
+		return id;
+	}
+	function noteChatRowVersion(row) {
+		if (row?.id && row.updated_at) chatRowVersions.set(row.id, row.updated_at);
+	}
 	var chatHistoryListRenderSeq = 0;
 	var activeGenerations = /* @__PURE__ */ new Map();
 	var INCREMENTAL_SAVE_INTERVAL_MS = 1e4;
@@ -11764,23 +11803,27 @@
 	});
 	async function renameChatHistory(chatId, newTitle) {
 		try {
-			const chat = await loadChatHistory(chatId);
-			if (!chat) return;
 			const response = await proxyFetch(EDGE_FUNCTION_URL, {
 				method: "POST",
 				headers: await proxyHeaders(),
 				body: JSON.stringify({
 					endpoint: "chat_history",
 					action: "update",
-					id: chatId,
-					messages: chat.messages || [],
+					id: resolveChatRowId(chatId),
 					title: newTitle
 				})
 			});
 			if (!response.ok) throw new Error("重命名失败");
 			const { data } = await response.json().catch(() => ({}));
-			if (data) upsertCachedChatSummary(data);
-			if (currentChatId === chatId) dispatchChatTitleUpdated(newTitle, chatId);
+			if (data) {
+				noteChatRowVersion({
+					...data,
+					id: data.id || resolveChatRowId(chatId)
+				});
+				upsertCachedChatSummary(data);
+			}
+			const resolvedId = resolveChatRowId(chatId);
+			if (currentChatId === chatId || currentChatId === resolvedId) dispatchChatTitleUpdated(newTitle, resolvedId);
 			renderChatHistoryList();
 			postCrossTabMessage("history-changed");
 			showToast("已重命名");
@@ -12771,10 +12814,11 @@
 		const navigationSeq = loadChatSeq;
 		const snapshot = snapshotMessages(messages);
 		const model = currentModel;
+		const createId = crypto.randomUUID();
 		try {
 			const title = await generateSmartTitle(snapshot);
 			if (epoch !== authSessionEpoch) return;
-			const data = await createChatHistoryRow(snapshot, model, title);
+			const data = await createChatHistoryRow(snapshot, model, title, createId);
 			if (epoch !== authSessionEpoch) return;
 			if (navigationSeq === loadChatSeq) currentChatId = data.id;
 			upsertCachedChatSummary(data);
@@ -12785,7 +12829,7 @@
 			if (epoch !== authSessionEpoch) return;
 			console.error("保存聊天记录失败:", error);
 			reportUnsavedChange("这个新对话没能保存到云端", () => {
-				if (epoch === authSessionEpoch) return createChatHistoryRow(snapshot, model, deriveLocalTitle(snapshot));
+				if (epoch === authSessionEpoch) return createChatHistoryRow(snapshot, model, deriveLocalTitle(snapshot), createId);
 			});
 		}
 	}
@@ -12862,6 +12906,7 @@
 				throw new Error(msg || "加载聊天记录失败");
 			}
 			const { data } = await response.json();
+			noteChatRowVersion(data);
 			return data;
 		} catch (error) {
 			console.error("加载聊天记录失败:", error);
@@ -12870,13 +12915,14 @@
 	}
 	async function deleteChatHistory(chatId) {
 		try {
+			const id = resolveChatRowId(chatId);
 			const response = await proxyFetch(EDGE_FUNCTION_URL, {
 				method: "POST",
 				headers: await proxyHeaders(),
 				body: JSON.stringify({
 					endpoint: "chat_history",
 					action: "delete",
-					id: chatId
+					id
 				})
 			});
 			let detail = (await response.text().catch(() => "")).trim();
@@ -12888,7 +12934,10 @@
 				success: false,
 				message: detail || "删除聊天记录失败"
 			};
+			chatRowVersions.delete(id);
+			chatRowRedirects.delete(chatId);
 			removeCachedChatSummary(chatId);
+			if (id !== chatId) removeCachedChatSummary(id);
 			postCrossTabMessage("chat-deleted", { chatId });
 			return {
 				success: true,
@@ -17241,7 +17290,7 @@
 		return {
 			modelId: base.modelId || fallback,
 			modelName: base.modelName || getModelDisplayName(base.modelId || fallback) || "未知模型",
-			iconPath: base.iconPath || getModelIconPath(base.modelId || fallback),
+			iconPath: base.iconPath || getModelIconPath(base.brand || getModelMeta(base.modelId || fallback).brand, base.modelId || fallback),
 			brand: base.brand || getModelMeta(base.modelId || fallback).brand,
 			errorCard: Boolean(base.errorCard),
 			retryable: Boolean(base.retryable)
@@ -18819,7 +18868,7 @@
 		}
 		activeGenerations.delete(gen.tempKey);
 	}
-	async function createChatHistoryRow(messages, model, title) {
+	async function createChatHistoryRow(messages, model, title, id = crypto.randomUUID()) {
 		const epoch = authSessionEpoch;
 		const headers = await proxyHeaders();
 		if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
@@ -18829,6 +18878,7 @@
 			body: JSON.stringify({
 				endpoint: "chat_history",
 				action: "create",
+				id,
 				title: title || deriveLocalTitle(messages),
 				messages,
 				model: model || currentModel
@@ -18836,17 +18886,35 @@
 		});
 		if (!response.ok) throw new Error("创建聊天记录失败");
 		const { data } = await response.json();
+		noteChatRowVersion(data);
 		return data;
 	}
-	async function updateChatHistoryRow(chatId, messages, title) {
+	async function forkChatHistoryRow(chatId, messages, title, conflictRow) {
+		const baseTitle = String(title || "").trim() || String(conflictRow?.title || "").trim() || resolveChatTitleForDisplay(chatId, "");
+		const fork = await createChatHistoryRow(messages, currentModel || conflictRow?.model || void 0, `${baseTitle || "新对话"}（冲突副本）`);
+		if (!fork?.id) throw new Error("更新聊天记录失败");
+		chatRowRedirects.set(chatId, fork.id);
+		if (currentChatId === chatId) {
+			currentChatId = fork.id;
+			persistSessionNav();
+		}
+		upsertCachedChatSummary(fork);
+		renderChatHistoryList();
+		postCrossTabMessage("history-changed");
+		return fork;
+	}
+	async function doUpdateChatHistoryRow(chatId, messages, title) {
 		const epoch = authSessionEpoch;
+		const id = resolveChatRowId(chatId);
 		const body = {
 			endpoint: "chat_history",
 			action: "update",
-			id: chatId,
+			id,
 			messages
 		};
 		if (typeof title === "string" && title.trim()) body.title = title.trim();
+		const expected = chatRowVersions.get(id);
+		if (expected) body.expected_updated_at = expected;
 		const headers = await proxyHeaders();
 		if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
 		const response = await proxyFetch(EDGE_FUNCTION_URL, {
@@ -18854,9 +18922,20 @@
 			headers,
 			body: JSON.stringify(body)
 		});
+		if (response.status === 409) {
+			const payload = await response.json().catch(() => null);
+			if (payload?.code === "conflict") return forkChatHistoryRow(id, messages, title, payload.data);
+		}
 		if (!response.ok) throw new Error("更新聊天记录失败");
 		const { data } = await response.json();
+		noteChatRowVersion(data);
 		return data;
+	}
+	function updateChatHistoryRow(chatId, messages, title) {
+		const key = resolveChatRowId(chatId);
+		const run = (chatRowWriteChains.get(key) || Promise.resolve()).then(() => doUpdateChatHistoryRow(chatId, messages, title));
+		chatRowWriteChains.set(key, run.catch(() => {}));
+		return run;
 	}
 	function genCurrentMessages(gen) {
 		const out = gen.baseMessages.slice();
@@ -18897,6 +18976,7 @@
 			_finalizing: false,
 			_rerenderTimer: null,
 			_creating: null,
+			_createId: null,
 			_titleUpgraded: false
 		};
 		activeGenerations.set(gen.tempKey, gen);
@@ -18907,11 +18987,12 @@
 		if (gen.authEpoch !== authSessionEpoch) return Promise.resolve(null);
 		if (gen.chatId) return Promise.resolve(gen.chatId);
 		if (gen._creating) return gen._creating;
+		if (!gen._createId) gen._createId = crypto.randomUUID();
 		gen._creating = (async () => {
 			try {
 				const msgs = genCurrentMessages(gen);
 				gen.localTitle = deriveLocalTitle(msgs);
-				const data = await createChatHistoryRow(msgs, gen.modelId, gen.localTitle);
+				const data = await createChatHistoryRow(msgs, gen.modelId, gen.localTitle, gen._createId);
 				if (gen.authEpoch !== authSessionEpoch) return null;
 				if (data && data.id) {
 					gen.chatId = data.id;
@@ -18924,9 +19005,10 @@
 					renderChatHistoryList();
 					postCrossTabMessage("history-changed");
 					if (isGenVisible(gen)) dispatchChatTitleUpdated(gen.localTitle, gen.chatId);
-				}
+				} else gen._creating = null;
 			} catch (error) {
 				console.error("后台创建聊天记录失败:", error);
+				gen._creating = null;
 			}
 			return gen.chatId;
 		})();
@@ -18957,11 +19039,14 @@
 		try {
 			const session = authSessionPromiseValue();
 			if (!session?.access_token) return false;
+			const id = resolveChatRowId(chatId);
+			const expected = chatRowVersions.get(id);
 			const body = JSON.stringify({
 				endpoint: "chat_history",
 				action: "update",
-				id: chatId,
+				id,
 				messages,
+				...expected ? { expected_updated_at: expected } : {},
 				__auth_token: session.access_token
 			});
 			if (body.length > KEEPALIVE_BODY_LIMIT) return false;
@@ -19101,7 +19186,8 @@
 			if (gen.chatId) savedChat = await updateChatHistoryRow(gen.chatId, finalMessages, smartTitle || void 0);
 			else {
 				gen.localTitle = gen.localTitle || deriveLocalTitle(finalMessages);
-				savedChat = await createChatHistoryRow(finalMessages, gen.modelId, gen.localTitle);
+				gen._createId || (gen._createId = crypto.randomUUID());
+				savedChat = await createChatHistoryRow(finalMessages, gen.modelId, gen.localTitle, gen._createId);
 				if (savedChat && savedChat.id) gen.chatId = savedChat.id;
 			}
 			if (gen.authEpoch !== authSessionEpoch) {
@@ -19124,7 +19210,7 @@
 					if (saved) upsertCachedChatSummary(saved);
 					return;
 				}
-				const created = await createChatHistoryRow(finalMessages, gen.modelId, gen.localTitle || deriveLocalTitle(finalMessages));
+				const created = await createChatHistoryRow(finalMessages, gen.modelId, gen.localTitle || deriveLocalTitle(finalMessages), gen._createId || void 0);
 				if (created?.id) {
 					gen.chatId = created.id;
 					upsertCachedChatSummary(created);
