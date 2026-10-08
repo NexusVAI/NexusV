@@ -570,6 +570,7 @@
 
 @media (min-width: 768px) {
     .lx-cmp-pair { grid-template-columns: 1fr 1fr; gap: 20px; }
+    .lx-cmp-pair:has(> .lx-cmp-side:only-child) { grid-template-columns: 1fr; }
     @supports (grid-template-rows: subgrid) {
         .lx-cmp-pair { grid-template-rows: auto 1fr auto; row-gap: 0; }
     }

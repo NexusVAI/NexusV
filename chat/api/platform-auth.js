@@ -7,6 +7,14 @@
 
   var sb = null;
 
+  // 本地预览旁路：localhost/127.0.0.1/[::1]/空 host(file://)/*.localhost 直接发假会话，
+  // 不跳登录页（生产域名下不生效）
+  var LOCAL_PREVIEW =
+    ["localhost", "127.0.0.1", "[::1]", ""].indexOf(win.location.hostname) >= 0 ||
+    /\.localhost$/i.test(win.location.hostname || "") ||
+    /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.|0\.0\.0\.0)/.test(win.location.hostname || "");
+  var LOCAL_SESSION = { user: { email: "local-preview", id: "local-preview" }, access_token: "local-preview" };
+
   function resolveLoginUrl() {
     var custom =
       (document.body && document.body.getAttribute("data-login-url")) ||
@@ -19,6 +27,7 @@
   }
 
   function redirectToLogin() {
+    if (LOCAL_PREVIEW) return;
     win.location.replace(resolveLoginUrl());
   }
 
@@ -60,6 +69,7 @@
   }
 
   async function getSession(timeoutMs) {
+    if (LOCAL_PREVIEW) return LOCAL_SESSION;
     if (timeoutMs == null) timeoutMs = 6000;
     var p = getSupabase().auth.getSession().then(function (r) {
       return r && r.data ? r.data.session : null;
@@ -80,6 +90,10 @@
   /** @returns {Promise<object|null>} session，或 null（已跳转登录页） */
   async function requireSession(opts) {
     opts = opts || {};
+    if (LOCAL_PREVIEW) {
+      if (opts.loadingId) hide(opts.loadingId);
+      return LOCAL_SESSION;
+    }
     try {
       getSupabase();
     } catch (e) {

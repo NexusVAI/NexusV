@@ -704,10 +704,12 @@ function showMsg(text, isErr) {
     }, 5000);
 }
 
+// 2026-09-16 审计 A15（同类）：原实现只转义 & < >，不转义引号 —— 本文件的渲染
+// 同样出现在 HTML 属性位置（自 XSS 面）。与 admin-usage-app.js 统一成同一套转义器。
 function esc(s) {
-    const d = document.createElement("div");
-    d.textContent = s;
-    return d.innerHTML;
+    return String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+    );
 }
 
 // 2026-06-23：页面内确认 / 输入弹窗（替代原生 confirm / prompt）。

@@ -1,0 +1,226 @@
+/* 团队页（team.html）：团队详情按角色渲染 + 管理（团队用量 / 团队Keys / 设置）。
+   只用快照里现成的 token（--color-* / --spacing / --radius-*），亮暗两套主题自动跟随；
+   品牌橙与 usage 页消耗折线同色（oai-console-data.js updateSpendChart）。
+   前缀：ctu = 用量 + 共用骨架，ctk = Keys，ctm = 管理面板 / 弹窗 / 按钮，ctd = 团队详情。 */
+.ctu{display:flex;flex-direction:column;gap:calc(var(--spacing)*4);font-variant-numeric:tabular-nums}
+.ctu-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:calc(var(--spacing)*3)}
+.ctu-title{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ctu-title h2{margin:0;color:var(--color-text);font-size:18px;font-weight:var(--font-weight-semibold);letter-spacing:-.01px;line-height:26px}
+.ctu-sub{margin:0;color:var(--color-text-secondary);font-size:13px;line-height:18px}
+.ctu-demo{display:inline-block;margin-left:8px;padding:0 6px;border:1px solid var(--color-border);border-radius:999px;color:var(--color-text-tertiary);font-size:11px;line-height:18px;vertical-align:1px}
+.ctu-controls{display:flex;flex-wrap:wrap;align-items:center;gap:calc(var(--spacing)*2)}
+.ctu-controls>[data-tab-switcher]+[data-tab-switcher]{margin-left:calc(var(--spacing)*2);padding-left:calc(var(--spacing)*4);border-left:1px solid var(--color-border)}
+
+.ctu-body{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:calc(var(--spacing)*3);align-items:stretch}
+
+/* 左：大图卡 */
+.ctu-card{display:flex;flex-direction:column;min-width:0;border:1px solid var(--color-border);border-radius:var(--radius-xl);background:var(--color-surface);overflow:visible}
+.ctu-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid var(--color-border)}
+.ctu-stat{display:flex;flex-direction:column;gap:4px;padding:14px 16px;min-width:0}
+.ctu-stat+.ctu-stat{border-left:1px solid var(--color-border)}
+.ctu-stat-label{color:var(--color-text-secondary);font-size:13px;line-height:18px}
+.ctu-stat-value{color:var(--color-text);font-size:20px;font-weight:var(--font-weight-semibold);line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctu-stat[data-active="true"] .ctu-stat-label{color:var(--color-text)}
+.ctu-stat[data-active="true"] .ctu-stat-label::before{content:"";display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:2px;background:#E36E30;vertical-align:0}
+
+/* 高度只由 CSS 决定；svg 绝对定位，不反过来撑高容器（否则 resize 后只增不减） */
+.ctu-plot{position:relative;height:clamp(320px,calc(100vh - 380px),560px);outline:none}
+.ctu-plot:focus-visible{box-shadow:inset 0 0 0 2px var(--color-text);border-radius:0 0 var(--radius-xl) var(--radius-xl)}
+.ctu-plot svg{position:absolute;top:8px;left:8px;display:block;overflow:visible}
+.ctu-grid{stroke:var(--color-border);stroke-width:1;shape-rendering:crispEdges}
+.ctu-grid[data-base="true"]{stroke:var(--color-border-strong)}
+.ctu-axis{fill:var(--color-text-tertiary);font-size:11px}
+.ctu-line{fill:none;stroke:#E36E30;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ctu-area{fill:#E36E30;fill-opacity:.12}
+.ctu-cross{stroke:var(--color-text-secondary);stroke-width:1;stroke-dasharray:3 3;shape-rendering:crispEdges}
+.ctu-dot{fill:#E36E30;stroke:var(--color-surface);stroke-width:2}
+.ctu-empty[hidden]{display:none}
+.ctu-empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--color-text-tertiary);font-size:13px;pointer-events:none}
+
+/* 悬停卡片 */
+.ctu-tip{position:absolute;top:0;left:0;z-index:5;min-width:180px;padding:10px 12px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-elevated);box-shadow:0 12px 32px rgba(0,0,0,.18);color:var(--color-text);font-size:12px;line-height:18px;pointer-events:none;opacity:0;transition:opacity .12s ease}
+.ctu-tip[data-show="true"]{opacity:1}
+.ctu-tip-date{margin-bottom:6px;color:var(--color-text-secondary)}
+.ctu-tip-who{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-weight:var(--font-weight-semibold);font-size:13px}
+.ctu-tip-who::before{content:"";width:8px;height:8px;border-radius:2px;background:#E36E30;flex:0 0 auto}
+.ctu-tip-row{display:flex;justify-content:space-between;gap:16px;color:var(--color-text-secondary)}
+.ctu-tip-row b{color:var(--color-text);font-weight:var(--font-weight-medium)}
+.ctu-tip-row[data-active="true"],.ctu-tip-row[data-active="true"] b{color:var(--color-text);font-weight:var(--font-weight-semibold)}
+
+/* 右：成员目录 */
+/* height:0 + min-height:100%：目录不参与撑高这一行，高度跟左侧卡片对齐，多出来的成员在内部滚动 */
+.ctu-members{display:flex;flex-direction:column;min-width:0;height:0;min-height:100%;border:1px solid var(--color-border);border-radius:var(--radius-xl);background:var(--color-surface);overflow:hidden}
+.ctu-members-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--color-border);color:var(--color-text);font-size:14px;font-weight:var(--font-weight-semibold)}
+.ctu-members-head span{color:var(--color-text-tertiary);font-size:12px;font-weight:var(--font-weight-normal)}
+.ctu-list{flex:1;display:flex;flex-direction:column;gap:6px;margin:0;padding:8px;list-style:none;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.ctu-member{display:flex;align-items:center;gap:10px;width:100%;padding:10px;border:1px solid transparent;border-radius:var(--radius-md);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.ctu-member:hover{background:var(--color-background-primary-soft)}
+.ctu-member:focus-visible{outline:2px solid var(--color-text);outline-offset:-2px}
+.ctu-member[aria-pressed="true"]{border-color:var(--color-border-strong);background:var(--color-surface-secondary)}
+.ctu-avatar{display:grid;flex:0 0 auto;width:32px;height:32px;border-radius:var(--radius-md);place-items:center;color:#fff;font-size:13px;font-weight:var(--font-weight-semibold)}
+.ctu-avatar[data-all="true"]{background:var(--color-surface-tertiary);color:var(--color-text)}
+.ctu-avatar.ctu-avatar-xs{width:18px;height:18px;border-radius:5px;font-size:10px}
+.ctu-mtext{display:flex;flex-direction:column;min-width:0;flex:1}
+.ctu-mname{display:flex;align-items:center;gap:6px;color:var(--color-text);font-size:14px;font-weight:var(--font-weight-medium);line-height:20px}
+.ctu-mname>span:first-child{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ctu-role{flex:0 0 auto;padding:0 5px;border-radius:4px;background:var(--color-surface-tertiary);color:var(--color-text-secondary);font-size:11px;font-weight:var(--font-weight-normal);line-height:16px}
+.ctu-mmeta{color:var(--color-text-secondary);font-size:12px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctu-bar{height:3px;margin-top:5px;border-radius:2px;background:var(--color-surface-tertiary);overflow:hidden}
+.ctu-bar>i{display:block;height:100%;background:#E36E30;border-radius:2px}
+
+/* ---------- 管理面板 ---------- */
+.ctm{display:flex;flex-direction:column;gap:calc(var(--spacing)*5)}
+.ctm-head{display:flex;align-items:center;gap:calc(var(--spacing)*3)}
+.ctm-head .ctu-demo{margin-left:0}
+
+/* ---------- 团队Keys ---------- */
+.ctk-toolbar{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;border-bottom:1px solid var(--color-border)}
+.ctk-count{color:var(--color-text-secondary);font-size:13px}
+.ctk-sel-actions{display:flex;gap:8px;margin-left:auto}
+.ctk-sel-actions[hidden]{display:none}
+.ctk-check{display:grid;place-items:center;width:20px;height:20px;cursor:pointer}
+.ctk-check input{width:16px;height:16px;margin:0;accent-color:#E36E30;cursor:pointer}
+.ctk-list{height:clamp(380px,calc(100vh - 320px),620px);margin:0;padding:8px;list-style:none;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.ctk-row{display:grid;grid-template-columns:20px minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:12px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface)}
+.ctk-row+.ctk-row{margin-top:8px}
+.ctk-row:hover{border-color:var(--color-border-strong)}
+.ctk-row[data-selected="true"]{border-color:#E36E30;background:var(--color-surface-secondary)}
+.ctk-main{min-width:0}
+.ctk-name{display:flex;align-items:center;gap:8px;min-width:0;color:var(--color-text);font-size:14px;font-weight:var(--font-weight-medium);line-height:20px}
+.ctk-name-text{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ctk-owner{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;color:var(--color-text-secondary);font-size:12px;font-weight:var(--font-weight-normal)}
+.ctk-meta{margin-top:2px;color:var(--color-text-tertiary);font-size:12px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctk-key{padding:4px 8px;border-radius:6px;background:var(--color-surface-secondary);color:var(--color-text-secondary);font-family:var(--font-mono);font-size:12px;line-height:18px;white-space:nowrap;letter-spacing:.02em}
+.ctk-key[data-shown="true"]{color:var(--color-text)}
+.ctk-actions{display:flex;gap:2px}
+.ctk-icon-btn{display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:var(--radius-md);background:transparent;color:var(--color-text-secondary);cursor:pointer}
+.ctk-icon-btn:hover{background:var(--color-background-primary-soft);color:var(--color-text)}
+.ctk-icon-btn:focus-visible{outline:2px solid var(--color-text);outline-offset:-2px}
+.ctk-icon-btn.ctk-danger:hover{background:var(--color-background-danger-soft);color:var(--color-text-danger)}
+.ctk-empty{display:grid;place-items:center;height:100%;color:var(--color-text-tertiary);font-size:13px}
+.ctm-icon{display:inline-flex;line-height:0}
+
+/* ---------- 按钮 / 弹窗 / toast ---------- */
+.ctm-btn{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 14px;border:1px solid var(--color-border);border-radius:999px;background:transparent;color:var(--color-text);font:inherit;font-size:14px;font-weight:var(--font-weight-medium);cursor:pointer;white-space:nowrap}
+.ctm-btn:hover{background:var(--color-background-primary-soft)}
+.ctm-btn:disabled{opacity:.5;cursor:default}
+.ctm-btn-sm{height:28px;padding:0 12px;font-size:13px}
+.ctm-btn-primary{border-color:transparent;background:var(--color-text);color:var(--color-surface)}
+.ctm-btn-primary:hover{background:var(--color-text);opacity:.88}
+.ctm-btn-danger{border-color:transparent;background:var(--color-background-danger-solid);color:#fff}
+.ctm-btn-danger:hover{background:var(--color-background-danger-solid);opacity:.88}
+.ctm-dialog-back{position:fixed;inset:0;z-index:500;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.45);animation:ctm-fade .15s ease-out}
+.ctm-dialog{width:min(440px,100%);max-height:calc(100vh - 32px);overflow-y:auto;border:1px solid var(--color-border);border-radius:var(--radius-xl);background:var(--color-surface-elevated);box-shadow:0 24px 64px rgba(0,0,0,.3);color:var(--color-text);animation:ctm-pop .18s cubic-bezier(.2,.8,.3,1)}
+.ctm-dialog-title{padding:18px 20px 0;font-size:16px;font-weight:var(--font-weight-semibold)}
+.ctm-dialog-body{padding:10px 20px 0;color:var(--color-text-secondary);font-size:14px;line-height:1.55}
+.ctm-dialog-p{margin:0}
+.ctm-dialog-list{margin:12px 0 0;padding:0;list-style:none;border:1px solid var(--color-border);border-radius:var(--radius-md)}
+.ctm-dialog-list li{display:flex;justify-content:space-between;gap:12px;padding:8px 12px;font-size:13px}
+.ctm-dialog-list li+li{border-top:1px solid var(--color-border)}
+.ctm-dialog-list span{color:var(--color-text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ctm-dialog-list code{flex:0 0 auto;font-family:var(--font-mono);font-size:12px}
+.ctm-dialog-more{color:var(--color-text-tertiary)}
+.ctm-dialog-err{margin:12px 20px 0;padding:8px 10px;border-radius:8px;background:var(--color-background-danger-soft);color:var(--color-text-danger);font-size:13px}
+.ctm-dialog-err[hidden]{display:none}
+.ctm-dialog-foot{display:flex;justify-content:flex-end;gap:10px;padding:20px}
+@keyframes ctm-fade{from{opacity:0}to{opacity:1}}
+@keyframes ctm-pop{from{transform:translateY(8px) scale(.98);opacity:0}to{transform:none;opacity:1}}
+.ctm-toast{position:fixed;left:50%;bottom:28px;z-index:510;padding:9px 16px;border-radius:999px;background:var(--color-text);color:var(--color-surface);font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translate(-50%,8px);opacity:0;pointer-events:none;transition:opacity .15s,transform .15s}
+.ctm-toast[data-show="true"]{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- 设置 ---------- */
+.ctm-settings{border:1px solid var(--color-border);border-radius:var(--radius-xl);background:var(--color-surface)}
+.ctm-setting{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:16px 18px}
+.ctm-setting+.ctm-setting{border-top:1px solid var(--color-border)}
+.ctm-setting-title{color:var(--color-text);font-size:14px;font-weight:var(--font-weight-medium);line-height:20px}
+.ctm-setting-desc{margin-top:2px;color:var(--color-text-secondary);font-size:13px;line-height:19px}
+.ctm-switch{position:relative;flex:0 0 auto;width:38px;height:22px;padding:0;border:0;border-radius:999px;background:var(--color-surface-tertiary);cursor:pointer;transition:background .15s}
+.ctm-switch[aria-checked="true"]{background:#E36E30}
+.ctm-switch:focus-visible{outline:2px solid var(--color-text);outline-offset:2px}
+.ctm-switch:disabled{opacity:.6;cursor:default}
+.ctm-switch-knob{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.ctm-switch[aria-checked="true"] .ctm-switch-knob{transform:translateX(16px)}
+
+/* ---------- 团队详情（成员视角） ---------- */
+.JnYBN>.ctd-hide{display:none!important}
+/* .JnYBN 是两列网格（快照），名单占满整行，人多时内部滚动 */
+.ctd-people{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));grid-auto-rows:min-content;align-content:start;gap:8px;max-height:340px;margin:0;padding:0;list-style:none;overflow-y:auto;scrollbar-width:thin}
+.ctd-person{display:flex;align-items:center;gap:10px;min-width:0;padding:10px 12px;border:1px solid var(--color-border);border-radius:var(--radius-xl);background:var(--color-surface)}
+.ctd-person-name{min-width:0;overflow:hidden;color:var(--color-text);font-size:14px;font-weight:var(--font-weight-medium);white-space:nowrap;text-overflow:ellipsis}
+.ctd-note{margin:-8px 0 0;color:var(--color-text-secondary);font-size:13px;line-height:18px}
+
+/* 快照里不少容器带 display:flex/grid，会压过 [hidden]；团队页里统一让 hidden 生效 */
+.oNUrP [hidden],.JfaJ8[hidden],#cnc-team-manage-panel[hidden]{display:none!important}
+
+/* ---------- 加载 / 出错 ---------- */
+.ctp-status{margin-bottom:16px;padding:12px 14px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text-secondary);font-size:14px}
+.ctp-status[data-error="true"]{border-color:var(--color-border-danger-surface,var(--color-border));background:var(--color-background-danger-soft);color:var(--color-text-danger)}
+
+/* ---------- 未入团 ---------- */
+.ctp-join{display:flex;flex-direction:column;gap:16px;max-width:640px}
+.ctp-card{display:flex;flex-direction:column;gap:12px;padding:20px;border:1px solid var(--color-border);border-radius:var(--radius-xl);background:var(--color-surface)}
+.ctp-card-title{margin:0;color:var(--color-text);font-size:18px;font-weight:var(--font-weight-semibold);line-height:26px}
+.ctp-card-desc{margin:0;color:var(--color-text-secondary);font-size:14px;line-height:22px}
+.ctp-actions{display:flex;flex-wrap:wrap;gap:8px}
+.ctp-form{display:flex;gap:8px;align-items:center}
+.ctp-form .ctm-input{flex:1;min-width:0}
+.ctp-err{margin:0;color:var(--color-text-danger);font-size:13px}
+
+/* ---------- 输入 / 链接 / Key 展示 ---------- */
+.ctm-input{height:34px;padding:0 12px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font:inherit;font-size:14px;outline:none}
+.ctm-input:focus{border-color:var(--color-border-strong);box-shadow:0 0 0 3px var(--color-background-primary-soft)}
+.ctm-input:disabled{opacity:.6}
+.ctm-field{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.ctm-field>span{color:var(--color-text-secondary);font-size:13px}
+.ctm-keybox{display:block;margin-top:12px;padding:10px 12px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary);color:var(--color-text);font-family:var(--font-mono);font-size:12.5px;line-height:18px;word-break:break-all;user-select:all}
+.ctm-keybox-inline{margin-top:6px}
+.ctm-linkbtn{margin-top:10px;padding:0;border:0;background:none;color:var(--color-text-secondary);font:inherit;font-size:13px;text-decoration:underline;cursor:pointer}
+.ctm-linkbtn:hover{color:var(--color-text)}
+.ctm-btn-ghost-danger{border-color:transparent;color:var(--color-text-danger)}
+.ctm-btn-ghost-danger:hover{background:var(--color-background-danger-soft)}
+
+/* ---------- 团队详情：公告空态 / 我的团队 Key / 退出 ---------- */
+.ctd-ann-empty{padding:4px 0;color:var(--color-text-tertiary);font-size:14px}
+.ctd-ann-empty em{font-style:italic}
+.ctd-sec-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ctd-keylist{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.ctd-keyrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:12px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface)}
+.ctd-keys-empty{padding:16px;border:1px dashed var(--color-border);border-radius:var(--radius-md);color:var(--color-text-tertiary);font-size:13px;text-align:center}
+.ctd-leave{display:flex;justify-content:flex-end}
+
+/* ---------- 管理：余额 / 设置卡片 ---------- */
+.ctm .ctu+.ctu{margin-top:0}
+.ctm-settings+.ctm-settings{margin-top:16px}
+.ctm-card-head{padding:12px 18px;border-bottom:1px solid var(--color-border);color:var(--color-text);font-size:14px;font-weight:var(--font-weight-semibold)}
+.ctm-setting-text{min-width:0;flex:1}
+.ctm-inline-form{flex:0 1 360px}
+.ctm-add-form{padding:12px 18px;border-top:1px solid var(--color-border)}
+.ctm-list{margin:0;padding:0;list-style:none}
+.ctm-list-row{display:flex;align-items:center;gap:12px;padding:12px 18px}
+.ctm-list-row+.ctm-list-row{border-top:1px solid var(--color-border)}
+.ctm-list-empty{padding:14px 18px;color:var(--color-text-tertiary);font-size:13px}
+.ctm-wrap{white-space:pre-wrap;overflow-wrap:anywhere}
+.ctm-danger-zone{border-color:var(--color-border-danger-surface,var(--color-border))}
+.ctb-amount{margin-top:4px;color:var(--color-text);font-size:28px;font-weight:var(--font-weight-semibold);line-height:36px;font-variant-numeric:tabular-nums}
+.ctb-debt{color:var(--color-text-danger)}
+.ctb-foot{margin:0}
+
+@media (max-width:900px){
+  .ctu-body{grid-template-columns:minmax(0,1fr)}
+  .ctu-members{order:-1;height:auto;min-height:0;max-height:260px}
+  .ctu-plot{height:300px}
+  .ctk-list{height:auto;max-height:none}
+  .ctk-row{grid-template-columns:20px minmax(0,1fr) auto;grid-template-areas:"c m a" ". k k"}
+  .ctk-row>.ctk-check{grid-area:c}
+  .ctk-row>.ctk-main{grid-area:m}
+  .ctk-row>.ctk-key{grid-area:k;justify-self:start;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+  .ctk-row>.ctk-actions{grid-area:a}
+  .ctd-keyrow{grid-template-columns:minmax(0,1fr) auto}
+  .ctd-keyrow>.ctk-key{grid-column:1/-1;grid-row:2;justify-self:start}
+  .ctm-setting{flex-wrap:wrap}
+  .ctm-inline-form{flex:1 1 100%}
+}
+@media (max-width:560px){
+  .ctu-stats{grid-template-columns:minmax(0,1fr)}
+  .ctu-stat+.ctu-stat{border-left:0;border-top:1px solid var(--color-border)}
+}

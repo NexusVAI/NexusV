@@ -90,5 +90,6 @@ export const MODEL_CATALOG_FALLBACK = [
   {"id":"z-image-turbo","name":"【订阅福利】造相-Z-Image-Turbo","brand":"Qwen","kind":"image","vision":false,"thinking":false,"tools":false,"costTier":"free"},
   {"id":"glm-4-9b-0414","name":"GLM-4-9B-0414","brand":"Zhipu","kind":"chat","vision":false,"thinking":false,"tools":false,"costTier":"free","lineLabel":"aiping"},
   {"id":"deepseek-r1-distill-qwen-14b","name":"DeepSeek-R1-Distill-Qwen-14B","brand":"DeepSeek","kind":"chat","vision":false,"thinking":true,"tools":false,"costTier":"free","lineLabel":"aiping"},
-  {"id":"kimi-k3-fp8-block-free","name":"Kimi K3 FP8 Free","brand":"Moonshot","kind":"chat","vision":false,"thinking":true,"tools":true,"costTier":"free","lineLabel":"gemai.cc"}
+  {"id":"kimi-k3-fp8-block-free","name":"Kimi K3 FP8 Free","brand":"Moonshot","kind":"chat","vision":false,"thinking":true,"tools":true,"costTier":"free","lineLabel":"gemai.cc"},
+  {"id":"claude-sonnet-5-5","name":"Claude Sonnet 5.5","brand":"Anthropic","kind":"chat","vision":true,"thinking":false,"tools":true,"costTier":"normal","lineLabel":"prorisehub"}
 ];
