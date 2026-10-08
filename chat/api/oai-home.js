@@ -35,28 +35,32 @@
   }
 
   // 首页旗舰卡营销展示（仅 UI；不改计费 / model_pricing）
+  // 2026-10-08：卡片绑定到价格对应的那条线（Kiro 分组 ¥1/¥5、XHigh 普惠 ¥0.3/¥1、grok-4.7 已付费），
+  // 上下文按 model_public_catalog 实测值（200K / 700K / 256K）。
   var HOME_CARD_OVERRIDES = {
-    "claude-opus-5-5": {
+    "claude-opus-5-5-kiro": {
       displayName: "Claude Opus 5.5",
-      inputPricePerM: 5,
-      outputPricePerM: 25,
-      cachePricePerM: 0.5,
-      ctxZh: "1M 上下文长度 · 32K 最大输出",
-      ctxEn: "1M context · 32K max output",
+      inputPricePerM: 1,
+      outputPricePerM: 5,
+      cachePricePerM: 0.1,
+      ctxZh: "200K 上下文长度 · 32K 最大输出",
+      ctxEn: "200K context · 32K max output",
     },
-    "gpt-6-sol": {
-      displayName: "GPT 6 Sol",
-      inputPricePerM: 0.5,
-      outputPricePerM: 2,
-      cachePricePerM: 0.05,
-      ctxZh: "1M 上下文长度 · 32K 最大输出",
-      ctxEn: "1M context · 32K max output",
+    "gpt-6.1-sol-xhigh": {
+      displayName: "GPT 6.1 Sol",
+      inputPricePerM: 0.3,
+      outputPricePerM: 1,
+      cachePricePerM: 0.03,
+      ctxZh: "700K 上下文长度 · 128K 最大输出",
+      ctxEn: "700K context · 128K max output",
     },
     "grok-4.7": {
       displayName: "Grok 4.7",
-      free: true,
-      ctxZh: "500K 上下文长度 · 32K 最大输出",
-      ctxEn: "500K context · 32K max output",
+      inputPricePerM: 0.5,
+      outputPricePerM: 1.5,
+      cachePricePerM: 0.05,
+      ctxZh: "256K 上下文长度 · 32K 最大输出",
+      ctxEn: "256K context · 32K max output",
     },
   };
 

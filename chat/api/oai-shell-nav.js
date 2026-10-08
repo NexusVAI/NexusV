@@ -264,6 +264,7 @@
           item("client-continue", "Continue") +
           item("client-faq", "常见问题"),
       ) +
+      group("团队协作", item("team", "团队（Team）")) +
       group(
         "配额与限制",
         item("quota", "计费与余额") +

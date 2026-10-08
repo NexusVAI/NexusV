@@ -118,13 +118,13 @@
            首屏 HTML 为 Neon 当前价兜底；oai-home.js 再从 model_public_catalog 灌真实价。 -->
       <div class="models-row" id="home-models-row">
         <!-- 首页卡片绑定可用模型 ID；营销展示名、价格与上下文由 oai-home.js 覆盖 -->
-        <a class="model-card" data-model-id="claude-opus-5-5" href="chat/api_models.html#model-claude-opus-5-5" style="background-image:url('chat/img/api-model-0.png')">
+        <a class="model-card" data-model-id="claude-opus-5-5-kiro" href="chat/api_models.html#model-claude-opus-5-5-kiro" style="background-image:url('chat/img/api-model-0.png')">
           <div class="model-card__body">
             <div class="model-card__slide">
               <div class="model-card__name">Claude Opus 5.5</div>
               <ul class="model-card__specs">
-                <li data-slot="price">输入：¥5.00 / 输出：¥25.00 / 缓存：¥0.50 每百万标记</li>
-                <li data-slot="ctx">1M 上下文长度 · 32K 最大输出</li>
+                <li data-slot="price">输入：¥1.00 / 输出：¥5.00 / 缓存：¥0.10 每百万标记</li>
+                <li data-slot="ctx">200K 上下文长度 · 32K 最大输出</li>
                 <li data-slot="cutoff">知识截止日期：2026年1月</li>
               </ul>
               <span class="model-card__cta"><span data-i18n="api.home.model.learn_more">了解更多</span>
@@ -133,13 +133,13 @@
             </div>
           </div>
         </a>
-        <a class="model-card" data-model-id="gpt-6-sol" href="chat/api_models.html#model-gpt-6-sol" style="background-image:url('chat/img/api-model-sf30.png')">
+        <a class="model-card" data-model-id="gpt-6.1-sol-xhigh" href="chat/api_models.html#model-gpt-6.1-sol-xhigh" style="background-image:url('chat/img/api-model-sf30.png')">
           <div class="model-card__body">
             <div class="model-card__slide">
-              <div class="model-card__name">GPT 6 Sol</div>
+              <div class="model-card__name">GPT 6.1 Sol</div>
               <ul class="model-card__specs">
-                <li data-slot="price">输入：¥0.50 / 输出：¥2.00 / 缓存：¥0.05 每百万标记</li>
-                <li data-slot="ctx">1M 上下文长度 · 32K 最大输出</li>
+                <li data-slot="price">输入：¥0.30 / 输出：¥1.00 / 缓存：¥0.03 每百万标记</li>
+                <li data-slot="ctx">700K 上下文长度 · 128K 最大输出</li>
                 <li data-slot="cutoff">知识截止日期：2025年12月</li>
               </ul>
               <span class="model-card__cta"><span data-i18n="api.home.model.learn_more">了解更多</span>
@@ -153,8 +153,8 @@
             <div class="model-card__slide">
               <div class="model-card__name">Grok 4.7</div>
               <ul class="model-card__specs">
-                <li data-slot="price">免费</li>
-                <li data-slot="ctx">500K 上下文长度 · 32K 最大输出</li>
+                <li data-slot="price">输入：¥0.50 / 输出：¥1.50 / 缓存：¥0.05 每百万标记</li>
+                <li data-slot="ctx">256K 上下文长度 · 32K 最大输出</li>
                 <li data-slot="cutoff">知识截止日期：2025年12月</li>
               </ul>
               <span class="model-card__cta"><span data-i18n="api.home.model.learn_more">了解更多</span>
@@ -456,7 +456,7 @@
   <script src="chat/cancri_config.js?v=2026-05-13e"></script>
   <script src="cancricode/js/cornerkit.js?v=ck-1.3.1" defer></script>
   <script src="chat/api/oai-trusted-logos.js?v=20260817-logos-cap2" defer></script>
-  <script src="chat/api/oai-home.js?v=20260928-model-prices" defer></script>
+  <script src="chat/api/oai-home.js?v=20261008-home-cards" defer></script>
   <script src="chat/model_launch_modal.js?v=20260809-f5lm2" defer></script>
   <script src="chat/glm52_fp8_launch_modal.js?v=20260814-ext0820" defer></script>
   <script>document.addEventListener('DOMContentLoaded', function () { if (window.injectComponents) injectComponents({}); });</script>

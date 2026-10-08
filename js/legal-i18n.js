@@ -15,7 +15,7 @@
       page_title: 'Terms of Service | NexusV',
       heading: 'Terms of Service',
       category: 'Legal',
-      effective: 'Last updated: August 9, 2026 · Effective: August 9, 2026',
+      effective: 'Last updated: October 8, 2026 · Effective: October 8, 2026',
       meta_description: 'NexusVAI Terms of Service, defining the rights and obligations of both parties, service scope, acceptable use, intellectual property, disclaimers, indemnification and dispute resolution.',
       content: `
             <div class="legal-toc" aria-label="Table of contents">
@@ -58,7 +58,7 @@
             <p>You should keep the email address and verification code used for login secure and are fully responsible for all operations performed through your account. If you discover any unauthorized use of your account, please notify us immediately through the contact information at the end of these Terms.</p>
 
             <h3>3.3 One Account Per Person</h3>
-            <p>Each natural person may in principle register only one account. You may not register accounts in bulk, or sell, rent, lend, transfer or share accounts. If any violation of the above is discovered, we have the right to freeze or cancel the relevant accounts immediately and reserve the right to pursue legal liability.</p>
+            <p>Each natural person may in principle register only one account. You may not register accounts in bulk, or sell, rent, lend, transfer or share accounts. If any violation of the above is discovered, we have the right to freeze or cancel the relevant accounts immediately and reserve the right to pursue legal liability. If several people need to use the API together, please use the Team feature described in Section 7.2 instead of sharing an account or API Key.</p>
 
             <h3>3.4 Age Restriction</h3>
             <p>The Service is not directed to children under 14 years of age. If you are under 14, please do not register an account. If you discover that a child under 14 is using the Service, please contact us immediately; we will terminate the relevant account and handle the data in accordance with the <a href="privacy.html">Privacy Policy</a> after verification.</p>
@@ -70,7 +70,7 @@
                 <li>Use the Service for activities that violate export controls, economic sanctions, anti-money laundering, counter-terrorism financing or other laws and regulations, or provide services to sanctioned countries, regions, entities or individuals;</li>
                 <li>Generate, transmit or store illegal or harmful content involving terrorism, violence, pornography, gambling, drugs, cults, ethnic hatred, disinformation, etc.;</li>
                 <li>Infringe the copyrights, trademark rights, patent rights, portrait rights, privacy rights, trade secrets or other lawful rights and interests of others;</li>
-                <li>Use automated scripts, crawlers, robots or unofficial clients to access the Service;</li>
+                <li>Use automated scripts, crawlers, robots or unofficial clients to access the Service’s web or desktop clients (including simulating web requests, scraping internal endpoints or reusing login sessions); programmatic calls made through the open API with your own valid API Key, and the third-party tools listed in the <a href="chat/api_docs_detail.html#intro">API Documentation</a>, are not restricted by this item;</li>
                 <li>Circumvent, bypass, interfere with or disrupt the Service’s access control, quota limits, verification codes, rate limits or security mechanisms;</li>
                 <li>Carry out denial-of-service attacks, injection attacks, vulnerability probing, reverse engineering, decompilation, disassembly or other destructive acts against the Service;</li>
                 <li>Register or use an account by deception, forgery or impersonation of another person;</li>
@@ -102,15 +102,27 @@
             <p>Except for your input and model outputs, the copyrights and other intellectual property rights in the Service’s website design, source code, interface, brand identity, domain names and documentation belong to the Operator. Without our written authorization, you may not copy, modify, distribute or commercially exploit the above content.</p>
 
             <h2 id="s7">7. API Use</h2>
+            <h3>7.1 General</h3>
             <p>The Service provides developers with an API compatible with common protocols such as OpenAI and Anthropic, but you understand and agree that:</p>
             <ol>
                 <li>We do not guarantee that any model will remain continuously available or online; the model list, model names, parameters, billing standards and multipliers may be adjusted at any time;</li>
                 <li>Upstream model service providers may take models offline, impose rate limits, change policies or adjust prices at any time, causing calls to fail, time out, return errors or be rejected;</li>
                 <li>The API compatibility provided by us is as described in the <a href="chat/api_docs_detail.html#intro">API Documentation</a>; we do not guarantee it is 100% consistent with the latest upstream version;</li>
                 <li>Retry, timeout and retry strategies do not guarantee that every call will succeed;</li>
-                <li>API Keys (prefixed with <code>cancri_sk_</code>) are for your personal or organizational use only, and may not be shared, rented, sold, embedded in public repositories or clients;</li>
+                <li>API Keys (prefixed with <code>cancri_sk_</code>) are for your personal use only; a Team Key may be used only by the team member who created it. No key may be shared, rented, sold, or embedded in public repositories or clients;</li>
                 <li>There is an upper limit on the number of active API Keys each account may hold at the same time, as displayed in the <a href="chat/api/keys.html">API Key console</a>;</li>
                 <li>Pay-as-you-go API top-ups are credited to an independent wallet, completely isolated from Chat/IDE plan quotas.</li>
+            </ol>
+
+            <h3>7.2 Team Feature</h3>
+            <p>The Service offers a Team feature that lets multiple users call the API using a shared team balance. When using the Team feature, you understand and agree that:</p>
+            <ol>
+                <li>The creator of a team is its administrator. The administrator is responsible for invitations and member management and should send invitation links only to people they trust. All charges incurred by members through Team Keys are borne by the team balance and are not refunded because a member later leaves, is removed, or disputes the charges;</li>
+                <li>Amounts the administrator transfers to the team balance cannot be transferred back to a personal balance. When a team is dissolved, the remaining team balance, after deducting any outstanding debt, is returned to the administrator’s personal API balance; the team balance is not refunded to any payment channel, and refunds are governed by Section 8.3;</li>
+                <li>Arrangements and disputes among team members regarding cost sharing, usage, membership, announcements or similar matters are to be resolved by the members themselves. The Operator is not a party to such arrangements and bears no liability for them, and will provide system-recorded usage and billing information only where required by law or where the Operator considers it necessary;</li>
+                <li>Team announcements are posted by the administrator and do not represent the Operator’s position. The administrator shall ensure that announcements are lawful and is responsible for their content;</li>
+                <li>If any member violates these Terms, we may take the measures described in Sections 4 and 9 against that member and, depending on the circumstances, revoke the relevant Team Keys, restrict team features or freeze the team balance;</li>
+                <li>By joining a team you acknowledge and agree that the team administrator can see your email address, as well as the usage and key information generated through your Team Keys; if the administrator makes usage public, other members can also see your team usage. See the <a href="privacy.html">Privacy Policy</a> for details.</li>
             </ol>
 
             <h2 id="s8">8. Payment, Subscription and Refund</h2>
@@ -119,10 +131,10 @@
             <p>The Chat/IDE monthly quota pool and the API wallet are independent and not interchangeable. Monthly subscription quotas reset each billing cycle; unused portions generally do not carry over to the next cycle; monthly subscriptions do not auto-renew and must be manually repurchased after expiry; after the plan quota is exhausted, pay-as-you-go overflow may apply, with specific overflow discounts and rules as displayed on the purchase page. Free quotas, limited-time benefits and trial features are entitlements provided at the Operator's discretion and may be adjusted, suspended or revoked at any time; they do not constitute a commitment to continued availability.</p>
 
             <h3>8.2 Payment and Activation</h3>
-            <p>You may select a tier or top-up package on the purchase page and pay by scanning the WeChat Pay or Alipay QR code. Please enter in the remarks or message an email address and QQ or WeChat ID consistent with your account, so that the Operator can reconcile the payment. After manual verification, the Operator will generate an activation code on the order page. You must enter the activation code yourself to complete the upgrade or credit the top-up. You may also purchase activation codes through third-party card-code channels designated by the Operator; for codes bought via third-party channels, ordering, payment, invoicing and after-sales matters are governed by that channel's rules — we only guarantee that the codes redeem normally within the Service, and disputes arising on third-party channels are resolved between you and that channel. Payment and fulfillment channels may be adjusted from time to time, as displayed on the purchase page at the relevant time. The Service does not integrate any third-party payment-platform SDK and does not touch your payment credentials.</p>
+            <p>Plans and API top-ups are currently purchased as card codes (activation codes) through a third-party card-issuing channel designated by the Operator on the purchase page, and take effect immediately once redeemed within the Service. For codes bought via third-party channels, ordering, payment, invoicing and after-sales matters are governed by that channel’s rules — we only guarantee that the codes redeem normally within the Service, and disputes arising on third-party channels are resolved between you and that channel. A code is deemed activated once successfully redeemed; please keep unredeemed codes safe, as we cannot reverse or reissue a code redeemed by someone else after it was leaked. Activation codes previously obtained through on-site orders (QR-code payment with manual verification by the Operator) can still be redeemed as before. Payment and fulfillment channels may be adjusted from time to time, as displayed on the purchase page at the relevant time. The Service does not integrate any third-party payment-platform SDK and does not touch your payment credentials.</p>
 
             <h3>8.3 Refund</h3>
-            <p><strong>Except as otherwise provided by law or these Terms, activated plans, top-up packages and API credits are non-refundable.</strong> Amounts you pay mainly cover upstream calls and operating costs. Upstream provider outages, rate limits, policy changes, regional network restrictions, or interruptions outside our reasonable control are not grounds for a refund. Refunds may be requested only if: (1) after payment, no order was submitted or no activation code was claimed; or (2) a major failure of the Service itself (meaning the Operator-controlled core entry points were completely unavailable for a continuous period confirmed by Operator logs) made paid entitlements unusable for more than 50% of the entitlement period. Refund requests go to the email at the end of these Terms; whether a major failure occurred is determined by the Operator based on logs.</p>
+            <p><strong>Except as otherwise provided by law or these Terms, activated plans, top-up packages and API credits are non-refundable.</strong> Amounts you pay mainly cover upstream calls and operating costs. Upstream provider outages, rate limits, policy changes, regional network restrictions, or interruptions outside our reasonable control are not grounds for a refund. Refunds may be requested only if: (1) after paying through an on-site order, no activation code was claimed (unredeemed card codes bought via a third-party channel are handled under that channel’s after-sales rules); or (2) a major failure of the Service itself (meaning the Operator-controlled core entry points were completely unavailable for a continuous period confirmed by Operator logs) made paid entitlements unusable for more than 50% of the entitlement period. Refund requests go to the email at the end of these Terms; whether a major failure occurred is determined by the Operator based on logs.</p>
 
             <h2 id="s9">9. Service Changes, Suspension and Termination</h2>
             <p>We reserve the right to decide, at our sole discretion, whether to accept a registration, continue providing services to a specific user, open or restrict a particular model, or restrict access from a particular region or class of IP addresses. We also reserve the following rights without liability to you:</p>
@@ -181,7 +193,7 @@
       page_title: 'Privacy Policy | NexusV',
       heading: 'Privacy Policy',
       category: 'Legal',
-      effective: 'Last updated: August 9, 2026 · Effective: August 9, 2026',
+      effective: 'Last updated: October 8, 2026 · Effective: October 8, 2026',
       meta_description: 'NexusVAI Privacy Policy, explaining how we collect, use, share, transfer internationally and protect your personal information, and stating your rights and choices.',
       content: `
             <p class="legal-summary"><strong>Important Notice:</strong> When you use chat, generation, API and other functions, the Service will forward your input to the third-party model service provider you select; that provider may be located outside mainland China. To provide the Service, we need to process and transfer part of your information internationally. Please make sure you understand this Policy before using the Service.</p>
@@ -225,10 +237,12 @@
             <h3>3.1 Information You Provide Voluntarily</h3>
             <ul>
                 <li><strong>Account information</strong>: email address. The Service uses email one-time password (OTP) as the primary registration and login method.</li>
-                <li><strong>Payment reconciliation information</strong>: if you purchase a subscription or top-up package, you need to submit an email address and QQ or WeChat ID consistent with the payment remarks on the purchase page, so the Operator can reconcile the payment manually and issue an activation code; if you purchase an activation code through a third-party card-code channel, we only receive the code and redemption information, not the payment details you submit to that channel.</li>
+                <li><strong>Payment and redemption information</strong>: when you buy a card code (activation code) through a third-party card-issuing channel and redeem it in the Service, we receive the code and redemption information (redemption time, redeeming account and face value), not the payment details you submit to that channel. If you previously purchased through an on-site order, we retain the email address and QQ or WeChat ID you submitted at that time for manual payment reconciliation.</li>
                 <li><strong>Conversation and generated content</strong>: text, images, files, prompts, and the model, parameters and settings you select when using chat, image generation, video generation, file analysis and other functions.</li>
                 <li><strong>Feedback and appeal information</strong>: bug reports, feature suggestions, appeal materials and user evaluations you actively submit.</li>
-                <li><strong>Model improvement authorization</strong>: you may choose in Settings whether to allow your conversation data to be used to improve the Cancri model. This function is turned on by default; it is processing for a purpose beyond the basic service and is based on your consent, and you may turn it off at any time in Settings. After turning it off, new conversations will still be saved for your review but will be marked as not participating in model training. Before turning it off, please do not input other people’s personal information or content subject to confidentiality obligations.</li>
+                <li><strong>Model improvement authorization</strong>: you may choose in Settings whether to allow your conversation data to be used to improve the Cancri model. This function is turned on by default; it is processing for a purpose beyond the basic service and is based on your consent, and you may turn it off at any time in Settings. After turning it off, new conversations will still be saved for your review but will be marked as not participating in model training. The same setting applies to requests you make with a personal API Key and the responses returned. Before turning it off, please do not input other people’s personal information or content subject to confidentiality obligations.</li>
+                <li><strong>Memory</strong>: the memory feature is on by default. When it is on, we use a model to extract a small amount of long-term information from your conversations (such as how you like to be addressed, preferences and common settings) and save it, so that later conversations can be more consistent. You can view or delete individual memories, or turn the memory feature off, in Settings; once it is off, no new memories are extracted automatically.</li>
+                <li><strong>Team information</strong>: if you create or join a team, we process the team name, your membership and role, join time, team announcements, and the usage records generated through your Team Keys, in order to provide the Team feature and team billing. What is visible within a team is described in Section 5.3.</li>
             </ul>
 
             <h3>3.2 Information We Collect Automatically</h3>
@@ -241,7 +255,7 @@
             </ul>
 
             <h3>3.3 Information We Do Not Collect</h3>
-            <p>We do not actively collect the following information: precise geolocation, address book, photo album, microphone, camera, biometric information, ID number, bank card number or payment password. The Service does not integrate any third-party payment-platform SDK; payment is completed by you via manual WeChat Pay or Alipay QR-code verification, or by purchasing an activation code on a third-party card-code platform, and we do not touch your payment credentials.</p>
+            <p>We do not actively collect the following information: precise geolocation, address book, photo album, microphone, camera, biometric information, ID number, bank card number or payment password. The Service does not integrate any third-party payment-platform SDK; payment is completed through a third-party card-issuing channel (earlier on-site orders were paid by QR code with manual verification), and we do not touch your payment credentials.</p>
 
             <h3>3.4 Separate Consent</h3>
             <p>In accordance with the separate-consent requirements of the Personal Information Protection Law, the following processing activities require you to give separate consent on the basis of full knowledge. By reading this Policy and clicking “Agree,” you are deemed to have given separate consent to the following matters:</p>
@@ -250,7 +264,8 @@
                 <li><strong>Cross-border transfer of personal information</strong>: the above information may be transferred outside mainland China (including to jurisdictions where model service providers and infrastructure providers are located) for processing;</li>
                 <li><strong>Device identification information</strong>: after you log in, device identification information is collected and processed for account security and anti-fraud purposes;</li>
                 <li><strong>Model improvement</strong>: after the “Model Improvement Authorization” is turned on in Settings, your conversation data will be used to improve the Cancri model; if you keep the default-on state, you are deemed to consent to such processing;</li>
-                <li><strong>Client diagnostics</strong>: after explicit consent in the “Telemetry Consent” pop-up or Settings, client diagnostic information is collected.</li>
+                <li><strong>Client diagnostics</strong>: after explicit consent in the “Telemetry Consent” pop-up or Settings, client diagnostic information is collected;</li>
+                <li><strong>Providing information to team members</strong>: when you join a team through an invitation link, you agree that the information described in Section 5.3 is shown to that team’s administrator and other members.</li>
             </ol>
             <p>If you do not agree to any of the above, please do not use the corresponding function or the Service, and exercise your deletion right in accordance with Section 10.</p>
 
@@ -292,7 +307,16 @@
             </ul>
             <p>The above third parties are processors that handle data only in accordance with our instructions and contractual provisions, and may not use it beyond the agreed purposes.</p>
 
-            <h3>5.3 Other Disclosures</h3>
+            <h3>5.3 Visibility Within a Team</h3>
+            <p>Teams are created and managed by users. After you join a team, the following information is shown within the team:</p>
+            <ul>
+                <li><strong>Visible to the team administrator</strong>: your nickname and email address, role and join time; the name, prefix, creation and last-used time and request count of Team Keys you create; and the daily request count, token count and charges generated through your Team Keys;</li>
+                <li><strong>Visible to other members</strong>: your nickname (or a partially hidden email prefix if you have not set one), role and join time; if the administrator turns on “Share team usage with members”, other members can also see your team usage;</li>
+                <li><strong>Never shown</strong>: your personal API Keys, personal balance, personal key usage, or your conversation content.</li>
+            </ul>
+            <p>After you leave or are removed from a team, you no longer appear in the member list, but the usage records generated through Team Keys while you were a member are retained as the team’s billing records and remain visible to the administrator. A team administrator is an independent user who is responsible for any further use of this information; please join only teams you trust.</p>
+
+            <h3>5.4 Other Disclosures</h3>
             <p>Except as described above, we disclose your personal information only in the following circumstances:</p>
             <ul>
                 <li>To comply with applicable laws, regulations, court orders or administrative supervision requirements, or to assist investigations conducted by state organs in accordance with law;</li>
@@ -322,7 +346,8 @@
                 <li><strong>Login state</strong>: access / refresh token;</li>
                 <li><strong>Preference settings</strong>: theme, language, interface state, recently used model;</li>
                 <li><strong>Consent and identifiers</strong>: telemetry consent state, anonymous identifier, device identifier, fingerprint reporting throttle mark;</li>
-                <li><strong>Session-level temporary information</strong>: the most recently generated API Key (sessionStorage only, automatically cleared when the tab is closed).</li>
+                <li><strong>Session-level temporary information</strong>: the most recently generated API Key (sessionStorage only, automatically cleared when the tab is closed);</li>
+                <li><strong>Team invitations</strong>: if you open a team invitation link before signing in, the invitation code is stored temporarily and cleared once you join or dismiss it.</li>
             </ul>
             <p>We do not save chat content in local storage. We do not use third-party tracking cookies and do not participate in cross-site advertising tracking. The human-machine verification provider may set its own cookies to maintain the verification session, but not for user profiling or advertising. You may disable cookies or clear local storage in browser settings, but disabling them may prevent the login state from being maintained or cause some functions to be unavailable.</p>
 
@@ -341,7 +366,7 @@
                 <li><strong>Right of rectification</strong>: if you need to change your email, please apply through the contact information at the end of this Policy; we will process it after identity verification;</li>
                 <li><strong>Right of erasure</strong>: you may delete individual sessions; you may also apply to cancel your account, and we will delete or anonymize your data within a reasonable period after verification. However, transaction records, billing records, audit logs and law-enforcement investigation materials that are required to be preserved by laws and regulations will be retained for the statutory minimum period and cannot be deleted immediately;</li>
                 <li><strong>Right to copy/portability</strong>: you may apply for a copy of your personal information;</li>
-                <li><strong>Right to withdraw consent</strong>: you may turn off the model improvement authorization in Settings at any time, or clear the telemetry consent state;</li>
+                <li><strong>Right to withdraw consent</strong>: you may turn off the model improvement authorization or the memory feature in Settings at any time, or clear the telemetry consent state; leaving a team stops new information about you from being shown to that team;</li>
                 <li><strong>Right to complain</strong>: if you believe we have violated this Policy or relevant laws and regulations, you may complain to the Service or to the regulatory authority.</li>
             </ul>
             <p>Exercise of the above rights is usually free of charge; if a request is clearly unfounded, excessively repetitive or requires substantial technical cost, we may refuse to process it or require payment of a reasonable cost fee. The specific cost standard will be communicated when the request is accepted.</p>

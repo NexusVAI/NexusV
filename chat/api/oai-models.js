@@ -49,6 +49,8 @@
     "gpt-5.6-sol",
     "claude-opus-5",
     "claude-opus-5-5",
+    // 2026-10-08: 按运营方要求，Kiro 分组在旗舰区单独成卡（见 FEATURED_STANDALONE）。
+    "claude-opus-5-5-kiro",
     // 2026-10-02: Claude Sonnet 5.5 上架（prorisehub，¥1 / ¥5）。自建单卡组
     // （group_id='claude-sonnet-5-5'，唯一成员），钉的就是自己的卡。
     "claude-sonnet-5-5",
@@ -63,6 +65,9 @@
     "gemini-3.8-flash-high",
     "kimi-k3",
   ];
+  // 旗舰区里**不折叠**、按成员自身单独出卡的 id（只影响旗舰区；全量网格照旧折叠）。
+  // 不在这里登记的组成员会被 repId 折算成代表卡，再被 seenTop 去重掉。
+  var FEATURED_STANDALONE = { "claude-opus-5-5-kiro": true };
   var FEATURED_RANK = {};
   FEATURED_ORDER.forEach(function (id, i) { FEATURED_RANK[id.toLowerCase()] = i; });
   // 2026-08-20 分组折叠：名单里钉的是**成员** id（claude-opus-4-8-xhigh / grok-4.5-xhigh），
@@ -912,6 +917,12 @@
       // 折叠后两者映到同一张卡 → 必须去重，否则旗舰区会出现重复卡。
       var seenTop = {};
       var top = FEATURED_ORDER.map(function (id) {
+        if (FEATURED_STANDALONE[id.toLowerCase()]) {
+          var own = modelById[id];
+          if (!own || seenTop[id.toLowerCase()]) return null;
+          seenTop[id.toLowerCase()] = true;
+          return own;
+        }
         var rid = repId(id).toLowerCase();
         if (seenTop[rid]) return null;
         var hit = byIdFrontier[rid];
