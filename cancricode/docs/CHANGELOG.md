@@ -181,3 +181,4 @@
 - 2026-09-27：核心难题区「了解工作原理」按钮补上链接（沿用 `g_clickable_wrap` 覆盖层写法），新标签页打开博客发布稿 `article.html?id=cancriCode3`。
 - 2026-09-27：核心难题区大卡片覆盖链接由 `/path-to-hope` 改为 `https://www.nexusvai.xyz/article?id=cancriCode3`。
 - 2026-10-01：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.0.8/Cancri-Code_3.0.8_x64-setup.exe`（3 处）。
+- 2026-10-09：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.1.0/Cancri-Code_3.1.0_x64-setup.exe`（3 处；客户端 `cancri-code` tauri 版本 3.1.0，CDN 实测 200）。
