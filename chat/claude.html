@@ -1650,7 +1650,7 @@
                                     <h2 class="claude-settings-h2 claude-settings-h2-mt">记忆</h2>
                                     <div class="claude-form-row claude-form-row-stack">
                                         <span class="claude-form-label">Cancri 的记忆</span>
-                                        <div class="claude-form-help">系统每天凌晨自动总结您的对话要点，帮助 Cancri 在后续对话中记住重要信息。最多保留 5 条记忆。</div>
+                                        <div class="claude-form-help">「搜索与参考聊天」开启时，Cancri 会按问题相关性参考你的记忆；「从聊天中生成记忆」开启时，服务器每天凌晨（北京时间）从前一天的对话中整理长期信息，关闭不会删除已有记忆。最多 50 条，与 Cancri Code 桌面端同步。</div>
                                         <div class="memory-import-row" id="claudeMemoryImportRow">
                                             <div class="memory-import-copy">
                                                 <span class="claude-form-label-strong">导入记忆</span>
@@ -2726,12 +2726,12 @@
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
         <!-- 2026-07-18~20：埃德加德加限时创意卡（替换 hero 问候文案位） -->
         <script defer src="./adejia_promo_card.js?v=20260719-moon-day"></script>
-        <script defer src="./cancri_chat.js?v=20261002-sonnet55"></script>
+        <script defer src="./cancri_chat.js?v=20261009-memory-v2"></script>
         <script type="module" src="./js/main.js?v=20260917-sb-blur"></script>
         <script defer src="./cancri_announcement.js?v=20260811-ann-expand"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=20260928-dl305"></script>
+        <script defer src="./claude_ui.js?v=20261009-memory-v2"></script>
         <!-- 额度耗尽提醒条 / 升级弹窗（cancri_chat.js 通过 window.CancriUpgradeQuotaUI 调用；此前仅 index.html 引入） -->
         <script defer src="./claude_upgrade_quota_ui.js?v=20260928-dl305"></script>
     </body>

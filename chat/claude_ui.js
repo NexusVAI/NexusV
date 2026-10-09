@@ -3733,10 +3733,19 @@
             }
         });
         memoriesContainer.addEventListener('change', function (e) {
+            var app = window.CancriApp;
+            if (!app) return;
+            var reference = e.target.closest('[data-action="toggle-memory-reference"]');
+            if (reference) {
+                if (typeof app.setMemoryReferenceEnabled === 'function') {
+                    app.setMemoryReferenceEnabled(Boolean(reference.checked));
+                }
+                return;
+            }
             var toggle = e.target.closest('[data-action="toggle-memory-generation"]');
             if (!toggle) return;
-            if (window.CancriApp && typeof window.CancriApp.setMemoryGenerationEnabled === 'function') {
-                window.CancriApp.setMemoryGenerationEnabled(Boolean(toggle.checked));
+            if (typeof app.setMemoryGenerationEnabled === 'function') {
+                app.setMemoryGenerationEnabled(Boolean(toggle.checked));
             }
         });
     }
