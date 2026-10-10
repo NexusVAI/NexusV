@@ -150,6 +150,10 @@
       const params = new URLSearchParams(location.search);
       const cb = params.get("cb") || "";
       const state = params.get("state") || "";
+      // 2026-10-10：新版桌面端额外带 exp（本机监听截止时间）与 form=1（接受整页表单回传）。
+      // 旧版桌面端不带这两个参数，下面的诊断/兜底会自动退化成原行为。
+      const loginExpiresAt = Number(params.get("exp")) || 0;
+      const formCallbackSupported = params.get("form") === "1";
 
       function isValidCb(url) {
         try {
@@ -275,16 +279,36 @@
         );
         let response;
         try {
-          response = await fetch(cb, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-          });
+          if (loginExpiresAt && Date.now() > loginExpiresAt) {
+            throw new Error("登录等待已超时（超过 5 分钟）。请回到 Cancri Code 重新点击登录，再在新打开的页面里完成登录。");
+          }
+          if (formCallbackSupported) {
+            // 新版桌面端：直接整页表单回传。新版 Chrome/Edge 会拦截（或弹权限框挂起）网页对
+            // 127.0.0.1 的 fetch —— 实测 Edge 153 未授权时 fetch 直接 Failed to fetch、本机一个
+            // 请求都收不到；整页跳转不受这条限制。结果页（成功/失效/超时）由桌面端直接返回。
+            submitSessionByForm(body);
+            return;
+          }
+          try {
+            response = await fetch(cb, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+          } catch (networkError) {
+            // 旧版桌面端（不支持表单回传）：请求根本没送到桌面端，最常见是浏览器拦截了
+            // 网页访问本机应用（Chrome/Edge「本地网络访问」权限、安全软件），或桌面端已关闭。
+            throw new Error(
+              "浏览器没能把登录结果交给本机的 Cancri Code。通常是浏览器拦截了网页访问本机应用：" +
+                "请点击地址栏左侧的网站设置，允许「本地网络访问」（或「访问此设备上的其他应用」）后重试；" +
+                "也可以换一个浏览器、暂时关闭拦截本机连接的安全软件，或把 Cancri Code 升级到最新版（新版不受此限制）。",
+            );
+          }
           if (!response.ok) {
             const text = await response.text().catch(function () {
               return "";
             });
-            throw new Error(text || "桌面端登录回调被拒绝　");
+            throw new Error(describeCallbackRejection(response.status, text));
           }
         } catch (error) {
           if (fromOtp) {
@@ -298,6 +322,46 @@
         setTimeout(function () {
           window.close();
         }, 800);
+      }
+
+      // 桌面端回调拒绝时只回英文短语；这里翻成用户能照做的话（否则全被兜底成同一句）。
+      function describeCallbackRejection(status, text) {
+        const raw = String(text || "").trim();
+        if (raw === "state mismatch") {
+          return "这个登录页已失效（桌面端已经重新发起过登录）。请回到 Cancri Code，使用最新打开的登录页。";
+        }
+        if (status === 403) {
+          return "登录页来源校验失败。请回到 Cancri Code 桌面端重新点击登录，并使用自动打开的页面。";
+        }
+        if (raw === "missing tokens") {
+          return "登录信息不完整，请点击「切换账号」重新登录一次。";
+        }
+        if (status >= 500) {
+          return "桌面端保存登录信息失败，请回到 Cancri Code 查看错误提示后重试。";
+        }
+        return "桌面端拒绝了这次登录回传（HTTP " + status + (raw ? "：" + raw : "") + "）。请回到 Cancri Code 重新点击登录。";
+      }
+
+      function submitSessionByForm(body) {
+        // 表单 POST 的 Origin 头受文档 referrer 策略约束：本页的 no-referrer 会让浏览器发
+        // `Origin: null`（桌面端据此拒绝）。跳转前把策略放宽到 origin —— 只暴露站点源，
+        // 不含带 state 的路径与查询串。
+        const meta = document.querySelector('meta[name="referrer"]');
+        if (meta) meta.setAttribute("content", "origin");
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = cb;
+        form.enctype = "application/x-www-form-urlencoded";
+        form.style.display = "none";
+        Object.keys(body).forEach(function (key) {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = String(body[key]);
+          form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
       }
 
       authFlow = window.CancriAuthFlow.create({
