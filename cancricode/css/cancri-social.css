@@ -92,3 +92,129 @@ html[data-cancri-theme="dark"] [data-cancri-role="faq-social"] {
   --cancri-social-ink-hover: #ffffff;
   --cancri-social-rule: rgba(255, 255, 255, 0.16);
 }
+
+/* ── Nav QQ group hover card ────────────────────────────────────
+ * Injected <li> before the nav CTA (index.html); copy behavior in
+ * js/cancri-site.js (initQqNav). Icon mask: images/social/tencent-qq.svg. */
+
+.cancri-qqnav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.cancri-qqnav__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--cancri-muted);
+  border-radius: 8px;
+  transition: color 160ms ease;
+}
+
+.cancri-qqnav__btn:hover,
+.cancri-qqnav:focus-within .cancri-qqnav__btn {
+  color: var(--cancri-ink);
+}
+
+.cancri-qqnav__icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  background-color: currentColor;
+  -webkit-mask: url("../images/social/tencent-qq.svg") center / contain no-repeat;
+  mask: url("../images/social/tencent-qq.svg") center / contain no-repeat;
+}
+
+.cancri-qqnav__pop {
+  position: absolute;
+  top: 100%;
+  right: -8px;
+  padding-top: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    visibility 160ms;
+  z-index: 90;
+}
+
+.cancri-qqnav:hover .cancri-qqnav__pop,
+.cancri-qqnav:focus-within .cancri-qqnav__pop {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.nav_links_item.is-mobile .cancri-qqnav__pop {
+  right: auto;
+  left: -8px;
+}
+
+.cancri-qqnav__card {
+  width: 216px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: var(--cancri-surface);
+  border: 1px solid var(--cancri-border);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+}
+
+.cancri-qqnav__row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.cancri-qqnav__num {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cancri-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.cancri-qqnav__copy {
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 2px 10px;
+  border: 1px solid var(--cancri-border);
+  border-radius: 999px;
+  background: none;
+  color: var(--cancri-muted);
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.cancri-qqnav__copy:hover {
+  color: var(--cancri-ink);
+}
+
+.cancri-qqnav__copy.is-copied {
+  color: #16a34a;
+}
+
+.cancri-qqnav__qr {
+  display: block;
+}
+
+.cancri-qqnav__qr img {
+  display: block;
+  width: 168px;
+  height: auto;
+  border-radius: 10px;
+}

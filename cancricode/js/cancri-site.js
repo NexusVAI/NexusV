@@ -100,10 +100,58 @@
     });
   }
 
+  /** Nav QQ group card: copy group number to clipboard. */
+  function initQqNav() {
+    document.querySelectorAll('[data-cancri-qq-copy]').forEach(function (btn) {
+      if (btn.dataset.cancriQqReady === 'true') return;
+      btn.dataset.cancriQqReady = 'true';
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var text = btn.getAttribute('data-cancri-qq-copy');
+        copyText(text).then(function () {
+          var prev = btn.textContent;
+          btn.classList.add('is-copied');
+          btn.textContent = '已复制';
+          window.setTimeout(function () {
+            btn.classList.remove('is-copied');
+            btn.textContent = prev;
+          }, 1100);
+        });
+      });
+    });
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).catch(function () {
+        return fallbackCopy(text);
+      });
+    }
+    return fallbackCopy(text);
+  }
+
+  function fallbackCopy(text) {
+    return new Promise(function (resolve) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (e) {}
+      resolve();
+    });
+  }
+
   function init() {
     initFaq();
     initHeroCtas();
     initNavCta();
+    initQqNav();
   }
 
   if (document.readyState === 'loading') {

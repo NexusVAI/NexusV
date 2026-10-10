@@ -169,6 +169,20 @@
       '<span class="truncate">开始搜索</span>' +
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 shrink-0"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>' +
       "</button>" +
+      '<div class="relative group hidden md:flex cancri-qqnav">' +
+      '<button type="button" aria-label="QQ 交流群" class="cancri-qqnav__btn text-secondary hover:text-default transition-colors">' +
+      '<span class="cancri-qqnav__icon" aria-hidden="true"></span>' +
+      "</button>" +
+      '<div class="invisible opacity-0 absolute right-0 top-full z-50 mt-2 transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 before:content-[\'\'] before:absolute before:-top-2 before:left-0 before:right-0 before:h-2">' +
+      '<div class="cancri-qqnav__card overflow-hidden rounded-md border border-primary-surface bg-surface shadow-md ring-1 ring-black/5 dark:ring-white/10">' +
+      '<div class="cancri-qqnav__row">' +
+      '<span class="cancri-qqnav__num">QQ 群 1076256254</span>' +
+      '<button type="button" class="cancri-qqnav__copy" data-copy="1076256254" title="复制群号"><span class="cancri-id__text">复制</span></button>' +
+      "</div>" +
+      '<a class="cancri-qqnav__qr" href="https://qm.qq.com/q/IguC3r3Zsc" target="_blank" rel="noopener noreferrer" title="扫码或点击加入 QQ 群">' +
+      '<img src="./assets/qq-group-qrcode.jpg" alt="QQ 交流群二维码" width="180" height="320" loading="lazy" />' +
+      "</a>" +
+      "</div></div></div>" +
       '<div class="hidden md:flex">' +
       '<a href="./api/console.html" class="_Button_6dmow_1 not-prose !h-9 !w-9 justify-center !px-0 min-[1000px]:!w-auto min-[1000px]:!px-4" data-color="primary" data-variant="solid" data-pill data-size="md">' +
       '<span class="_ButtonInner_6dmow_4"><span class="sr-only min-[1000px]:not-sr-only">控制台</span>' +
