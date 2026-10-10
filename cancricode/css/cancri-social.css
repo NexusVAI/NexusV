@@ -218,3 +218,51 @@ html[data-cancri-theme="dark"] [data-cancri-role="faq-social"] {
   height: auto;
   border-radius: 10px;
 }
+
+/* ── Top announcement banner (template nav_banner_* slot) ─────────
+ * Element injected as first child of .nav_component (index.html);
+ * html:has(.nav_banner_wrap) already feeds --nav--height-total.
+ * Close button: js/cancri-site.js (initTopBanner) → html.hide-nav-banner. */
+
+.cancri-topbanner {
+  min-height: var(--nav--banner-height, 2.75rem);
+  display: flex;
+  align-items: center;
+}
+
+.cancri-topbanner .nav_banner_contain {
+  align-items: center;
+}
+
+.cancri-topbanner__text {
+  line-height: 1.4;
+}
+
+.cancri-topbanner__arrow {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  opacity: 0.8;
+}
+
+.cancri-topbanner__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.cancri-topbanner__close:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.cancri-topbanner__close .nav_banner_close_svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}

@@ -147,11 +147,22 @@
     });
   }
 
+  /** Top announcement banner close → html.hide-nav-banner (template CSS). */
+  function initTopBanner() {
+    var close = document.querySelector('[data-cancri-banner-close]');
+    if (!close || close.dataset.cancriReady === 'true') return;
+    close.dataset.cancriReady = 'true';
+    close.addEventListener('click', function () {
+      document.documentElement.classList.add('hide-nav-banner');
+    });
+  }
+
   function init() {
     initFaq();
     initHeroCtas();
     initNavCta();
     initQqNav();
+    initTopBanner();
   }
 
   if (document.readyState === 'loading') {
