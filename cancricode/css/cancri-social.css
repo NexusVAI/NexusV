@@ -222,12 +222,27 @@ html[data-cancri-theme="dark"] [data-cancri-role="faq-social"] {
 /* ── Top announcement banner (template nav_banner_* slot) ─────────
  * Element injected as first child of .nav_component (index.html);
  * html:has(.nav_banner_wrap) already feeds --nav--height-total.
- * Close button: js/cancri-site.js (initTopBanner) → html.hide-nav-banner. */
+ * Close button: js/cancri-site.js (initTopBanner) → html.hide-nav-banner.
+ * cancri-liquid-glass.css turns .nav_component into a fixed flex-row host
+ * that centers the nav bar — wrap so the banner takes its own line. */
+
+.nav_component {
+  flex-wrap: wrap;
+}
 
 .cancri-topbanner {
+  width: 100%;
+  flex: none;
+  pointer-events: auto;
   min-height: var(--nav--banner-height, 2.75rem);
   display: flex;
   align-items: center;
+}
+
+/* Scrolled host gets padding:10px 16px 0 — keep the banner full-bleed. */
+html.cancri-nav-scrolled .cancri-topbanner {
+  width: calc(100% + 32px);
+  margin: -10px -16px 10px;
 }
 
 .cancri-topbanner .nav_banner_contain {
