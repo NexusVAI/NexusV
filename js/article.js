@@ -1453,6 +1453,29 @@ const articleData = {
             ]
         }
     },
+    cancriBot: {
+        overlay: '',
+        layout: 'launch',
+        media: { type: 'image', src: 'Logo/cancribot.png', alt: 'Cancri Bot' },
+        zh: {
+            title: '隆重介绍我们的全天候管家：Cancri Bot',
+            date: '2026年10月13日',
+            category: '产品',
+            readTime: '14 分钟阅读',
+            paragraphs: [
+                '今天我们推出 Cancri Bot：一个住在 Cancri Code 里、有长期记忆、还有一台自己云电脑的私人助理。它记得你说过的事，能替你上网查资料、跑代码、把网页上的活做完。现在限时免费。'
+            ]
+        },
+        en: {
+            title: 'Introducing Cancri Bot, Our Always-On Butler',
+            date: 'October 13, 2026',
+            category: 'Product',
+            readTime: '14 min read',
+            paragraphs: [
+                'Today we are introducing Cancri Bot: a personal assistant that lives inside Cancri Code, with a long-term memory and a cloud computer of its own. It remembers what you tell it, and it can search the web, run code and finish jobs in a browser for you. It is free for a limited time.'
+            ]
+        }
+    },
     cancri25flash: {
         overlay: '',
         layout: 'launch',
@@ -3445,11 +3468,12 @@ function initIndexPage() {
     if (!heroCard && !scrollableList && !newsGrid && !featureStrip) return;
 
     function renderIndex(lang) {
-        // Scrollable List (cancri25flash first, then sentienceV52mens, cancriV1)
+        // Scrollable List (cancriBot first, then cancri25flash, cancriV1)
+        // sentienceV52mens 已撤下首页，入口只留在顶栏超级菜单（js/menu.js）。
         if (scrollableList) {
             scrollableList.innerHTML = '';
-            const listIds = ['cancri25flash', 'sentienceV52mens', 'cancriV1'];
-            const linkTargets = ['cancri25flash', 'sentienceV52mens', 'cancriV1'];
+            const listIds = ['cancriBot', 'cancri25flash', 'cancriV1'];
+            const linkTargets = ['cancriBot', 'cancri25flash', 'cancriV1'];
             
             listIds.forEach((id, index) => {
                  const item = articleData[id];

@@ -257,6 +257,190 @@
                 ]
             }
         },
+        cancriBot: {
+            zh: {
+                eyebrow: '2026 年 10 月 13 日',
+                eyebrowColor: '#efe4d2',
+                heading: '隆重介绍我们的全天候管家：Cancri Bot',
+                toc: [
+                    { id: 'introduction', label: '引言' },
+                    { id: 'memory', label: '记忆' },
+                    { id: 'computer', label: '它的电脑' },
+                    { id: 'availability', label: '现在可用' }
+                ],
+                blocks: [
+                    { t: 'anchor', id: 'introduction' },
+                    { t: 'summary', text: '隆重介绍 Cancri Bot：一个有长期记忆、还有一台自己云电脑的私人助理。它记得你，也替你动手——而且从今天起，限时免费。' },
+                    { t: 'p', html: 'Cancri Bot 住在 Cancri Code 里。你和它之间只有一条对话，从你们第一次打招呼开始，永远不会结束：今天聊到一半的事，下周打开还在；上个月你随口提过的偏好，它到现在都记得。' },
+                    { t: 'p', html: '它也不只是会聊天。每个 Bot 都有一台属于自己的云电脑——Linux 系统，装着 Chrome。查资料、比价、整理表格、跑一段脚本、把一个网页上的流程走完，它会自己开机、自己动手，做完再用一两句话告诉你结果。你想看的话，它的屏幕就在旁边，实时可见。¹' },
+                    { t: 'p', html: '和 <a href="article.html?id=cancriCode3">Cancri Code 3</a> 一样，这台电脑是一台隔离的云沙箱，不是你的电脑。它碰不到你本机的文件、邮箱和账号；它要用你的东西，得你亲手递过去。' },
+                    { t: 'p', html: '这一版里你会感受到的几件事：' },
+                    { t: 'p', html: '<strong>像朋友那样说话。</strong>它的回复会拆成几条短消息，一条一条冒出来，而不是一墙长文。你可以引用某一条回复它，可以给消息点个表情——它偶尔也会给你点一个。没有客服腔，也不会说"作为 AI"。' },
+                    { t: 'p', html: '<strong>记得住，也忘得掉。</strong>你的称呼、喜好、家人、计划、答应过你的事，它会随手记下；你说"上次"，它会先去翻旧账再回答；你让它忘掉，它就删掉。它记了什么，你随时都能打开看、直接改。' },
+                    { t: 'p', html: '<strong>先做再说。</strong>要上网、要算、要跑代码，它直接动手，而不是先列一份计划请你批准。多步的事一步步推进，直到做完或者确实卡住——卡住了，它会告诉你卡在哪。' },
+                    { t: 'p', html: '<strong>名字由你来起。</strong>第一次见面它会请你给它起个名字。你也可以养好几个 Bot：一个管生活琐事，一个陪你啃项目，各自的记忆互不相通。' },
+                    { t: 'compare', tab: '一次对话', replayLabel: '重播回复动画', prompt: '帮我看看下周六杭州的天气，顺便记一下：我妈 11 月 2 号生日，到时候提醒我挑礼物。',
+                        sides: [
+                            { label: 'Cancri Bot · 动手', toggleLabel: '动手', response: [
+                                { p: '查好了，下周六杭州多云转小雨，16–22°C，出门带把伞。' },
+                                { p: '要的话我截一张预报页给你。' }
+                            ] },
+                            { label: 'Cancri Bot · 记住', toggleLabel: '记住', response: [
+                                { p: '阿姨的生日我记下了：11 月 2 日。' },
+                                { code: '记事本 · 事件  2026-11-02  妈妈生日\n记事本 · 待办  提醒挑生日礼物（未完成）' },
+                                { p: '下次你来找我，我会先提这件事。想好预算的话告诉我，我先帮你看几样。' }
+                            ] }
+                        ],
+                        caption: '示意对话，用于说明交互方式；天气等具体内容以实际查询结果为准。' },
+
+                    { t: 'h2', id: 'memory', text: '记忆' },
+                    { t: 'p', html: '大多数聊天助手的"记忆"是一段越拉越长的聊天记录：聊得越久，越早的内容越先被挤出去。一个要陪你很久的助理不能这样工作。所以我们给 Cancri Bot 设计了分层的记忆，每一层负责不同的时间尺度。' },
+                    { t: 'table', title: 'Cancri Bot 的四层记忆', head: ['', '里面是什么', '什么时候用到'], rows: [
+                        ['关于我', '它是谁、叫什么、是怎样的性格——它自己写，也可以你来改', '每一轮对话'],
+                        ['关于你', '你的称呼、身份、习惯和长期偏好', '每一轮对话'],
+                        ['记事本', '一条一条的事实、偏好、待办和带日期的事件', '按和当前话题的相关性挑出来；没办完的待办始终在场'],
+                        ['聊天记录', '你们完整的对话历史', '你提到"上次""之前"时，它会先去搜，再回答']
+                    ] },
+                    { t: 'p', html: '前两层是常驻的：它每次开口之前都会先读一遍，并且会自己改写——你告诉它"我换工作了"，它会把那一段重写，而不是在后面再追加一行矛盾的信息。记事本更像一本带分类的便签：哪天是谁的生日、你不吃香菜、答应你周五前整理好的清单。它不会每次把整本都摊开，只挑和眼下话题相关的几条，没办完的待办则一直摆在手边。' },
+                    { t: 'p', html: '它还知道时间。每次你开口，它都知道现在是几点、星期几，以及距离你们上一次说话过去了多久——隔了三天回来，它不会接着三天前的语气寒暄，也不会忘了三天前答应你的事。' },
+                    { t: 'p', html: '<strong>记忆是你的。</strong>在 Bot 的面板里，「详情」页能看到它写下的"关于我"和"关于你"，「记忆」页能看到整本记事本：可以增、可以删、可以把待办勾掉。这些内容保存在你自己的设备上，按账号隔开，换一个账号登录互相看不见。²' },
+                    { t: 'p', html: '我们也对记忆本身做了防护。记忆里的文字有一部分来自网页和聊天，我们把它们一律当作资料而不是指令来处理——有人想在聊天里塞一段伪装成系统指令的文字，进到记忆里也只会是一段普通的文字。' },
+
+                    { t: 'h2', id: 'computer', text: '它的电脑' },
+                    { t: 'p', html: '一个助理只会说"你可以去某某网站看看"，帮的忙就到此为止了。我们想要的是它自己去看。' },
+                    { t: 'p', html: 'Cancri Bot 的电脑是一台带浏览器的云沙箱，和 Cancri Code 3 用的是同一套基础设施。它平时是关着的；Bot 需要用的时候自动开机，十来秒就能就绪。闲置一会儿会自动休眠、不再计时，下次要用再自动唤醒。你不需要记得去开，也不需要记得去关。' },
+                    { t: 'grid', title: '在它的电脑上，Bot 能做什么', subject: 0, columns: ['Cancri Bot', '普通聊天助手'], rows: [
+                        { label: '上网查资料', sub: '搜索、读网页正文', cells: ['✓', '部分'] },
+                        { label: '用浏览器办事', sub: '打开页面、点击、填写、翻页', cells: ['✓', '—'] },
+                        { label: '跑命令和代码', sub: '装软件、写脚本、处理数据', cells: ['✓', '—'] },
+                        { label: '读写文件', sub: '在它自己的电脑上', cells: ['✓', '—'] },
+                        { label: '截图发给你', sub: '整页长图也可以', cells: ['✓', '—'] },
+                        { label: '实时观看与接管', sub: '你随时可以亲手操作', cells: ['✓', '—'] }
+                    ], caption: '"普通聊天助手"指不带执行环境的纯对话产品，仅作对照。' },
+                    { t: 'p', html: '<strong>你看得见它在干什么。</strong>打开面板的「电脑」页，就是它的屏幕，可以放大到全屏。它在浏览器里每点一下、每输入一个字，你都看得到。想要一张截图，跟它说一声，它会直接发进聊天里。' },
+                    { t: 'p', html: '<strong>你可以随时接手。</strong>遇到验证码、需要你亲自登录、或者你就是想自己点一下的时候，点「接管」，鼠标和键盘就交到你手上。接管期间它的浏览器动作会自动让开，免得两只手抢一个鼠标。交还之后，它接着往下做。' },
+                    { t: 'p', html: '<strong>你的文件，你来递。</strong>它碰不到你的电脑。需要你本机上的某份文件时——比如一份要改的简历——它会在聊天里弹出一张卡片，写清楚要什么、拿去做什么，由你亲自挑选文件交给它。你也可以主动把文件上传到它的电脑上。你拒绝了，它就不会反复再要。' },
+
+                    { t: 'h2', id: 'safety', text: '边界与安全' },
+                    { t: 'p', html: '一个能上网、能动手、还记得你很多事的助理，必须先想清楚什么事不该替你做。' },
+                    { t: 'p', html: '<strong>会产生后果的事，先问你。</strong>在网上提交表单、下单、发帖、登录，这类会替你产生后果的动作，它会先停下来征求你的同意。它自己电脑上的日常操作——看网页、跑命令、写文件——不需要你一次次点头，因为那台电脑是隔离的，出了事影响的也只是它自己的机器。' },
+                    { t: 'p', html: '<strong>敏感信息不随便出门。</strong>如果对话里出现过敏感数据，它再往外发起网络请求时会弹出一张确认卡，由你决定放不放行。网页和文件里的内容在它眼里是资料，不是给它的指令。' },
+                    { t: 'p', html: '<strong>钥匙不交给模型。</strong>这台云电脑的访问凭据只在客户端里使用，不会出现在模型能看到的任何地方。模型能做的，是通过我们定义好的几个动作去用这台电脑，而不是拿到它的钥匙。' },
+                    { t: 'p', html: '<strong>不编造。</strong>工具失败了，它会如实告诉你失败的原因；没做过的事，不会说成做过。我们宁可它说"这一步没成功"，也不要一个看起来圆满、实际上是编出来的结果。' },
+                    { t: 'quote', html: '我们最在意的不是它能做多少事，而是你敢不敢把事交给它。', source: 'NexusVAI' },
+
+                    { t: 'h2', id: 'availability', text: '现在可用' },
+                    { t: 'p', html: 'Cancri Bot 今天起随 Cancri Code 桌面端提供，登录你的 NexusV 账号即可使用。' },
+                    { t: 'p', html: '<strong>限时免费。</strong>Bot 对话默认使用的模型线在 Cancri Code 里免费；没有付费套餐的用户，云电脑也有限时试用额度：<strong>每 5 小时可用 2 小时、每周最多 4 小时</strong>。额度在面板的「电脑」页实时显示，用完之后等额度重置即可继续使用。已订阅套餐的用户，云电脑按使用时长计入套餐。³' },
+                    { t: 'table', title: '云电脑额度', head: ['', '免费计划（限时试用）', '付费套餐'], rows: [
+                        ['对话模型', '默认模型线免费', '默认模型线免费'],
+                        ['云电脑', '每 5 小时 2 小时 · 每周 4 小时', '按使用时长计入套餐'],
+                        ['闲置时', '自动休眠，不计时', '自动休眠，不计费'],
+                        ['额度显示', '「电脑」页实时显示', '「电脑」页显示本次用时']
+                    ] },
+                    { t: 'cta', href: DOWNLOAD_URL, text: '下载 Cancri Code，认识 Cancri Bot' },
+                    { t: 'p', html: '也有它还做不到的事，提前说清楚：' },
+                    { t: 'p', html: '它现在还不会主动找你。"全天候"指的是它一直在、一直记得——你什么时候打开，它都接得上；但 Cancri Code 关着的时候，它不会自己醒来干活，也不会到点了先给你发消息。让它在你离开之后继续做事、到时间主动提醒你，是我们接下来最想做的一件事。' },
+                    { t: 'p', html: '它默认使用的模型只读文字。它截给你的图，它自己其实"看"不到——它靠读取网页正文和可点击元素来操作浏览器。对于大多数网页这已经够用，但遇到纯图片内容时会力不从心。' },
+                    { t: 'p', html: '如果这是你第一次用 Cancri Code，可以先读 <a href="article.html?id=cancriCode3">Cancri Code 3：见识一下你的软件工程师</a>，了解云沙箱是怎么来的。然后去认识一下你的 Bot，给它起个名字，跟它说说你自己。' },
+                    { t: 'note', html: '¹ 云电脑在 Bot 需要时自动开机，首次开机约需 10–20 秒；闲置后自动休眠，再次使用时自动唤醒。' },
+                    { t: 'note', html: '² 聊天记录与记忆保存在当前设备上，按登录账号分别存放；清空聊天记录或删除 Bot 会一并删除对应内容。' },
+                    { t: 'note', html: '³ 试用额度仅适用于没有有效付费套餐的用户，以及带浏览器的云电脑；任一额度用尽后，正在运行的云电脑会停止，直到额度重置。限时试用的额度与期限可能调整，以客户端显示为准。' },
+                    { t: 'note', html: '—— NexusVAI 呈献' }
+                ]
+            },
+            en: {
+                eyebrow: 'October 13, 2026',
+                eyebrowColor: '#efe4d2',
+                heading: 'Introducing Cancri Bot, Our Always-On Butler',
+                toc: [
+                    { id: 'introduction', label: 'Introduction' },
+                    { id: 'memory', label: 'Memory' },
+                    { id: 'computer', label: 'Its computer' },
+                    { id: 'availability', label: 'Availability' }
+                ],
+                blocks: [
+                    { t: 'anchor', id: 'introduction' },
+                    { t: 'summary', text: 'Introducing Cancri Bot: a personal assistant with a long-term memory and a cloud computer of its own. It remembers you, and it gets things done for you. Starting today, it is free for a limited time.' },
+                    { t: 'p', html: 'Cancri Bot lives inside Cancri Code. You and your Bot share a single conversation that starts the first time you say hello and never ends. Whatever you were in the middle of today is still there next week, and a preference you mentioned in passing last month is still remembered now.' },
+                    { t: 'p', html: 'It does more than chat. Every Bot has a computer of its own, a Linux machine with Chrome installed. Research, price comparisons, tidying up a spreadsheet, running a script, getting through a multi-step form on a website: it turns the machine on, does the work itself, and tells you how it went in a sentence or two. If you want to watch, its screen is right there, live.¹' },
+                    { t: 'p', html: 'As with <a href="article.html?id=cancriCode3">Cancri Code 3</a>, that computer is an isolated cloud sandbox, not your machine. It cannot reach the files, email or accounts on your computer. If it needs something of yours, you hand it over yourself.' },
+                    { t: 'p', html: 'Here is what you will notice in this release:' },
+                    { t: 'p', html: '<strong>It talks like a friend.</strong> Replies arrive as a few short messages, one after another, instead of a wall of text. You can quote a message to reply to it and react with an emoji, and every now and then it will react to yours. No call-center voice, and no "as an AI".' },
+                    { t: 'p', html: '<strong>It remembers, and it forgets when asked.</strong> What you like to be called, your preferences, your family, your plans, the things it promised you: it notes them down as you go. Say "last time" and it looks things up before answering. Ask it to forget something and it deletes it. You can open up what it has remembered and edit it at any time.' },
+                    { t: 'p', html: '<strong>It acts first, then reports.</strong> When a job needs the web, some arithmetic or a bit of code, it just gets on with it instead of asking you to approve a plan. Multi-step work moves forward step by step until it is done or genuinely stuck, and if it is stuck, it tells you where.' },
+                    { t: 'p', html: '<strong>You choose its name.</strong> The first time you meet, it asks you to name it. You can also keep several Bots, one for everyday errands and one for a project you are working through, each with a memory of its own.' },
+                    { t: 'compare', tab: 'A conversation', replayLabel: 'Replay the responses', prompt: 'Can you check the weather in Hangzhou next Saturday? Also, note that my mom\'s birthday is November 2, and remind me to pick a present.',
+                        sides: [
+                            { label: 'Cancri Bot · doing', toggleLabel: 'Doing', response: [
+                                { p: 'Done. Next Saturday in Hangzhou: cloudy turning to light rain, 16–22°C. Bring an umbrella.' },
+                                { p: 'Want me to send you a screenshot of the forecast?' }
+                            ] },
+                            { label: 'Cancri Bot · remembering', toggleLabel: 'Remembering', response: [
+                                { p: 'Got it, your mom\'s birthday is November 2.' },
+                                { code: 'Notebook · event  2026-11-02  Mom\'s birthday\nNotebook · to-do  Remind to pick a present (open)' },
+                                { p: 'I\'ll bring it up next time you drop by. Tell me your budget and I\'ll start looking at a few ideas.' }
+                            ] }
+                        ],
+                        caption: 'Illustrative conversation showing how the interaction works; details such as the weather depend on the actual lookup.' },
+
+                    { t: 'h2', id: 'memory', text: 'Memory' },
+                    { t: 'p', html: 'For most chat assistants, "memory" is just a chat log that keeps getting longer. The longer you talk, the sooner the early parts get pushed out. An assistant meant to stay with you for a long time cannot work that way, so we gave Cancri Bot layered memory, with each layer covering a different time scale.' },
+                    { t: 'table', title: 'Cancri Bot\'s four layers of memory', head: ['', 'What is in it', 'When it is used'], rows: [
+                        ['About me', 'Who it is, its name and personality. It writes this itself, and you can edit it', 'Every turn'],
+                        ['About you', 'What you like to be called, who you are, your habits and lasting preferences', 'Every turn'],
+                        ['Notebook', 'Individual facts, preferences, to-dos and dated events', 'Picked by relevance to the current topic; open to-dos are always at hand'],
+                        ['Chat history', 'Your complete conversation', 'When you mention "last time" or "before", it searches first, then answers']
+                    ] },
+                    { t: 'p', html: 'The first two layers are always loaded: it reads them before it says anything, and it rewrites them itself. Tell it "I changed jobs" and it rewrites that part rather than appending a line that contradicts the old one. The notebook is more like a set of sorted sticky notes: whose birthday is when, that you do not eat cilantro, the list it promised to have ready by Friday. It does not spread the whole notebook out every time. It picks the few notes that matter for the conversation at hand, and keeps open to-dos within reach.' },
+                    { t: 'p', html: 'It also knows the time. Whenever you write, it knows the hour, the day of the week, and how long it has been since you last talked. Come back after three days and it will not pick up in a three-day-old tone, nor forget what it promised you three days ago.' },
+                    { t: 'p', html: '<strong>Your memory belongs to you.</strong> In the Bot\'s panel, the Details tab shows what it has written in "About me" and "About you", and the Memory tab shows the whole notebook. You can add, delete, and tick off to-dos. All of this is stored on your own device, kept separately per account; sign in with another account and neither can see the other\'s.²' },
+                    { t: 'p', html: 'We protect the memory itself too. Some of the text in memory comes from web pages and chats, and we treat all of it as material, never as instructions. If someone slips text dressed up as a system instruction into a chat, it ends up in memory as ordinary text and nothing more.' },
+
+                    { t: 'h2', id: 'computer', text: 'Its computer' },
+                    { t: 'p', html: 'An assistant that only says "you could check such-and-such website" has done as much as it is going to do. We wanted one that goes and looks.' },
+                    { t: 'p', html: 'Cancri Bot\'s computer is a cloud sandbox with a browser, built on the same infrastructure as Cancri Code 3. It stays off until the Bot needs it, then starts on its own and is ready in a matter of seconds. After a while without use it goes to sleep and stops counting time, and it wakes up again on its own when needed. You never have to remember to turn it on or off.' },
+                    { t: 'grid', title: 'What the Bot can do on its computer', subject: 0, columns: ['Cancri Bot', 'Chat-only assistant'], rows: [
+                        { label: 'Research online', sub: 'search, read page text', cells: ['✓', 'Partly'] },
+                        { label: 'Get things done in a browser', sub: 'open, click, type, scroll', cells: ['✓', '—'] },
+                        { label: 'Run commands and code', sub: 'install software, write scripts, process data', cells: ['✓', '—'] },
+                        { label: 'Read and write files', sub: 'on its own computer', cells: ['✓', '—'] },
+                        { label: 'Send you screenshots', sub: 'full-page captures too', cells: ['✓', '—'] },
+                        { label: 'Live view and takeover', sub: 'you can take the controls at any time', cells: ['✓', '—'] }
+                    ], caption: '"Chat-only assistant" refers to conversational products without an execution environment, for comparison only.' },
+                    { t: 'p', html: '<strong>You can see what it is doing.</strong> Open the Computer tab in the panel and you are looking at its screen, which you can expand to full screen. Every click and every keystroke in the browser is visible. Ask for a screenshot and it drops one straight into the chat.' },
+                    { t: 'p', html: '<strong>You can take over at any time.</strong> When there is a CAPTCHA, a login that needs you, or you simply want to click something yourself, press Take over and the mouse and keyboard are yours. While you are in control, its browser actions step aside so two hands are not fighting over one mouse. Hand it back and it carries on.' },
+                    { t: 'p', html: '<strong>Your files, handed over by you.</strong> It cannot reach your computer. When it needs a file from your machine, say a résumé you want revised, it shows a card in the chat explaining what it needs and why, and you pick the file yourself. You can also upload files to its computer on your own. If you decline, it will not keep asking.' },
+
+                    { t: 'h2', id: 'safety', text: 'Boundaries and safety' },
+                    { t: 'p', html: 'An assistant that can browse, act, and remember a lot about you has to be clear first about what it should not do on your behalf.' },
+                    { t: 'p', html: '<strong>Anything with consequences, it asks first.</strong> Submitting a form, placing an order, posting, signing in: actions that have consequences for you make it stop and ask for your go-ahead. Everyday work on its own computer, like reading pages, running commands and writing files, does not need your approval each time, because that machine is isolated and anything that goes wrong stays on it.' },
+                    { t: 'p', html: '<strong>Sensitive information does not wander off.</strong> If sensitive data has come up in the conversation, any further outbound web request shows a confirmation card, and you decide whether it goes through. To the Bot, the content of web pages and files is material, not instructions.' },
+                    { t: 'p', html: '<strong>The model never gets the keys.</strong> Access credentials for the cloud computer are used only inside the client and never appear anywhere the model can see. The model uses the machine through a small set of actions we define. It never holds the keys to it.' },
+                    { t: 'p', html: '<strong>No making things up.</strong> When a tool fails, it tells you why. If it did not do something, it will not say it did. We would much rather it say "that step didn\'t work" than hand you a result that looks complete but was invented.' },
+                    { t: 'quote', html: 'What matters most to us is not how much it can do, but whether you trust it enough to hand things over.', source: 'NexusVAI' },
+
+                    { t: 'h2', id: 'availability', text: 'Availability' },
+                    { t: 'p', html: 'Cancri Bot is available starting today in the Cancri Code desktop app. Sign in with your NexusV account to get started.' },
+                    { t: 'p', html: '<strong>Free for a limited time.</strong> The model line Bot uses for conversation by default is free in Cancri Code. Users without a paid plan also get a limited-time trial of the cloud computer: <strong>2 hours in every 5-hour window, up to 4 hours a week</strong>. Your remaining allowance is shown live on the Computer tab, and once it runs out, you can continue after it resets. On a paid plan, cloud computer time is billed under your plan.³' },
+                    { t: 'table', title: 'Cloud computer allowance', head: ['', 'Free plan (limited-time trial)', 'Paid plans'], rows: [
+                        ['Conversation model', 'Default model line is free', 'Default model line is free'],
+                        ['Cloud computer', '2 h per 5-hour window · 4 h per week', 'Billed by usage under your plan'],
+                        ['When idle', 'Sleeps automatically, no time counted', 'Sleeps automatically, no billing'],
+                        ['Allowance display', 'Live on the Computer tab', 'Session time on the Computer tab']
+                    ] },
+                    { t: 'cta', href: DOWNLOAD_URL, text: 'Download Cancri Code and meet Cancri Bot' },
+                    { t: 'p', html: 'There are things it cannot do yet, and we would rather say so up front:' },
+                    { t: 'p', html: 'It does not reach out on its own yet. "Always-on" means it is always there and always remembers: whenever you open it, it picks up where you left off. But while Cancri Code is closed, it does not wake up to work, and it will not message you first when something is due. Letting it keep working after you leave, and remind you when the time comes, is what we most want to build next.' },
+                    { t: 'p', html: 'The model it uses by default reads text only. It cannot actually "see" the screenshots it sends you; it operates the browser by reading page text and the list of clickable elements. That is enough for most web pages, but it struggles with content that exists only as images.' },
+                    { t: 'p', html: 'If you are new to Cancri Code, start with <a href="article.html?id=cancriCode3">Cancri Code 3: Meet Your Software Engineer</a> to see where the cloud sandbox came from. Then go meet your Bot, give it a name, and tell it a little about yourself.' },
+                    { t: 'note', html: '¹ The cloud computer starts automatically when the Bot needs it; the first start takes about 10–20 seconds. It sleeps when idle and wakes automatically the next time it is used.' },
+                    { t: 'note', html: '² Chat history and memory are stored on the current device, kept separately per signed-in account. Clearing the chat history or deleting a Bot removes the corresponding content.' },
+                    { t: 'note', html: '³ The trial allowance applies only to users without an active paid plan, and only to the cloud computer with a browser. When either allowance runs out, a running cloud computer stops until the allowance resets. Limited-time trial allowances and dates may change; the app shows what currently applies.' },
+                    { t: 'note', html: '— Presented by NexusVAI' }
+                ]
+            }
+        },
         cancri25flash: {
             zh: {
                 eyebrow: '2026 年 9 月 25 日',
@@ -703,6 +887,8 @@
         var eyebrow = el('p', 'lx-eyebrow', c.eyebrow);
         // 各封面画面重心不同；个别文章可用 eyebrowTop 覆盖 CSS 默认的 21% 位置。
         if (c.eyebrowTop) eyebrow.style.top = c.eyebrowTop;
+        // 深色封面（如 cancriBot）上默认墨色看不见，可用 eyebrowColor 覆盖。
+        if (c.eyebrowColor) eyebrow.style.color = c.eyebrowColor;
         landing.appendChild(eyebrow);
         var h1 = el('h1', 'lx-visually-hidden', c.heading);
         h1.id = 'lx-hero-title';
