@@ -14,7 +14,7 @@
  * 约定：桌面端本地发的消息经 `/sync` 上去只存档，云端**不会**再回一遍；
  * 想让云端来回复（例如电脑要关了），走 `send()`。
  */
-import { defaultSelfBlock, type BotChatMessage, type BotGroup, type BotProfile, type BotState } from "./bot-store";
+import { BOT_DEFAULT_NAME, createBot, defaultSelfBlock, type BotChatMessage, type BotGroup, type BotProfile, type BotState } from "./bot-store";
 
 export const BOT_CLOUD_PATH = "/functions/v1/bot-hub";
 /** 每个会话最多带多少条最近消息上去（云端只需要上下文，不是备份） */
@@ -53,6 +53,11 @@ export interface SyncPayload {
   /** 本地删掉的 Bot / 群：云端跟着删（不然它们还会在云端发消息） */
   removedBots?: string[];
   removedGroups?: string[];
+  /** 本地删掉的消息 / 清空的会话：云端跟着删，再告诉其它端 */
+  removedMessages?: Array<{ conv: string; id: string }>;
+  cleared?: Array<{ conv: string; before: number }>;
+  /** 这一端的随机 id：云端广播「名册变了」时带上，自己发起的那次不用再拉 */
+  clientId?: string;
 }
 
 function wire(conv: ConvKey, m: BotChatMessage): HubMessageWire {
@@ -144,6 +149,18 @@ export interface ApplyResult {
   images: string[];
   /** 云端 Bot「正在输入 / 在用工具」的开关（Bot 发出消息也算输入结束） */
   typing: TypingSignal[];
+  /** 事件里出现了本地还没有的会话（别的端刚建的 Bot / 群）：要先拿名册再补消息 */
+  unknownConvs: string[];
+  /** 「名册变了」事件是谁发起的（clientId）；自己发起的可以忽略 */
+  rosterBy: string[];
+  /** 被别的端清空的会话：本地的模型上下文也作废了（和本地清空一样） */
+  cleared: string[];
+}
+
+/** 本地删掉 / 清空一段消息（云端发来的 message_remove / conv_clear，或快照里的墓碑） */
+function dropMessages(thread: BotChatMessage[], pred: (m: BotChatMessage) => boolean): BotChatMessage[] | null {
+  const next = thread.filter((m) => !pred(m));
+  return next.length === thread.length ? null : next;
 }
 
 export interface TypingSignal {
@@ -160,6 +177,18 @@ export function applyHubEvents(state: BotState, events: HubEventWire[]): ApplyRe
   const convs = new Set<string>();
   const images = new Set<string>();
   const typing: TypingSignal[] = [];
+  const unknownConvs = new Set<string>();
+  const rosterBy: string[] = [];
+  const cleared = new Set<string>();
+  const setThread = (conv: string, next: BotChatMessage[]): void => {
+    if (conv.startsWith("bot:")) {
+      const b = state.bots.find((x) => x.id === conv.slice(4));
+      if (b) b.thread = next;
+    } else {
+      const g = state.groups.find((x) => x.id === conv.slice(6));
+      if (g) g.thread = next;
+    }
+  };
   for (const ev of events) {
     if (ev.data?.notify) notices.push(ev);
     if (ev.type === "typing") {
@@ -168,15 +197,49 @@ export function applyHubEvents(state: BotState, events: HubEventWire[]): ApplyRe
       if (threadOf(state, conv) && botId) typing.push({ conv, botId, on: ev.data.on === true, ...(typeof ev.data.tool === "string" ? { tool: ev.data.tool } : {}) });
       continue;
     }
+    if (ev.type === "roster") {
+      rosterBy.push(String(ev.data?.by ?? ""));
+      continue;
+    }
+    if (ev.type === "message_remove" || ev.type === "conv_clear") {
+      const conv = String(ev.data.conv ?? "");
+      const t = threadOf(state, conv);
+      if (!t) continue;
+      const ids = new Set(Array.isArray(ev.data.ids) ? ev.data.ids.map(String) : []);
+      const before = Number(ev.data.before) || 0;
+      const next = dropMessages(t.thread, ev.type === "message_remove" ? (m) => ids.has(m.id) : (m) => m.at <= before);
+      if (next) {
+        setThread(conv, next);
+        changed = true;
+        convs.add(conv);
+      }
+      if (ev.type === "conv_clear" && next) {
+        if (t.group) {
+          t.group.modelMessages = {};
+          t.group.seen = {};
+        } else {
+          const b = state.bots.find((x) => `bot:${x.id}` === conv);
+          if (b) b.modelMessages = [];
+        }
+        cleared.add(conv);
+      }
+      continue;
+    }
     if (ev.type === "message" || ev.type === "message_update") {
       const m = ev.data.message as HubMessageWire | undefined;
       if (!m?.id || typeof m.conv !== "string") continue;
       const t = threadOf(state, m.conv);
-      if (!t) continue;
+      if (!t) {
+        if (/^(bot|group):[\w-]+$/.test(m.conv)) unknownConvs.add(m.conv);
+        continue;
+      }
       const i = t.thread.findIndex((x) => x.id === m.id);
       if (i >= 0) {
         const prev = t.thread[i];
         const next = { ...prev, ...fromWire(m) };
+        // 本地已有的消息：来源以本地为准（自己推上去的消息云端会标成 user 再广播回来，不能把它变成「云端消息」）
+        if (prev.origin) next.origin = prev.origin;
+        else delete next.origin;
         // 审批已经有结论了：同一条消息再来一遍（补齐 / 改字）不能把按钮又变回「待批准」
         if (prev.approval && prev.approval.status !== "pending") next.approval = prev.approval;
         if (JSON.stringify(next) !== JSON.stringify(prev)) {
@@ -245,7 +308,20 @@ export function applyHubEvents(state: BotState, events: HubEventWire[]): ApplyRe
       }
     }
   }
-  return { changed, notices, convs: [...convs], images: [...images], typing };
+  return { changed, notices, convs: [...convs], images: [...images], typing, unknownConvs: [...unknownConvs], rosterBy, cleared: [...cleared] };
+}
+
+/** 快照里的删除墓碑 → 本地照删（网页端本地存档里可能还留着别的端删掉的消息） */
+export function applyRemovals(
+  state: BotState,
+  r: { removedMessages?: Array<{ id: string; conv: string }>; cleared?: Record<string, number> },
+): string[] {
+  const events: HubEventWire[] = [];
+  const byConv = new Map<string, string[]>();
+  for (const x of r.removedMessages ?? []) if (x && typeof x.id === "string" && typeof x.conv === "string") byConv.set(x.conv, [...(byConv.get(x.conv) ?? []), x.id]);
+  for (const [conv, ids] of byConv) events.push({ at: 0, type: "message_remove", data: { conv, ids } });
+  for (const [conv, before] of Object.entries(r.cleared ?? {})) events.push({ at: 0, type: "conv_clear", data: { conv, before } });
+  return events.length ? applyHubEvents(state, events).convs : [];
 }
 
 // ── 名册（别的端新建 / 删掉的 Bot、群） ───────────────────────────────────────
@@ -269,12 +345,24 @@ export interface HubRosterGroup {
 export interface HubRoster {
   bots: HubRosterBot[];
   groups: HubRosterGroup[];
+  /** 删除墓碑：别的端删掉的 Bot / 群（老版云端不带） */
+  removedBots?: string[];
+  removedGroups?: string[];
 }
 /** `GET /state`：网页 / 手机端没有本地存档，首屏一次拿全 */
 export interface HubSnapshot extends HubRoster {
   messages: Record<string, HubMessageWire[]>;
   cursor: number;
+  removedMessages?: Array<{ id: string; conv: string }>;
+  cleared?: Record<string, number>;
 }
+
+/** 名册里「看得见」的字段签名：三方合并（本地 / 云端 / 上次对齐时）靠它判断谁改过 */
+export const botSig = (b: { name: string; tags?: string[]; memorySelf?: string; memoryUser?: string }): string =>
+  JSON.stringify([b.name, b.tags ?? [], b.memorySelf ?? "", b.memoryUser ?? ""]);
+export const groupSig = (g: { name: string; memberIds: string[]; activity?: string }): string => JSON.stringify([g.name ?? "", g.memberIds, g.activity ?? "normal"]);
+export const localBotSig = (b: BotProfile): string => botSig({ name: b.name, tags: b.tags, memorySelf: b.memory.self, memoryUser: b.memory.user });
+export const localGroupSig = (g: BotGroup): string => groupSig({ name: g.name, memberIds: g.memberIds, activity: g.activity ?? "normal" });
 
 const GROUP_ACTIVITY = ["quiet", "normal", "lively"] as const;
 
@@ -321,34 +409,48 @@ export interface RosterMerge {
 
 /**
  * 云端名册 → 本地。
- *   · 桌面端（authoritative=false）：只补上本地没有的（网页 / 手机新建的）；本地删掉的已经随这次 sync 让云端删了，不会再回来。
- *   · 网页端（authoritative=true）：云端就是正本 —— 名字 / 标签 / 记忆跟云端走；云端没有、而本地以前同步过（known）的 → 别的端删了，本地也删；
+ *   · 名字 / 标签 / 记忆、群名 / 成员 / 活跃度按三方合并：本地自上次对齐（base）以来没改过、云端改过 → 跟云端；
+ *     本地改过 → 留本地（这次 sync 已经推上去了）。网页端没有 base 时直接跟云端（它就是正本），桌面端没有 base 时留本地。
+ *   · 删除墓碑（removedBots / removedGroups）：别的端删掉的，两端都照删。
+ *   · 本地没有的：补上（网页 / 手机 / 另一台电脑新建的）。
+ *   · 网页端（authoritative=true）另外：云端没有、而本地以前同步过（known）的 → 别的端删了，本地也删（兼容不带墓碑的老云端）；
  *     本地新建还没上传的保留（下次 sync 带上去）。从没用过的默认 Bot（没发过消息）在云端已有 Bot 时直接丢掉，免得多出一个空 Bot。
  */
 export function mergeRoster(
   state: BotState,
   roster: HubRoster,
-  opts: { authoritative?: boolean; known?: { bots: string[]; groups: string[] }; now?: number } = {},
+  opts: { authoritative?: boolean; known?: { bots: string[]; groups: string[] }; base?: Map<string, string> | null; now?: number } = {},
 ): RosterMerge {
   const now = opts.now ?? Date.now();
   const convs = new Set<string>();
   const known = { bots: new Set(opts.known?.bots ?? []), groups: new Set(opts.known?.groups ?? []) };
+  const base = opts.base ?? null;
+  /** 本地没改过（相对上次对齐）→ 可以跟云端 */
+  const follow = (key: string, localSig: string): boolean => (base ? base.get(key) === localSig : !!opts.authoritative);
   const hubBots = new Map(roster.bots.filter((b) => b && typeof b.id === "string").map((b) => [b.id, b]));
   const hubGroups = new Map(roster.groups.filter((g) => g && typeof g.id === "string").map((g) => [g.id, g]));
+  const goneBots = new Set((roster.removedBots ?? []).filter((id) => typeof id === "string" && !hubBots.has(id)));
+  const goneGroups = new Set((roster.removedGroups ?? []).filter((id) => typeof id === "string" && !hubGroups.has(id)));
   for (const hb of hubBots.values()) {
     const local = state.bots.find((b) => b.id === hb.id);
+    const key = `bot:${hb.id}`;
     if (!local) {
       state.bots.push(profileFromHub(hb, now, !!opts.authoritative));
-      convs.add(`bot:${hb.id}`);
-    } else if (opts.authoritative) {
-      const next = { name: hb.name || local.name, tags: hb.tags ?? local.tags, self: hb.memorySelf ?? local.memory.self, user: hb.memoryUser ?? local.memory.user };
-      if (next.name !== local.name || JSON.stringify(next.tags) !== JSON.stringify(local.tags) || next.self !== local.memory.self || next.user !== local.memory.user) {
-        local.name = next.name;
-        local.tags = [...next.tags];
-        local.memory = { self: next.self, user: next.user };
-        convs.add(`bot:${hb.id}`);
-      }
+      convs.add(key);
+    } else if (botSig(hb) !== localBotSig(local) && follow(key, localBotSig(local))) {
+      local.name = hb.name || local.name;
+      local.tags = [...(hb.tags ?? local.tags)];
+      const self = hb.memorySelf ?? local.memory.self;
+      local.memory = { self: opts.authoritative ? self : self || defaultSelfBlock(local.name), user: hb.memoryUser ?? local.memory.user };
+      local.updatedAt = now;
+      convs.add(key);
     }
+  }
+  if (goneBots.size && state.bots.some((b) => goneBots.has(b.id))) {
+    for (const b of state.bots) if (goneBots.has(b.id)) convs.add(`bot:${b.id}`);
+    state.bots = state.bots.filter((b) => !goneBots.has(b.id));
+    // 一个 Bot 都不剩时界面没法画：和本地删光时一样，补一个新的
+    if (!state.bots.length) state.bots.push(createBot(BOT_DEFAULT_NAME, now));
   }
   if (opts.authoritative) {
     const keep = state.bots.filter((b) => {
@@ -368,22 +470,33 @@ export function mergeRoster(
     const members = hg.memberIds.filter((id) => botIds.has(id));
     if (members.length < 2) continue;
     const local = state.groups.find((g) => g.id === hg.id);
+    const key = `group:${hg.id}`;
     if (!local) {
       state.groups.push(groupFromHub({ ...hg, memberIds: members }, now));
-      convs.add(`group:${hg.id}`);
-    } else if (opts.authoritative && (local.name !== (hg.name ?? "") || local.memberIds.join() !== members.join())) {
+      convs.add(key);
+    } else if (groupSig({ ...hg, memberIds: members }) !== localGroupSig(local) && follow(key, localGroupSig(local))) {
       local.name = hg.name ?? "";
       local.memberIds = members;
-      convs.add(`group:${hg.id}`);
+      const activity = GROUP_ACTIVITY.find((a) => a === hg.activity);
+      if (activity) local.activity = activity;
+      convs.add(key);
     }
   }
-  if (opts.authoritative) {
-    state.groups = state.groups.filter((g) => {
-      const gone = !hubGroups.has(g.id) && known.groups.has(g.id);
-      if (gone) convs.add(`group:${g.id}`);
-      return !gone && g.memberIds.every((id) => botIds.has(id));
-    });
-  }
+  state.groups = state.groups.filter((g) => {
+    const key = `group:${g.id}`;
+    if (goneGroups.has(g.id) || (opts.authoritative && !hubGroups.has(g.id) && known.groups.has(g.id))) {
+      convs.add(key);
+      return false;
+    }
+    // 网页端：成员不全的群不画（云端名册里成员都在）
+    if (opts.authoritative) return g.memberIds.every((id) => botIds.has(id));
+    // 桌面端：成员被别的端删掉了 → 和本地删 Bot 一样，移出成员；一个都不剩的群一起删
+    const members = g.memberIds.filter((id) => botIds.has(id));
+    if (members.length === g.memberIds.length) return true;
+    convs.add(key);
+    g.memberIds = members;
+    return members.length > 0;
+  });
   if (!state.bots.some((b) => b.id === state.activeId) && !state.groups.some((g) => g.id === state.activeId)) {
     state.activeId = state.bots[0]?.id ?? state.activeId;
   }
@@ -469,8 +582,22 @@ export interface BotCloudDeps {
   fetch?: typeof fetch;
   WebSocketImpl?: typeof WebSocket;
   onEvents?: (events: HubEventWire[]) => void;
+  /** 游标比云端保留的事件还旧（离线太久）：增量补不齐了，要整段重拉 */
+  onReset?: () => void;
   setTimeout?: (fn: () => void, ms: number) => unknown;
+  clearTimeout?: (h: unknown) => void;
+  setInterval?: (fn: () => void, ms: number) => unknown;
+  clearInterval?: (h: unknown) => void;
+  now?: () => number;
 }
+
+/** 心跳：每 15 秒 ping 一次；20 秒没收到任何东西就当连接已死（手机切网 / 电脑睡醒后常见的半开连接）重连 */
+export const WS_PING_MS = 15_000;
+export const WS_DEAD_MS = 20_000;
+/** 云端 DO 用 setWebSocketAutoResponse 原样回 pong，不唤醒 DO —— 两边的字符串必须逐字一致 */
+export const WS_PING = '{"type":"ping"}';
+/** 一次 /sync 最多带回这么多事件（与云端 events() 默认 limit 一致）：满了说明还有，接着拉 */
+export const SYNC_EVENTS_PAGE = 500;
 
 export class BotCloudError extends Error {
   readonly status: number;
@@ -487,10 +614,34 @@ export class BotCloudClient {
   private ws: WebSocket | null = null;
   private closed = false;
   private retry = 0;
+  private retryTimer: unknown = null;
+  private heartbeat: unknown = null;
+  private lastHeard = 0;
   private readonly d: BotCloudDeps;
 
   constructor(d: BotCloudDeps) {
     this.d = d;
+  }
+
+  private now(): number {
+    return (this.d.now ?? Date.now)();
+  }
+
+  /**
+   * 收到一批持久事件后推进游标。只接着上一个往后走：中间缺了（实时推过来的比补齐的快）就先不动，
+   * 下一次 sync 从缺口处补齐 —— 否则游标一跳，缺口里的事件就再也拿不到了。重复的事件各端都按 id 去重。
+   */
+  advance(events: HubEventWire[]): void {
+    for (const ev of events) {
+      if (typeof ev.seq !== "number") continue;
+      if (ev.seq === this.cursor + 1 || this.cursor === 0) this.cursor = ev.seq;
+      else if (ev.seq > this.cursor + 1) return;
+    }
+  }
+
+  /** WebSocket 还连着吗（心跳判过的） */
+  get live(): boolean {
+    return !!this.ws && this.ws.readyState === 1 && this.now() - this.lastHeard < WS_DEAD_MS;
   }
 
   async call<T>(path: string, method = "GET", body?: unknown): Promise<T> {
@@ -524,9 +675,22 @@ export class BotCloudClient {
   /** 推本地状态、拉云端事件；返回的事件已经推给 onEvents */
   async sync(state: BotState): Promise<HubEventWire[]> {
     const r = await this.call<{ cursor: number; events: HubEventWire[]; reset?: boolean }>(`/sync?since=${this.cursor}`, "POST", toSyncPayload(state));
-    this.cursor = r.cursor;
-    if (r.events?.length) this.d.onEvents?.(r.events);
+    this.take(r);
     return r.events ?? [];
+  }
+
+  /** 一次 /sync 或 /events 的结果：推进游标、交出事件、离线太久就让上层整段重拉 */
+  take(r: { cursor?: number; events?: HubEventWire[]; reset?: boolean }): void {
+    const events = r.events ?? [];
+    if (r.reset) {
+      if (typeof r.cursor === "number") this.cursor = r.cursor;
+      if (events.length) this.d.onEvents?.(events);
+      this.d.onReset?.();
+      return;
+    }
+    if (events.length) this.advance(events);
+    else if (typeof r.cursor === "number") this.cursor = Math.max(this.cursor, r.cursor);
+    if (events.length) this.d.onEvents?.(events);
   }
 
   send(conv: ConvKey, text: string, opts: { id?: string; replyTo?: string } = {}): Promise<{ message: HubMessageWire }> {
@@ -569,49 +733,124 @@ export class BotCloudClient {
     return this.call(`/approvals/${encodeURIComponent(id)}`, "POST", { approve, scope });
   }
 
-  /** 实时通道：WebSocket 子协议带 token；断线指数退避重连，连上先按游标补齐 */
+  /**
+   * 实时通道：WebSocket 子协议带 token；断线指数退避重连，连上先按游标补齐。
+   * 每条连接的回调只认自己：旧连接晚到的 onclose 不能把新连接清掉、也不能再排一次重连（否则会叠出两条连接）。
+   */
   async connect(): Promise<void> {
     this.closed = false;
+    this.clearRetry();
     const token = await this.d.token();
     const WS = this.d.WebSocketImpl ?? (typeof WebSocket !== "undefined" ? WebSocket : undefined);
-    if (!token || !WS) return;
+    if (!WS || this.closed) return;
+    if (!token) {
+      // 登录态一时取不到（刷新 token 失败、刚醒来没网）：别就此断了实时通道，过会儿再试
+      this.scheduleReconnect();
+      return;
+    }
+    this.drop();
     const url = `${this.d.baseUrl.replace(/^http/, "ws")}${BOT_CLOUD_PATH}/ws`;
     const ws = new WS(url, ["cancri-bothub", token]);
     this.ws = ws;
+    this.lastHeard = this.now();
     ws.onopen = () => {
+      if (this.ws !== ws) return;
       this.retry = 0;
+      this.lastHeard = this.now();
       ws.send(JSON.stringify({ type: "hello", since: this.cursor }));
+      this.startHeartbeat(ws);
     };
     ws.onmessage = (e: MessageEvent) => {
+      if (this.ws !== ws) return;
+      this.lastHeard = this.now();
       let msg: Record<string, unknown>;
       try {
         msg = JSON.parse(String(e.data));
       } catch {
         return;
       }
+      if (msg.type === "pong") return;
       if (msg.type === "backlog") {
-        const events = (msg.events as HubEventWire[]) ?? [];
-        if (typeof msg.cursor === "number") this.cursor = Math.max(this.cursor, msg.cursor);
-        if (events.length) this.d.onEvents?.(events);
+        this.take(msg as { cursor?: number; events?: HubEventWire[]; reset?: boolean });
         return;
       }
       if (typeof msg.type === "string" && msg.data) {
         const ev = msg as unknown as HubEventWire;
-        if (typeof ev.seq === "number") this.cursor = Math.max(this.cursor, ev.seq);
+        if (typeof ev.seq === "number") this.advance([ev]);
         this.d.onEvents?.([ev]);
       }
     };
     ws.onclose = () => {
+      if (this.ws !== ws) return;
       this.ws = null;
-      if (this.closed) return;
-      const delay = Math.min(60_000, 1000 * 2 ** this.retry++);
-      (this.d.setTimeout ?? setTimeout)(() => void this.connect(), delay);
+      this.stopHeartbeat();
+      if (!this.closed) this.scheduleReconnect();
     };
+  }
+
+  /** 怀疑连接不行了（心跳超时、页面回到前台、网络恢复）：立刻换一条新的 */
+  reconnect(): void {
+    if (this.closed) return;
+    this.retry = 0;
+    void this.connect();
+  }
+
+  private scheduleReconnect(): void {
+    if (this.closed || this.retryTimer) return;
+    const delay = Math.min(60_000, 1000 * 2 ** this.retry++);
+    this.retryTimer = (this.d.setTimeout ?? setTimeout)(() => {
+      this.retryTimer = null;
+      void this.connect();
+    }, delay);
+  }
+
+  private clearRetry(): void {
+    if (this.retryTimer) (this.d.clearTimeout ?? clearTimeout)(this.retryTimer as ReturnType<typeof setTimeout>);
+    this.retryTimer = null;
+  }
+
+  private startHeartbeat(ws: WebSocket): void {
+    this.stopHeartbeat();
+    this.heartbeat = (this.d.setInterval ?? setInterval)(() => {
+      if (this.ws !== ws) return;
+      if (this.now() - this.lastHeard > WS_DEAD_MS) {
+        // 半开连接：不会有 onclose，只能自己判死
+        this.reconnect();
+        return;
+      }
+      try {
+        ws.send(WS_PING);
+      } catch {
+        this.reconnect();
+      }
+    }, WS_PING_MS);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeat) (this.d.clearInterval ?? clearInterval)(this.heartbeat as ReturnType<typeof setInterval>);
+    this.heartbeat = null;
+  }
+
+  /** 丢掉当前连接（不触发重连） */
+  private drop(): void {
+    const old = this.ws;
+    this.ws = null;
+    this.stopHeartbeat();
+    if (old) {
+      old.onclose = null;
+      old.onmessage = null;
+      old.onopen = null;
+      try {
+        old.close();
+      } catch {
+        /* 已经断了 */
+      }
+    }
   }
 
   close(): void {
     this.closed = true;
-    this.ws?.close();
-    this.ws = null;
+    this.clearRetry();
+    this.drop();
   }
 }

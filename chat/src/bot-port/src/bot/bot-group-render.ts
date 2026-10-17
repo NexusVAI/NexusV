@@ -197,7 +197,6 @@ export function renderGroupPanel(group: BotGroup, bots: BotProfile[], tab: "memb
       </section>
       <section class="bot-section">
         ${activityPickerHtml(group)}
-        <p class="bot-dim bot-activity-hint">安静：多半只有一个 Bot 回；热闹：大家更爱插话、互相接梗（也更耗用量）。</p>
       </section>
       <section class="bot-section bot-group-danger">
         <button type="button" class="bot-btn bot-btn--ghost bot-btn--sm" data-bot-action="group-clear">清空聊天记录</button>

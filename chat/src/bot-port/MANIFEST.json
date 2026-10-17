@@ -15,7 +15,7 @@
     "@tauri-apps/plugin-opener"
   ],
   "files": {
-    "src/bot/bot-view.ts": "f1508cc558fbe033",
+    "src/bot/bot-view.ts": "f04d74900f4ff4a7",
     "src/bot/bot-view.css": "736822d8d456a3a3",
     "src/ui/image-viewer.ts": "72bcacdc9bb34cf3",
     "src/contextMenu.ts": "2d0757989d64a987",
@@ -60,11 +60,11 @@
     "src/chat/render/rich-ui-core.ts": "afede9841f6123a4",
     "src/chat/render/rich-ui-icons.ts": "0c9fc1cae0064010",
     "src/chat/render/rich-ui-widgets.ts": "9508c4498c5c314e",
-    "src/bot/bot-group-render.ts": "71dcdb4531be509b",
+    "src/bot/bot-group-render.ts": "b4be2735bcfbb744",
     "src/bot/bot-tools.ts": "1c8482ab02bd61a4",
     "src/bot/bot-memory.ts": "7465dd27e9110407",
     "src/memory-relevance.ts": "34d4f40fbbb0dcdc",
-    "src/bot/bot-cloud.ts": "4b3701c48ee51c66",
+    "src/bot/bot-cloud.ts": "b75dd860e69396b1",
     "src/bot/bot-images.ts": "a05a723eee591d4a",
     "src/composer-media.ts": "be6caa9508935c62",
     "src/bot/bot-panel.ts": "bd942eb5783c2216",
@@ -72,10 +72,10 @@
     "tasks/_codex-icons/svg/custom/app-initial-12.svg": "99719e9773f1bb6d",
     "tasks/_codex-icons/svg/custom/app-initial-117.svg": "d63ce83bcf27e610",
     "src/gateway-config.ts": "18cb0a8a754c800b",
-    "src/bot/bot-cloud-link.ts": "4c126f43bca51f3a"
+    "src/bot/bot-cloud-link.ts": "2b8a0276fd570e11"
   },
   "css": {
-    "kept": 703,
-    "dropped": 4922
+    "kept": 812,
+    "dropped": 5568
   }
 }

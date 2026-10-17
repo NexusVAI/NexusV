@@ -398,6 +398,15 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
     onInfo: () => refreshCloudCard(),
     onNotice: (text) => showToast(text),
     onTyping: (t) => onCloudTyping(t),
+    onContextReset: (convs) => {
+      for (const key of convs) {
+        const id = key.replace(/^(bot|group):/, "");
+        stopConvo(id);
+        if (key.startsWith("group:")) runtime.forgetGroup(id);
+        else runtime.forget(id);
+        queues.delete(id);
+      }
+    },
     ...(remote ? { remote: true } : {}),
   });
   const runtime = new BotRuntime({
@@ -1252,7 +1261,16 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
     persistLocal();
     for (const key of convs) {
       const id = key.replace(/^(bot|group):/, "");
-      if (!findConvo(id)) continue;
+      if (!findConvo(id)) {
+        // 别的端删掉了：本机这边正在跑的、排着的、它的电脑一并收掉（和本地删除一样）
+        stopConvo(id);
+        if (key.startsWith("group:")) runtime.forgetGroup(id);
+        else runtime.forgetBot(id);
+        void pool?.drop(key as ComputerKey).catch(() => {});
+        queues.delete(id);
+        unread.delete(id);
+        continue;
+      }
       if (id !== state.activeId || !visible || page !== "chat") unread.set(id, "done");
     }
     // 网页端第一次打开：云端已经有 Bot 了就不走引导
@@ -2358,6 +2376,7 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
         void deleteBotImages(imageIdsOf(convo.thread.filter((m) => m.id === id)));
         convo.thread = convo.thread.filter((m) => m.id !== id);
         if (replyTo === id) replyTo = null;
+        cloud?.removeMessages(isGroup(convo) ? `group:${convo.id}` : `bot:${convo.id}`, [id]);
         persist();
         renderThreadDom();
         renderComposer();
@@ -2513,8 +2532,10 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
           runtime.forget(bot.id);
           queues.delete(bot.id);
           void deleteBotImages(imageIdsOf(bot.thread));
-          bot.thread = [{ id: uuidv4(), role: "event", text: "聊天记录已清空，记忆已保留", at: Date.now() }];
+          const before = Date.now();
+          bot.thread = [{ id: uuidv4(), role: "event", text: "聊天记录已清空，记忆已保留", at: before + 1 }];
           bot.modelMessages = [];
+          cloud?.clearConv(`bot:${bot.id}`, before);
           persist();
           renderChat();
         });
@@ -2713,9 +2734,11 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
           runtime.forgetGroup(group.id);
           queues.delete(group.id);
           void deleteBotImages(imageIdsOf(group.thread));
-          group.thread = [{ id: uuidv4(), role: "event", text: "聊天记录已清空", at: Date.now() }];
+          const before = Date.now();
+          group.thread = [{ id: uuidv4(), role: "event", text: "聊天记录已清空", at: before + 1 }];
           group.modelMessages = {};
           group.seen = {};
+          cloud?.clearConv(`group:${group.id}`, before);
           persist();
           renderChat();
         });

@@ -38,7 +38,9 @@ export const SHIMS = [
   "tools/builtin/websearch.ts",
   "tools/builtin/webfetch.ts",
 ];
-const GLOBAL_CSS = ["styles.css", "devin-ui.css", "chat-port.css", "chat/render/rich-ui.css"];
+// model-menu-duck.css：确认 / 输入弹窗（showConfirmDialog 的 .cc-glass-dialog）的定位与尺寸在这里。
+// 漏了它，网页端删除确认框会退回无样式的 modal-card：贴在左上角、撑满整屏高（2026-10-17 实报）。
+const GLOBAL_CSS = ["styles.css", "devin-ui.css", "chat-port.css", "model-menu-duck.css", "chat/render/rich-ui.css"];
 /** 网页没有的大字体：中文回落系统字体（PingFang / 微软雅黑 / Noto） */
 const DROP_FONTS = ["NotoSansSC-Variable.woff2", "OpenAISans-"];
 
