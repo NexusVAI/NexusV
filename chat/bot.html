@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="codex" data-flavor="cancri" data-menu-chrome="transparent">
+    <head>
+        <meta charset="UTF-8" />
+        <!-- 首帧就定好深浅色（放在 CSP 之前：meta CSP 只管它后面的内联脚本） -->
+        <script>
+            (function () {
+                var dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+                document.documentElement.setAttribute("data-scheme", dark ? "dark" : "light");
+            })();
+        </script>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://cn.nexusvai.xyz; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
+        />
+        <title>Bot - Cancri | NexusVAI</title>
+        <meta name="description" content="Cancri Bot：在云端常驻的 AI 伙伴，关掉电脑也在线。" />
+        <meta name="robots" content="noindex" />
+        <meta name="theme-color" content="#ffffff" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="Cancri Bot" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <link rel="manifest" href="./bot.webmanifest" />
+        <link rel="icon" type="image/png" sizes="192x192" href="./assets/bot-icon-192.png" />
+        <link rel="apple-touch-icon" href="./assets/bot-apple-touch-180.png" />
+        <link rel="preconnect" href="https://chat.nexusvai.xyz" crossorigin />
+        <script src="./cancri_config.js?v=20260829-relay-failover"></script>
+        <!-- 与 index.html 同一个固定版本的 supabase-js：复用 Chat 的登录态（storageKey cancri_supabase_auth） -->
+        <script
+            src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+            crossorigin="anonymous"
+        ></script>
+        <link rel="stylesheet" href="./cancri_bot.css?v=20261017" />
+        <script defer src="./cancri_bot.js?v=20261017"></script>
+    </head>
+    <body>
+        <noscript>Cancri Bot 需要启用 JavaScript。</noscript>
+    </body>
+</html>

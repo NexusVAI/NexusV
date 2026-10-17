@@ -1,0 +1,17 @@
+{
+  "name": "Cancri Bot",
+  "short_name": "Cancri Bot",
+  "description": "在云端常驻的 Cancri Bot：手机、网页和 Cancri Code 桌面端共用同一套 Bot 与聊天记录。",
+  "id": "/chat/bot.html",
+  "start_url": "/chat/bot.html",
+  "scope": "/chat/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "assets/bot-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/bot-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

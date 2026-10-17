@@ -23,6 +23,8 @@ export default [
       "src/grok-bot/eyes.js",
       "src/grok-bot/character.js",
       "src/grok-bot/engine.js",
+      // npm run sync:bot 从 cancri-code 原样拷来的 Bot 界面（勿手改，见 scripts/sync-bot-port.mjs）
+      "src/bot-port/**",
     ],
   },
   js.configs.recommended,
@@ -68,5 +70,9 @@ export default [
       sourceType: "module",
       globals: { ...globals.node },
     },
+  },
+  {
+    files: ["src/bot-web/bot-sw.js"],
+    languageOptions: { sourceType: "script", globals: { ...globals.serviceworker } },
   },
 ];
