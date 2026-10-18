@@ -15,6 +15,7 @@
  * GIF 也走元素宽高，ImageBitmap 会把动画定格在第一帧。
  */
 import { showContextMenu } from "../contextMenu";
+import { dataUrlToBlob } from "../core/data-url";
 import { showToast } from "./toast";
 
 let activeViewer: HTMLElement | null = null;
@@ -208,50 +209,75 @@ function loadImageElement(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/** 非 PNG 图片画到 canvas 转 PNG（剪贴板 ClipboardItem 仅稳定支持 image/png） */
-export async function convertBlobToPng(blob: Blob): Promise<Blob> {
-  let imgSource: CanvasImageSource;
-  let w = 0;
-  let h = 0;
-  try {
-    const bitmap = await createImageBitmap(blob);
-    imgSource = bitmap;
-    w = bitmap.width;
-    h = bitmap.height;
-  } catch {
-    const img = new Image();
-    const url = URL.createObjectURL(blob);
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error("image load failed"));
-      img.src = url;
-    });
-    URL.revokeObjectURL(url);
-    imgSource = img;
-    w = img.naturalWidth;
-    h = img.naturalHeight;
-  }
+/** 把一张已解码的图画到 canvas 转 PNG Blob。 */
+async function drawImageToPng(source: CanvasImageSource, w: number, h: number): Promise<Blob> {
+  if (!(w > 0 && h > 0)) throw new Error("image has no intrinsic size");
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("canvas 2d context unavailable");
-  ctx.drawImage(imgSource, 0, 0);
+  ctx.drawImage(source, 0, 0);
   return await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png");
   });
 }
 
+/** 非 PNG 图片画到 canvas 转 PNG（剪贴板 ClipboardItem 仅稳定支持 image/png） */
+export async function convertBlobToPng(blob: Blob): Promise<Blob> {
+  try {
+    const bitmap = await createImageBitmap(blob);
+    try {
+      return await drawImageToPng(bitmap, bitmap.width, bitmap.height);
+    } finally {
+      bitmap.close?.();
+    }
+  } catch {
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await loadImageElement(url);
+      return await drawImageToPng(img, img.naturalWidth, img.naturalHeight);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+}
+
+/**
+ * 图片地址（data: / blob: / asset / http(s)）→ PNG Blob，**不走 fetch**。
+ *
+ * ⛔ 桌面 tauri.conf.json 与网页 chat/bot.html 的 CSP `connect-src` 是白名单（CC-SEC-010），
+ *   不放 `data:` / `blob:` / `asset:`：打包后 `fetch(这些地址)` 直接被拒（jsdom 没有 CSP，单测测不出来）。
+ *   `<img>` 归 `img-src` 管（已放行），所以 data: 直接解码，其余经 `<img>` → canvas 转 PNG。
+ */
+export async function imageSrcToPngBlob(src: string): Promise<Blob> {
+  if (/^data:/i.test(src)) {
+    const blob = dataUrlToBlob(src);
+    return blob.type === "image/png" ? blob : await convertBlobToPng(blob);
+  }
+  try {
+    const img = await loadImageElement(src);
+    return await drawImageToPng(img, img.naturalWidth || img.width, img.naturalHeight || img.height);
+  } catch (err) {
+    // 跨域 http(s) 图画进 canvas 会被污染（toBlob 抛 SecurityError）：只有这种才退回 fetch（connect-src 白名单里的域仍可取）
+    if (!/^https?:\/\//i.test(src) || /^https?:\/\/asset\.localhost\//i.test(src)) throw err;
+    const blob = await (await fetch(src)).blob();
+    return blob.type === "image/png" ? blob : await convertBlobToPng(blob);
+  }
+}
+
 /** 把图片地址（Blob URL / Data URL / http URL）复制到系统剪贴板 */
 export async function copyImageToClipboard(src: string): Promise<boolean> {
   try {
-    const res = await fetch(src);
-    const blob = await res.blob();
-    const pngBlob = blob.type === "image/png" ? blob : await convertBlobToPng(blob);
     if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
-      await navigator.clipboard.write([new ClipboardItem({ "image/png": pngBlob })]);
+      // 交给 ClipboardItem 一个 Promise：Safari 要求 write() 在用户手势同一拍里调用，转码放进 Promise 里做
+      const png = imageSrcToPngBlob(src);
+      png.catch(() => undefined);
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
     } else if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(src);
+    } else {
+      throw new Error("clipboard unavailable");
     }
     showToast("已复制图片");
     return true;

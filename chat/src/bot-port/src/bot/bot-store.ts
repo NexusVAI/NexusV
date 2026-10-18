@@ -64,6 +64,11 @@ export interface BotChatMessage {
   image?: { id: string };
   /** 用户粘贴发送的图片，同样只记 IndexedDB 的 id。 */
   images?: Array<{ id: string }>;
+  /**
+   * Bot 发来的录屏 / 文件（用户电脑上的 pc_screen_record / pc_send_file）。本体同样在 IndexedDB（bot-images.ts）：
+   * 本地发的 id 是随机的；云端发的是 `hub-<key>`，点开时才去 `/media/<key>` 拉（录屏动辄十几 MB，不预取）。
+   */
+  file?: { id: string; name: string; mime: string; size: number; kind: "video" | "file"; durationMs?: number; width?: number; height?: number };
   /** 群聊里 Bot 发的消息：是哪个 Bot（BotProfile.id）。单聊不填。 */
   authorId?: string;
   /** 云端 Bot（BotHub）发来的审批请求：这条 event 消息带按钮，点了回 `/approvals/<id>` */

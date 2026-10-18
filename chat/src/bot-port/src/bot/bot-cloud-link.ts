@@ -22,13 +22,17 @@ import {
   SYNC_EVENTS_PAGE,
   applyHubEvents,
   applyRemovals,
+  approvalEvents,
   botSig,
   groupSig,
   hubErrorText,
+  inferReadCursors,
   mergeRoster,
+  parseDevices,
   snapshotEvents,
   toSyncPayload,
   type ConvKey,
+  type HubDevice,
   type HubEventWire,
   type HubMessageWire,
   type HubMonitor,
@@ -64,6 +68,8 @@ export interface CloudInfo {
   monitors: number;
   pendingApprovals: number;
   error?: string;
+  /** 用户自己的电脑（开了「允许云端 Bot 访问这台电脑」的）；还没问过云端时不填 */
+  devices?: HubDevice[];
 }
 
 export interface BotCloudLinkDeps {
@@ -360,17 +366,29 @@ export class BotCloudLink {
    * 游标接到快照的位置，之后 WebSocket / sync 只补增量。
    */
   async hydrate(): Promise<void> {
-    const snap = await this.client.snapshot();
+    // 快照不带审批结论：顺手并行拉一份审批列表，把批过 / 拒过 / 过期的卡片校正过来（拉不到就算了）
+    const [snap, approvals] = await Promise.all([this.client.snapshot(), this.recentApprovals()]);
     const st = this.d.state();
     const convs = new Set(this.applyRoster(snap, this.readKnown()));
     for (const c of applyRemovals(st, snap)) convs.add(c);
-    const r = applyHubEvents(st, this.withoutPending(snapshotEvents(snap)));
+    const r = applyHubEvents(st, [...this.withoutPending(snapshotEvents(snap)), ...approvalEvents(approvals)]);
     for (const c of r.convs) convs.add(c);
+    // 快照也不带已读游标：不推一下的话，首屏每条用户消息都挂着「未读」
+    for (const c of inferReadCursors(st, snap)) convs.add(c);
     if (typeof snap.cursor === "number") this.client.cursor = Math.max(this.client.cursor, snap.cursor);
     if (st.bots.length && !st.onboardedAt) st.onboardedAt = Date.now();
     this.writeKnown({ bots: st.bots.map((b) => b.id), groups: st.groups.map((g) => g.id) });
     this.d.onChanged([...convs]);
     for (const key of r.images) void this.fetchImage(key, r.convs);
+  }
+
+  /** 审批列表只用来校正卡片状态：失败（老版云端 / 网络抖动）不能拖垮首屏 */
+  private async recentApprovals(): Promise<Array<{ id?: unknown; status?: unknown }> | undefined> {
+    try {
+      return (await this.client.approvals())?.approvals;
+    } catch {
+      return undefined;
+    }
   }
 
   /** 本地刚删、还没推上去的消息：云端发回来的（补齐 / 快照）先别加回来 */
@@ -412,10 +430,10 @@ export class BotCloudLink {
         await this.hydrate();
         return;
       }
-      const snap = await this.client.snapshot();
+      const [snap, approvals] = await Promise.all([this.client.snapshot(), this.recentApprovals()]);
       const st = this.d.state();
       const convs = new Set(applyRemovals(st, snap));
-      const r = applyHubEvents(st, this.withoutPending(snapshotEvents(snap)));
+      const r = applyHubEvents(st, [...this.withoutPending(snapshotEvents(snap)), ...approvalEvents(approvals)]);
       for (const c of r.convs) convs.add(c);
       if (typeof snap.cursor === "number") this.client.cursor = Math.max(this.client.cursor, snap.cursor);
       this.writeCursor();
@@ -514,6 +532,7 @@ export class BotCloudLink {
     this.writeCursor();
     for (const t of r.typing) this.d.onTyping?.(t);
     for (const key of r.images) void this.fetchImage(key, r.convs);
+    if (r.devices) this.setInfo({ devices: r.devices });
     for (const ev of r.notices) {
       const text = noticeText(ev, st);
       if (text) this.d.onNotice?.(text);
@@ -531,6 +550,21 @@ export class BotCloudLink {
     }
   }
 
+  /** 云端发来的录屏 / 文件：点开时才拉（`/media/<key>`），存进 IndexedDB（id = `hub-<key>`），下次不再拉 */
+  private mediaInflight = new Map<string, Promise<Blob>>();
+  fetchMedia(key: string): Promise<Blob> {
+    let p = this.mediaInflight.get(key);
+    if (!p) {
+      p = this.client.media(key).then(async (blob) => {
+        await this.d.putImage(`hub-${key}`, blob).catch(() => undefined);
+        return blob;
+      });
+      this.mediaInflight.set(key, p);
+      void p.catch(() => undefined).finally(() => this.mediaInflight.delete(key));
+    }
+    return p;
+  }
+
   async refreshCounts(): Promise<void> {
     try {
       const s = await this.client.status();
@@ -538,6 +572,7 @@ export class BotCloudLink {
         routines: Number(s.routines) || 0,
         monitors: Number(s.monitors) || 0,
         pendingApprovals: Number(s.pendingApprovals) || 0,
+        ...(Array.isArray(s.devices) ? { devices: parseDevices(s.devices) } : {}),
       });
     } catch {
       /* 计数只是展示 */
@@ -545,7 +580,15 @@ export class BotCloudLink {
   }
 
   async decideApproval(id: string, approve: boolean, scope: "once" | "hour" = "once"): Promise<void> {
-    const r = (await this.client.decideApproval(id, approve, scope)) as { approval?: { id: string; status: string } };
+    let r: { approval?: { id: string; status: string } };
+    try {
+      r = (await this.client.decideApproval(id, approve, scope)) as typeof r;
+    } catch (e) {
+      // 别的端已经批过 / 拒过 / 过期了（409 approval_<状态>）、或早被清掉（404）：照云端的结论改卡片，不报错
+      const done = e instanceof BotCloudError ? /^approval_(approved|denied|expired)$/.exec(e.code)?.[1] ?? (e.code === "approval_not_found" ? "expired" : "") : "";
+      if (!done) throw e;
+      r = { approval: { id, status: done } };
+    }
     if (r?.approval) this.handle([{ at: Date.now(), type: "approval", data: { approval: r.approval } }]);
   }
 
@@ -601,8 +644,46 @@ function noticeText(ev: HubEventWire, st: BotState): string {
   return "";
 }
 
-/** 面板里那张「云端运行」卡片：默认开着，只显示状态（没有开关） */
-export function cloudCardHtml(info: CloudInfo, esc: (s: string) => string): string {
+/** 桌面端「允许云端 Bot 访问这台电脑」开关的状态（网页端没有） */
+export interface DeviceCardState {
+  enabled: boolean;
+  phase: "off" | "connecting" | "online" | "error";
+  error?: string;
+}
+
+const deviceName = (d: HubDevice, esc: (s: string) => string): string => `「${esc(d.name)}」`;
+
+/** 卡片里关于用户电脑的那一块：桌面端是开关 + 状态，网页端只说哪台在线 / 怎么开 */
+function deviceBlockHtml(info: CloudInfo, esc: (s: string) => string, device?: DeviceCardState): string {
+  const list = info.devices ?? [];
+  const online = list.filter((d) => d.online);
+  if (device) {
+    const line = !device.enabled
+      ? "关着：云端 Bot 碰不到这台电脑"
+      : device.phase === "online"
+        ? "已连接：Bot 能看这台电脑的状态、找文件；截屏、录屏、读文件、发文件前都会先问你"
+        : device.phase === "error"
+          ? esc(device.error || "连接失败，稍后自动重试")
+          : "正在连接…";
+    return `
+      <div class="bot-cloud-device">
+        <button type="button" class="bot-device-switch" data-bot-action="device-toggle" role="switch" aria-checked="${device.enabled ? "true" : "false"}">
+          <span class="bot-device-switch-label">允许云端 Bot 访问这台电脑</span>
+          <span class="bot-switch${device.enabled ? " is-on" : ""}" aria-hidden="true"><span class="bot-switch-knob"></span></span>
+        </button>
+        <div class="bot-dim bot-cloud-line" data-device-line>${line}</div>
+      </div>`;
+  }
+  const line = online.length
+    ? `你的电脑 ${online.map((d) => deviceName(d, esc)).join("、")} 在线：可以让 Bot 看电脑上的文件、截屏或录屏（会先问你）`
+    : list.length
+      ? `你的电脑 ${deviceName(list[0], esc)} 现在不在线（打开电脑上的 Cancri Code 就能连上）`
+      : "想让 Bot 看你电脑上的文件、截屏或录屏：在电脑上的 Cancri Code 里打开 Bot，在资料卡里开启「允许云端 Bot 访问这台电脑」";
+  return `<div class="bot-dim bot-cloud-line bot-cloud-device-line" data-device-line>${line}</div>`;
+}
+
+/** 面板里那张「云端运行」卡片：默认开着，只显示状态（没有开关）；下面一块是用户自己的电脑 */
+export function cloudCardHtml(info: CloudInfo, esc: (s: string) => string, device?: DeviceCardState): string {
   if (info.phase === "unavailable" || info.phase === "unknown") return "";
   const line =
     info.phase === "starting"
@@ -618,6 +699,6 @@ export function cloudCardHtml(info: CloudInfo, esc: (s: string) => string): stri
         <span>云端运行</span>
         <span class="bot-cloud-dot${info.phase === "on" ? " is-on" : info.phase === "error" ? " is-error" : ""}" aria-hidden="true"></span>
       </div>
-      <div class="bot-dim bot-cloud-line">${line}</div>
+      <div class="bot-dim bot-cloud-line">${line}</div>${info.phase === "on" || device ? deviceBlockHtml(info, esc, device) : ""}
     </section>`;
 }

@@ -98,12 +98,14 @@ import type { ChatProvider } from "../providers/types";
 import { BOT_REACTIONS, describeToolActivity, uploadLocalFiles, type LocalFile, type WorkspaceAccess } from "./bot-tools";
 import { base64ToBlob, deleteBotImages, getBotImage, putBotImage } from "./bot-images";
 import { COMPOSER_MAX_IMAGES, fileToImageAttachment, isImageFile, readFileAsDataUrl, type ComposerImageAttachment } from "../composer-media";
-import { THREAD_PAGE, botScope, plainPreview, receiptHtml, renderBotText, renderMessage, renderThread, singleReceipt, splitBubbles, type ThreadScope } from "./bot-thread";
+import { THREAD_PAGE, attachmentLabel, botScope, plainPreview, receiptHtml, renderBotText, renderMessage, renderThread, singleReceipt, splitBubbles, type ThreadScope } from "./bot-thread";
 import { PHASE_LABEL, ScreenHost, renderPanel, renderPanelBody, renderPanelTags, renderScreenOverlay, type PanelTab } from "./bot-panel";
 import type { SandboxTrialQuota } from "../sandbox/backend";
 import { CF_GATEWAY_URL } from "../gateway-config";
 import { BotCloudLink, cloudCardHtml } from "./bot-cloud-link";
-import { hubErrorText } from "./bot-cloud";
+import { hubErrorText, hubImageKey } from "./bot-cloud";
+// ⛔ 只许 import type：这两个文件调用 Tauri，网页端移植（npm run sync:bot）不跟进 type 导入
+import type { BotDeviceHandle, DeviceMedia } from "./bot-device-types";
 
 const NAME_OPTIONS = ["小云", "Cancri", BOT_DEFAULT_NAME];
 const ONBOARDING_STEPS = 3;
@@ -288,6 +290,13 @@ export interface BotViewDeps {
   workspace?: WorkspaceAccess;
   /** 打开的会话变了（null = 手机布局回到列表）：网页端据此改地址栏 #hash、让通知别打扰正在看的会话 */
   onActive?: (conv: string | null) => void;
+  /**
+   * 桌面端（main.ts 注入）：用户自己这台电脑。本地跑的 Bot 多出 pc_* 工具；资料卡里多一个
+   * 「允许云端 Bot 访问这台电脑」开关（默认关）。网页端不传。
+   */
+  device?: BotDeviceHandle;
+  /** 桌面端「另存为」：录屏 / 文件附件存到用户选的位置；false = 取消了。缺省（网页）走浏览器下载 */
+  saveFile?: (blob: Blob, name: string) => Promise<boolean>;
 }
 
 export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotViewHandle {
@@ -413,6 +422,8 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
     computer: fallbackComputer,
     ...(cloud ? { cloud } : {}),
     ...(deps.workspace ? { workspace: deps.workspace } : {}),
+    ...(deps.device ? { device: { run: (tool, args, signal) => deps.device!.run(tool, args, signal) } } : {}),
+    showMedia: (bot, media, caption, group) => postMedia(bot, media, caption, group),
     ...(pool ? {
       computers: {
         mine: (bot: BotProfile) => computerOf(bot),
@@ -696,7 +707,7 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
     const bot = convo;
     const last = [...bot.thread].reverse().find((m) => m.role !== "event");
     if (!last) return "";
-    return (last.role === "user" ? "你：" : "") + (plainPreview(last.text, 120) || (last.image ? "[截图]" : last.images?.length ? "[图片]" : ""));
+    return (last.role === "user" ? "你：" : "") + (plainPreview(last.text, 120) || attachmentLabel(last));
   };
 
   /** 一轮结束后还没看的结果：done = 正常结束，error = 异常终止。切到该会话即清掉。 */
@@ -929,7 +940,177 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
   };
 
   const imageIdsOf = (msgs: BotChatMessage[]): string[] =>
-    msgs.flatMap((m) => [...(m.image?.id ? [m.image.id] : []), ...(m.images ?? []).map((i) => i.id)]);
+    msgs.flatMap((m) => [...(m.image?.id ? [m.image.id] : []), ...(m.file?.id ? [m.file.id] : []), ...(m.images ?? []).map((i) => i.id)]);
+
+  /** pc_* 拿回来的截图 / 录屏 / 文件：本体进 IndexedDB，线程里一条 Bot 消息（群里排在它前面那几句后面） */
+  const postMedia = (bot: BotProfile, media: DeviceMedia, caption: string, group?: BotGroup): void => {
+    const mediaId = uuidv4();
+    const mime = media.mime || "application/octet-stream";
+    void putBotImage(mediaId, new Blob([media.bytes], { type: mime })).catch(() =>
+      showToast(media.kind === "image" ? "截图保存失败，重启后将无法查看。" : "附件保存失败，重启后将无法查看。"),
+    );
+    const attach: Pick<BotChatMessage, "image" | "file"> =
+      media.kind === "image"
+        ? { image: { id: mediaId } }
+        : {
+            file: {
+              id: mediaId,
+              name: media.name.slice(0, 120) || (media.kind === "video" ? "录屏.mp4" : "文件"),
+              mime,
+              size: media.bytes.byteLength,
+              kind: media.kind === "video" ? "video" : "file",
+              ...(media.durationMs ? { durationMs: Math.round(media.durationMs) } : {}),
+              ...(media.width && media.height ? { width: Math.round(media.width), height: Math.round(media.height) } : {}),
+            },
+          };
+    const room: Convo = group ?? bot;
+    const post = (): void => {
+      room.thread.push({ id: uuidv4(), role: "bot", text: caption, at: Date.now(), ...attach, ...(group ? { authorId: bot.id } : {}) });
+      persist();
+      if (visible && page === "chat") {
+        if (room.id === state.activeId) renderThreadDom();
+        renderList();
+      }
+    };
+    const live = group ? lives.get(group.id) : undefined;
+    if (live?.posting) live.posting = live.posting.then(post);
+    else post();
+  };
+
+  // ── 录屏 / 文件附件：点了才取（本机 IndexedDB → 云端 /media） ─────────────────
+
+  /** 正在播的录屏的 object URL；播放器从页面上消失（换会话 / 删消息）就回收 */
+  const videoUrls = new Map<string, string>();
+  const loadingMedia = new Set<string>();
+  const sweepVideoUrls = (): void => {
+    for (const [id, url] of [...videoUrls]) {
+      if (root.querySelector(`video[data-bot-video-player="${CSS.escape(id)}"]`)) continue;
+      URL.revokeObjectURL(url);
+      videoUrls.delete(id);
+    }
+  };
+
+  /** 本机有就用本机的（桌面端自己发的、拉过一次的）；云端的（hub-<key>）按需拉一次 */
+  const loadMedia = async (id: string): Promise<Blob | null> => {
+    const local = await getBotImage(id).catch(() => null);
+    if (local) return local;
+    const key = hubImageKey(id);
+    if (!key || !cloud) return null;
+    return cloud.fetchMedia(key);
+  };
+
+  const mediaFailText = (id: string, e: unknown, what: string): string => {
+    if (!hubImageKey(id)) return `${what}已不在本机`;
+    const code = e instanceof Error ? e.message : "";
+    return /not_found|404|gone/i.test(code) ? `${what}在云端已过期（只保留一段时间）` : `${what}取不下来：${hubErrorText(e)}`;
+  };
+
+  const fileOf = (id: string): NonNullable<BotChatMessage["file"]> | undefined => {
+    for (const c of [current(), ...state.bots, ...state.groups]) {
+      const hit = c.thread.find((m) => m.file?.id === id)?.file;
+      if (hit) return hit;
+    }
+    return undefined;
+  };
+
+  const playVideo = async (id: string): Promise<void> => {
+    if (!id || loadingMedia.has(id)) return;
+    const busy = (on: boolean): void => {
+      root.querySelectorAll<HTMLElement>(`[data-bot-video="${CSS.escape(id)}"]`).forEach((b) => b.classList.toggle("is-loading", on));
+    };
+    loadingMedia.add(id);
+    busy(true);
+    let blob: Blob | null = null;
+    let err: unknown = null;
+    try {
+      blob = await loadMedia(id);
+    } catch (e) {
+      err = e;
+    } finally {
+      loadingMedia.delete(id);
+      busy(false);
+    }
+    if (!blob) {
+      showToast(mediaFailText(id, err, "录屏"));
+      return;
+    }
+    // 等的时候线程可能重绘过：找现在页面上的那颗按钮
+    const btn = root.querySelector<HTMLElement>(`[data-bot-video="${CSS.escape(id)}"]`);
+    if (!btn) return;
+    let url = videoUrls.get(id);
+    if (!url) {
+      const mime = btn.dataset.mime || fileOf(id)?.mime || "video/mp4";
+      url = URL.createObjectURL(blob.type ? blob : new Blob([blob], { type: mime }));
+      videoUrls.set(id, url);
+    }
+    const v = document.createElement("video");
+    v.className = "bot-msg-video-player";
+    v.dataset.botVideoPlayer = id;
+    v.controls = true;
+    v.autoplay = true;
+    v.playsInline = true;
+    v.preload = "auto";
+    v.src = url;
+    btn.replaceWith(v);
+    sweepVideoUrls();
+  };
+
+  const safeFileName = (name: string): string => name.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, "_").trim().slice(0, 120) || "附件";
+
+  const saveAttachment = async (id: string): Promise<void> => {
+    if (!id || loadingMedia.has(id)) return;
+    const f = fileOf(id);
+    const name = safeFileName(f?.name || "附件");
+    loadingMedia.add(id);
+    let blob: Blob | null = null;
+    let err: unknown = null;
+    try {
+      blob = await loadMedia(id);
+    } catch (e) {
+      err = e;
+    } finally {
+      loadingMedia.delete(id);
+    }
+    if (!blob) {
+      showToast(mediaFailText(id, err, f?.kind === "video" ? "录屏" : "文件"));
+      return;
+    }
+    if (deps.saveFile) {
+      try {
+        if (await deps.saveFile(blob, name)) showToast("已保存");
+      } catch (e) {
+        showToast(`保存失败：${e instanceof Error ? e.message : String(e)}`.slice(0, 120));
+      }
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.rel = "noopener";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  };
+
+  /** 重绘线程前拿下正在播的 <video>，画完放回对应位置（同一个任务里拿下再放回，播放不会被打断） */
+  const keepPlayers = (host: ParentNode): Map<string, HTMLVideoElement> => {
+    const keep = new Map<string, HTMLVideoElement>();
+    host.querySelectorAll<HTMLVideoElement>("video[data-bot-video-player]").forEach((v) => keep.set(v.dataset.botVideoPlayer ?? "", v));
+    return keep;
+  };
+  const restorePlayers = (host: ParentNode, keep: Map<string, HTMLVideoElement>): void => {
+    if (!keep.size) return;
+    host.querySelectorAll<HTMLElement>("[data-bot-video]").forEach((btn) => {
+      const id = btn.dataset.botVideo ?? "";
+      const v = keep.get(id);
+      if (!v) return;
+      keep.delete(id);
+      btn.replaceWith(v);
+    });
+  };
 
   // ── 输入框粘贴图片 ────────────────────────────────────────────────────────
 
@@ -992,6 +1173,7 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
   const renderThreadDom = (): void => {
     const host = q("[data-bot-thread]");
     if (!host) return;
+    const players = keepPlayers(host);
     const group = activeGroup();
     if (group) {
       host.innerHTML = (group.noticeDismissed ? "" : groupNoticeHtml(true)) + renderThread(groupScope(group, state.bots), threadLimit);
@@ -1000,6 +1182,8 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
       host.innerHTML = renderThread(botScope(bot), threadLimit) + (bot.named ? "" : nameAskHtml());
     }
     hydrateImages(host);
+    restorePlayers(host, players);
+    if (videoUrls.size) sweepVideoUrls();
     if (flashId) {
       const el = host.querySelector<HTMLElement>(`[data-msg-id="${CSS.escape(flashId)}"]`);
       el?.classList.add("is-flash");
@@ -1016,8 +1200,10 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
     tpl.innerHTML = renderMessage(scopeOf(current()), msg, { showAuthor: el.classList.contains("is-run-start") }).trim();
     const next = tpl.content.firstElementChild;
     if (next) {
+      const players = keepPlayers(el);
       el.replaceWith(next);
       hydrateImages(next);
+      restorePlayers(next, players);
     }
   };
 
@@ -1224,7 +1410,7 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
       const target = replyTo ? convo.thread.find((m) => m.id === replyTo) : null;
       bar.hidden = !target;
       bar.innerHTML = target
-        ? `<span class="bot-replybar-text">回复 <b>${escapeHtml(scopeOf(convo).nameOf(target))}</b>：${escapeHtml(plainPreview(target.text, 60) || (target.image ? "[截图]" : target.images?.length ? "[图片]" : ""))}</span><button type="button" class="bot-icon-btn" data-bot-action="reply-cancel" aria-label="取消回复">${ICON_CLOSE}</button>`
+        ? `<span class="bot-replybar-text">回复 <b>${escapeHtml(scopeOf(convo).nameOf(target))}</b>：${escapeHtml(plainPreview(target.text, 60) || attachmentLabel(target))}</span><button type="button" class="bot-icon-btn" data-bot-action="reply-cancel" aria-label="取消回复">${ICON_CLOSE}</button>`
         : "";
     }
   };
@@ -1250,11 +1436,14 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
     if (!panel || !panelOpen) return;
     panel.querySelector("[data-cloud-card]")?.remove();
     if (!cloud || panelTab === "computer") return;
-    const html = cloudCardHtml(cloud.info, escapeHtml);
+    const device = deps.device ? { enabled: deps.device.enabled(), phase: deps.device.phase, ...(deps.device.error ? { error: deps.device.error } : {}) } : undefined;
+    const html = cloudCardHtml(cloud.info, escapeHtml, device);
     if (!html) return;
     const anchor = panel.querySelector(".bot-danger, .bot-group-danger");
     anchor?.insertAdjacentHTML("beforebegin", html);
   };
+  // 设备通道连上 / 断开 / 被挤下线：资料卡上的那行状态跟着变
+  deps.device?.onChange(() => refreshCloudCard());
 
   /** 云端改了本地状态：只落盘（不回推），重画受影响的会话 */
   const onCloudChanged = (convs: string[]): void => {
@@ -1369,6 +1558,29 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
       showToast(hubErrorText(e));
       btn.closest(".bot-event-approval")?.querySelectorAll("button").forEach((b) => b.removeAttribute("disabled"));
     }
+  };
+
+  /** 资料卡里的「允许云端 Bot 访问这台电脑」：打开前说清楚 Bot 能做什么、哪些每次都要先问 */
+  const toggleDevice = async (): Promise<void> => {
+    const dev = deps.device;
+    if (!dev) return;
+    if (dev.enabled()) {
+      dev.setEnabled(false);
+      refreshCloudCard();
+      return;
+    }
+    const r = await showConfirmDialog({
+      title: "允许云端 Bot 访问这台电脑？",
+      message:
+        "打开后，你在手机或网页上找 Bot 时，它也能用到这台电脑：看电脑状态、列出文件夹、按名字找文件、弹通知会直接做；" +
+        "截屏、录屏、读文件内容、把文件发到聊天里，每次都会先问你（在手机、网页或这台电脑上点「允许」都行），录屏时屏幕上方会挂一个红色提示。" +
+        "密钥、密码、浏览器资料这类位置一律读不了。电脑关机或退出 Cancri Code 后就连不上了，随时可以在这里关掉。",
+      confirmText: "打开",
+      cancelText: "先不用",
+    });
+    if (!r.ok) return;
+    dev.setEnabled(true);
+    refreshCloudCard();
   };
 
   const renderPanelDomInner = (): void => {
@@ -1623,6 +1835,13 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
     const a = (ev.args ?? {}) as Record<string, unknown>;
     if (ev.toolName === "web_fetch" && typeof a.url === "string") return `允许打开 ${a.url} 吗？`;
     if (ev.toolName === "web_search" && typeof a.query === "string") return `允许搜索「${a.query}」吗？`;
+    if (ev.toolName === "pc_screenshot") return "允许截取你电脑的屏幕吗？";
+    if (ev.toolName === "pc_screen_record") {
+      const secs = typeof a.seconds === "number" && a.seconds >= 1 ? Math.min(30, Math.round(a.seconds)) : 10;
+      return `允许录制你电脑屏幕 ${secs} 秒吗？`;
+    }
+    if (ev.toolName === "pc_files" && typeof a.path === "string") return `允许读取 ${a.path.slice(0, 160)} 吗？`;
+    if (ev.toolName === "pc_send_file" && typeof a.path === "string") return `允许把 ${a.path.slice(0, 160)} 发到聊天里吗？`;
     return ev.summary ? `需要确认：${ev.summary}` : "需要确认这一步";
   };
 
@@ -2269,6 +2488,9 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
       case "cloud-deny":
         void decideCloudApproval(btn, false);
         break;
+      case "device-toggle":
+        void toggleDevice();
+        break;
       // 引导
       case "next":
         if (step + 1 >= ONBOARDING_STEPS) {
@@ -2825,6 +3047,18 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
       if (/^https?:\/\//i.test(href)) void openUrl(href).catch(() => showToast("打不开这个链接"));
       return;
     }
+    const video = target?.closest<HTMLElement>("[data-bot-video]");
+    if (video) {
+      event.preventDefault();
+      void playVideo(video.dataset.botVideo ?? "");
+      return;
+    }
+    const attachment = target?.closest<HTMLElement>("[data-bot-file]");
+    if (attachment) {
+      event.preventDefault();
+      void saveAttachment(attachment.dataset.botFile ?? "");
+      return;
+    }
     const img = target?.closest<HTMLImageElement>(".bot-msg-img, .bot-msg-body img, .bot-live img");
     if (img && !img.classList.contains("bot-msg-img-missing")) {
       event.preventDefault();
@@ -2867,6 +3101,19 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
       event.preventDefault();
       event.stopPropagation();
       openPopover({ kind: "bot-menu", id: item.dataset.id, anchor: item, x: event.clientX, y: event.clientY });
+      return;
+    }
+    const att = target?.closest<HTMLElement>("[data-bot-video], [data-bot-file], video[data-bot-video-player]");
+    if (att) {
+      const id = att.dataset.botVideo ?? att.dataset.botFile ?? att.dataset.botVideoPlayer ?? "";
+      if (!id) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (popover) closePopover();
+      showContextMenu(event.clientX, event.clientY, [
+        ...(att.dataset.botVideo ? [{ label: "播放", onClick: () => void playVideo(id) }] : []),
+        { label: deps.saveFile ? "另存为…" : "下载", onClick: () => void saveAttachment(id) },
+      ], { anchor: att });
       return;
     }
     const img = target?.closest<HTMLImageElement>(".bot-msg-img, .bot-msg-body img, .bot-live img");

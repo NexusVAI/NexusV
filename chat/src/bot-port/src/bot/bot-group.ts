@@ -15,7 +15,7 @@
  */
 import { neutralizeControlTags } from "../core/control-tags";
 import type { BotChatMessage, BotGroup, BotProfile } from "./bot-store";
-import { plainPreview } from "./bot-thread";
+import { attachmentLabel, plainPreview } from "./bot-thread";
 import { ACTIVITY_LABEL, PASS_TOKEN, parseBotReply, shortRef, type GroupActivity } from "./bot-social";
 
 export { PASS_TOKEN };
@@ -207,6 +207,7 @@ export function formatTranscript(group: BotGroup, msgs: BotChatMessage[], bots: 
     let text = m.text;
     if (!text && (m.image || m.images?.length)) text = "[图片]";
     else if (m.images?.length) text = `[图片] ${text}`;
+    if (m.file) text = text ? `${attachmentLabel(m)} ${text}` : attachmentLabel(m);
     const target = m.replyTo ? group.thread.find((x) => x.id === m.replyTo) : undefined;
     const quote = target ? `（回复 #${shortRef(target.id)} ${nameOf(target)}：「${plainPreview(target.text, 80)}」）` : "";
     return `#${shortRef(m.id)} ${nameOf(m)}：${quote}${text}`;

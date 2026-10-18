@@ -33,8 +33,40 @@ export interface HubMessageWire {
   reactions?: Array<{ emoji: string; by: "user" | "bot"; authorId?: string }>;
   origin?: string;
   image?: { key: string };
+  /** 用户电脑传上来的录屏 / 文件（cf-gateway bot-hub HubFile）：本体在 `/media/<key>` */
+  file?: { key: string; name: string; mime: string; size: number; kind: "video" | "file"; durationMs?: number; width?: number; height?: number };
   approvalId?: string;
   error?: boolean;
+}
+
+/** 用户自己的电脑（桌面端开了「允许云端 Bot 访问这台电脑」的那几台） */
+export interface HubDevice {
+  id: string;
+  name: string;
+  os?: string;
+  app?: string;
+  online: boolean;
+  lastSeenAt?: number;
+}
+
+/** `device` 事件 / `/status` 里的设备名单 → 干净的数组（字段不对的丢掉） */
+export function parseDevices(raw: unknown): HubDevice[] {
+  if (!Array.isArray(raw)) return [];
+  const out: HubDevice[] = [];
+  for (const d of raw.slice(0, 10)) {
+    if (!d || typeof d !== "object") continue;
+    const x = d as Record<string, unknown>;
+    if (typeof x.id !== "string" || !x.id) continue;
+    out.push({
+      id: x.id.slice(0, 64),
+      name: (typeof x.name === "string" && x.name.trim() ? x.name : "我的电脑").slice(0, 60),
+      ...(typeof x.os === "string" && x.os ? { os: x.os.slice(0, 60) } : {}),
+      ...(typeof x.app === "string" && x.app ? { app: x.app.slice(0, 30) } : {}),
+      online: x.online === true,
+      ...(typeof x.lastSeenAt === "number" ? { lastSeenAt: x.lastSeenAt } : {}),
+    });
+  }
+  return out;
 }
 
 export interface HubEventWire {
@@ -60,12 +92,29 @@ export interface SyncPayload {
   clientId?: string;
 }
 
+/**
+ * 只在这台电脑上的附件（桌面端本地跑的 Bot 截的图 / 录的屏 / 发的文件、用户粘贴的图）：字节不上云，
+ * 上行时在文字前面带一句说明 —— 不然网页端只看到一个空气泡，云端的 Bot 也不知道这里发过什么。
+ */
+export function localMediaNote(m: Pick<BotChatMessage, "image" | "images" | "file">): string {
+  if (m.image?.id && !m.image.id.startsWith(HUB_IMAGE_PREFIX)) return "[截图，在电脑上看]";
+  if (m.file?.id && !m.file.id.startsWith(HUB_IMAGE_PREFIX)) return m.file.kind === "video" ? "[录屏，在电脑上看]" : `[文件「${m.file.name}」，在电脑上看]`;
+  if (m.images?.length) return m.images.length > 1 ? `[${m.images.length} 张图片，在电脑上看]` : "[图片，在电脑上看]";
+  return "";
+}
+
+function wireText(m: BotChatMessage): string {
+  const note = localMediaNote(m);
+  if (!note) return m.text;
+  return m.text ? `${note}\n${m.text}` : note;
+}
+
 function wire(conv: ConvKey, m: BotChatMessage): HubMessageWire {
   return {
     id: m.id,
     conv,
     role: m.role,
-    text: m.text,
+    text: wireText(m),
     at: m.at,
     ...(m.authorId ? { authorId: m.authorId } : {}),
     ...(m.replyTo ? { replyTo: m.replyTo } : {}),
@@ -119,6 +168,22 @@ function threadOf(state: BotState, conv: string): { thread: BotChatMessage[]; gr
   return null;
 }
 
+function hubFile(f: NonNullable<HubMessageWire["file"]>): NonNullable<BotChatMessage["file"]> {
+  const n = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.round(v) : undefined);
+  const durationMs = n(f.durationMs);
+  const width = n(f.width);
+  const height = n(f.height);
+  return {
+    id: HUB_IMAGE_PREFIX + f.key,
+    name: String(f.name || (f.kind === "video" ? "录屏.mp4" : "文件")).slice(0, 120),
+    mime: String(f.mime || "application/octet-stream").slice(0, 100),
+    size: n(f.size) ?? 0,
+    kind: f.kind === "video" ? "video" : "file",
+    ...(durationMs ? { durationMs } : {}),
+    ...(width && height ? { width, height } : {}),
+  };
+}
+
 function fromWire(m: HubMessageWire): BotChatMessage {
   // 截图在云端（/bot-hub/image/<key>）：本地记成 `hub-<key>`，由 BotCloudLink 拉下来存进 IndexedDB
   const text = m.text;
@@ -132,6 +197,7 @@ function fromWire(m: HubMessageWire): BotChatMessage {
     ...(m.reactions?.length ? { reactions: m.reactions } : {}),
     ...(m.error ? { error: true } : {}),
     ...(m.image?.key ? { image: { id: HUB_IMAGE_PREFIX + m.image.key } } : {}),
+    ...(!m.image?.key && m.file?.key ? { file: hubFile(m.file) } : {}),
     ...(m.approvalId ? { approval: { id: m.approvalId, status: "pending" as const } } : {}),
     ...(m.origin ? { origin: m.origin } : {}),
   };
@@ -155,6 +221,8 @@ export interface ApplyResult {
   rosterBy: string[];
   /** 被别的端清空的会话：本地的模型上下文也作废了（和本地清空一样） */
   cleared: string[];
+  /** 用户电脑上线 / 下线（`device` 事件，最后一次为准）；没有这类事件时不填 */
+  devices?: HubDevice[];
 }
 
 /** 本地删掉 / 清空一段消息（云端发来的 message_remove / conv_clear，或快照里的墓碑） */
@@ -180,6 +248,7 @@ export function applyHubEvents(state: BotState, events: HubEventWire[]): ApplyRe
   const unknownConvs = new Set<string>();
   const rosterBy: string[] = [];
   const cleared = new Set<string>();
+  let devices: HubDevice[] | undefined;
   const setThread = (conv: string, next: BotChatMessage[]): void => {
     if (conv.startsWith("bot:")) {
       const b = state.bots.find((x) => x.id === conv.slice(4));
@@ -199,6 +268,10 @@ export function applyHubEvents(state: BotState, events: HubEventWire[]): ApplyRe
     }
     if (ev.type === "roster") {
       rosterBy.push(String(ev.data?.by ?? ""));
+      continue;
+    }
+    if (ev.type === "device") {
+      devices = parseDevices(ev.data?.devices);
       continue;
     }
     if (ev.type === "message_remove" || ev.type === "conv_clear") {
@@ -237,6 +310,8 @@ export function applyHubEvents(state: BotState, events: HubEventWire[]): ApplyRe
       if (i >= 0) {
         const prev = t.thread[i];
         const next = { ...prev, ...fromWire(m) };
+        // 自己推上去的本机附件消息：云端那份文字带着「在电脑上看」的说明，本地保持原文
+        if (localMediaNote(prev)) next.text = prev.text;
         // 本地已有的消息：来源以本地为准（自己推上去的消息云端会标成 user 再广播回来，不能把它变成「云端消息」）
         if (prev.origin) next.origin = prev.origin;
         else delete next.origin;
@@ -308,7 +383,7 @@ export function applyHubEvents(state: BotState, events: HubEventWire[]): ApplyRe
       }
     }
   }
-  return { changed, notices, convs: [...convs], images: [...images], typing, unknownConvs: [...unknownConvs], rosterBy, cleared: [...cleared] };
+  return { changed, notices, convs: [...convs], images: [...images], typing, unknownConvs: [...unknownConvs], rosterBy, cleared: [...cleared], ...(devices ? { devices } : {}) };
 }
 
 /** 快照里的删除墓碑 → 本地照删（网页端本地存档里可能还留着别的端删掉的消息） */
@@ -322,6 +397,59 @@ export function applyRemovals(
   for (const [conv, ids] of byConv) events.push({ at: 0, type: "message_remove", data: { conv, ids } });
   for (const [conv, before] of Object.entries(r.cleared ?? {})) events.push({ at: 0, type: "conv_clear", data: { conv, before } });
   return events.length ? applyHubEvents(state, events).convs : [];
+}
+
+/**
+ * 审批列表 → `approval` 事件（交给 applyHubEvents：只改卡片状态，对不上的忽略）。
+ * 快照里的审批卡片消息只记了「发起时」的样子（待批准）：不校正的话，网页首屏 / 重拉后
+ * 早就批过、拒过、过期的卡片又冒出三个按钮，点了只会得到 409。
+ */
+export function approvalEvents(list: Array<{ id?: unknown; status?: unknown }> | undefined): HubEventWire[] {
+  const events: HubEventWire[] = [];
+  for (const a of Array.isArray(list) ? list : []) {
+    if (a && typeof a.id === "string" && typeof a.status === "string") events.push({ at: 0, type: "approval", data: { approval: { id: a.id, status: a.status } } });
+  }
+  return events;
+}
+
+/**
+ * 快照不带已读游标（单聊的游标存在云端 meta 里，只随 receipt 事件下发）：网页首屏 / 重拉后
+ * 每条用户消息都显示「未读」。单聊按「Bot 回过话 = 读过它之前的用户消息」推一个；
+ * 群聊用快照里群自带的 `read`。只往前推、不往回退；游标那条已被截掉（= 全读过）的不动。
+ * 返回游标变了的会话。
+ */
+export function inferReadCursors(state: BotState, snap: { groups?: Array<{ id?: unknown; read?: unknown }> }): string[] {
+  const convs: string[] = [];
+  for (const b of state.bots) {
+    const t = b.thread;
+    const cur = b.readId ? t.findIndex((m) => m.id === b.readId) : -1;
+    if (b.readId && cur < 0) continue;
+    let lastBot = t.length - 1;
+    while (lastBot >= 0 && t[lastBot].role !== "bot") lastBot--;
+    let target = lastBot - 1;
+    while (target >= 0 && t[target].role !== "user") target--;
+    if (target > cur) {
+      b.readId = t[target].id;
+      convs.push(`bot:${b.id}`);
+    }
+  }
+  for (const hg of Array.isArray(snap.groups) ? snap.groups : []) {
+    const g = hg && typeof hg.id === "string" ? state.groups.find((x) => x.id === hg.id) : undefined;
+    if (!g || !hg.read || typeof hg.read !== "object") continue;
+    const read = (g.read ??= {});
+    let moved = false;
+    for (const [botId, msgId] of Object.entries(hg.read as Record<string, unknown>)) {
+      if (typeof msgId !== "string") continue;
+      const next = g.thread.findIndex((m) => m.id === msgId);
+      const cur = read[botId] ? g.thread.findIndex((m) => m.id === read[botId]) : -1;
+      if (next > cur && (cur >= 0 || !read[botId])) {
+        read[botId] = msgId;
+        moved = true;
+      }
+    }
+    if (moved) convs.push(`group:${g.id}`);
+  }
+  return convs;
 }
 
 // ── 名册（别的端新建 / 删掉的 Bot、群） ───────────────────────────────────────
@@ -671,6 +799,10 @@ export class BotCloudClient {
   snapshot(): Promise<HubSnapshot> {
     return this.call("/state");
   }
+  /** 最近的审批（全部状态，云端最多回 100 条）：快照只带消息、不带审批结论，首屏靠它把卡片校正过来 */
+  approvals(): Promise<{ approvals?: Array<{ id?: unknown; status?: unknown }> }> {
+    return this.call("/approvals");
+  }
 
   /** 推本地状态、拉云端事件；返回的事件已经推给 onEvents */
   async sync(state: BotState): Promise<HubEventWire[]> {
@@ -725,6 +857,16 @@ export class BotCloudClient {
     if (!token) throw new BotCloudError(401, "not_signed_in");
     const f = this.d.fetch ?? fetch;
     const res = await f(`${this.d.baseUrl}${BOT_CLOUD_PATH}/image/${encodeURIComponent(key)}`, { headers: { authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new BotCloudError(res.status, `http_${res.status}`);
+    return await res.blob();
+  }
+
+  /** 用户电脑传上来的录屏 / 文件（DO 里只留最近一批，总量有上限） */
+  async media(key: string): Promise<Blob> {
+    const token = await this.d.token();
+    if (!token) throw new BotCloudError(401, "not_signed_in");
+    const f = this.d.fetch ?? fetch;
+    const res = await f(`${this.d.baseUrl}${BOT_CLOUD_PATH}/media/${encodeURIComponent(key)}`, { headers: { authorization: `Bearer ${token}` } });
     if (!res.ok) throw new BotCloudError(res.status, `http_${res.status}`);
     return await res.blob();
   }

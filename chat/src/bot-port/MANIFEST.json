@@ -15,11 +15,12 @@
     "@tauri-apps/plugin-opener"
   ],
   "files": {
-    "src/bot/bot-view.ts": "f04d74900f4ff4a7",
-    "src/bot/bot-view.css": "736822d8d456a3a3",
-    "src/ui/image-viewer.ts": "72bcacdc9bb34cf3",
+    "src/bot/bot-view.ts": "3992967066f0d106",
+    "src/bot/bot-view.css": "a8aeb74ab8b67afd",
+    "src/ui/image-viewer.ts": "59d53843e3c30617",
     "src/contextMenu.ts": "2d0757989d64a987",
     "src/ui/liquid-glass-surface.ts": "d5cb40a140a7800f",
+    "src/core/data-url.ts": "86bf745484ab7d32",
     "src/ui/toast.ts": "8af837b25ed76419",
     "src/ui/grok-bot/mascot.ts": "e9c8eb655ccb3954",
     "src/ui/grok-bot/mood-director.ts": "1f091c267d67ac11",
@@ -45,12 +46,12 @@
     "src/ui/dialog-keyboard.ts": "187cb704354f4750",
     "src/ui/settings-scroll-fade.ts": "ebea4a3cd9bcaab1",
     "src/chat/render/streaming-patch.ts": "03fa8e7f8638ca2c",
-    "src/bot/bot-store.ts": "8940458bb3f1722d",
+    "src/bot/bot-store.ts": "8f45ce5dec5c3074",
     "src/agent/context-pipeline.ts": "77e2ae8cdf66ef44",
     "src/bot/bot-social.ts": "b69ddb574ac89bf5",
-    "src/bot/bot-group.ts": "ed68bf840f410fc8",
+    "src/bot/bot-group.ts": "b896a50cb0e5f7aa",
     "src/core/control-tags.ts": "8e508839da01b3d5",
-    "src/bot/bot-thread.ts": "c88cc6d3823d30a2",
+    "src/bot/bot-thread.ts": "997fe5a9f2e72a71",
     "src/chat/render/markdown.ts": "181db82824f0823f",
     "src/chat/format.ts": "21e79599f03b354f",
     "src/chat/render/web-sources.ts": "b03c85cecee6fe37",
@@ -60,22 +61,23 @@
     "src/chat/render/rich-ui-core.ts": "afede9841f6123a4",
     "src/chat/render/rich-ui-icons.ts": "0c9fc1cae0064010",
     "src/chat/render/rich-ui-widgets.ts": "9508c4498c5c314e",
-    "src/bot/bot-group-render.ts": "b4be2735bcfbb744",
-    "src/bot/bot-tools.ts": "1c8482ab02bd61a4",
+    "src/bot/bot-group-render.ts": "264319cbdfb3d456",
+    "src/bot/bot-tools.ts": "e30683075447d642",
     "src/bot/bot-memory.ts": "7465dd27e9110407",
     "src/memory-relevance.ts": "34d4f40fbbb0dcdc",
-    "src/bot/bot-cloud.ts": "b75dd860e69396b1",
-    "src/bot/bot-images.ts": "a05a723eee591d4a",
-    "src/composer-media.ts": "be6caa9508935c62",
+    "src/bot/bot-cloud.ts": "a9f119de0b8324cc",
+    "src/bot/bot-images.ts": "bd22ebdcc782c567",
+    "src/composer-media.ts": "f8c5e24b60c1af71",
     "src/bot/bot-panel.ts": "bd942eb5783c2216",
     "tasks/_codex-icons/svg/custom/app-initial-219.svg": "25ecec1577d9d244",
     "tasks/_codex-icons/svg/custom/app-initial-12.svg": "99719e9773f1bb6d",
     "tasks/_codex-icons/svg/custom/app-initial-117.svg": "d63ce83bcf27e610",
     "src/gateway-config.ts": "18cb0a8a754c800b",
-    "src/bot/bot-cloud-link.ts": "2b8a0276fd570e11"
+    "src/bot/bot-cloud-link.ts": "89e563a88230c02b",
+    "src/bot/bot-device-types.ts": "ac196a763b5938b4"
   },
   "css": {
-    "kept": 812,
-    "dropped": 5568
+    "kept": 809,
+    "dropped": 5583
   }
 }

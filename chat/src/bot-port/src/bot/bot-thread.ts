@@ -76,6 +76,34 @@ function renderUserText(text: string): string {
 const ICON_SMILE = `<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.3"/><circle cx="5.9" cy="6.6" r=".85" fill="currentColor"/><circle cx="10.1" cy="6.6" r=".85" fill="currentColor"/><path d="M5.3 9.4c.7 1.1 1.6 1.6 2.7 1.6s2-.5 2.7-1.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
 const ICON_REPLY = `<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 4 3 7.5 6.5 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.4 7.5h5.4c2.4 0 4.2 1.7 4.2 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`;
 const ICON_MORE = `<svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="12.5" cy="8" r="1.2" fill="currentColor"/></svg>`;
+const ICON_PLAY = `<svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7.2" fill="currentColor" opacity=".16"/><path d="M6.4 5.1v5.8L11 8z" fill="currentColor"/></svg>`;
+const ICON_FILE = `<svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 1.8h5l3.2 3.2v8.2c0 .6-.5 1-1 1H4c-.6 0-1-.4-1-1V2.8c0-.6.4-1 1-1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M9 1.9V5h3.1" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
+
+/** 附件大小：1.2 MB / 830 KB */
+export function sizeLabel(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return "";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+/** 没有文字的消息在列表预览 / 回复条 / 群聊转述里显示什么 */
+export function attachmentLabel(m: Pick<BotChatMessage, "image" | "images" | "file">): string {
+  if (m.image) return "[截图]";
+  if (m.file) return m.file.kind === "video" ? "[录屏]" : `[文件] ${m.file.name}`;
+  return m.images?.length ? "[图片]" : "";
+}
+
+/** Bot 发来的录屏 / 文件：录屏先出一个「播放」占位（点了才去取视频），文件是一张可点的条 */
+export function fileHtml(f: NonNullable<BotChatMessage["file"]>): string {
+  const size = sizeLabel(f.size);
+  if (f.kind === "video") {
+    const secs = f.durationMs ? Math.max(1, Math.round(f.durationMs / 1000)) : 0;
+    const meta = [secs ? `${secs} 秒` : "", size].filter(Boolean).join(" · ");
+    return `<button type="button" class="bot-msg-video" data-bot-video="${escapeAttr(f.id)}" data-mime="${escapeAttr(f.mime)}" title="播放录屏">${ICON_PLAY}<span class="bot-msg-file-text"><span class="bot-msg-file-name">播放录屏</span>${meta ? `<span class="bot-msg-file-meta">${escapeHtml(meta)}</span>` : ""}</span></button>`;
+  }
+  return `<button type="button" class="bot-msg-file" data-bot-file="${escapeAttr(f.id)}" title="保存「${escapeAttr(f.name)}」">${ICON_FILE}<span class="bot-msg-file-text"><span class="bot-msg-file-name">${escapeHtml(f.name)}</span>${size ? `<span class="bot-msg-file-meta">${escapeHtml(size)}</span>` : ""}</span></button>`;
+}
 
 /** 群聊里 Bot 消息的作者（单聊不需要：只有一个 Bot） */
 export interface ThreadAuthor {
@@ -201,7 +229,9 @@ export function renderMessage(scope: ThreadScope, msg: BotChatMessage, opts: { s
     .join("");
   const body = msg.image?.id
     ? `<img class="bot-msg-img" data-bot-img="${escapeAttr(msg.image.id)}" alt="截图" title="点击放大查看">${text}`
-    : pasted + text;
+    : msg.file?.id
+      ? fileHtml(msg.file) + text
+      : pasted + text;
   const retry = msg.error
     ? `<button type="button" class="bot-retry" data-bot-action="retry" data-id="${escapeAttr(msg.id)}">重试</button>`
     : "";

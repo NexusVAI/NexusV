@@ -882,6 +882,13 @@ export function describeToolActivity(name: string, args: unknown): string {
     case "web_fetch": return `正在读取 ${host(a.url) || "网页"}…`;
     case "memory_search": return "正在查找记忆…";
     case "cloud_schedule": return a.action === "list" ? "正在看日程…" : "正在安排日程…";
+    // pc_*：用户自己的电脑（「你」= 用户），和 Bot 自己的云电脑（computer_*）区分开
+    case "pc_status": return "正在看你电脑的状态…";
+    case "pc_files": return a.action === "search" ? "正在你电脑上找文件…" : a.action === "read" ? "正在读你电脑上的文件…" : "正在看你电脑上的文件…";
+    case "pc_screenshot": return "正在截你电脑的屏幕…";
+    case "pc_screen_record": return "正在录你电脑的屏幕…";
+    case "pc_send_file": return "正在从你电脑发文件…";
+    case "pc_notify": return "正在给你电脑发通知…";
     case "memory_edit":
     case "memory_note": return "已记录";
     default: return "正在处理…";

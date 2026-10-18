@@ -3325,14 +3325,6 @@ body {
   --cc-glass-frost-fill: rgba(248, 248, 248, 0.86);
   --cc-glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 26px rgba(0, 0, 0, 0.1);
   --cc-glass-inset: inset 0 0 0 rgba(255, 255, 255, 0);
-  --cc-glass-edge: linear-gradient(
-    135deg,
-    rgba(17, 17, 17, 0.2) 0%,
-    rgba(17, 17, 17, 0) 12%,
-    rgba(17, 17, 17, 0) 86%,
-    rgba(17, 17, 17, 0.14) 100%
-  );
-  --cc-glass-edge-blend: normal;
   --cc-glass-glare: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.28) 0%,
@@ -3346,28 +3338,12 @@ body {
   --cc-glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.16), 0 10px 26px rgba(0, 0, 0, 0.28);
   --cc-glass-frost-fill: rgba(40, 40, 40, 0.88);
   --cc-glass-inset: inset 0 0 0 rgba(255, 255, 255, 0);
-  --cc-glass-edge: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.38) 0%,
-    rgba(255, 255, 255, 0) 12%,
-    rgba(255, 255, 255, 0) 86%,
-    rgba(255, 255, 255, 0.26) 100%
-  );
-  --cc-glass-edge-blend: screen;
   --cc-glass-glare: none;
 }
 :root[data-theme="codex"][data-scheme="black"] {
   --cc-glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.19), 0 10px 26px rgba(0, 0, 0, 0.34);
   --cc-glass-frost-fill: rgba(20, 20, 20, 0.9);
   --cc-glass-inset: inset 0 0 0 rgba(255, 255, 255, 0);
-  --cc-glass-edge: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.32) 0%,
-    rgba(255, 255, 255, 0) 12%,
-    rgba(255, 255, 255, 0) 86%,
-    rgba(255, 255, 255, 0.22) 100%
-  );
-  --cc-glass-edge-blend: screen;
   --cc-glass-glare: none;
 }
 :root[data-theme="codex"] .ctx-menu.glass-active::after,
@@ -3378,13 +3354,19 @@ body {
   border-radius: inherit;
   pointer-events: none;
   z-index: 2;
-  padding: 1px;
+  padding: var(--cc-rim-w, 1px);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
-  background: var(--cc-glass-edge);
-  mix-blend-mode: var(--cc-glass-edge-blend, screen);
+  background:
+    var(--cc-rim-tl) left top / var(--cc-rim-gr, 24px) var(--cc-rim-gr, 24px) no-repeat,
+    var(--cc-rim-tr) right top / var(--cc-rim-gr, 24px) var(--cc-rim-gr, 24px) no-repeat,
+    var(--cc-rim-br) right bottom / var(--cc-rim-gr, 24px) var(--cc-rim-gr, 24px) no-repeat,
+    var(--cc-rim-bl) left bottom / var(--cc-rim-gr, 24px) var(--cc-rim-gr, 24px) no-repeat,
+    linear-gradient(var(--cc-rim-h), var(--cc-rim-h)) center / calc(100% - 2 * var(--cc-rim-gr, 24px)) 100% no-repeat,
+    linear-gradient(var(--cc-rim-v), var(--cc-rim-v)) center / 100% calc(100% - 2 * var(--cc-rim-gr, 24px)) no-repeat;
+  mix-blend-mode: var(--cc-rim-blend, plus-lighter);
 }
 @supports (corner-shape: squircle) {
   :root[data-theme="codex"] .ctx-menu.glass-active {
@@ -3664,30 +3646,6 @@ body {
   :root[data-theme="codex"] .cc-confirm-dialog.cc-glass-dialog::after {
     corner-shape: superellipse(1.6);
   }
-}
-:root[data-theme="codex"] .cc-confirm-dialog.cc-glass-dialog {
-  --cc-glass-edge: linear-gradient(
-    135deg,
-    rgba(17, 17, 17, 0.22) 0%,
-    rgba(17, 17, 17, 0.1) 18%,
-    rgba(17, 17, 17, 0.085) 50%,
-    rgba(17, 17, 17, 0.1) 82%,
-    rgba(17, 17, 17, 0.16) 100%
-  );
-}
-:root[data-theme="codex"][data-scheme="dark"] .cc-confirm-dialog.cc-glass-dialog,
-:root[data-theme="codex"][data-scheme="black"] .cc-confirm-dialog.cc-glass-dialog {
-  --cc-glass-edge: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.42) 0%,
-    rgba(255, 255, 255, 0.14) 18%,
-    rgba(255, 255, 255, 0.11) 50%,
-    rgba(255, 255, 255, 0.13) 82%,
-    rgba(255, 255, 255, 0.24) 100%
-  );
-}
-:root[data-theme="codex"] .cc-confirm-dialog.cc-glass-dialog::after {
-  padding: 1px;
 }
 :root[data-theme="codex"] .cc-glass-dialog .modal-head,
 :root[data-theme="codex"] .cc-glass-dialog .modal-body,

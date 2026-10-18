@@ -2003,6 +2003,95 @@ body[data-product="bot"] .sidebar-collapsed-rail,
 #bot-view .bot-cloud-dot.is-on { background: #22a35a; }
 #bot-view .bot-cloud-dot.is-error { background: #e5484d; }
 
+/* 「允许云端 Bot 访问这台电脑」（桌面端）/ 你的电脑在不在线（网页端） */
+#bot-view .bot-cloud-device {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bot-line);
+}
+#bot-view .bot-device-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--bot-text);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+#bot-view .bot-device-switch:focus-visible { outline: 2px solid var(--bot-line-strong); outline-offset: 3px; border-radius: 6px; }
+#bot-view .bot-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--bot-line-strong);
+  transition: background-color 0.18s ease;
+}
+#bot-view .bot-switch.is-on { background: #22a35a; }
+#bot-view .bot-switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  transition: transform 0.18s ease;
+}
+#bot-view .bot-switch.is-on .bot-switch-knob { transform: translateX(14px); }
+
+/* pc_screen_record 的录屏、pc_send_file 的文件：点了才去取（录屏可能十几 MB） */
+#bot-view .bot-msg-video,
+#bot-view .bot-msg-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(100%, 320px);
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--bot-card);
+  box-shadow: inset 0 0 0 1px var(--bot-line);
+  color: var(--bot-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+#bot-view .bot-msg-video:hover,
+#bot-view .bot-msg-file:hover { background: var(--bot-fill-hover); }
+#bot-view .bot-msg-video svg,
+#bot-view .bot-msg-file svg { flex: 0 0 auto; width: 20px; height: 20px; }
+#bot-view .bot-msg-video.is-loading,
+#bot-view .bot-msg-file.is-loading { opacity: 0.6; cursor: progress; }
+#bot-view .bot-msg-file-text { display: flex; flex-direction: column; min-width: 0; }
+#bot-view .bot-msg-file-name {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#bot-view .bot-msg-file-meta { color: var(--bot-text-dim); font-size: 11.5px; }
+#bot-view .bot-msg-video:not(:last-child),
+#bot-view .bot-msg-file:not(:last-child),
+#bot-view .bot-msg-video-player:not(:last-child) { margin-bottom: 6px; }
+#bot-view .bot-msg-video-player {
+  display: block;
+  max-width: min(100%, 420px);
+  max-height: 320px;
+  border-radius: 10px;
+  background: #000;
+}
+
 /* 返回列表：只有手机单栏布局才有 */
 #bot-view .bot-back { display: none; }
 

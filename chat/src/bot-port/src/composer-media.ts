@@ -136,12 +136,25 @@ export async function blobToImageAttachment(
 export async function pathToImageAttachment(absPath: string): Promise<ComposerImageAttachment | null> {
   if (!isImagePath(absPath)) return null;
   const name = absPath.split(/[/\\]/).pop() || "image";
-  const { convertFileSrc } = await import("@tauri-apps/api/core");
-  const assetUrl = convertFileSrc(absPath);
-  const resp = await fetch(assetUrl);
-  if (!resp.ok) throw new Error(`读取图片失败 (${resp.status})`);
-  const blob = await resp.blob();
-  return blobToImageAttachment(blob, name);
+  // ⛔ 不用 fetch(convertFileSrc(path))：打包后 CSP connect-src 不放 asset: / http://asset.localhost，
+  //   会被直接拒掉（拖进来的图片文件全部失败；jsdom 没有 CSP，单测测不出来）。
+  //   改走 Rust 原样读字节（与 Bot workspace_files 同一条命令、同一道凭据路径闸门），超限由 Rust 侧拒绝。
+  const { invoke } = await import("@tauri-apps/api/core");
+  let buf: ArrayBuffer | number[];
+  try {
+    buf = await invoke<ArrayBuffer | number[]>("cancri_read_file_bytes", {
+      path: absPath,
+      maxBytes: COMPOSER_MAX_IMAGE_BYTES,
+    });
+  } catch (err) {
+    const msg = String((err as { message?: unknown } | null)?.message ?? err);
+    if (/file too large/i.test(msg)) {
+      throw new Error(`图片过大（>${COMPOSER_MAX_IMAGE_BYTES / 1024 / 1024}MB）`);
+    }
+    throw new Error(`读取图片失败：${msg}`);
+  }
+  const bytes = buf instanceof ArrayBuffer ? new Uint8Array(buf) : Uint8Array.from(buf);
+  return blobToImageAttachment(new Blob([bytes], { type: guessMimeFromName(name) }), name);
 }
 
 function guessMimeFromName(name: string): string {

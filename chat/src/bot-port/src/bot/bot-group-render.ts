@@ -9,7 +9,7 @@
  */
 import { escapeAttr, escapeHtml } from "../core/escape";
 import type { BotChatMessage, BotGroup, BotProfile } from "./bot-store";
-import { authorAvatarHtml, plainPreview, type ReceiptView, type ThreadAuthor, type ThreadScope } from "./bot-thread";
+import { attachmentLabel, authorAvatarHtml, plainPreview, type ReceiptView, type ThreadAuthor, type ThreadScope } from "./bot-thread";
 import { ACTIVITY_LABEL, GROUP_ACTIVITIES, receiptFor } from "./bot-social";
 import {
   EVERYONE_HANDLES,
@@ -265,6 +265,6 @@ export function groupPreview(group: BotGroup, bots: BotProfile[]): string {
   const last = [...group.thread].reverse().find((m: BotChatMessage) => m.role !== "event");
   if (!last) return `${groupMembers(group, bots).length} 个 Bot`;
   const who = last.role === "user" ? "你" : bots.find((b) => b.id === last.authorId)?.name ?? "Bot";
-  const text = plainPreview(last.text, 120) || (last.image ? "[截图]" : last.images?.length ? "[图片]" : "");
+  const text = plainPreview(last.text, 120) || attachmentLabel(last);
   return `${who}：${text}`;
 }
