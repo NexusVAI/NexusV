@@ -871,6 +871,10 @@ export class BotCloudClient {
     return await res.blob();
   }
 
+  setRules(botId: string, rules: Record<string, string>): Promise<unknown> {
+    return this.call(`/rules/${encodeURIComponent(botId)}`, "PUT", rules);
+  }
+
   decideApproval(id: string, approve: boolean, scope: "once" | "task" | "hour" | "always" = "once"): Promise<unknown> {
     return this.call(`/approvals/${encodeURIComponent(id)}`, "POST", { approve, scope });
   }

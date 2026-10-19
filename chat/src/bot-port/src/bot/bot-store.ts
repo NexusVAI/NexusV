@@ -128,7 +128,21 @@ export interface BotProfile {
   pinnedAt?: number;
   /** 单聊已读回执：Bot 读到的最后一条用户消息 id */
   readId?: string;
+  /** 云端 Bot 的操作权限：ask = 改动类操作先问（缺省）；full = 云电脑上直接做 */
+  access?: BotAccess;
+  /** 每天 0 点 Bot 自己写的日记（bot-diary.ts），新的在后 */
+  diary?: BotDiaryEntry[];
 }
+
+export type BotAccess = "ask" | "full";
+
+export interface BotDiaryEntry {
+  /** YYYY-MM-DD（本地日期） */
+  date: string;
+  text: string;
+}
+
+export const DIARY_MAX = 60;
 
 export interface BotState {
   version: 2;
@@ -220,6 +234,10 @@ function sanitizeBot(raw: unknown): BotProfile | null {
     updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : Date.now(),
     ...(typeof raw.pinnedAt === "number" ? { pinnedAt: raw.pinnedAt } : {}),
     ...(typeof raw.readId === "string" ? { readId: raw.readId } : {}),
+    ...(raw.access === "full" ? { access: "full" as const } : {}),
+    ...(Array.isArray(raw.diary)
+      ? { diary: raw.diary.filter((d): d is BotDiaryEntry => isObj(d) && typeof d.date === "string" && typeof d.text === "string").slice(-DIARY_MAX) }
+      : {}),
   };
 }
 

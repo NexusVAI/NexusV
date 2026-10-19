@@ -592,6 +592,13 @@ export class BotCloudLink {
     if (r?.approval) this.handle([{ at: Date.now(), type: "approval", data: { approval: r.approval } }]);
   }
 
+  /** 操作权限：full = 云电脑上的读写、开机、联网都直接做；你电脑上的截屏和文件、登录付款仍然要你来 */
+  async setAccess(botId: string, access: "ask" | "full"): Promise<void> {
+    this.ready();
+    const level = access === "full" ? "auto" : "ask";
+    await this.client.setRules(botId, { read: "auto", compute: "auto", write: level, outbound: level, device: "ask" });
+  }
+
   // ── 给 Bot 工具用的日程接口 ─────────────────────────────────────────────
 
   private ready(): void {

@@ -52,6 +52,13 @@ function detailsHtml(bot: BotProfile, now: number): string {
       <span class="bot-field-head">关于你<em>${bot.memory.user.length}/${USER_BLOCK_MAX}</em></span>
       <textarea class="bot-textarea" data-bot-memory="user" maxlength="${USER_BLOCK_MAX}" rows="6" placeholder="聊天中提到的信息会自动记录在这里，也可以直接填写">${escapeHtml(bot.memory.user)}</textarea>
     </label>
+    <div class="bot-activity" role="radiogroup" aria-label="云端操作权限">
+      <span class="bot-activity-label">云端操作权限</span>
+      ${(["ask", "full"] as const).map((v) => {
+        const on = (bot.access ?? "ask") === v;
+        return `<button type="button" role="radio" aria-checked="${on}" class="bot-activity-opt${on ? " is-on" : ""}" data-bot-action="bot-access" data-value="${v}">${v === "ask" ? "需要批准" : "完全访问"}</button>`;
+      }).join("")}
+    </div>
     <div class="bot-danger">
       <button type="button" class="bot-btn bot-btn--ghost" data-bot-action="clear-thread">清空聊天记录</button>
       <button type="button" class="bot-btn bot-btn--danger" data-bot-action="delete-bot">删除 ${escapeHtml(bot.name)}</button>
@@ -82,7 +89,11 @@ function libraryHtml(bot: BotProfile): string {
       <input class="bot-input" name="text" maxlength="500" placeholder="添加一条记忆" autocomplete="off" />
       <button type="submit" class="bot-btn bot-btn--primary bot-btn--sm">添加</button>
     </form>
-    ${groups || `<div class="bot-empty">还没有记忆。聊天中提到的事实、偏好和待办会自动记录在这里。</div>`}`;
+    ${bot.diary?.length ? `<section class="bot-lib-group">
+        <h4>日记<em>${bot.diary.length}</em></h4>
+        ${[...bot.diary].reverse().map((d) => `<div class="bot-note"><span class="bot-note-text">${escapeHtml(d.text)}<time>${escapeHtml(d.date)}</time></span></div>`).join("")}
+      </section>` : ""}
+    ${groups || (bot.diary?.length ? "" : `<div class="bot-empty">还没有记忆。聊天中提到的事实、偏好和待办会自动记录在这里。</div>`)}`;
 }
 
 const codexIcon = (raw: string, name: string): string =>

@@ -15,7 +15,7 @@
     "@tauri-apps/plugin-opener"
   ],
   "files": {
-    "src/bot/bot-view.ts": "3992967066f0d106",
+    "src/bot/bot-view.ts": "5bd29a35547cfade",
     "src/bot/bot-view.css": "a8aeb74ab8b67afd",
     "src/ui/image-viewer.ts": "59d53843e3c30617",
     "src/contextMenu.ts": "2d0757989d64a987",
@@ -46,11 +46,13 @@
     "src/ui/dialog-keyboard.ts": "187cb704354f4750",
     "src/ui/settings-scroll-fade.ts": "ebea4a3cd9bcaab1",
     "src/chat/render/streaming-patch.ts": "03fa8e7f8638ca2c",
-    "src/bot/bot-store.ts": "8f45ce5dec5c3074",
+    "src/bot/bot-store.ts": "8ee2a4a6fb0a6cc6",
     "src/agent/context-pipeline.ts": "77e2ae8cdf66ef44",
     "src/bot/bot-social.ts": "b69ddb574ac89bf5",
-    "src/bot/bot-group.ts": "b896a50cb0e5f7aa",
+    "src/bot/bot-memory.ts": "d36733753aa3dc55",
     "src/core/control-tags.ts": "8e508839da01b3d5",
+    "src/memory-relevance.ts": "34d4f40fbbb0dcdc",
+    "src/bot/bot-group.ts": "b896a50cb0e5f7aa",
     "src/bot/bot-thread.ts": "997fe5a9f2e72a71",
     "src/chat/render/markdown.ts": "181db82824f0823f",
     "src/chat/format.ts": "21e79599f03b354f",
@@ -62,22 +64,20 @@
     "src/chat/render/rich-ui-icons.ts": "0c9fc1cae0064010",
     "src/chat/render/rich-ui-widgets.ts": "9508c4498c5c314e",
     "src/bot/bot-group-render.ts": "264319cbdfb3d456",
-    "src/bot/bot-tools.ts": "e30683075447d642",
-    "src/bot/bot-memory.ts": "7465dd27e9110407",
-    "src/memory-relevance.ts": "34d4f40fbbb0dcdc",
-    "src/bot/bot-cloud.ts": "a9f119de0b8324cc",
+    "src/bot/bot-tools.ts": "cdbfe22271f698d6",
+    "src/bot/bot-cloud.ts": "213956847ab6a2a7",
     "src/bot/bot-images.ts": "bd22ebdcc782c567",
     "src/composer-media.ts": "f8c5e24b60c1af71",
-    "src/bot/bot-panel.ts": "bd942eb5783c2216",
+    "src/bot/bot-panel.ts": "04322a5f95421541",
     "tasks/_codex-icons/svg/custom/app-initial-219.svg": "25ecec1577d9d244",
     "tasks/_codex-icons/svg/custom/app-initial-12.svg": "99719e9773f1bb6d",
     "tasks/_codex-icons/svg/custom/app-initial-117.svg": "d63ce83bcf27e610",
     "src/gateway-config.ts": "18cb0a8a754c800b",
-    "src/bot/bot-cloud-link.ts": "89e563a88230c02b",
+    "src/bot/bot-cloud-link.ts": "91038413397b2685",
     "src/bot/bot-device-types.ts": "ac196a763b5938b4"
   },
   "css": {
     "kept": 809,
-    "dropped": 5583
+    "dropped": 5584
   }
 }

@@ -271,7 +271,7 @@ function memoryNoteTool(deps: BotToolDeps): ToolDef<NoteArgs> {
 function memorySearchTool(deps: BotToolDeps): ToolDef<{ query: string }> {
   return auto<{ query: string }>({
     name: "memory_search",
-    description: "翻旧账：在记事本和你们全部的聊天记录里搜。用户提到「上次」「之前说过」、或你不确定以前聊过什么时先搜再答。",
+    description: "翻旧账：在记事本、你的日记和你们全部的聊天记录里搜。用户提到「上次」「之前说过」、或你不确定以前聊过什么时先搜再答。",
     schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"], additionalProperties: false },
     isReadOnly: true,
     async execute(a) {
@@ -279,7 +279,7 @@ function memorySearchTool(deps: BotToolDeps): ToolDef<{ query: string }> {
       if (!q) return fail("query 不能为空。", "invalid_args");
       const hits = searchBotMemory(deps.bot(), q);
       if (!hits.length) return ok(`没搜到和「${q}」相关的记录。`);
-      return ok(hits.map((h) => `${formatLocalTime(h.at)} ${h.kind === "note" ? "记事本" : "聊天"}｜${h.text}`).join("\n"));
+      return ok(hits.map((h) => `${formatLocalTime(h.at)} ${h.kind === "note" ? "记事本" : h.kind === "diary" ? "日记" : "聊天"}｜${h.text}`).join("\n"));
     },
   });
 }

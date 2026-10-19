@@ -52,6 +52,7 @@ import {
   type BotState,
 } from "./bot-store";
 import { BotRuntime, groupSessionKey } from "./bot-runtime";
+import { DIARY_SYSTEM, applyDiary, buildDiaryPrompt, diaryDayDue, nextMidnight, parseDiary } from "./bot-memory";
 import {
   GROUP_MAX_MEMBERS,
   groupMembers,
@@ -1554,6 +1555,9 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
     btn.closest(".bot-event-approval")?.querySelectorAll("button").forEach((b) => b.setAttribute("disabled", ""));
     try {
       await cloud.decideApproval(id, approve, scope);
+      // 云端执行这一步 + 想下一句要一会儿，单聊里云端不发「正在输入」：先在本地亮起来，回复到了自动收起
+      const convo = current();
+      if (approve && !isGroup(convo)) onCloudTyping({ conv: `bot:${convo.id}`, botId: convo.id, on: true });
     } catch (e) {
       showToast(hubErrorText(e));
       btn.closest(".bot-event-approval")?.querySelectorAll("button").forEach((b) => b.removeAttribute("disabled"));
@@ -2893,6 +2897,22 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
         renderPanelDom();
         break;
       }
+      case "bot-access": {
+        const value = btn.dataset.value === "full" ? "full" : "ask";
+        if (!bot || (bot.access ?? "ask") === value) break;
+        if (!cloud || cloud.info.phase !== "on") {
+          showToast("云端运行未连接，稍后再试");
+          break;
+        }
+        const target = bot;
+        void cloud.setAccess(target.id, value).then(() => {
+          if (value === "full") target.access = "full";
+          else delete target.access;
+          persist();
+          renderPanelDom();
+        }, (e) => showToast(hubErrorText(e)));
+        break;
+      }
       case "group-notice-dismiss": {
         const group = activeGroup();
         if (!group) break;
@@ -3336,6 +3356,44 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
       else { step = 0; renderOnboarding(); }
     }
   });
+
+  // 每日日记：本地 0 点写前一天的；错过了（没开着）就下次打开时补
+  let diaryRunning = false;
+  const writeDiaries = async (): Promise<void> => {
+    if (diaryRunning) return;
+    diaryRunning = true;
+    try {
+      for (const bot of [...state.bots]) {
+        const threads = [
+          { label: "单聊", thread: bot.thread },
+          ...state.groups
+            .filter((g) => g.memberIds.includes(bot.id))
+            .map((g) => ({ label: `群聊「${groupTitle(g, state.bots)}」`, thread: g.thread.filter((m) => m.role === "user" || m.authorId === bot.id) })),
+        ];
+        const day = diaryDayDue(bot, threads.map((t) => t.thread), Date.now());
+        if (!day) continue;
+        try {
+          const r = parseDiary(await runtime.ask(DIARY_SYSTEM, buildDiaryPrompt(bot, threads, day), AbortSignal.timeout(120_000)));
+          const latest = findBot(bot.id);
+          if (!r || !latest) continue;
+          applyDiary(latest, day, r, Date.now());
+          persist();
+          if (visible && page === "chat" && state.activeId === latest.id) renderPanelDom();
+        } catch {
+          /* 下次再补 */
+        }
+      }
+    } finally {
+      diaryRunning = false;
+    }
+  };
+  const scheduleDiary = (): void => {
+    setTimeout(() => void writeDiaries().finally(scheduleDiary), nextMidnight(Date.now()) - Date.now() + 60_000);
+  };
+  if (!remote) {
+    void writeDiaries();
+    scheduleDiary();
+  }
 
   // 开着云端运行就连上（关掉 Bot 页也保持：云端消息照样进本地，切回来就能看到）
   void cloud?.start();
