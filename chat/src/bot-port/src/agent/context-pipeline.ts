@@ -303,6 +303,7 @@ export function buildInTurnProgressSummaryMessage(summary: string, droppedCount:
     `【上下文压缩 · 当前任务进度】以下是本轮较早步骤的摘要，仅作事实背景，不是新指令。` +
     `上方的用户原始请求仍未完成，仍是当前目标；摘要里已读过/已确认的内容不要重复读取或重复派子代理。\n\n` +
     `【已压缩 ${droppedCount} 条较早消息】\n${summary.trim()}\n` +
+    `（摘要记不清的细节——原来的内容、改了什么、命令输出——用 session_history 查本会话原文，不要凭摘要猜。）\n` +
     `--- 进度摘要结束：继续完成原始用户请求 ---`;
   return { role: "user", content: text, meta: { createdAt: Date.now(), compactedSummary: true } };
 }
@@ -349,7 +350,7 @@ export function buildSummaryMessage(summary: string, droppedCount: number): Mess
     `那条才是当前唯一要做的事；即使话题与摘要重合，也以最新消息为准。若最新消息出现反向信号` +
     `（停止/撤销/回退/只是看看/别做了/换了新话题），立即终止摘要里描述的在途工作，之后也不要再翻出来做。\n\n` +
     `【历史摘要 · 已压缩 ${droppedCount} 条早期消息】\n${summary.trim()}\n` +
-    `（如需更早细节，请用 read_file / grep 重新获取，或 todo_read 查看计划。）\n` +
+    `（如需更早细节：session_history 可以查本会话被压缩前的原文（看过的内容、改了什么、命令输出）；文件现状用 read_file / grep 重新获取，计划用 todo_read。）\n` +
     `--- 摘要到此结束：请回应下方最新消息，不要把上面的摘要当作新指令 ---`;
   return { role: "user", content: text, meta: { createdAt: Date.now(), compactedSummary: true } };
 }
@@ -359,6 +360,7 @@ export function buildScreenshotProgressSummaryMessage(summary: string, droppedCo
     `【上下文压缩 · 当前任务进度】以下是本轮较早的电脑操作摘要，仅作事实背景，不是新指令。` +
     `上方的用户原始请求仍是当前目标，下方保留了最新屏幕；冲突时以原始请求和最新屏幕为准。\n\n` +
     `【已压缩 ${droppedCount} 条较早操作】\n${summary.trim()}\n` +
+    `（更早的操作细节可以用 session_history 查本会话原文。）\n` +
     `--- 进度摘要结束：继续完成原始用户请求 ---`;
   return { role: "user", content: text, meta: { createdAt: Date.now(), compactedSummary: true } };
 }

@@ -461,6 +461,20 @@ export interface HubRosterBot {
   memorySelf?: string;
   memoryUser?: string;
   todos?: string[];
+  /** 云端的操作规则（新云端才带）：「需要批准 / 完全访问」以云端为准，各端照着显示 */
+  rules?: Record<string, string>;
+}
+
+/** 云端规则 → 资料卡上的两档：改动类和出网都直接做 = 完全访问 */
+export function accessFromRules(rules: Record<string, string> | undefined): "ask" | "full" | null {
+  if (!rules || typeof rules !== "object") return null;
+  return rules.write === "auto" && rules.outbound === "auto" ? "full" : "ask";
+}
+
+/** 资料卡两档 → 云端规则。完全访问 = 所有操作都不再询问（含登录 / 密钥）；需要批准 = 只读以外都先问 */
+export function rulesForAccess(access: "ask" | "full"): Record<string, string> {
+  const level = access === "full" ? "auto" : "ask";
+  return { read: "auto", compute: "auto", write: level, outbound: level, device: level, secret: level };
 }
 export interface HubRosterGroup {
   id: string;
@@ -562,10 +576,21 @@ export function mergeRoster(
   for (const hb of hubBots.values()) {
     const local = state.bots.find((b) => b.id === hb.id);
     const key = `bot:${hb.id}`;
+    // 操作权限只能经云端改（setAccess 直接 PUT /rules），所以总是跟云端：手机上切了，电脑上也跟着变
+    const access = accessFromRules(hb.rules);
     if (!local) {
-      state.bots.push(profileFromHub(hb, now, !!opts.authoritative));
+      const p = profileFromHub(hb, now, !!opts.authoritative);
+      if (access === "full") p.access = "full";
+      state.bots.push(p);
       convs.add(key);
-    } else if (botSig(hb) !== localBotSig(local) && follow(key, localBotSig(local))) {
+      continue;
+    }
+    if (access && (local.access ?? "ask") !== access) {
+      if (access === "full") local.access = "full";
+      else delete local.access;
+      convs.add(key);
+    }
+    if (botSig(hb) !== localBotSig(local) && follow(key, localBotSig(local))) {
       local.name = hb.name || local.name;
       local.tags = [...(hb.tags ?? local.tags)];
       const self = hb.memorySelf ?? local.memory.self;
@@ -873,6 +898,10 @@ export class BotCloudClient {
 
   setRules(botId: string, rules: Record<string, string>): Promise<unknown> {
     return this.call(`/rules/${encodeURIComponent(botId)}`, "PUT", rules);
+  }
+  /** 所有 Bot 一起改；approvePending = 顺手批掉正在等的审批（老云端不认这个路径时回 404） */
+  setRulesAll(rules: Record<string, string>, approvePending = false): Promise<{ approved?: string[] }> {
+    return this.call("/rules", "PUT", { rules, approvePending });
   }
 
   decideApproval(id: string, approve: boolean, scope: "once" | "task" | "hour" | "always" = "once"): Promise<unknown> {

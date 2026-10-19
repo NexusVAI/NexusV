@@ -512,8 +512,8 @@ export function localFileTool(deps: BotToolDeps): ToolDef<{ reason: string; mult
   return auto({
     name: "request_local_file",
     description:
-      `向用户要本机电脑上的文件，传到你云电脑的 ${UPLOAD_DIR}/ 下。聊天里会弹一张卡，由用户亲自挑选文件（你不能指定本机路径）。` +
-      "reason 写清楚你要什么文件、拿来做什么（用户会看到这句话）。用户拒绝了就别反复要。",
+      `弹一张卡请用户亲自挑本机文件，传到你云电脑的 ${UPLOAD_DIR}/ 下。有 pc_files / pc_to_computer 时优先自己找、自己传（任何盘、整个文件夹都行），` +
+      "只有用户想自己挑、或你确实找不到时才用这个。reason 写清楚你要什么文件、拿来做什么（用户会看到这句话）。用户拒绝了就别反复要。",
     schema: {
       type: "object",
       properties: {
@@ -580,7 +580,7 @@ export function workspaceFilesTool(deps: BotToolDeps & { workspace: WorkspaceAcc
     description:
       "用户电脑上当前打开的工作区（项目文件夹）。文件**不会自动传给你**：接到要用到项目文件的任务时，先 action=list 看有哪些（可用 query 按文件名 / 路径关键字筛，空格分隔多个词），" +
       `再 action=upload 挑真正需要的几个（一次最多 ${WORKSPACE_UPLOAD_FILES} 个，单个 ≤ ${UPLOAD_MAX_BYTES / 1024 / 1024}MB），会原样放到你云电脑的 ${WORKSPACE_UPLOAD_DIR}/<相对路径>。` +
-      "只传和任务有关的，别整个项目往上搬；.env、密钥、凭据类文件一律传不了。没打开工作区时告诉用户先在 Cancri Code 里打开项目，或改用 request_local_file 让用户自己挑。",
+      "只传和任务有关的，别整个项目往上搬；.env、密钥、凭据类文件一律传不了。没打开工作区时，用户电脑上的文件用 pc_files 找、pc_to_computer 传（整个文件夹也行）。",
     schema: {
       type: "object",
       properties: {
@@ -600,7 +600,7 @@ export function workspaceFilesTool(deps: BotToolDeps & { workspace: WorkspaceAcc
     },
     async execute(a, ctx) {
       const root = ws.root();
-      if (!root) return fail("用户现在没有在 Cancri Code 里打开工作区。告诉用户先打开项目文件夹，或用 request_local_file 让用户直接挑文件。", "no_workspace");
+      if (!root) return fail("用户现在没有在 Cancri Code 里打开工作区。用户电脑上的文件直接用 pc_files 找、pc_to_computer 传（整个文件夹也行）；没有这两个工具时再请用户打开项目文件夹。", "no_workspace");
       let files: string[];
       try {
         files = (await ws.list(root)).map((p) => p.replace(/\\/g, "/"));
@@ -889,6 +889,9 @@ export function describeToolActivity(name: string, args: unknown): string {
     case "pc_screen_record": return "正在录你电脑的屏幕…";
     case "pc_send_file": return "正在从你电脑发文件…";
     case "pc_notify": return "正在给你电脑发通知…";
+    case "pc_open": return "正在你电脑上打开…";
+    case "pc_to_computer": return "正在把你电脑上的文件传到云电脑…";
+    case "computer_to_pc": return "正在把文件下载到你电脑…";
     case "memory_edit":
     case "memory_note": return "已记录";
     default: return "正在处理…";

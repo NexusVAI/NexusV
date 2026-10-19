@@ -6,8 +6,23 @@
  * 真正干活、要 invoke Rust 的 bot-device.ts / bot-device-link.ts 只留在桌面端。
  */
 
-/** 六个能力；顺序 / 取值与 bot-device.ts 的 DEVICE_TOOL_NAMES、cf-gateway bot-hub 的 PC_TOOLS 一致 */
-export type DeviceToolName = "pc_status" | "pc_files" | "pc_screenshot" | "pc_screen_record" | "pc_send_file" | "pc_notify";
+/**
+ * 设备通道认得的能力；顺序 / 取值与 bot-device.ts 的 DEVICE_TOOL_NAMES 一致。
+ * 除 pc_save_file 外 = cf-gateway bot-hub 的 PC_TOOLS（模型直接看到）；pc_save_file 是 computer_to_pc（云电脑 → 用户电脑）
+ * 的最后一步，只由程序内部调用（云端经设备通道 / 桌面端 bot-transfer-tools.ts），模型看不到。
+ */
+export type DeviceToolName =
+  | "pc_status"
+  | "pc_files"
+  | "pc_screenshot"
+  | "pc_screen_record"
+  | "pc_send_file"
+  | "pc_notify"
+  | "pc_save_file"
+  | "pc_open"
+  | "pc_windows"
+  | "pc_inspect"
+  | "pc_action";
 
 export interface DeviceMedia {
   kind: "image" | "video" | "file";
@@ -36,5 +51,7 @@ export interface BotDeviceHandle {
   setEnabled(on: boolean): void;
   onChange(fn: () => void): () => void;
   /** 本地跑的 Bot 用 pc_* 工具（不受开关限制：确认卡在本机弹） */
-  run(tool: DeviceToolName, args: Record<string, unknown>, signal: AbortSignal): Promise<DeviceOutcome>;
+  run(tool: DeviceToolName, args: Record<string, unknown>, signal: AbortSignal, exposure?: (reason: string) => void): Promise<DeviceOutcome>;
+  /** 桌面端跑的 Bot 的 computer_to_pc：把手上的字节存进这台电脑（folder 只能是下载 / 桌面 / 文档…；同内容跳过、同名不覆盖） */
+  save(bytes: Uint8Array, name: string, folder: string | undefined, signal: AbortSignal): Promise<DeviceOutcome>;
 }

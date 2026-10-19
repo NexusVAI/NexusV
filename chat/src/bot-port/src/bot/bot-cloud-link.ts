@@ -29,6 +29,7 @@ import {
   inferReadCursors,
   mergeRoster,
   parseDevices,
+  rulesForAccess,
   snapshotEvents,
   toSyncPayload,
   type ConvKey,
@@ -592,11 +593,35 @@ export class BotCloudLink {
     if (r?.approval) this.handle([{ at: Date.now(), type: "approval", data: { approval: r.approval } }]);
   }
 
-  /** 操作权限：full = 云电脑上的读写、开机、联网都直接做；你电脑上的截屏和文件、登录付款仍然要你来 */
+  /**
+   * 操作权限：full = 云电脑和你电脑上的所有操作都直接做（不再弹审批卡）；ask = 只读以外的操作都先弹「允许 / 拒绝」。
+   */
   async setAccess(botId: string, access: "ask" | "full"): Promise<void> {
     this.ready();
-    const level = access === "full" ? "auto" : "ask";
-    await this.client.setRules(botId, { read: "auto", compute: "auto", write: level, outbound: level, device: "ask" });
+    await this.client.setRules(botId, rulesForAccess(access));
+  }
+
+  /**
+   * 一键：所有 Bot 同一档。approvePending = 顺手批掉正在等的审批（「全部允许，不再询问」）。
+   * 老云端没有 `PUT /rules`（404）→ 退回逐个改，正在等的那张由调用方自己批。返回云端批掉的审批 id。
+   */
+  async setAccessAll(access: "ask" | "full", approvePending = false): Promise<string[]> {
+    this.ready();
+    const rules = rulesForAccess(access);
+    let approved: string[] = [];
+    try {
+      approved = (await this.client.setRulesAll(rules, approvePending))?.approved ?? [];
+    } catch (e) {
+      if (!(e instanceof BotCloudError) || e.status !== 404) throw e;
+      for (const b of this.d.state().bots) await this.client.setRules(b.id, rules).catch(() => undefined);
+    }
+    const st = this.d.state();
+    for (const b of st.bots) {
+      if (access === "full") b.access = "full";
+      else delete b.access;
+    }
+    if (approved.length) this.handle(approved.map((id) => ({ at: Date.now(), type: "approval", data: { approval: { id, status: "approved" } } })));
+    return approved;
   }
 
   // ── 给 Bot 工具用的日程接口 ─────────────────────────────────────────────
@@ -665,38 +690,42 @@ function deviceBlockHtml(info: CloudInfo, esc: (s: string) => string, device?: D
   const list = info.devices ?? [];
   const online = list.filter((d) => d.online);
   if (device) {
-    const line = !device.enabled
-      ? "关着：云端 Bot 碰不到这台电脑"
-      : device.phase === "online"
-        ? "已连接：Bot 能看这台电脑的状态、找文件；截屏、录屏、读文件、发文件前都会先问你"
-        : device.phase === "error"
-          ? esc(device.error || "连接失败，稍后自动重试")
-          : "正在连接…";
+    // 开着且连上 / 关着都不写说明：开关本身就是状态。只在连接中、出错时给一句
+    const line = !device.enabled || device.phase === "online"
+      ? ""
+      : device.phase === "error"
+        ? esc(device.error || "连接失败，稍后自动重试")
+        : "正在连接…";
     return `
       <div class="bot-cloud-device">
         <button type="button" class="bot-device-switch" data-bot-action="device-toggle" role="switch" aria-checked="${device.enabled ? "true" : "false"}">
           <span class="bot-device-switch-label">允许云端 Bot 访问这台电脑</span>
           <span class="bot-switch${device.enabled ? " is-on" : ""}" aria-hidden="true"><span class="bot-switch-knob"></span></span>
         </button>
-        <div class="bot-dim bot-cloud-line" data-device-line>${line}</div>
+        ${line ? `<div class="bot-dim bot-cloud-line" data-device-line>${line}</div>` : ""}
       </div>`;
   }
   const line = online.length
-    ? `你的电脑 ${online.map((d) => deviceName(d, esc)).join("、")} 在线：可以让 Bot 看电脑上的文件、截屏或录屏（会先问你）`
+    ? `${online.map((d) => deviceName(d, esc)).join("、")}在线`
     : list.length
-      ? `你的电脑 ${deviceName(list[0], esc)} 现在不在线（打开电脑上的 Cancri Code 就能连上）`
-      : "想让 Bot 看你电脑上的文件、截屏或录屏：在电脑上的 Cancri Code 里打开 Bot，在资料卡里开启「允许云端 Bot 访问这台电脑」";
-  return `<div class="bot-dim bot-cloud-line bot-cloud-device-line" data-device-line>${line}</div>`;
+      ? `${deviceName(list[0], esc)}不在线`
+      : "";
+  return line ? `<div class="bot-dim bot-cloud-line bot-cloud-device-line" data-device-line>${line}</div>` : "";
 }
 
 /** 面板里那张「云端运行」卡片：默认开着，只显示状态（没有开关）；下面一块是用户自己的电脑 */
 export function cloudCardHtml(info: CloudInfo, esc: (s: string) => string, device?: DeviceCardState): string {
   if (info.phase === "unavailable" || info.phase === "unknown") return "";
+  // 在线只靠右上角的绿点表示；有定时任务 / 监控 / 待批准才列出来
   const line =
     info.phase === "starting"
       ? "正在连接云端…"
       : info.phase === "on"
-        ? `在线 · ${info.routines} 个定时任务 · ${info.monitors} 个监控${info.pendingApprovals ? ` · ${info.pendingApprovals} 个待批准` : ""}`
+        ? [
+          info.routines ? `${info.routines} 个定时任务` : "",
+          info.monitors ? `${info.monitors} 个监控` : "",
+          info.pendingApprovals ? `${info.pendingApprovals} 个待批准` : "",
+        ].filter(Boolean).join("，")
         : info.phase === "error"
           ? esc(info.error || "连接失败，稍后自动重试")
           : "登录后自动连接";
@@ -706,6 +735,6 @@ export function cloudCardHtml(info: CloudInfo, esc: (s: string) => string, devic
         <span>云端运行</span>
         <span class="bot-cloud-dot${info.phase === "on" ? " is-on" : info.phase === "error" ? " is-error" : ""}" aria-hidden="true"></span>
       </div>
-      <div class="bot-dim bot-cloud-line">${line}</div>${info.phase === "on" || device ? deviceBlockHtml(info, esc, device) : ""}
+      ${line ? `<div class="bot-dim bot-cloud-line">${line}</div>` : ""}${info.phase === "on" || device ? deviceBlockHtml(info, esc, device) : ""}
     </section>`;
 }

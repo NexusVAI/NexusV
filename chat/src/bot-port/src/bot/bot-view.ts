@@ -100,7 +100,7 @@ import { BOT_REACTIONS, describeToolActivity, uploadLocalFiles, type LocalFile, 
 import { base64ToBlob, deleteBotImages, getBotImage, putBotImage } from "./bot-images";
 import { COMPOSER_MAX_IMAGES, fileToImageAttachment, isImageFile, readFileAsDataUrl, type ComposerImageAttachment } from "../composer-media";
 import { THREAD_PAGE, attachmentLabel, botScope, plainPreview, receiptHtml, renderBotText, renderMessage, renderThread, singleReceipt, splitBubbles, type ThreadScope } from "./bot-thread";
-import { PHASE_LABEL, ScreenHost, renderPanel, renderPanelBody, renderPanelTags, renderScreenOverlay, type PanelTab } from "./bot-panel";
+import { PHASE_LABEL, ScreenHost, formatSpan, renderPanel, renderPanelBody, renderPanelTags, renderScreenOverlay, type PanelTab, type UsageView } from "./bot-panel";
 import type { SandboxTrialQuota } from "../sandbox/backend";
 import { CF_GATEWAY_URL } from "../gateway-config";
 import { BotCloudLink, cloudCardHtml } from "./bot-cloud-link";
@@ -423,8 +423,21 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
     computer: fallbackComputer,
     ...(cloud ? { cloud } : {}),
     ...(deps.workspace ? { workspace: deps.workspace } : {}),
-    ...(deps.device ? { device: { run: (tool, args, signal) => deps.device!.run(tool, args, signal) } } : {}),
+    ...(deps.device
+      ? {
+        device: {
+          run: (tool, args, signal, exposure) => deps.device!.run(tool, args, signal, exposure),
+          save: (bytes, name, folder, signal) => deps.device!.save(bytes, name, folder, signal),
+        },
+      }
+      : {}),
     showMedia: (bot, media, caption, group) => postMedia(bot, media, caption, group),
+    showNotice: (bot, text, group) => {
+      const room: Convo = group ?? bot;
+      room.thread.push({ id: uuidv4(), role: "event", text: text.slice(0, 300), at: Date.now() });
+      persist();
+      if (visible && page === "chat" && room.id === state.activeId) renderThreadDom();
+    },
     ...(pool ? {
       computers: {
         mine: (bot: BotProfile) => computerOf(bot),
@@ -1431,6 +1444,53 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
     refreshCloudCard();
   };
 
+  // ── 电脑页的用量明细：按电脑归属键（bot:<id> / group:<id>）分开记，默认最近 7 天 ──
+  const usageViews = new Map<string, UsageView>();
+  const ymd = (ms: number): string => {
+    const d = new Date(ms);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const queryUsage = async (owner: string): Promise<void> => {
+    const u = usageViews.get(owner);
+    const backend = sandboxBackend();
+    if (!u || !backend?.usage) return;
+    const from = new Date(`${u.from}T00:00:00`).getTime();
+    const to = new Date(`${u.to}T00:00:00`).getTime() + 86_400_000;
+    u.report = undefined;
+    if (!Number.isFinite(from) || !Number.isFinite(to) || from >= to) {
+      u.error = "开始日期不能晚于结束日期";
+      renderPanelDom();
+      return;
+    }
+    u.loading = true;
+    u.error = undefined;
+    renderPanelDom();
+    try {
+      u.report = await backend.usage({ owner, from, to, signal: AbortSignal.timeout(20_000) });
+    } catch {
+      u.error = "查询失败，请稍后重试";
+    } finally {
+      u.loading = false;
+      renderPanelDom();
+    }
+  };
+  /** 网页端没有沙箱后端（或老后端没有 usage）：不画这一块 */
+  const usageFor = (owner: string): UsageView | null => {
+    if (!sandboxBackend()?.usage) return null;
+    let u = usageViews.get(owner);
+    if (!u) {
+      const now = Date.now();
+      u = { from: ymd(now - 6 * 86_400_000), to: ymd(now), loading: false };
+      usageViews.set(owner, u);
+      setTimeout(() => void queryUsage(owner), 0);
+    }
+    return u;
+  };
+  const panelOwner = (): string => {
+    const g = activeGroup();
+    return g ? `group:${g.id}` : `bot:${active().id}`;
+  };
+
   /** 资料面板（单聊「详情」/ 群「成员」页）里那张「云端运行」卡片；没开放给这个账号时不画 */
   const refreshCloudCard = (): void => {
     const panel = q("[data-bot-panel]");
@@ -1553,14 +1613,42 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
     const id = btn.dataset.approval ?? "";
     const scope = btn.dataset.scope === "hour" ? "hour" : "once";
     btn.closest(".bot-event-approval")?.querySelectorAll("button").forEach((b) => b.setAttribute("disabled", ""));
+    // 点下去马上有反馈：请求要过云端，执行这一步 + 想下一句还要一会儿。不等网络回来就先亮「正在…」，
+    // 之后云端每执行一步都会发 typing 刷新状态，回复到了自动收起
+    const convo = current();
+    const conv = `bot:${convo.id}`;
+    if (approve && !isGroup(convo)) onCloudTyping({ conv, botId: convo.id, on: true });
     try {
       await cloud.decideApproval(id, approve, scope);
-      // 云端执行这一步 + 想下一句要一会儿，单聊里云端不发「正在输入」：先在本地亮起来，回复到了自动收起
-      const convo = current();
-      if (approve && !isGroup(convo)) onCloudTyping({ conv: `bot:${convo.id}`, botId: convo.id, on: true });
     } catch (e) {
+      if (approve && !isGroup(convo)) onCloudTyping({ conv, botId: convo.id, on: false });
       showToast(hubErrorText(e));
       btn.closest(".bot-event-approval")?.querySelectorAll("button").forEach((b) => b.removeAttribute("disabled"));
+    }
+  };
+
+  /** 「全部允许，不再询问」/ 资料卡的一键开关：所有 Bot 同一档，正在等的审批一起批掉 */
+  const setAllAccess = async (access: "ask" | "full", card?: HTMLElement): Promise<void> => {
+    if (!cloud || cloud.info.phase !== "on") {
+      showToast("云端运行未连接，稍后再试");
+      return;
+    }
+    const id = card?.dataset.approval ?? "";
+    const box = card?.closest(".bot-event-approval");
+    box?.querySelectorAll("button").forEach((b) => b.setAttribute("disabled", ""));
+    const convo = current();
+    if (id && !isGroup(convo)) onCloudTyping({ conv: `bot:${convo.id}`, botId: convo.id, on: true });
+    try {
+      const approved = await cloud.setAccessAll(access, access === "full");
+      // 老云端不会顺手批：这张自己批
+      if (id && !approved.includes(id)) await cloud.decideApproval(id, true, "once");
+      persist();
+      renderPanelDom();
+      showToast(access === "full" ? "所有 Bot 已切换为完全访问" : "所有 Bot 已切换为需要批准");
+    } catch (e) {
+      if (id && !isGroup(convo)) onCloudTyping({ conv: `bot:${convo.id}`, botId: convo.id, on: false });
+      box?.querySelectorAll("button").forEach((b) => b.removeAttribute("disabled"));
+      showToast(hubErrorText(e));
     }
   };
 
@@ -1575,10 +1663,7 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
     }
     const r = await showConfirmDialog({
       title: "允许云端 Bot 访问这台电脑？",
-      message:
-        "打开后，你在手机或网页上找 Bot 时，它也能用到这台电脑：看电脑状态、列出文件夹、按名字找文件、弹通知会直接做；" +
-        "截屏、录屏、读文件内容、把文件发到聊天里，每次都会先问你（在手机、网页或这台电脑上点「允许」都行），录屏时屏幕上方会挂一个红色提示。" +
-        "密钥、密码、浏览器资料这类位置一律读不了。电脑关机或退出 Cancri Code 后就连不上了，随时可以在这里关掉。",
+      message: "云端 Bot 可以查看和操作这台电脑，包括截屏、录屏、文件和键鼠操作。可以随时关闭。",
       confirmText: "打开",
       cancelText: "先不用",
     });
@@ -1606,7 +1691,7 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
       const members = groupMembers(group, state.bots);
       const tab = panelTab === "computer" ? "computer" : "members";
       const computerBody = tab === "computer" && members[0]
-        ? renderPanelBody({ ...members[0], name: groupTitle(group, state.bots) }, "computer", pcView, Date.now(), pcQuota)
+        ? renderPanelBody({ ...members[0], name: groupTitle(group, state.bots) }, "computer", pcView, Date.now(), pcQuota, usageFor(`group:${group.id}`))
         : "";
       const prevScroll = panel.scrollTop;
       panel.dataset.kind = "group";
@@ -1642,11 +1727,11 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
       });
 
       const activeEl = document.activeElement;
-      const isEditingMemory = Boolean(activeEl?.matches?.("[data-bot-memory]") && panel.contains(activeEl));
+      const isEditingMemory = Boolean(activeEl?.matches?.("[data-bot-memory], .bot-usage-date") && panel.contains(activeEl));
       if (!isEditingMemory) {
         const prevScroll = panel.scrollTop;
         bodyEl.dataset.tabBody = panelTab;
-        bodyEl.innerHTML = renderPanelBody(curBot, panelTab, pcView, Date.now(), pcQuota);
+        bodyEl.innerHTML = renderPanelBody(curBot, panelTab, pcView, Date.now(), pcQuota, panelTab === "computer" ? usageFor(`bot:${curBot.id}`) : null);
         markQuotaEnter(bodyEl);
         panel.scrollTop = prevScroll;
       }
@@ -1657,7 +1742,7 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
     }
 
     quotaCardShown = false;
-    panel.innerHTML = renderPanel(curBot, panelTab, pcView, Date.now(), pcQuota);
+    panel.innerHTML = renderPanel(curBot, panelTab, pcView, Date.now(), pcQuota, panelTab === "computer" ? usageFor(`bot:${curBot.id}`) : null);
     markQuotaEnter(panel);
     mountMascots(panel);
     screen.sync(pcView.phase === "running", pcView.userControl);
@@ -1841,9 +1926,11 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
     if (ev.toolName === "web_search" && typeof a.query === "string") return `允许搜索「${a.query}」吗？`;
     if (ev.toolName === "pc_screenshot") return "允许截取你电脑的屏幕吗？";
     if (ev.toolName === "pc_screen_record") {
-      const secs = typeof a.seconds === "number" && a.seconds >= 1 ? Math.min(30, Math.round(a.seconds)) : 10;
-      return `允许录制你电脑屏幕 ${secs} 秒吗？`;
+      const secs = typeof a.seconds === "number" && a.seconds >= 1 ? Math.min(7200, Math.round(a.seconds)) : 10;
+      return `允许录制你电脑屏幕 ${formatSpan(secs)}吗？`;
     }
+    if (ev.toolName === "pc_action") return `允许操作你电脑的鼠标键盘吗？${ev.summary ? `（${ev.summary}）` : ""}`;
+    if (ev.toolName === "pc_inspect") return "允许读取你电脑窗口里的内容吗？";
     if (ev.toolName === "pc_files" && typeof a.path === "string") return `允许读取 ${a.path.slice(0, 160)} 吗？`;
     if (ev.toolName === "pc_send_file" && typeof a.path === "string") return `允许把 ${a.path.slice(0, 160)} 发到聊天里吗？`;
     return ev.summary ? `需要确认：${ev.summary}` : "需要确认这一步";
@@ -2492,6 +2579,9 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
       case "cloud-deny":
         void decideCloudApproval(btn, false);
         break;
+      case "cloud-approve-all":
+        void setAllAccess("full", btn);
+        break;
       case "device-toggle":
         void toggleDevice();
         break;
@@ -2897,6 +2987,10 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
         renderPanelDom();
         break;
       }
+      case "bot-access-all": {
+        void setAllAccess(btn.dataset.value === "ask" ? "ask" : "full");
+        break;
+      }
       case "bot-access": {
         const value = btn.dataset.value === "full" ? "full" : "ask";
         if (!bot || (bot.access ?? "ask") === value) break;
@@ -3289,6 +3383,19 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
   });
 
   root.addEventListener("submit", (event) => {
+    const usageForm = (event.target as HTMLElement | null)?.closest<HTMLFormElement>('[data-bot-form="usage"]');
+    if (usageForm) {
+      event.preventDefault();
+      const owner = panelOwner();
+      const u = usageViews.get(owner);
+      if (!u) return;
+      const data = new FormData(usageForm);
+      u.from = String(data.get("from") ?? u.from) || u.from;
+      u.to = String(data.get("to") ?? u.to) || u.to;
+      (document.activeElement as HTMLElement | null)?.blur?.();
+      void queryUsage(owner);
+      return;
+    }
     const form = (event.target as HTMLElement | null)?.closest<HTMLFormElement>('[data-bot-form="note"]');
     if (!form) return;
     event.preventDefault();
@@ -3308,6 +3415,11 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
 
   root.addEventListener("change", (event) => {
     const t = event.target as HTMLInputElement | null;
+    if (t?.matches(".bot-usage-date")) {
+      const u = usageViews.get(panelOwner());
+      if (u && t.value) u[t.name === "from" ? "from" : "to"] = t.value;
+      return;
+    }
     if (t?.matches("[data-bot-pick]")) {
       const files = Array.from(t.files ?? []);
       t.value = "";

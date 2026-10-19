@@ -212,8 +212,7 @@ export function renderMessage(scope: ThreadScope, msg: BotChatMessage, opts: { s
       const tail =
         ap.status === "pending"
           ? `<span class="bot-approval-actions">
-              <button type="button" class="bot-approval-btn is-primary" data-bot-action="cloud-approve" data-approval="${id}" data-scope="once">批准一次</button>
-              <button type="button" class="bot-approval-btn" data-bot-action="cloud-approve" data-approval="${id}" data-scope="hour">一小时内都允许</button>
+              <button type="button" class="bot-approval-btn is-primary" data-bot-action="cloud-approve" data-approval="${id}" data-scope="once">允许</button>
               <button type="button" class="bot-approval-btn" data-bot-action="cloud-deny" data-approval="${id}">拒绝</button>
             </span>`
           : `<span class="bot-approval-state">${done[ap.status] ?? ""}</span>`;

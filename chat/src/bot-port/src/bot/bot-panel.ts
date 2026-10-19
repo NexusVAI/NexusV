@@ -9,7 +9,7 @@
 import { escapeAttr, escapeHtml } from "../core/escape";
 import { NOTE_KINDS, SELF_BLOCK_MAX, USER_BLOCK_MAX, type BotNote, type BotProfile } from "./bot-store";
 import { ScreenStream, type ComputerView, type ScreenState } from "./bot-computer";
-import type { SandboxTrialQuota, SandboxTrialWindow } from "../sandbox/backend";
+import type { SandboxTrialQuota, SandboxTrialWindow, SandboxUsageReport } from "../sandbox/backend";
 // 试用额度卡片的图标取自 Codex 自绘图标集（见 src/ui/codex-menu-icons.ts 文件头），尺寸由 CSS 定。
 import QUOTA_GAUGE_RAW from "../../tasks/_codex-icons/svg/custom/app-initial-219.svg?raw";
 import QUOTA_CLOCK_RAW from "../../tasks/_codex-icons/svg/custom/app-initial-12.svg?raw";
@@ -58,6 +58,9 @@ function detailsHtml(bot: BotProfile, now: number): string {
         const on = (bot.access ?? "ask") === v;
         return `<button type="button" role="radio" aria-checked="${on}" class="bot-activity-opt${on ? " is-on" : ""}" data-bot-action="bot-access" data-value="${v}">${v === "ask" ? "需要批准" : "完全访问"}</button>`;
       }).join("")}
+    </div>
+    <div class="bot-access-hint">
+      <button type="button" class="bot-link-btn" data-bot-action="bot-access-all" data-value="${bot.access === "full" ? "ask" : "full"}">${bot.access === "full" ? "所有 Bot 设为需要批准" : "所有 Bot 设为完全访问"}</button>
     </div>
     <div class="bot-danger">
       <button type="button" class="bot-btn bot-btn--ghost" data-bot-action="clear-thread">清空聊天记录</button>
@@ -154,7 +157,64 @@ function quotaCardHtml(q: Extract<SandboxTrialQuota, { eligible: true }>, now: n
     </section>`;
 }
 
-function computerHtml(bot: BotProfile, view: ComputerView, quota: SandboxTrialQuota | null, now: number): string {
+/** 秒 → 「1 小时 5 分钟」/「12 分钟」/「40 秒」 */
+export function formatSpan(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h) return `${h} 小时${m ? ` ${m} 分钟` : ""}`;
+  if (m) return `${m} 分钟`;
+  return `${s} 秒`;
+}
+
+/** 电脑页的用量明细（日期是本地 `YYYY-MM-DD`，含两端） */
+export interface UsageView {
+  from: string;
+  to: string;
+  loading: boolean;
+  error?: string;
+  report?: SandboxUsageReport;
+}
+
+const yuan = (micro: number): string => `¥${(micro / 1_000_000).toFixed(2)}`;
+
+function stamp(ms: number): string {
+  const d = new Date(ms);
+  const p = (n: number): string => String(n).padStart(2, "0");
+  return `${d.getMonth() + 1}月${d.getDate()}日 ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function usageHtml(u: UsageView): string {
+  const r = u.report;
+  const body = u.loading
+    ? `<div class="bot-usage-empty">正在查询…</div>`
+    : u.error
+      ? `<div class="bot-usage-empty">${escapeHtml(u.error)}</div>`
+      : !r
+        ? ""
+        : !r.sessions.length
+          ? `<div class="bot-usage-empty">这段时间没有使用记录</div>`
+          : `<div class="bot-usage-total"><span>运行 <b>${formatSpan(r.totalSeconds)}</b></span><span>扣费 <b>${yuan(r.totalChargedMicro)}</b></span></div>
+             <div class="bot-usage-rows">${r.sessions.map((x) => `
+               <div class="bot-usage-row">
+                 <span class="bot-usage-when">${stamp(x.openedAt)}</span>
+                 <span class="bot-usage-dur">${formatSpan(x.billedSeconds)}</span>
+                 <span class="bot-usage-cost">${x.trial ? "免费额度" : yuan(x.chargedMicro)}</span>
+               </div>`).join("")}</div>`;
+  return `
+    <section class="bot-usage" aria-label="用量">
+      <div class="bot-usage-head">用量</div>
+      <form class="bot-usage-query" data-bot-form="usage">
+        <input class="bot-input bot-usage-date" type="date" name="from" value="${escapeAttr(u.from)}" aria-label="开始日期" />
+        <span class="bot-usage-sep">至</span>
+        <input class="bot-input bot-usage-date" type="date" name="to" value="${escapeAttr(u.to)}" aria-label="结束日期" />
+        <button type="submit" class="bot-btn bot-btn--ghost bot-btn--sm"${u.loading ? " disabled" : ""}>查询</button>
+      </form>
+      ${body}
+    </section>`;
+}
+
+function computerHtml(bot: BotProfile, view: ComputerView, quota: SandboxTrialQuota | null, now: number, usage: UsageView | null): string {
   const live = view.phase === "running";
   const power = view.phase === "off"
     ? `<button type="button" class="bot-btn bot-btn--primary bot-btn--sm" data-bot-action="pc-start">开机</button>`
@@ -178,8 +238,9 @@ function computerHtml(bot: BotProfile, view: ComputerView, quota: SandboxTrialQu
     </div>
     ${view.error ? `<div class="bot-pc-error">${escapeHtml(view.error)}</div>` : ""}
     <div class="bot-pc-actions">${power}</div>
-    ${quota?.eligible === false ? `<p class="bot-hint">按使用时长计费，计入你的套餐。</p>` : ""}
-    ${quota?.eligible === true ? quotaCardHtml(quota, now) : ""}`;
+    ${quota?.eligible === false ? `<p class="bot-hint">按运行时长计费，休眠和关机不计费。</p>` : ""}
+    ${quota?.eligible === true ? quotaCardHtml(quota, now) : ""}
+    ${usage ? usageHtml(usage) : ""}`;
 }
 
 /**
@@ -190,13 +251,13 @@ export function renderPanelTags(tags: string[]): string {
   return `${tags.map((t) => `<span class="bot-tag">${escapeHtml(t)}<button type="button" data-bot-action="tag-remove" data-tag="${escapeAttr(t)}" aria-label="移除标签">${ICON_CLOSE}</button></span>`).join("")}${tags.length < 8 ? `<button type="button" class="bot-tag-add" data-bot-action="tag-add">添加标签</button>` : ""}`;
 }
 
-export function renderPanelBody(bot: BotProfile, tab: PanelTab, view: ComputerView, now: number = Date.now(), quota: SandboxTrialQuota | null = null): string {
-  return tab === "details" ? detailsHtml(bot, now) : tab === "library" ? libraryHtml(bot) : computerHtml(bot, view, quota, now);
+export function renderPanelBody(bot: BotProfile, tab: PanelTab, view: ComputerView, now: number = Date.now(), quota: SandboxTrialQuota | null = null, usage: UsageView | null = null): string {
+  return tab === "details" ? detailsHtml(bot, now) : tab === "library" ? libraryHtml(bot) : computerHtml(bot, view, quota, now, usage);
 }
 
-export function renderPanel(bot: BotProfile, tab: PanelTab, view: ComputerView, now: number = Date.now(), quota: SandboxTrialQuota | null = null): string {
+export function renderPanel(bot: BotProfile, tab: PanelTab, view: ComputerView, now: number = Date.now(), quota: SandboxTrialQuota | null = null, usage: UsageView | null = null): string {
   const tabs: Array<[PanelTab, string]> = [["details", "详情"], ["library", "记忆"], ["computer", "电脑"]];
-  const body = renderPanelBody(bot, tab, view, now, quota);
+  const body = renderPanelBody(bot, tab, view, now, quota, usage);
   return `
     <div class="bot-panel-top">
       <button type="button" class="bot-icon-btn bot-icon-btn--round" data-bot-action="panel-close" aria-label="关闭面板">${ICON_CLOSE}</button>
