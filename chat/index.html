@@ -29,21 +29,39 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://cn.nexusvai.xyz https://challenges.cloudflare.com; frame-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
         />
-        <title>Cancri - AI 对话平台 | NexusVAI</title>
-    <meta name="description" content="Cancri 是 NexusVAI 的 AI 对话客户端，统一体验 40+ 顶尖大语言模型。" />
-    <link rel="canonical" href="https://www.nexusvai.xyz/chat/index.html" />
-    <meta property="og:title" content="Cancri - AI 对话平台 | NexusVAI">
-    <meta property="og:description" content="Cancri 是 NexusVAI 的 AI 对话客户端，统一体验 40+ 顶尖大语言模型。">
+        <title>Cancri | NexusVAI</title>
+    <meta name="description" content="Cancri 是 NexusVAI 打造的 AI 助手。在一个界面里使用多种领先模型，帮你写作、编程、分析与创作。" />
+    <link rel="canonical" href="https://www.nexusvai.xyz/chat/" />
+    <meta property="og:title" content="Cancri | NexusVAI">
+    <meta property="og:description" content="Cancri 是 NexusVAI 打造的 AI 助手。在一个界面里使用多种领先模型，帮你写作、编程、分析与创作。">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://www.nexusvai.xyz/chat/index.html">
+    <meta property="og:url" content="https://www.nexusvai.xyz/chat/">
     <meta property="og:image" content="https://www.nexusvai.xyz/Logo/Cancri1.jpg">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Cancri - AI 对话平台 | NexusVAI">
-    <meta name="twitter:description" content="Cancri 是 NexusVAI 的 AI 对话客户端，统一体验 40+ 顶尖大语言模型。">
+    <meta name="twitter:title" content="Cancri | NexusVAI">
+    <meta name="twitter:description" content="Cancri 是 NexusVAI 打造的 AI 助手。在一个界面里使用多种领先模型，帮你写作、编程、分析与创作。">
     <meta name="twitter:image" content="https://www.nexusvai.xyz/Logo/Cancri1.jpg">
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Cancri",
+  "url": "https://www.nexusvai.xyz/chat/",
+  "description": "Cancri 是 NexusVAI 打造的 AI 助手。在一个界面里使用多种领先模型，帮你写作、编程、分析与创作。",
+  "applicationCategory": "ProductivityApplication",
+  "operatingSystem": "Web",
+  "publisher": {
+    "@type": "Organization",
+    "name": "NexusVAI",
+    "url": "https://www.nexusvai.xyz/"
+  }
+}
+    </script>
         <!-- Browser tab icon. -->
-        <link rel="icon" type="image/svg+xml" href="assets/nexusvai-N-logo-tight.svg" />
-        <link rel="apple-touch-icon" href="../Logo/Cancri1.jpg" />
+        <link rel="icon" href="/favicon.ico" sizes="48x48" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
         <!-- Logo 同时被 sidebar-topbar、登录页 .auth-brand、PWA install
              prompt、模态框 hero 重复使用 6+ 次。fetchpriority=high 让浏览器
              把品牌图排到 HTTP 队列最前，首屏 LCP 候选元素更快出现。

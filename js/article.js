@@ -3287,6 +3287,10 @@ function initArticlePage() {
         if (categoryEl) categoryEl.textContent = data.category;
         if (titleEl) titleEl.textContent = data.title;
         document.title = `${data.title} | NexusV`;
+        // SEO：每篇文章用自己的首段作为 description，避免所有 ?id= 页面共用列表页简介。
+        const seoFirst = (data.paragraphs || []).find(t => typeof t === 'string' && !t.startsWith('__'));
+        const seoDesc = document.querySelector('meta[name="description"]');
+        if (params.get('id') && seoDesc && seoFirst) seoDesc.setAttribute('content', seoFirst.replace(/<[^>]+>/g, '').replace(/[*_`#]/g, '').replace(/\s+/g, ' ').trim().slice(0, 120));
         
         if (authorPill && data.date) {
             const year = data.date.match(/\d{4}/);

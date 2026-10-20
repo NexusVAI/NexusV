@@ -118,15 +118,15 @@ const translations = {
         // About Page
         'about.category': '公司',
         'about.title': '简介',
-        'about.subtitle': 'NexusV 是一家前沿游戏模组制作工作室。我们的使命是为全球玩家打造最具沉浸感的开放世界交互体验。',
+        'about.subtitle': 'NexusV 是 NexusVAI 与 Cancri 的统一博客站，也是一支 GTAV 模组团队。NexusVAI 专注于 AI 开发，旗下产品 Cancri 包括 CancriCode、Cancri 2.5 Flash 与 Cancri Bot。',
         'about.vision_title': '打造我们未来的愿景',
-        'about.vision_text': '最具沉浸感的开放世界交互体验。',
+        'about.vision_text': '用 AI 打造真正好用的产品，用模组创造更有沉浸感的世界。',
         'about.btn1': '加入我们',
         'about.btn2': '协议',
 
         // API Open Platform home (chat/api/index.html)
-        'api.home.doc_title': 'NexusV 开放平台',
-        'api.home.doc_desc': '在 NexusV 平台上开发领先的 AI 产品。一个端点，多种协议，一把密钥——把 OpenAI、Anthropic 与 Codex 原生协议归一到同一个 API 网关。',
+        'api.home.doc_title': 'API 平台 | NexusVAI',
+        'api.home.doc_desc': 'NexusVAI API 平台：一个端点、一把密钥，接入 Cancri 与多种前沿模型，原生兼容 OpenAI、Anthropic 与 Codex 协议。',
         'api.home.hero.title': '在 NexusVAI 平台上开发领先的 AI 产品',
         'api.home.hero.contact_sales': '联系我们',
         'api.home.hero.start_build': '开始构建',
@@ -140,7 +140,7 @@ const translations = {
         'api.home.nav.join': '加入 NexusVAI',
         'api.home.trusted_aria': '生态模型品牌',
         'api.home.models.title': '由前沿模型驱动',
-        'api.home.models.sub': '我们提供全球的前沿智能服务，助你构建雄心勃勃的软件',
+        'api.home.models.sub': '通过 NexusVAI API 使用 Cancri 与多种前沿模型，构建更有野心的软件。',
         'api.home.model.learn_more': '了解更多',
         // 2026-08-10: 旗舰卡营销文案（仅首页展示；价/ctx 以 oai-home HOME_CARD_OVERRIDES 为准，勿用 data-i18n 灌价）。
         'api.home.card.opus.spec1': '输入：¥0.59 / 输出：¥1.99 每百万标记',
@@ -359,15 +359,15 @@ const translations = {
         // About Page
         'about.category': 'Company',
         'about.title': 'About Us',
-        'about.subtitle': 'NexusV is a cutting-edge game modding studio. Our mission is to deliver the most immersive open-world interactive experience for players worldwide.',
+        'about.subtitle': 'NexusV is the unified blog of NexusVAI and Cancri, and a GTAV modding team. NexusVAI focuses on AI development; its product Cancri includes CancriCode, Cancri 2.5 Flash, and Cancri Bot.',
         'about.vision_title': 'Crafting Our Vision for Tomorrow',
-        'about.vision_text': 'The most immersive open-world interactive experience.',
+        'about.vision_text': 'Building AI products that truly help, and mods that make worlds more immersive.',
         'about.btn1': 'Join Us',
         'about.btn2': 'Terms',
 
         // API Open Platform home (chat/api/index.html)
-        'api.home.doc_title': 'NexusV Open Platform',
-        'api.home.doc_desc': 'Build leading AI products on NexusV. One endpoint, multiple protocols, one key—OpenAI, Anthropic, and Codex native APIs unified through a single gateway.',
+        'api.home.doc_title': 'API Platform | NexusVAI',
+        'api.home.doc_desc': 'The NexusVAI API Platform: one endpoint and one key for Cancri and other frontier models, natively compatible with OpenAI, Anthropic, and Codex protocols.',
         'api.home.hero.title': 'Build leading AI products on the NexusVAI platform',
         'api.home.hero.contact_sales': 'Contact us',
         'api.home.hero.start_build': 'Start building',
@@ -381,7 +381,7 @@ const translations = {
         'api.home.nav.join': 'Join NexusVAI',
         'api.home.trusted_aria': 'Ecosystem model brands',
         'api.home.models.title': 'Powered by frontier models',
-        'api.home.models.sub': 'We provide world-leading frontier intelligence to help you build ambitious software.',
+        'api.home.models.sub': 'Use Cancri and other frontier models through the NexusVAI API to build ambitious software.',
         'api.home.model.learn_more': 'Learn more',
         // 2026-08-10: homepage marketing copy only (prices/ctx applied by oai-home overrides).
         'api.home.card.opus.spec1': 'Input: ¥0.59 / Output: ¥1.99 per 1M tokens',

@@ -1,0 +1,14 @@
+{
+  "name": "NexusV",
+  "short_name": "NexusV",
+  "description": "NexusV 是 NexusVAI 与 Cancri 的官方博客，也是一支 GTAV 模组团队。",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

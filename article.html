@@ -4,16 +4,17 @@
     <meta charset="UTF-8"><script src="/js/clean-url.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>技术文章与动态 | NexusV</title>
-    <meta name="description" content="NexusV 技术文章、产品动态、研究发布与平台更新。">
-    <link rel="canonical" href="https://www.nexusvai.xyz/article.html" />
-    <meta name="keywords" content="NexusV,SentienceV4,游戏模组,技术文章">
-    <meta property="og:title" content="技术文章与动态 | NexusV">
+    <title>新闻 | NexusV</title>
+    <meta name="description" content="NexusVAI 与 Cancri 的最新发布、研究进展与产品更新，以及 NexusV 的 GTAV 模组动态。">
+    <!-- canonical 随 ?id= 变化：每篇文章指向自己，列表页指向 /article（Google 建议 JS 注入时 HTML 里不要再写静态 canonical） -->
+    <script>(function(){var i=new URLSearchParams(location.search).get("id");var l=document.createElement("link");l.rel="canonical";l.href="https://www.nexusvai.xyz/article"+(i?"?id="+encodeURIComponent(i):"");document.head.appendChild(l);})();</script>
+    <meta name="keywords" content="NexusV,NexusVAI,Cancri,CancriCode,Cancri 2.5 Flash,Cancri Bot,新闻">
+    <meta property="og:title" content="新闻 | NexusV">
     <meta property="og:site_name" content="NexusV">
-    <meta property="og:description" content="NexusV 技术文章、产品动态、研究发布与平台更新。">
+    <meta property="og:description" content="NexusVAI 与 Cancri 的最新发布、研究进展与产品更新，以及 NexusV 的 GTAV 模组动态。">
     <meta property="og:type" content="article">
-    <meta property="og:url" content="https://www.nexusvai.xyz/article.html">
-    <meta property="og:image" content="https://www.nexusvai.xyz/Logo/NNNEE.png">
+    <meta property="og:url" content="https://www.nexusvai.xyz/article">
+    <meta property="og:image" content="https://www.nexusvai.xyz/Logo/nexusv-og.png">
     <meta name="twitter:card" content="summary_large_image">
     <script>
         (() => {
@@ -24,8 +25,10 @@
             if (theme === 'blue') document.documentElement.classList.add('blue-theme');
         })();
     </script>
-    <link rel="icon" type="image/svg+xml" href="chat/assets/nexusvai-N-logo-tight.svg" />
-    <link rel="apple-touch-icon" href="Logo/Cancri.png">
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="css/variables.css?v=2026-08-30-cjk">
     <link rel="stylesheet" href="css/navbar.css">
     <link rel="stylesheet" href="css/mobile-menu.css">
@@ -46,8 +49,8 @@
 {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  "name": "技术文章与动态 | NexusVAI",
-  "url": "https://www.nexusvai.xyz/article.html"
+  "name": "新闻 | NexusV",
+  "url": "https://www.nexusvai.xyz/article"
 }
 </script>
   </head>
