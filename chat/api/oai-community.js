@@ -13,10 +13,33 @@
   var image = widget.querySelector("[data-community-qr]");
   var caption = widget.querySelector("[data-community-caption]");
   var platforms = widget.querySelectorAll("[data-community-platform]");
+  var tour = widget.querySelector("[data-welcome-tour]");
   var isOpen = false;
   var pinned = false;
   var restoringFocus = false;
   var preloaded = false;
+
+  function isTourOpen() {
+    return Boolean(tour && !tour.hidden);
+  }
+
+  function dismissTour() {
+    if (!tour || tour.hidden) return;
+    tour.hidden = true;
+    try {
+      localStorage.setItem("cancri-api-models-welcome-v1", "1");
+    } catch (_) {}
+  }
+
+  function inCommunityPopover(node) {
+    return Boolean(node && (trigger.contains(node) || panel.contains(node)));
+  }
+
+  function hasPopoverFocusVisible() {
+    return Boolean(
+      trigger.matches(":focus-visible") || panel.querySelector(":focus-visible")
+    );
+  }
 
   // ── Apple corners: the Bezier construction from cancri-code src/ui/squircle-path.ts ──
   // A circular arc in the middle of each corner, joined to the straight edges by two cubic
@@ -147,6 +170,7 @@
   }
 
   trigger.addEventListener("click", function () {
+    if (isTourOpen()) dismissTour();
     if (isOpen && pinned) {
       setOpen(false);
     } else {
@@ -154,19 +178,26 @@
       pinned = true;
     }
   });
-  widget.addEventListener("pointerenter", function (event) {
-    if (event.pointerType === "mouse" || event.pointerType === "pen") setOpen(true);
-  });
-  widget.addEventListener("pointerleave", function (event) {
-    // Touch ends with pointerleave before click; hiding here would cancel the tap.
-    if (event.pointerType === "touch" || pinned) return;
-    if (!widget.querySelector(":focus-visible")) setOpen(false);
+  [trigger, panel].forEach(function (el) {
+    if (!el) return;
+    el.addEventListener("pointerenter", function (event) {
+      if (isTourOpen()) return;
+      if (event.pointerType === "mouse" || event.pointerType === "pen") setOpen(true);
+    });
+    el.addEventListener("pointerleave", function (event) {
+      // Touch ends with pointerleave before click; hiding here would cancel the tap.
+      if (event.pointerType === "touch" || pinned) return;
+      if (inCommunityPopover(event.relatedTarget)) return;
+      if (!hasPopoverFocusVisible()) setOpen(false);
+    });
   });
   widget.addEventListener("focusin", function (event) {
+    if (isTourOpen() || !inCommunityPopover(event.target)) return;
     if (!restoringFocus && event.target.matches(":focus-visible")) setOpen(true);
   });
   widget.addEventListener("focusout", function (event) {
-    if (!pinned && !widget.contains(event.relatedTarget)) setOpen(false);
+    if (!inCommunityPopover(event.target)) return;
+    if (!pinned && !inCommunityPopover(event.relatedTarget)) setOpen(false);
   });
   platforms.forEach(function (button) {
     button.addEventListener("pointerenter", function (event) {

@@ -2,10 +2,19 @@
 (function () {
   var KEY = "cancri-api-models-welcome-v1";
   var tour = document.querySelector("[data-welcome-tour]");
-  if (!tour || localStorage.getItem(KEY)) return;
+  if (!tour) return;
+  try {
+    if (localStorage.getItem(KEY)) return;
+  } catch (_) {}
   tour.hidden = false;
-  tour.querySelector("[data-welcome-tour-ok]").addEventListener("click", function () {
-    tour.hidden = true;
-    localStorage.setItem(KEY, "1");
-  });
+  var okBtn = tour.querySelector("[data-welcome-tour-ok]");
+  if (okBtn) {
+    okBtn.addEventListener("click", function (event) {
+      event.stopPropagation();
+      tour.hidden = true;
+      try {
+        localStorage.setItem(KEY, "1");
+      } catch (_) {}
+    });
+  }
 })();
