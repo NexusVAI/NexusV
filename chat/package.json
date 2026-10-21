@@ -7,6 +7,7 @@
   "scripts": {
     "build": "vite build",
     "watch": "vite build --watch",
+    "preview:local": "vite build && vite preview --outDir .. --port 4173 --open \"/chat/?local_preview=1\"",
     "lint": "eslint src",
     "format": "prettier --write \"src/**/*.js\"",
     "test": "vitest run",

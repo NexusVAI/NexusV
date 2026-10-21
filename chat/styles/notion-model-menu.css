@@ -1,0 +1,356 @@
+/* ───────────────────────────────────────────────────────────
+   Notion AI 模型菜单（2026-10-21）
+   来源：「Notion AI ｜ Notion (2026_10_21 15：50：46).html」
+   三个 role=dialog 模型菜单 + 输入框「工作量」信号格。
+
+   §1 设计 token：参考页 :root（浅色）与 .notion-dark-theme（深色）里
+      菜单实际用到的那几项，原值照抄。
+   §2 原子类：参考页内嵌样式表里，菜单 DOM 用到的类对应的规则原样摘出，
+      统一加 .nmm 作用域防止外泄；顺序按原 @layer priority2→5（后者优先），
+      层内保持原顺序。⛔ 别手改这一段，要改样式写在 §3。
+   §3 接入层：把 #modelDropdown 原有 Claude 卡片样式（claude.css 一堆
+      !important）让位给 Notion 结构，用 #id 特异性压过去。
+   §4 输入框信号格。
+   ─────────────────────────────────────────────────────────── */
+
+/* §1 设计 token */
+.nmm,
+.nmm-signal {
+    --c-texPri: #2c2c2b;
+    --c-texSec: #7d7a75;
+    --c-icoPri: #383836;
+    --c-icoSec: #8e8b86;
+    --c-icoDis: #bcbab6;
+    --ca-bacIntTra: #211b170d;
+    --ca-borSecTra: #2a1c0012;
+    --ca-graBacSecTra: #2a1c0012;
+    --c-graTexAccPri: #8e8b86;
+    --c-popBac: #fff;
+    --c-shaOutLg: 0px 20px 24px 0px #1919190d, 0px 5px 8px 0px #19191907, 0px 0px 0px 1px #2a1c0012;
+}
+html[data-theme="dark"] .nmm,
+html[data-theme="black"] .nmm,
+html[data-theme="dark"] .nmm-signal,
+html[data-theme="black"] .nmm-signal {
+    --c-texPri: #f0efed;
+    --c-texSec: #ada9a3;
+    --c-icoPri: #e6e5e3;
+    --c-icoSec: #ada9a3;
+    --c-icoDis: #5f5e59;
+    --ca-bacIntTra: #ffffff0e;
+    --ca-borSecTra: #fffff315;
+    --ca-graBacSecTra: #ffffeb1a;
+    --c-popBac: #252525;
+    --c-shaOutLg: 0px 0px 0px 1px #383836, 0px 14px 28px -6px #19191933, 0px 2px 4px -1px #1919191e;
+}
+
+/* §2 原子类（原样摘录） */
+/* @layer priority2 */
+.nmm .x1mmz80m{background:var(--c-popBac)}
+.nmm .x102ppi5{background:var(--ca-borSecTra)}
+.nmm .xt2wqj3{background:var(--x-background)}
+.nmm .x16lehos{background:var(--x-l5dkfo)}
+.nmm .x19b482l:focus-visible{background:var(--x-13tdqfb)}
+.nmm .xdxgbl4:hover{background:var(--x-umghl)}
+.nmm .xayv9eh:active{background:var(--x-ph3bdx)}
+
+/* @layer priority3 */
+.nmm .xaqea5y{border-bottom:0}
+.nmm .x12wdn4z{border-inline-end:0}
+.nmm .x1f0uuog{border-inline-start:0}
+.nmm .x6umtig{border-top:0}
+.nmm .x1isitws{flex:auto}
+.nmm .xe0qb83{outline:1px solid #0000}
+.nmm .x1b7c0jy{transition:background 20ms ease-in}
+.nmm .x1ds2qyl{transition:background .1s ease-in-out}
+.nmm .xv7b8oh{transition:stroke-dashoffset .5s ease-out}
+
+/* @layer priority4 */
+.nmm .xs1r7gh{-webkit-backdrop-filter:none}
+.nmm .x6s0dn4{align-items:center}
+.nmm .xamitd3{align-self:center}
+.nmm .xqcrz7y{align-self:flex-start}
+.nmm .x1t853zo{backdrop-filter:none}
+.nmm .x1dm3dyd{border-end-end-radius:10px}
+.nmm .x1wcsgtt{border-end-end-radius:4px}
+.nmm .xr2y4jy{border-end-end-radius:6px}
+.nmm .x1pv694p{border-end-start-radius:10px}
+.nmm .x1pczhz8{border-end-start-radius:4px}
+.nmm .x1ihp6rs{border-end-start-radius:6px}
+.nmm .xi7iut8{border-start-end-radius:10px}
+.nmm .x1t39747{border-start-end-radius:4px}
+.nmm .x1whfx0g{border-start-end-radius:6px}
+.nmm .x16qb05n{border-start-start-radius:10px}
+.nmm .xjwep3j{border-start-start-radius:4px}
+.nmm .x1i5p2am{border-start-start-radius:6px}
+.nmm .x4ma8is{box-shadow:var(--c-shaOutLg)}
+.nmm .x1hyvwdk{clip-path:inset(50%)}
+.nmm .xeh89do{clip:rect(0 0 0 0)}
+.nmm .x1heor9g{color:inherit}
+.nmm .x1b8rd1j{color:var(--c-texSec)}
+.nmm .x14rh7hd{color:var(--x-color)}
+.nmm .x1o1pmfc{column-gap:0}
+.nmm .x121lspk{column-gap:1px}
+.nmm .xfex06f{column-gap:8px}
+.nmm .x1ypdohk{cursor:pointer}
+.nmm .x1lliihq{display:block}
+.nmm .xjp7ctv{display:contents}
+.nmm .x78zum5{display:flex}
+.nmm .x3nfvp2{display:inline-flex}
+.nmm .x1kihv7h{fill:inherit}
+.nmm .xgol4h7{fill:var(--c-icoSec)}
+.nmm .xj7j8on{fill:var(--x-1c06d8x)}
+.nmm .x19zyb68{fill:var(--x-fill)}
+.nmm .x3ieub6{flex-direction:column-reverse}
+.nmm .xdt5ytf{flex-direction:column}
+.nmm .x15zctf7{flex-direction:row-reverse}
+.nmm .x1q0g3np{flex-direction:row}
+.nmm .x1c4vz4f{flex-grow:0}
+.nmm .x1iyjqo2{flex-grow:1}
+.nmm .x2lah0s{flex-shrink:0}
+.nmm .x1j6dyjg{font-size:11px}
+.nmm .xfifm61{font-size:12px}
+.nmm .xif65rj{font-size:14px}
+.nmm .xk50ysn{font-weight:500}
+.nmm .x9q68il{inset-inline-end:12px}
+.nmm .xqxgn94{inset-inline-end:var(--x-insetInlineEnd)}
+.nmm .x1r4y97{inset-inline-start:12px}
+.nmm .x1lxsm33{inset-inline-start:var(--x-insetInlineStart)}
+.nmm .xl56j7k{justify-content:center}
+.nmm .x1u7k74{line-height:1.2}
+.nmm .xwn7fz2{line-height:1.3}
+.nmm .xkds0cx{line-height:120%}
+.nmm .xjn30re{margin-inline-end:-1px}
+.nmm .x1c9tiao{margin-inline-end:var(--x-marginInlineEnd)}
+.nmm .x1hb08if{margin-inline-start:-1px}
+.nmm .xvc5jky{margin-inline-start:auto}
+.nmm .x4lel18{margin-inline-start:var(--x-marginInlineStart)}
+.nmm .x1hc1fzr{opacity:1}
+.nmm .xyri2b{padding-inline-end:0}
+.nmm .x11lfxj5{padding-inline-end:4px}
+.nmm .xf159sx{padding-inline-end:8px}
+.nmm .x1c1uobl{padding-inline-start:0}
+.nmm .x135b78x{padding-inline-start:4px}
+.nmm .xmzvs34{padding-inline-start:8px}
+.nmm .x47corl{pointer-events:none}
+.nmm .x10l6tqk{position:absolute}
+.nmm .x1n2onr6{position:relative}
+.nmm .xxs79tx{row-gap:0}
+.nmm .xm83of2{row-gap:1px}
+.nmm .x3pnbk8{row-gap:8px}
+.nmm .xhsan64{stroke-width:0}
+.nmm .xeutv01{stroke:none}
+.nmm .x6mkzkt{stroke:var(--x-stroke)}
+.nmm .xlyipyv{text-overflow:ellipsis}
+.nmm .xf6vlc6{transform-origin:var(--x-transformOrigin)}
+.nmm .x17dzmu4{transform:translateZ(0)}
+.nmm .x87ps6o{-webkit-user-select:none;user-select:none}
+.nmm .x13efnbd{vector-effect:non-scaling-stroke}
+.nmm .xlshs6z{visibility:hidden}
+.nmm .xeaf4i8{white-space:normal}
+.nmm .xuxw1ft{white-space:nowrap}
+
+/* @layer priority5 */
+.nmm .x5yr21d{height:100%}
+.nmm .xjm9jq1{height:1px}
+.nmm .xeuugli{min-width:0}
+.nmm .x6ikm8r{overflow-x:hidden}
+.nmm .x1plvlek{overflow-x:visible}
+.nmm .x10wlt62{overflow-y:hidden}
+.nmm .xryxfnj{overflow-y:visible}
+.nmm .x18d9i69{padding-bottom:0}
+.nmm .x1120s5i{padding-bottom:2px}
+.nmm .xexx8yu{padding-top:0}
+.nmm .x1nn3v0j{padding-top:2px}
+.nmm .x1yrsyyn{padding-top:6px}
+.nmm .x13vifvy{top:0}
+.nmm .xh8yej3{width:100%}
+.nmm .x1i1rx1s{width:1px}
+.nmm .x1v9usgg{height:14px}
+.nmm .xlup9mm{height:16px}
+.nmm .x1qx5ct2{height:20px}
+.nmm .x16ye13r{height:var(--x-height)}
+.nmm .x1jyxor1{margin-bottom:-1px}
+.nmm .x1e56ztr{margin-bottom:8px}
+.nmm .x1y332i5{margin-top:-1px}
+.nmm .xvijh9v{margin-top:1px}
+.nmm .xr9ek0c{margin-top:2px}
+.nmm .x1k70j0n{margin-top:6px}
+.nmm .x1jols5v{max-height:var(--x-maxHeight)}
+.nmm .xf68679{max-width:var(--x-maxWidth)}
+.nmm .x2lwn1j{min-height:0}
+.nmm .xisnujt{min-height:20px}
+.nmm .xe0p6wg{min-height:28px}
+.nmm .x1wjjzik{min-height:45px}
+.nmm .xt4ypqs{min-width:20px}
+.nmm .xkj4a21{min-width:var(--x-minWidth)}
+.nmm .x1odjw0f{overflow-y:auto}
+.nmm .xjkvuk6{padding-bottom:4px}
+.nmm .x14jbevu{padding-bottom:initial}
+.nmm .x1iorvi4{padding-top:4px}
+.nmm .x1pdr0v7{top:-1px}
+.nmm .xjbys53{top:var(--x-top)}
+.nmm .x6jxa94{width:14px}
+.nmm .x1kky2od{width:16px}
+.nmm .xw4jnvo{width:20px}
+.nmm .xvv7f4i{max-width:calc(100vw - 24px)}
+.nmm .x5lhr3w{width:var(--x-width)}
+
+/* §3 接入层 */
+#modelDropdown.nmm {
+    background: var(--c-popBac) !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    box-shadow: var(--c-shaOutLg) !important;
+    padding: 0 !important;
+    min-width: 180px !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: min(560px, 70dvh);
+    /* 子菜单面板挂在卡片外侧，卡片本身不能再裁剪；第一层的滚动交给 content */
+    overflow: visible !important;
+    color: var(--c-texPri);
+}
+#modelDropdown.nmm .model-dropdown-content {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 0 !important;
+    border-radius: 10px;
+}
+#modelDropdown.nmm .model-filter-row,
+#modelDropdown.nmm .model-dropdown-footer,
+#modelDropdown.nmm .model-hover-popover {
+    display: none !important;
+}
+#modelDropdown.nmm .model-search-panel {
+    padding: 8px 8px 0 !important;
+    margin: 0 !important;
+    border-bottom: 0 !important;
+}
+#modelDropdown.nmm #modelSearchInput {
+    height: 28px !important;
+    border: 0 !important;
+    border-radius: 6px !important;
+    background: var(--ca-bacIntTra) !important;
+    color: var(--c-texPri) !important;
+    font-size: 14px !important;
+}
+
+/* 行：Notion menuitem 自带内边距与圆角，清掉 .model-option 的旧盒模型 */
+#modelDropdown.nmm .model-option,
+#modelDropdown.nmm .nmm-submenu-trigger,
+#modelDropdown.nmm .nmm-back-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    border: 0 !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: normal !important;
+    color: var(--c-texPri) !important;
+    background: transparent !important;
+    white-space: nowrap;
+}
+#modelDropdown.nmm [role="menuitem"]:hover {
+    background: var(--x-umghl) !important;
+}
+#modelDropdown.nmm [role="menuitem"]:active {
+    background: var(--x-ph3bdx) !important;
+}
+#modelDropdown.nmm .nmm-submenu-trigger[aria-expanded="true"] {
+    background: var(--x-background) !important;
+}
+/* 选中态 = 右侧勾（参考页 checkmarkSmall），不再铺底色 / ::after 勾 */
+#modelDropdown.nmm .model-option::after {
+    content: none !important;
+    display: none !important;
+}
+#modelDropdown.nmm .model-speed-dot {
+    display: none !important;
+}
+#modelDropdown.nmm .nmm-trailing {
+    fill: var(--c-icoPri);
+}
+#modelDropdown.nmm .nmm-check {
+    visibility: hidden;
+}
+#modelDropdown.nmm .model-option.active .nmm-check {
+    visibility: visible;
+}
+#modelDropdown.nmm .nmm-icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+/* 免费计划下的付费模型：沿用原 PAID + Upgrade 徽章（.model-access，main.js 注入） */
+#modelDropdown.nmm .model-option .model-access {
+    align-self: center;
+    margin-left: 0;
+    padding-inline-end: 8px;
+}
+#modelDropdown.nmm .nmm-empty {
+    padding-block: 6px;
+}
+
+/* 子菜单面板：绝对定位在 #modelDropdown 内，坐标由 model-menu-notion.js 计算 */
+#modelDropdown.nmm > .nmm-panel {
+    position: absolute;
+    z-index: 2;
+}
+#modelDropdown.nmm > .nmm-panel[hidden] {
+    display: none !important;
+}
+#modelDropdown.nmm .nmm-back-chevron svg {
+    transform: rotate(180deg);
+}
+@media (min-width: 769px) {
+    #modelDropdown.nmm .nmm-back-row {
+        display: none !important;
+    }
+}
+
+/* §4 输入框信号格（参考页 agent-service-reasoning-effort-button，28×28 圆形钮内 5 根柱） */
+.nmm-signal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: default;
+}
+.nmm-signal[hidden] {
+    display: none !important;
+}
+/* 对话态：与发送槽同一行，排在发送槽前面 */
+.composer-input-row > .nmm-signal {
+    order: 1;
+    align-self: flex-end;
+    margin: 0 2px 2px 0;
+}
+/* 首页态：发送槽被钉在卡片右下角（claude.css §39），信号格紧挨其左 */
+#homeView:not(.chatting) .composer-input-row > .nmm-signal {
+    position: absolute;
+    right: 44px;
+    bottom: 10px;
+    z-index: 3;
+    margin: 0;
+}
+#homeView:not(.chatting) .composer-tools-row {
+    padding-right: 76px;
+}
+/* 移动端发送槽是 36px 宽（实测），右移量随之 +4 */
+@media (max-width: 768px) {
+    #homeView:not(.chatting) .composer-input-row > .nmm-signal {
+        right: 48px;
+    }
+    #homeView:not(.chatting) .composer-tools-row {
+        padding-right: 80px;
+    }
+}

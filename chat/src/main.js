@@ -5,6 +5,19 @@ import { MODEL_CATALOG_FALLBACK } from "./data/model-catalog-fallback.js";
 import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
 import { mountHeroMascot } from "./grok-bot/hero-mascot.js";
 import loginIslandHtml from "../claude-login-island.html?raw";
+import {
+  classifyModelMenuLayers,
+  getModelCostLevel,
+  isFreeMenuModel,
+  COST_LEVEL_LABELS,
+} from "./model-menu-layers.js";
+import {
+  bindNotionSubmenus,
+  buildModelRow,
+  closeNotionSubmenus,
+  renderCostSignal,
+  renderNotionModelMenu,
+} from "./model-menu-notion.js";
 
 // ── 账号记忆相关性选择 ──
 /**
@@ -488,6 +501,11 @@ function lastUserMessageText(messages) {
   const modelDropdown = document.getElementById("modelDropdown");
   const modelSearchInput = document.getElementById("modelSearchInput");
   const modelFilterRow = document.getElementById("modelFilterRow");
+  // 2026-10-21：主对话页的模型菜单改为 Notion AI 三层菜单（推荐 / 其他模型 / 较早的模型）。
+  // claude.html（Claude 1:1 复刻页）有 claude_ui.js 自己的 cascade 折叠菜单，保持旧渲染；
+  // 判据与 claude_ui.js bindModelMoreMenu 相同（clean-url 会去掉 .html，两种写法都认）。
+  const USE_LAYERED_MODEL_MENU = !/\/claude(\.html)?$/i.test(location.pathname);
+  const composerCostSignal = document.getElementById("composerCostSignal");
   const currentModelName = document.getElementById("currentModelName");
   const topArenaModeSelector = document.getElementById("topArenaModeSelector");
   const topArenaModeBtn = document.getElementById("topArenaModeBtn");
@@ -2707,6 +2725,12 @@ function lastUserMessageText(messages) {
         } catch (e) {
           /* ignore */
         }
+        // billing_mode 决定信号格看单价还是看倍率
+        try {
+          updateComposerCostSignal();
+        } catch (e) {
+          /* ignore */
+        }
         return quotaState;
       })
       .catch((e) => {
@@ -3273,6 +3297,10 @@ function lastUserMessageText(messages) {
       disabled: serverModel.disabled === true,
       gateCostTier: serverModel.gateCostTier || null,
       freeUserBlocked: serverModel.freeUserBlocked === true,
+      // model_pricing 单价（¥/M 或 ¥/次），输入框旁信号格按它画消耗高低。
+      inputPricePerM: serverModel.inputPricePerM,
+      outputPricePerM: serverModel.outputPricePerM,
+      perCallPrice: serverModel.perCallPrice,
     };
   }
 
@@ -3553,6 +3581,9 @@ function lastUserMessageText(messages) {
         customMultiplier: entry.customMultiplier,
         gateCostTier: entry.gateCostTier || null,
         freeUserBlocked: entry.freeUserBlocked === true,
+        inputPricePerM: entry.inputPricePerM,
+        outputPricePerM: entry.outputPricePerM,
+        perCallPrice: entry.perCallPrice,
         isWelfare,
         isFree: entry.costTier === "free" || isWelfare,
         isPromo: entry.promoLimited === true || isSpecial,
@@ -3650,6 +3681,22 @@ function lastUserMessageText(messages) {
   function updateModelSelectorIcons() {
     updateModelButtonIcon(modelCurrentBtn, currentModel);
     updateModelButtonIcon(compareModelCurrentBtn, compareModel);
+    updateComposerCostSignal();
+  }
+
+  // 输入框发送钮左侧的信号格：越满 = 当前模型消耗越高。
+  function updateComposerCostSignal() {
+    if (!composerCostSignal) return;
+    const meta = getModelMeta(currentModel);
+    const level = getModelCostLevel(meta, quotaState.billingMode);
+    const name = meta.displayName || currentModel;
+    const free = isFreeMenuModel(meta) || isFreeWelfareModel(currentModel);
+    renderCostSignal(
+      composerCostSignal,
+      free ? 1 : level,
+      `${name} 消耗：${free ? "免费" : COST_LEVEL_LABELS[level]}（${free ? 1 : level}/5）`,
+    );
+    composerCostSignal.hidden = false;
   }
   
   function getModelBrandName(modelId) {
@@ -5470,7 +5517,98 @@ function lastUserMessageText(messages) {
     }
   }
 
+  // ── 本地免登录预览（2026-10-21）────────────────────────────────
+  // 只在本机地址（localhost / 127.0.0.1 / ::1 / *.localhost / file:）生效，给开发者
+  // 预览 UI 用：跳过登录浮层，不伪造任何会话 —— 需要鉴权的接口照常 401，
+  // 鉴权始终在网关侧。线上域名下入口不渲染、开关恒为 false。
+  const LOCAL_PREVIEW_STORAGE_KEY = "cancri_local_preview";
+  function isLocalPreviewHost() {
+    if (location.protocol === "file:") return true;
+    const host = location.hostname;
+    return (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "::1" ||
+      host === "[::1]" ||
+      host.endsWith(".localhost")
+    );
+  }
+  function isLocalPreviewActive() {
+    if (!isLocalPreviewHost()) return false;
+    try {
+      return sessionStorage.getItem(LOCAL_PREVIEW_STORAGE_KEY) === "1";
+    } catch (_e) {
+      return false;
+    }
+  }
+  function renderLocalPreviewBanner() {
+    let banner = document.getElementById("localPreviewBanner");
+    if (!isLocalPreviewActive()) {
+      banner?.remove();
+      return;
+    }
+    if (banner) return;
+    banner = document.createElement("div");
+    banner.id = "localPreviewBanner";
+    banner.setAttribute("role", "status");
+    banner.style.cssText =
+      "position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:2147483646;" +
+      "display:flex;align-items:center;gap:10px;padding:6px 8px 6px 12px;border-radius:999px;" +
+      "max-width:calc(100vw - 24px);white-space:nowrap;" +
+      "background:rgba(37,37,37,.92);color:#f0efed;font-size:12px;line-height:18px;" +
+      "box-shadow:0 0 0 1px #383836,0 6px 16px rgba(0,0,0,.25)";
+    const text = document.createElement("span");
+    text.style.cssText = "overflow:hidden;text-overflow:ellipsis";
+    text.textContent = "本地免登录预览 · 需要登录的接口仍会失败";
+    const exit = document.createElement("button");
+    exit.type = "button";
+    exit.textContent = "去登录";
+    exit.style.cssText =
+      "flex:0 0 auto;border:0;border-radius:999px;padding:2px 10px;background:#f0efed;color:#191919;font-size:12px;cursor:pointer";
+    exit.addEventListener("click", exitLocalPreview);
+    banner.append(text, exit);
+    document.body.appendChild(banner);
+  }
+  function enterLocalPreview() {
+    if (!isLocalPreviewHost()) return;
+    try {
+      sessionStorage.setItem(LOCAL_PREVIEW_STORAGE_KEY, "1");
+    } catch (_e) {
+      /* 隐私模式：本次页面内仍生效 */
+    }
+    hideAuthOverlay();
+    authInitialized = true;
+    renderLocalPreviewBanner();
+  }
+  function exitLocalPreview() {
+    try {
+      sessionStorage.removeItem(LOCAL_PREVIEW_STORAGE_KEY);
+    } catch (_e) {
+      /* ignore */
+    }
+    renderLocalPreviewBanner();
+    showAuthOverlay();
+  }
+  // 登录浮层上的入口：仅本机地址渲染。
+  function mountLocalPreviewEntry() {
+    if (!isLocalPreviewHost()) return;
+    const overlay = document.getElementById("authOverlay");
+    if (!overlay || document.getElementById("localPreviewEntryBtn")) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "localPreviewEntryBtn";
+    btn.textContent = "在本地打开（免登录）";
+    btn.title = "仅本机地址可见：跳过登录预览对话页 UI";
+    btn.style.cssText =
+      "position:fixed;right:16px;top:16px;z-index:2147483647;border:0;border-radius:999px;" +
+      "padding:8px 14px;background:#f0efed;color:#191919;font-size:13px;line-height:18px;" +
+      "box-shadow:0 0 0 1px rgba(0,0,0,.08),0 6px 16px rgba(0,0,0,.25);cursor:pointer";
+    btn.addEventListener("click", enterLocalPreview);
+    overlay.appendChild(btn);
+  }
+
   function showAuthOverlay() {
+    if (isLocalPreviewActive()) return;
     const overlay = document.getElementById("authOverlay");
     if (overlay) overlay.classList.add("visible");
     ensureAuthLoginFrameLoaded();
@@ -5729,7 +5867,20 @@ function lastUserMessageText(messages) {
   function initAuthOverlay() {
     const overlay = document.getElementById("authOverlay");
     if (!overlay) return;
-  
+
+    mountLocalPreviewEntry();
+    // `npm run preview:local` 打开的地址带 ?local_preview=1，直接进免登录预览。
+    if (
+      isLocalPreviewHost() &&
+      new URLSearchParams(location.search).get("local_preview") === "1"
+    ) {
+      try {
+        sessionStorage.setItem(LOCAL_PREVIEW_STORAGE_KEY, "1");
+      } catch (_e) {
+        /* ignore */
+      }
+    }
+
     (async () => {
       try {
         const client = getSupabaseClient();
@@ -5742,11 +5893,14 @@ function lastUserMessageText(messages) {
         } else if (hasSharedConversationHash()) {
           hideAuthOverlay();
           authInitialized = true;
+        } else if (isLocalPreviewActive()) {
+          enterLocalPreview();
         } else {
           showAuthOverlay();
         }
       } catch {
         if (hasSharedConversationHash()) hideAuthOverlay();
+        else if (isLocalPreviewActive()) enterLocalPreview();
         else showAuthOverlay();
       }
     })();
@@ -18694,6 +18848,11 @@ function lastUserMessageText(messages) {
       return;
     }
 
+    if (USE_LAYERED_MODEL_MENU) {
+      renderLayeredModelDropdown(content);
+      return;
+    }
+
     const isArenaMode =
       state.arenaMode === "side_by_side" || state.arenaMode === "anonymous";
     const grouped = new Map();
@@ -18808,7 +18967,77 @@ function lastUserMessageText(messages) {
       /* ignore */
     }
   }
-  
+
+  // Notion 三层菜单：推荐 / 其他模型 / 较早的模型（归属规则见 model-menu-layers.js）。
+  // 搜索框有字时退化为一层按品牌分组的结果列表。每行仍是 .model-option，
+  // 付费闸门（disabled / quota-blocked / PAID+Upgrade）由 updateModelDropdownIndicators 照旧施加。
+  function renderLayeredModelDropdown(content) {
+    modelDropdown.classList.add("nmm");
+    bindNotionSubmenus(modelDropdown, {
+      isCompact: () => window.matchMedia("(max-width: 768px)").matches,
+    });
+    const isArenaMode =
+      state.arenaMode === "side_by_side" || state.arenaMode === "anonymous";
+    const models = SELECTABLE_MODELS.filter(
+      (m) => !m.translateOnly && !(isArenaMode && (m.imageOnly || m.videoOnly)),
+    );
+    const query = modelSearchInput ? modelSearchInput.value.trim() : "";
+    const filter = getActiveModelFilter();
+    const matches = (m, q) => modelMatchesFilter({ dataset: { model: m.id } }, filter, q);
+
+    const makeRow = (model) => {
+      const showPromoTag = model.promoLimited && isGrokImagineVideoPromoActive();
+      const displayName = showPromoTag
+        ? `【限时】${model.displayName || model.id}`
+        : model.displayName || model.id;
+      const row = buildModelRow(
+        {
+          id: model.id,
+          displayName,
+          brand: model.brand || getModelBrandName(model.id),
+          canonicalId: model.canonicalId,
+          lineLabel: model.lineLabel,
+          multimodal: model.multimodal,
+          iconPath: model.iconPath,
+          title: model.lineLabel ? `${displayName} · ${model.lineLabel}` : displayName,
+          available: model.available,
+          unavailableMessage: model.unavailableMessage,
+        },
+        {
+          active: model.id === currentModel,
+          free: isFreeMenuModel(model) || isFreeWelfareModel(model.id),
+        },
+      );
+      const icon = row.querySelector("img.nmm-icon");
+      if (icon) applyModelIconThemeClass(icon, model.iconPath, model.brand);
+      return row;
+    };
+
+    if (query) {
+      renderNotionModelMenu({
+        dropdown: modelDropdown,
+        content,
+        searchResults: models.filter((m) => matches(m, query)),
+        makeRow,
+      });
+    } else {
+      const pool = filter === "all" ? models : models.filter((m) => matches(m, ""));
+      renderNotionModelMenu({
+        dropdown: modelDropdown,
+        content,
+        layers: classifyModelMenuLayers(pool),
+        makeRow,
+      });
+    }
+    // 存在 dataset 而非模块级 let：applyModelDropdownFilters 可能在模块体走到这里之前被调用（TDZ）。
+    modelDropdown.dataset.nmmQuery = `${query}\u0000${filter}`;
+    try {
+      updateModelDropdownIndicators();
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
   function getActiveModelFilter() {
     return (
       modelFilterRow?.querySelector(".model-filter-chip.active")?.dataset
@@ -18859,6 +19088,14 @@ function lastUserMessageText(messages) {
   }
   
   function applyModelDropdownFilters() {
+    if (USE_LAYERED_MODEL_MENU && modelDropdown) {
+      // 三层菜单按查询词整块重渲染（只有查询 / 筛选变了才重建，打开菜单不重放）。
+      const key = `${modelSearchInput ? modelSearchInput.value.trim() : ""}\u0000${getActiveModelFilter()}`;
+      if (modelCatalogLoaded && key !== modelDropdown.dataset.nmmQuery) {
+        renderModelDropdownFromCatalog();
+      }
+      return;
+    }
     const filter = getActiveModelFilter();
     const query = modelSearchInput ? modelSearchInput.value : "";
     const options = Array.from(
@@ -18966,10 +19203,12 @@ function lastUserMessageText(messages) {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const isCompact = window.matchMedia("(max-width: 768px)").matches;
+    // Notion 三层菜单第一层宽 300（参考页 --x-width:300px）
+    const menuWidth = USE_LAYERED_MODEL_MENU ? 300 : 320;
     const width = Math.round(
       isCompact
-        ? Math.min(320, vw - 24)
-        : Math.min(320, Math.max(280, Math.min(420, vw - 24))),
+        ? Math.min(menuWidth, vw - 24)
+        : Math.min(menuWidth, Math.max(280, Math.min(420, vw - 24))),
     );
     // Viewport space for max-height — must NOT use containing-block coords:
     // composer-bottom has backdrop-filter, so getFixedContainingBlock() returns
@@ -19119,7 +19358,8 @@ function lastUserMessageText(messages) {
     clearTimeout(modelDropdownAnimTimer);
     modelDropdown?.classList.remove("animating");
     modelDropdownTriggerEl = null;
-  
+    closeNotionSubmenus(modelDropdown);
+
     if (modelDropdown) {
       ["top", "left", "right", "bottom", "width", "max-height"].forEach((prop) => {
         modelDropdown.style.removeProperty(prop);
