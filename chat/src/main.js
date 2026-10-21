@@ -2386,6 +2386,69 @@ function lastUserMessageText(messages) {
     }
   }
   seedQuotaStateFromTierCache();
+
+  // 2026-10-21：免费用户「首次打开模型菜单看不到付费模型暗淡 + PAID/Upgrade」。
+  // 根因：plan_v4 闸门要 billingMode/planV4Active，这两个只在 get_quota_status
+  // 返回后才有；上面那份 tier 缓存不带它们（也是 5 分钟 TTL），于是在配额请求
+  // 回来之前打开菜单，getQuotaBlockReason 走 legacy 分支一律放行 → 整列「可用」。
+  // 这里把闸门判据按用户缓存一份（仅 UX 预判，后端仍是权威），启动即 seed；
+  // 每次 get_quota_status 成功后覆盖。按 JWT sub 隔离，换号不串。
+  const QUOTA_GATE_CACHE_KEY = "cancri_quota_gate_cache_v1";
+  const QUOTA_GATE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+  function getQuotaGateCacheUserId() {
+    try {
+      const token = getCancriAccessTokenForQuota();
+      const part = token.split(".")[1];
+      if (!part) return "";
+      const json = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
+      return json && json.sub ? String(json.sub) : "";
+    } catch (e) {
+      return "";
+    }
+  }
+  function seedQuotaStateFromGateCache() {
+    try {
+      const uid = getQuotaGateCacheUserId();
+      if (!uid) return;
+      const parsed = JSON.parse(localStorage.getItem(QUOTA_GATE_CACHE_KEY) || "null");
+      if (!parsed || parsed.uid !== uid || typeof parsed.cachedAt !== "number") return;
+      if (Date.now() - parsed.cachedAt > QUOTA_GATE_CACHE_TTL_MS) return;
+      if (parsed.billingMode === "plan_v4" || parsed.billingMode === "wallet_v3" || parsed.billingMode === "quota_v2") {
+        quotaState.billingMode = parsed.billingMode;
+      }
+      if (parsed.planV4Active === true || parsed.planV4Active === false) {
+        quotaState.planV4Active = parsed.planV4Active;
+      }
+      if (quotaState.tier === null && (parsed.tier === "free" || parsed.tier === "paid")) {
+        quotaState.tier = parsed.tier;
+      }
+      if (quotaState.planCode === null && isAnyPaidPlanCode(parsed.planCode)) {
+        quotaState.planCode = parsed.planCode;
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  }
+  seedQuotaStateFromGateCache();
+  function persistQuotaGateCache() {
+    try {
+      const uid = getQuotaGateCacheUserId();
+      if (!uid) return;
+      localStorage.setItem(
+        QUOTA_GATE_CACHE_KEY,
+        JSON.stringify({
+          uid,
+          cachedAt: Date.now(),
+          billingMode: quotaState.billingMode,
+          planV4Active: quotaState.planV4Active,
+          tier: quotaState.tier,
+          planCode: quotaState.planCode,
+        }),
+      );
+    } catch (e) {
+      /* ignore */
+    }
+  }
   
   function isPaidGateModel(modelId) {
     if (PAID_GATE_IDS.has(modelId)) return true;
@@ -2707,6 +2770,7 @@ function lastUserMessageText(messages) {
             quotaState.walletTier = null;
           }
           quotaState.fetchedAt = Date.now();
+          persistQuotaGateCache();
           if (clearTopupBackedQuotaLocks()) {
             persistModelTelemetryCache();
           }
@@ -3047,7 +3111,7 @@ function lastUserMessageText(messages) {
   // 纯不可用（上游挂了 / 额度锁）只置灰、不带升级钮。
   const MODEL_UPGRADE_HREF = "./pricing.html";
   function syncModelAccessBadge(opt, modelId) {
-    const existing = opt.querySelector(":scope > .model-access");
+    const existing = opt.querySelector(":scope > .model-access, :scope .nmm-trailing > .model-access");
     const message = opt.classList.contains("quota-blocked")
       ? getQuotaBlockMessage(modelId)
       : "";
@@ -3071,7 +3135,11 @@ function lastUserMessageText(messages) {
     link.title = "前往定价页升级";
     link.textContent = "Upgrade";
     wrap.append(badge, link);
-    opt.appendChild(wrap);
+    // Notion 三层菜单：徽章放进行尾槽（勾的前面），跟名字同一行 flex，不会被
+    // 300px 卡片裁掉；旧菜单没有这个槽，照旧挂在行末。
+    const trailing = opt.querySelector(".nmm-trailing");
+    if (trailing) trailing.insertBefore(wrap, trailing.querySelector(".nmm-check"));
+    else opt.appendChild(wrap);
   }
   
   function usesSharedQuota(modelId = currentModel) {
@@ -19301,6 +19369,18 @@ function lastUserMessageText(messages) {
 
     applyModelDropdownFilters();
     initModelPagination();
+    // 2026-10-21：三层菜单打开时不重建行，闸门状态（暗淡 / PAID+Upgrade）要在这里
+    // 当场补一次；配额缓存过期则顺手拉新（回来后 refreshQuotaState 自己会再刷一遍）。
+    try {
+      updateModelDropdownIndicators();
+    } catch (e) {
+      /* ignore */
+    }
+    try {
+      refreshQuotaState(false);
+    } catch (e) {
+      /* ignore */
+    }
   
     const modelOptions = Array.from(
       modelDropdown?.querySelectorAll(".model-option") || [],

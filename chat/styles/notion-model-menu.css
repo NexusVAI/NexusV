@@ -13,11 +13,16 @@
    §4 输入框信号格。
    ─────────────────────────────────────────────────────────── */
 
-/* §1 设计 token */
+/* §1 设计 token
+   2026-10-21 修：原来只认 html[data-theme="dark|black"]，且 black 与 dark 共用一套
+   Notion 深灰 —— 纯黑主题下菜单是一块 #252525 灰板、PAID 徽章还是浅色版，看起来
+   「不跟主题」。现在三套各自对齐 claude.css 的页面 token（--c-bg-elev-2 / --c-line…），
+   深色判据改成「不是浅色」，PORT_SKIN（data-theme=claude + data-mode）也一并覆盖。 */
 .nmm,
 .nmm-signal {
     --c-texPri: #2c2c2b;
     --c-texSec: #7d7a75;
+    --c-texDis: #a5a29c;
     --c-icoPri: #383836;
     --c-icoSec: #8e8b86;
     --c-icoDis: #bcbab6;
@@ -27,21 +32,55 @@
     --c-graTexAccPri: #8e8b86;
     --c-popBac: #fff;
     --c-shaOutLg: 0px 20px 24px 0px #1919190d, 0px 5px 8px 0px #19191907, 0px 0px 0px 1px #2a1c0012;
+    /* 订阅闸门：PAID 蓝胶囊 + Upgrade 描边胶囊 */
+    --nmm-paid-bg: #e6f0fd;
+    --nmm-paid-fg: #2383e2;
+    --nmm-up-fg: #2383e2;
+    --nmm-up-border: #2383e259;
+    --nmm-up-hover-bg: #2383e214;
 }
-html[data-theme="dark"] .nmm,
-html[data-theme="black"] .nmm,
-html[data-theme="dark"] .nmm-signal,
-html[data-theme="black"] .nmm-signal {
+html:not([data-theme="light"]):not([data-mode="light"]) .nmm,
+html:not([data-theme="light"]):not([data-mode="light"]) .nmm-signal {
     --c-texPri: #f0efed;
     --c-texSec: #ada9a3;
+    --c-texDis: #6f6c67;
     --c-icoPri: #e6e5e3;
     --c-icoSec: #ada9a3;
     --c-icoDis: #5f5e59;
     --ca-bacIntTra: #ffffff0e;
     --ca-borSecTra: #fffff315;
     --ca-graBacSecTra: #ffffeb1a;
+    --c-graTexAccPri: #ada9a3;
     --c-popBac: #252525;
     --c-shaOutLg: 0px 0px 0px 1px #383836, 0px 14px 28px -6px #19191933, 0px 2px 4px -1px #1919191e;
+    --nmm-paid-bg: #2383e233;
+    --nmm-paid-fg: #6cb2f7;
+    --nmm-up-fg: #6cb2f7;
+    --nmm-up-border: #6cb2f766;
+    --nmm-up-hover-bg: #2383e226;
+}
+/* 纯黑：卡片取页面 --c-bg-elev-2（#111），描边用页面同款暖白 15% */
+html[data-theme="black"]:not([data-mode="light"]) .nmm,
+html[data-theme="black"]:not([data-mode="light"]) .nmm-signal {
+    --c-texPri: #faf9f5;
+    --c-texSec: #9b9890;
+    --c-texDis: #5e5c57;
+    --c-icoPri: #faf9f5;
+    --c-icoSec: #9b9890;
+    --c-icoDis: #4a4945;
+    --ca-bacIntTra: #ffffff12;
+    --ca-borSecTra: #e2dfd526;
+    --ca-graBacSecTra: #e2dfd51f;
+    --c-graTexAccPri: #9b9890;
+    --c-popBac: #111111;
+    --c-shaOutLg: 0px 0px 0px 1px #e2dfd526, 0px 14px 28px -6px #000000cc, 0px 2px 4px -1px #00000099;
+}
+html[data-theme="light"] .nmm,
+html[data-mode="light"] .nmm {
+    color-scheme: light;
+}
+html:not([data-theme="light"]):not([data-mode="light"]) .nmm {
+    color-scheme: dark;
 }
 
 /* §2 原子类（原样摘录） */
@@ -287,11 +326,76 @@ html[data-theme="black"] .nmm-signal {
     object-fit: contain;
     flex-shrink: 0;
 }
-/* 免费计划下的付费模型：沿用原 PAID + Upgrade 徽章（.model-access，main.js 注入） */
-#modelDropdown.nmm .model-option .model-access {
-    align-self: center;
-    margin-left: 0;
-    padding-inline-end: 8px;
+/* 名字过长时副名截断，保证右侧徽章 / 勾不被挤出 300px 卡片 */
+#modelDropdown.nmm .model-option .nmm-name {
+    flex-shrink: 0;
+}
+#modelDropdown.nmm .model-option .nmm-name-secondary {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── 免费计划下的付费模型（2026-10-21 补回「暗淡 + 蓝胶囊」）──────────
+   main.js updateModelDropdownIndicators 给不可用行挂 .disabled；订阅闸门再挂
+   .quota-blocked.is-upgrade-gated，并把 PAID + Upgrade（.model-access）塞进
+   行尾 .nmm-trailing。旧样式在 cancri_chat.css / claude.css 里按旧行结构写，
+   对 Notion 行不生效（opacity:1 !important 还把整行「暗淡」顶掉了），这里重写。
+   规则：图标 + 名字暗淡；徽章保持满色，Upgrade 可点。 */
+#modelDropdown.nmm .model-option.disabled,
+#modelDropdown.nmm .model-option.quota-blocked,
+#modelDropdown.nmm .model-option.quota-blocked.is-upgrade-gated {
+    opacity: 1 !important;
+    cursor: default !important;
+}
+#modelDropdown.nmm .model-option.disabled .nmm-icon,
+#modelDropdown.nmm .model-option.disabled .nmm-name,
+#modelDropdown.nmm .model-option.disabled .nmm-name-secondary,
+#modelDropdown.nmm .model-option.disabled .nmm-free-badge {
+    opacity: 0.45;
+}
+#modelDropdown.nmm .model-option.disabled:not(.is-upgrade-gated) {
+    cursor: not-allowed !important;
+}
+#modelDropdown.nmm .model-option.disabled:not(.is-upgrade-gated):hover {
+    background: transparent !important;
+}
+#modelDropdown.nmm .model-access {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    flex-shrink: 0;
+}
+#modelDropdown.nmm .model-access-badge {
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: var(--nmm-paid-bg) !important;
+    color: var(--nmm-paid-fg) !important;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: 0.02em;
+}
+#modelDropdown.nmm .model-upgrade-link {
+    padding: 1px 8px;
+    border: 1px solid var(--nmm-up-border) !important;
+    border-radius: 999px;
+    background: transparent !important;
+    color: var(--nmm-up-fg) !important;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-decoration: none;
+    cursor: pointer;
+    pointer-events: auto;
+}
+#modelDropdown.nmm .model-upgrade-link:hover,
+#modelDropdown.nmm .model-upgrade-link:focus-visible {
+    border-color: var(--nmm-up-fg) !important;
+    background: var(--nmm-up-hover-bg) !important;
 }
 #modelDropdown.nmm .nmm-empty {
     padding-block: 6px;

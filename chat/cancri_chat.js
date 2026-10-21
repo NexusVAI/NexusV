@@ -7790,6 +7790,12 @@
 		"claude-opus-4-6-thinking",
 		"deepseek-v4-flash"
 	];
+	var MODEL_MENU_CURRENT_IDS = [
+		"gpt-6-sol",
+		"gpt-6-sol-plus",
+		"gpt-6-sol-xhigh"
+	];
+	var MODEL_MENU_OLDER_IDS = [];
 	var LINE_QUALIFIER_WORDS = new Set([
 		"thinking",
 		"high",
@@ -7800,11 +7806,25 @@
 		"latest",
 		"instruct",
 		"it",
-		"chat"
+		"chat",
+		"pro5x"
+	]);
+	var SUBLINE_WORDS = new Set([
+		"lite",
+		"mini",
+		"nano",
+		"micro",
+		"air"
 	]);
 	var VERSION_TOKEN_RE = /^[a-z]?(\d+(?:\.\d+)*)$/i;
 	function splitNameTokens(name) {
 		return String(name || "").split(/[\s\-_()（）/]+/).map((t) => t.trim()).filter(Boolean);
+	}
+	function parseVersionToken(tok) {
+		const vm = VERSION_TOKEN_RE.exec(tok);
+		if (!vm) return null;
+		if (/^\d+$/.test(tok) && tok.length >= 4) return null;
+		return vm[1].split(".").map(Number);
 	}
 	function parseModelLine(displayName) {
 		const tokens = splitNameTokens(displayName);
@@ -7817,14 +7837,23 @@
 		const family = (head ? head[1] : tokens[0].replace(/[^a-z]/gi, "")).toLowerCase();
 		let version = head ? head[2].split(".").map(Number) : null;
 		let line = "";
+		let lineDone = false;
 		for (let i = 1; i < tokens.length; i += 1) {
 			const tok = tokens[i];
-			const vm = VERSION_TOKEN_RE.exec(tok);
-			if (vm) {
-				if (!version) version = vm[1].split(".").map(Number);
+			const v = parseVersionToken(tok);
+			if (v) {
+				if (!version) version = v;
+				if (line) lineDone = true;
 				continue;
 			}
-			if (!line && /^[a-z]+$/i.test(tok) && !LINE_QUALIFIER_WORDS.has(tok.toLowerCase())) line = tok.toLowerCase();
+			if (!/^[a-z]+$/i.test(tok)) continue;
+			const word = tok.toLowerCase();
+			if (LINE_QUALIFIER_WORDS.has(word)) continue;
+			if (!line) line = word;
+			else if (!lineDone && SUBLINE_WORDS.has(word) && !line.includes(" ")) {
+				line = `${line} ${word}`;
+				lineDone = true;
+			} else lineDone = true;
 		}
 		return {
 			family,
@@ -7840,13 +7869,23 @@
 		}
 		return 0;
 	}
-	function classifyModelMenuLayers(models, recommendedIds = MODEL_MENU_RECOMMENDED_IDS) {
+	function isOlderThan(version, latest) {
+		if (!version || !latest) return false;
+		const major = version[0] || 0;
+		const latestMajor = latest[0] || 0;
+		if (major !== latestMajor) return major < latestMajor;
+		return (latest[1] || 0) - (version[1] || 0) >= 2;
+	}
+	function classifyModelMenuLayers(models, recommendedIds = MODEL_MENU_RECOMMENDED_IDS, { currentIds = MODEL_MENU_CURRENT_IDS, olderIds = MODEL_MENU_OLDER_IDS } = {}) {
 		const list = Array.isArray(models) ? models : [];
 		const byId = new Map(list.map((m) => [m.id, m]));
 		const recommended = recommendedIds.map((id) => byId.get(id)).filter(Boolean);
 		const recommendedSet = new Set(recommended.map((m) => m.id));
+		const pinnedCurrent = new Set(currentIds);
+		const pinnedOlder = new Set(olderIds);
 		const parsed = /* @__PURE__ */ new Map();
 		const latestByLine = /* @__PURE__ */ new Map();
+		const latestMajorByFamily = /* @__PURE__ */ new Map();
 		for (const m of list) {
 			const info = parseModelLine(m.displayName || m.id);
 			parsed.set(m.id, info);
@@ -7854,14 +7893,24 @@
 			const key = `${info.family}\u0000${info.line}`;
 			const prev = latestByLine.get(key);
 			if (!prev || compareVersions(info.version, prev) > 0) latestByLine.set(key, info.version);
+			const major = info.version[0] || 0;
+			if (major > (latestMajorByFamily.get(info.family) || 0)) latestMajorByFamily.set(info.family, major);
 		}
+		const isOlder = (m) => {
+			if (pinnedCurrent.has(m.id)) return false;
+			if (pinnedOlder.has(m.id)) return true;
+			const info = parsed.get(m.id);
+			if (!info || !info.version) return false;
+			const latest = latestByLine.get(`${info.family}\u0000${info.line}`);
+			if (isOlderThan(info.version, latest)) return true;
+			if (!info.line) return (info.version[0] || 0) < (latestMajorByFamily.get(info.family) || 0);
+			return false;
+		};
 		const other = [];
 		const older = [];
 		for (const m of list) {
 			if (recommendedSet.has(m.id)) continue;
-			const info = parsed.get(m.id);
-			const latest = info && info.version ? latestByLine.get(`${info.family}\u0000${info.line}`) : null;
-			if (latest && compareVersions(info.version, latest) < 0) older.push(m);
+			if (isOlder(m)) older.push(m);
 			else other.push(m);
 		}
 		return {
@@ -9796,6 +9845,46 @@
 		} catch (e) {}
 	}
 	seedQuotaStateFromTierCache();
+	var QUOTA_GATE_CACHE_KEY = "cancri_quota_gate_cache_v1";
+	var QUOTA_GATE_CACHE_TTL_MS = 10080 * 60 * 1e3;
+	function getQuotaGateCacheUserId() {
+		try {
+			const part = getCancriAccessTokenForQuota().split(".")[1];
+			if (!part) return "";
+			const json = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
+			return json && json.sub ? String(json.sub) : "";
+		} catch (e) {
+			return "";
+		}
+	}
+	function seedQuotaStateFromGateCache() {
+		try {
+			const uid = getQuotaGateCacheUserId();
+			if (!uid) return;
+			const parsed = JSON.parse(localStorage.getItem(QUOTA_GATE_CACHE_KEY) || "null");
+			if (!parsed || parsed.uid !== uid || typeof parsed.cachedAt !== "number") return;
+			if (Date.now() - parsed.cachedAt > QUOTA_GATE_CACHE_TTL_MS) return;
+			if (parsed.billingMode === "plan_v4" || parsed.billingMode === "wallet_v3" || parsed.billingMode === "quota_v2") quotaState.billingMode = parsed.billingMode;
+			if (parsed.planV4Active === true || parsed.planV4Active === false) quotaState.planV4Active = parsed.planV4Active;
+			if (quotaState.tier === null && (parsed.tier === "free" || parsed.tier === "paid")) quotaState.tier = parsed.tier;
+			if (quotaState.planCode === null && isAnyPaidPlanCode(parsed.planCode)) quotaState.planCode = parsed.planCode;
+		} catch (e) {}
+	}
+	seedQuotaStateFromGateCache();
+	function persistQuotaGateCache() {
+		try {
+			const uid = getQuotaGateCacheUserId();
+			if (!uid) return;
+			localStorage.setItem(QUOTA_GATE_CACHE_KEY, JSON.stringify({
+				uid,
+				cachedAt: Date.now(),
+				billingMode: quotaState.billingMode,
+				planV4Active: quotaState.planV4Active,
+				tier: quotaState.tier,
+				planCode: quotaState.planCode
+			}));
+		} catch (e) {}
+	}
 	function isPaidGateModel(modelId) {
 		if (PAID_GATE_IDS.has(modelId)) return true;
 		const meta = getModelMeta(modelId);
@@ -9956,6 +10045,7 @@
 					quotaState.walletTier = null;
 				}
 				quotaState.fetchedAt = Date.now();
+				persistQuotaGateCache();
 				if (clearTopupBackedQuotaLocks()) persistModelTelemetryCache();
 			}
 			quotaStateFetchInflight = null;
@@ -10138,7 +10228,7 @@
 	}
 	var MODEL_UPGRADE_HREF = "./pricing.html";
 	function syncModelAccessBadge(opt, modelId) {
-		const existing = opt.querySelector(":scope > .model-access");
+		const existing = opt.querySelector(":scope > .model-access, :scope .nmm-trailing > .model-access");
 		const message = opt.classList.contains("quota-blocked") ? getQuotaBlockMessage(modelId) : "";
 		if (!(Boolean(message) && /订阅|PAID|Pro/.test(message))) {
 			opt.classList.remove("is-upgrade-gated");
@@ -10159,7 +10249,9 @@
 		link.title = "前往定价页升级";
 		link.textContent = "Upgrade";
 		wrap.append(badge, link);
-		opt.appendChild(wrap);
+		const trailing = opt.querySelector(".nmm-trailing");
+		if (trailing) trailing.insertBefore(wrap, trailing.querySelector(".nmm-check"));
+		else opt.appendChild(wrap);
 	}
 	function usesSharedQuota(modelId = currentModel) {
 		return !INDEPENDENT_QUOTA_MODEL_IDS.has(modelId);
@@ -21470,6 +21562,12 @@
 		} catch (e) {}
 		applyModelDropdownFilters();
 		initModelPagination();
+		try {
+			updateModelDropdownIndicators();
+		} catch (e) {}
+		try {
+			refreshQuotaState(false);
+		} catch (e) {}
 		const modelOptions = Array.from(modelDropdown?.querySelectorAll(".model-option") || []);
 		const activeModelForTarget = modelSelectTarget === "compare" ? compareModel : currentModel;
 		const activeIndex = modelOptions.findIndex((opt) => opt.dataset.model === activeModelForTarget);
