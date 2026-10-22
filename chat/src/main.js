@@ -12754,6 +12754,7 @@ function lastUserMessageText(messages) {
     pinnedTurnObserver = null;
     if (pinnedTurnEl && pinnedTurnEl.style) {
       pinnedTurnEl.style.minHeight = "";
+      pinnedTurnEl.style.flexShrink = "";
     }
     pinnedTurnEl = null;
   }
@@ -12784,6 +12785,10 @@ function lastUserMessageText(messages) {
     clearPinnedTurnReserve();
     resetChatAutoScrollLock();
     pinnedTurnEl = assistantEl;
+    // #chatMessages 是纵向 flex 容器：显式 min-height 会顶掉 flex 子项默认的
+    // min-height:auto，flex-shrink:1 于是把本轮压回 min-height，超出一屏的正文
+    // 溢出到盒子外、不计入滚动高度，末尾落在输入框底下滚不到（2026-10-22 实测）。
+    assistantEl.style.flexShrink = "0";
     const isCurrent = () => pinnedTurnEl === assistantEl &&
       chatMessages.contains(assistantEl) && homeView.classList.contains("chatting");
     const refreshReserve = () => {

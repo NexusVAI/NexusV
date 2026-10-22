@@ -17243,7 +17243,10 @@
 	function clearPinnedTurnReserve() {
 		pinnedTurnObserver?.disconnect();
 		pinnedTurnObserver = null;
-		if (pinnedTurnEl && pinnedTurnEl.style) pinnedTurnEl.style.minHeight = "";
+		if (pinnedTurnEl && pinnedTurnEl.style) {
+			pinnedTurnEl.style.minHeight = "";
+			pinnedTurnEl.style.flexShrink = "";
+		}
 		pinnedTurnEl = null;
 	}
 	function measureTurnReserve(assistantEl) {
@@ -17263,6 +17266,7 @@
 		clearPinnedTurnReserve();
 		resetChatAutoScrollLock();
 		pinnedTurnEl = assistantEl;
+		assistantEl.style.flexShrink = "0";
 		const isCurrent = () => pinnedTurnEl === assistantEl && chatMessages.contains(assistantEl) && homeView.classList.contains("chatting");
 		const refreshReserve = () => {
 			assistantEl.style.minHeight = `${Math.round(measureTurnReserve(assistantEl))}px`;
