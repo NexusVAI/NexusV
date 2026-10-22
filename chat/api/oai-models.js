@@ -43,10 +43,13 @@
     // 所以这里只钉代表 id —— 再钉 Pro 那条会被 seenTop 去重，属多余。
     "gpt-6-astra",
     "gpt-6-sol",
-    // 2026-09-28: 移除 MiMo V2.6 Pro / glm-5.3 —— 两条随 api.tokenrouter.com 上游整体退役
-    // （实测近 4 天 0 成功、全 5xx，DB visible/enabled=false）。站内 GLM-5.3 曾由
-    // glm-5.3-fp8-free 承接，该线 2026-10-01 也已下架。⛔ 别把免费线钉进本名单（会从免费区「掉」到旗舰区）。
-    "gpt-5.6-sol",
+    // 2026-09-28: 移除 MiMo V2.6 Pro / glm-5.3 —— 两条随 api.tokenrouter.com 上游整体退役。
+    // ⛔ 别把免费线钉进本名单（会从免费区「掉」到旗舰区）。
+    // 2026-10-22: 按运营方要求移出 gpt-5.6-sol 与 minimax-m3（只撤出旗舰区，模型本身照常在售），
+    // 补入 glm-5.3（当日改挂 mzeapi 复活）/ deepseek-v4.1-flash / claude-opus-4-6-thinking。
+    "glm-5.3",
+    "deepseek-v4.1-flash",
+    "claude-opus-4-6-thinking",
     "claude-opus-5",
     "claude-opus-5-5",
     // 2026-10-08: 按运营方要求，Kiro 分组在旗舰区单独成卡（见 FEATURED_STANDALONE）。
@@ -57,7 +60,6 @@
     // 2026-09-02: Claude Fable 5.1 上架，钉进旗舰区。它**不分组**（group_id 为空），
     // 所以这里钉的就是它自己的卡 id，不会被折叠到 claude-fable-5 那张卡上。
     "claude-fable-5-1",
-    "minimax-m3",
     "deepseek-v4-pro",
     // 2026-09-02: gemini-3.7-flash 换成 gemini-3.8-flash-high（prorisehub 新线，
     // 上游实测 1.98s vs 3.7 的 6.2s）。3.7 只是撤出旗舰区，**没有下架**，
@@ -90,10 +92,16 @@
     "kimi-k3",
     // 2026-09-28: glm-5.3 随 tokenrouter 上游退役，从本名单移除（免费线的 glm-5.3-fp8-free 不补位）。
     "composer-2.5-fast",
-    "doubao-seed-2-0-lite-260428",
-    "doubao-seed-2-0-mini-260215",
-    "MiniMax-M2.7",
+    // 2026-10-22: 按运营方要求移出 doubao-seed-2-0-lite / -mini 与 MiniMax-M2.7，
+    // 补入当日上架的 mzeapi 线 + gemini-3.8-flash-high（名单超 12 张时 HTML 的 data-cancri-limit 要跟着调）。
     "deepseek-v4.1-flash",
+    "minimax-m3.1-flash",
+    "glm-5.3-flash",
+    "glm-5.3-flashx",
+    "qwen3.8-flash",
+    "gemini-3.8-flash-high",
+    "mimo-v2.6-flash",
+    "mimo-v2.6-pro",
   ];
 
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
@@ -181,40 +189,9 @@
   // card art pool: assets/oai.logo/1-6.png, assigned randomly per render
   // with a "no repeat among the last 3 picks" rule so nearby cards differ.
   var ART_POOL = ["1.png", "2.png", "3.png", "4.png", "5.png", "6.png"];
-  // GPT-5.6 cards use the three images extracted from the reference page.
-  var ART_OVERRIDE = {
-    "gpt-5.6-sol": "gpt56-sol.jpg",
-    "c:gpt-5.6-sol": "gpt56-sol.jpg",
-    "gpt-5.6-sol-xhigh": "gpt56-sol.jpg",
-    "gpt-5.6-terra": "gpt56-terra.jpg",
-    "gpt-5.6-terra-xhigh": "gpt56-terra.jpg",
-    "gpt-5.6-luna": "gpt56-luna.jpg",
-    "c:gpt-5.6-luna": "gpt56-luna.jpg",
-    "gpt-5.6-luna-xhigh": "gpt56-luna.jpg",
-    // 2026-07-16: Claude Fable 5 专用卡面（Logo/fable5.png → assets/oai.logo/fable5.png）
-    "claude-fable-5": "fable5.png",
-    // 2026-09-02: Claude Fable 5.1 专用卡面（Logo/fable5-1.png → assets/oai.logo/fable5-1.png）
-    "claude-fable-5-1": "fable5-1.png",
-    "claude-opus-5": "opus5.png",
-    "claude-opus-5-5": "/Logo/Opus5.5.png",
-    // 2026-09-30: Kiro 分组与 Max 分组折叠成一张卡（代表是 claude-opus-5-5）；
-    // 也登记一份，免得日后换代表后卡面掉回随机图。
-    "claude-opus-5-5-kiro": "/Logo/Opus5.5.png",
-    // 2026-08-18 晚：站内 id 从 c:claude-opus-5 改名（免费期结束）。卡面沿用同一张图。
-    "claude-opus-5-thinking": "opus5.png",
-    // 2026-07-17: Kimi K3 专用卡面（Logo/kimik3.jpg → assets/oai.logo/kimik3.jpg）
-    "kimi-k3": "kimik3.jpg",
-    "kimi-k3-high": "kimik3.jpg",
-    // 2026-09-05: GPT-6 Astra 专用卡面（Logo/Astragpt-6.png → assets/oai.logo/gpt6-astra.png）。
-    // 2026-09-21 起是**三**条线折叠成一张卡，代表是 gpt-6-astra；
-    // 其余两条也各登记一份，免得日后换代表后卡面掉回随机图。
-    "gpt-6-astra": "gpt6-astra.png",
-    "gpt-6-astra-pro": "gpt6-astra.png",
-    "gpt-6-astra-pro5x": "gpt6-astra.png",
-    // 2026-09-22: MiMo V2.6 两张卡共用 Logo/mimo.png → assets/oai.logo/mimo.png。
-    "mimo-v2.6-flash": "mimo.png",
-    "mimo-v2.6-pro": "mimo.png",
-  };
+  // 2026-10-22: 按运营方要求，所有卡面统一用磨砂金属旋转封面（grok-fluid-covers.js 按 id 播种），
+  // 原 ART_OVERRIDE 专用素材图（gpt56 / fable5 / opus5 / kimik3 / gpt6-astra / mimo …）一并停用。
+  // ⛔ 别再给卡加 data-cover="fixed"：带它的卡会被 grok-fluid-covers.js 跳过、退回静态图。
 
   var HIDE_IDS = {
     "z-image-turbo": 1, "grok-imagine-image-lite": 1, "gpt-image-2-all": 1,
@@ -245,18 +222,11 @@
   function artBase() {
     return document.body.getAttribute("data-cancri-artbase") || "./assets/oai.logo/";
   }
-  function artOverrideUrl(id) {
-    var override = ART_OVERRIDE[id];
-    if (!override) return "";
-    return override.charAt(0) === "/" ? override : artBase() + override;
-  }
   // per-section picker: random, but never repeats any of the last 3 picks
   // (covers the card on the left and the ones directly above in 2/3-col grids).
   function makeArtPicker() {
     var recent = [];
-    return function (id) {
-      var fixed = artOverrideUrl(id);
-      if (fixed) return fixed;
+    return function () {
       var pool = ART_POOL.filter(function (a) { return recent.indexOf(a) === -1; });
       var pick = pool[Math.floor(Math.random() * pool.length)];
       recent.push(pick);
@@ -587,7 +557,6 @@
     var id = m.id || m.canonicalId || "";
     var name = m.displayName || id;
     var desc = cardDescription(m);
-    var fixedArt = artOverrideUrl(id);
     var featured = isFeaturedId(id);
     var badge = (featured && opts.flagshipBadge)
       ? ' <div class="_Badge_10t5o_1" data-color="success" data-size="md" data-pill data-variant="soft">旗舰</div>'
@@ -604,8 +573,7 @@
       '<div class="flex flex-col text-emphasis"' + idAttr + ' data-model-id="' + escAttr(id) + '"' + groupIdsAttr + ' role="link" tabindex="0" style="cursor:pointer">' +
         '<div class="w-full" style="height:230px">' +
           '<div class="cancri-thumb flex h-full w-full flex-1 flex-row items-center justify-center gap-4 rounded-lg"' +
-               (fixedArt ? ' data-cover="fixed"' : '') +
-               ' style="background-image:url(\'' + escAttr(opts.art || fixedArt || artBase() + ART_POOL[0]) + '\')">' +
+               ' style="background-image:url(\'' + escAttr(opts.art || artBase() + ART_POOL[0]) + '\')">' +
             '<span class="cancri-thumb__name">' + esc(name) + "</span>" +
           "</div>" +
         "</div>" +
@@ -648,7 +616,6 @@
       '<a href="#model-' + escAttr(id) + '" class="flex h-full flex-col gap-4 text-emphasis hover:text-emphasis">' +
         '<div class="group flex h-full w-full cursor-pointer flex-row items-center gap-4 rounded-lg p-2 hover:bg-primary-soft">' +
           '<div class="cancri-thumb-sm flex shrink-0 overflow-hidden rounded-lg"' +
-               (ART_OVERRIDE[id] ? ' data-cover="fixed"' : '') +
                ' style="background-image:url(\'' + escAttr(art) + '\')"></div>' +
           '<div class="flex flex-col min-w-0">' +
             '<div class="flex items-center gap-2">' +
@@ -985,6 +952,16 @@
         var mid = String(m.id || m.canonicalId || "").toLowerCase();
         return !FREE_BLOCKLIST[mid];
       });
+      // 2026-10-22: 免费区收全站**所有**免费模型 —— FREE_ORDER 只决定排在前面的顺序，
+      // 其余 cost_tier=free 的线按目录顺序补在后面（新上的免费线不用再手动登记）。
+      var freeSeen = {};
+      freeList.forEach(function (m) { freeSeen[MG.modelId(m).toLowerCase()] = true; });
+      rawModels.forEach(function (m) {
+        var mid = MG.modelId(m).toLowerCase();
+        if (!mid || freeSeen[mid] || FREE_BLOCKLIST[mid] || !isFreeTierModel(m)) return;
+        freeSeen[mid] = true;
+        freeList.push(m);
+      });
       var freeAnchor = !document.getElementById("cancri-grid");
       var pickFree = makeArtPicker();
       free.innerHTML = freeList.length
@@ -996,9 +973,22 @@
 
     var grid = document.getElementById("cancri-grid");
     if (grid) {
+      // 2026-10-22: 完整目录按厂商分节（运营方要求「按各自厂商挨个分类」），节内保持目录顺序。
       var pickGrid = makeArtPicker();
-      grid.innerHTML = models.map(function (m) {
-        return cardHtml(m, { flagshipBadge: true, anchor: true, art: pickGrid(m.id || m.canonicalId || "") });
+      grid.innerHTML = groupByVendor(models).map(function (sec) {
+        return (
+          '<section class="cancri-vendor flex flex-col gap-7 scroll-mt-24" data-vendor="' + escAttr(sec.brand) + '">' +
+            '<div class="flex items-center gap-2">' +
+              '<h3 class="font-semibold text-emphasis" style="font-size:1.375rem;line-height:1.3">' + esc(brandLabel(sec.brand)) + "</h3>" +
+              '<span class="text-sm text-secondary">' + sec.list.length + " 个模型</span>" +
+            "</div>" +
+            '<div class="cancri-grid">' +
+              sec.list.map(function (m) {
+                return cardHtml(m, { flagshipBadge: true, anchor: true, art: pickGrid(m.id || m.canonicalId || "") });
+              }).join("") +
+            "</div>" +
+          "</section>"
+        );
       }).join("");
     }
 
@@ -1042,6 +1032,30 @@
 
   function brandOf(m) { return (m && m.brand) || "其他"; }
   function brandLabel(b) { return BRAND_LABELS[b] || b; }
+
+  // 完整目录的厂商顺序：名单内按名单，名单外按名字，「其他」垫底。
+  var VENDOR_ORDER = [
+    "OpenAI", "Anthropic", "Google", "xAI", "DeepSeek", "Zhipu", "Qwen",
+    "Moonshot", "MiniMax", "小米 MiMo", "Doubao",
+  ];
+  function groupByVendor(list) {
+    var byBrand = {};
+    var brands = [];
+    list.forEach(function (m) {
+      var b = brandOf(m);
+      if (!byBrand[b]) { byBrand[b] = []; brands.push(b); }
+      byBrand[b].push(m);
+    });
+    function rank(b) {
+      if (b === "其他") return 1e9;
+      var i = VENDOR_ORDER.indexOf(b);
+      return i === -1 ? VENDOR_ORDER.length : i;
+    }
+    brands.sort(function (a, b) {
+      return rank(a) - rank(b) || (a < b ? -1 : a > b ? 1 : 0);
+    });
+    return brands.map(function (b) { return { brand: b, list: byBrand[b] }; });
+  }
   function isWideLayout() { return window.matchMedia("(min-width: 1024px)").matches; }
 
   function setFilterOpen(open) {
@@ -1444,7 +1458,7 @@
     var free = document.getElementById("cancri-free");
     if (free) {
       free.setAttribute("aria-busy", "true");
-      free.innerHTML = skelFeatureGrid(FREE_ORDER.length);
+      free.innerHTML = skelFeatureGrid(6);
     }
     var specialized = document.getElementById("cancri-specialized");
     if (specialized) {
