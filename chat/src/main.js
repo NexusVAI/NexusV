@@ -6407,22 +6407,28 @@ function lastUserMessageText(messages) {
       // 纯改名：只发 title —— 不再 GET 全量消息再回写（那会把没拉过正文的行
       // 用空 messages 覆盖掉，也平白多一次跨洋往返）。也不带 expected_updated_at：
       // 标题改与不改都不丢任何人的正文。
-      const response = await proxyFetch(EDGE_FUNCTION_URL, {
-        method: "POST",
-        headers: await proxyHeaders(),
-        body: JSON.stringify({
-          endpoint: "chat_history",
-          action: "update",
-          id: resolveChatRowId(chatId),
-          title: newTitle,
-        }),
+      // 与内容写入同一条写链：并发时响应乱序到达会把较旧的版本号记成「最新」，
+      // 下一次带 expected_updated_at 的保存就会伪冲突。
+      const rowKey = resolveChatRowId(chatId);
+      const run = (chatRowWriteChains.get(rowKey) || Promise.resolve()).then(async () => {
+        const response = await proxyFetch(EDGE_FUNCTION_URL, {
+          method: "POST",
+          headers: await proxyHeaders(),
+          body: JSON.stringify({
+            endpoint: "chat_history",
+            action: "update",
+            id: resolveChatRowId(chatId),
+            title: newTitle,
+          }),
+        });
+        if (!response.ok) throw new Error("重命名失败");
+        const { data } = await response.json().catch(() => ({}));
+        if (data) noteChatRowVersion({ ...data, id: data.id || resolveChatRowId(chatId) });
+        return data;
       });
-      if (!response.ok) throw new Error("重命名失败");
-      const { data } = await response.json().catch(() => ({}));
-      if (data) {
-        noteChatRowVersion({ ...data, id: data.id || resolveChatRowId(chatId) });
-        upsertCachedChatSummary(data);
-      }
+      chatRowWriteChains.set(rowKey, run.catch(() => {}));
+      const data = await run;
+      if (data) upsertCachedChatSummary(data);
       const resolvedId = resolveChatRowId(chatId);
       if (currentChatId === chatId || currentChatId === resolvedId) {
         dispatchChatTitleUpdated(newTitle, resolvedId);
@@ -6926,6 +6932,11 @@ function lastUserMessageText(messages) {
                 text: event.text || "",
                 thinking: false,
               });
+              // 留住句柄：整页重绘后若这条仍在流式，adoptLiveGenerationNode 要把它
+              // 接成「当前思考块」续写，而不是再新开一块把整段思考重放一遍。
+              block.segmentText = event.text || "";
+              block._timelineEvent = event;
+              parts.lastReasoningBlock = block;
               block.thinkBlock.classList.remove("is-collapsed");
               if (block.thinkHeader) {
                 block.thinkHeader.setAttribute("aria-expanded", "true");
@@ -6944,6 +6955,7 @@ function lastUserMessageText(messages) {
           typeof message.reasoning === "string" && !timeline.length
             ? message.reasoning
             : "";
+        if (parts) parts.restoredReasoningText = typeof message.reasoning === "string" ? message.reasoning : "";
         updateAssistantMessage(id, {
           answer: content,
           reasoning: restoredReasoning,
@@ -7804,7 +7816,7 @@ function lastUserMessageText(messages) {
     );
   }
 
-  async function loadChatHistoryList() {
+  async function loadChatHistoryList({ quiet = false } = {}) {
     const epoch = authSessionEpoch;
     try {
       const response = await proxyFetch(EDGE_FUNCTION_URL, {
@@ -7830,7 +7842,7 @@ function lastUserMessageText(messages) {
         error instanceof Error ? error.message : "加载聊天记录列表失败";
       // 登录浮层已经在屏幕上时不再叠一条 toast：那是同一件事的第二次通知，
       // 也是「退出浏览器再进来就报错」里用户唯一看到的那条噪音。
-      if (msg && msg !== "请先登录后再使用。" && !isAuthOverlayVisible()) {
+      if (!quiet && msg && msg !== "请先登录后再使用。" && !isAuthOverlayVisible()) {
         showToast(msg);
       }
       const cached = readCachedChatHistoryList();
@@ -14640,6 +14652,7 @@ function lastUserMessageText(messages) {
           timelineContainer.appendChild(block.thinkBlock);
           timeline.push(event);
           parts.currentReasoningBlock = block;
+          parts.lastReasoningBlock = block;
         }
       } else if (rawDelta) {
         const block = parts.currentReasoningBlock;
@@ -16571,6 +16584,29 @@ function lastUserMessageText(messages) {
     }
   }
 
+  // 2026-10-22「一条回答两个思考块」：重绘出来的节点 committedReasoningLength=0、
+  // 没有当前思考块，下一个 chunk 会把**整段**累计思考当成增量另开一块 —— 快照那块
+  // 停在半截，新块从头重放。这里按快照里已渲染的思考长度对齐写入位置，并把末尾
+  // 那块思考接成当前块，后续 chunk 只追加真正的新增部分。
+  function resumeLiveReasoningState(parts) {
+    if (!parts) return;
+    const timeline = Array.isArray(parts.timeline) ? parts.timeline : [];
+    const hasReasoningEvent = timeline.some((e) => e && e.type === "reasoning");
+    if (!hasReasoningEvent) return;
+    const gen = getVisibleLiveGeneration();
+    const full = String(gen?.partialReasoning || "");
+    const snap = String(parts.restoredReasoningText || "");
+    let committed = parts.committedReasoningLength || 0;
+    if (snap && full.startsWith(snap)) committed = snap.length;
+    else if (snap.trim() && full.indexOf(snap.trim()) >= 0) committed = full.indexOf(snap.trim()) + snap.trim().length;
+    else committed = Math.max(committed, full.length);
+    parts.committedReasoningLength = committed;
+    const last = timeline[timeline.length - 1];
+    const block = parts.lastReasoningBlock;
+    parts.currentReasoningBlock =
+      last && last.type === "reasoning" && block && block._timelineEvent === last ? block : null;
+  }
+
   function adoptLiveGenerationNode(tailAssistantId) {
     if (!tailAssistantId) return;
     const gen = getVisibleLiveGeneration();
@@ -16581,6 +16617,7 @@ function lastUserMessageText(messages) {
     const node = document.getElementById(tailAssistantId);
     if (!node) return;
     node.id = gen.assistantMessageId;
+    resumeLiveReasoningState(node._parts);
     // 重新挂上「生成中」的脉冲，别让一条还在写的回答看起来已经写完了。
     if (PORT_SKIN) portSetStreaming(node, true);
     else node.classList.add("is-generating");
@@ -16665,6 +16702,11 @@ function lastUserMessageText(messages) {
     );
     if (!fork?.id) throw new Error("更新聊天记录失败");
     chatRowRedirects.set(chatId, fork.id);
+    // 进行中的生成一并改认副本：否则 gen.chatId 还是旧 id ⇒ isGenVisible 判成「不可见」，
+    // 侧栏转圈挂在旧行上，用户点旧行又被当成「回到后台生成」重绘一遍。
+    for (const g of activeGenerations.values()) {
+      if (g.chatId === chatId) g.chatId = fork.id;
+    }
     if (currentChatId === chatId) {
       currentChatId = fork.id;
       persistSessionNav();
@@ -16675,7 +16717,33 @@ function lastUserMessageText(messages) {
     return fork;
   }
 
-  async function doUpdateChatHistoryRow(chatId, messages, title) {
+  // 409 之后判定「云端那一版是不是本端这一版的子集」：逐条同角色，且本端正文 /
+  // 思考都以云端为前缀（流式中途的快照只会变长），图片数不少于云端。成立 ⇒ 覆盖
+  // 不丢任何人的内容（典型：本端自己更早的一次写入、版本号没对上），换新版本重写
+  // 即可；不成立才是真冲突，走分叉。
+  function countImageParts(content) {
+    if (!Array.isArray(content)) return 0;
+    return content.filter((p) => p && typeof p === "object" && /image/.test(String(p.type || ""))).length;
+  }
+  function chatMessagesSubsumedBy(remote, local) {
+    if (!Array.isArray(remote) || !remote.length) return true;
+    if (!Array.isArray(local) || remote.length > local.length) return false;
+    for (let i = 0; i < remote.length; i++) {
+      const r = remote[i] || {};
+      const l = local[i] || {};
+      if (String(r.role || "") !== String(l.role || "")) return false;
+      const rText = extractMessageText(r.content).trim();
+      const lText = extractMessageText(l.content).trim();
+      if (!lText.startsWith(rText)) return false;
+      const rReason = String(r.reasoning || "").trim();
+      const lReason = String(l.reasoning || "").trim();
+      if (!lReason.startsWith(rReason)) return false;
+      if (countImageParts(r.content) > countImageParts(l.content)) return false;
+    }
+    return true;
+  }
+
+  async function doUpdateChatHistoryRow(chatId, messages, title, conflictRetried = false) {
     const epoch = authSessionEpoch;
     const id = resolveChatRowId(chatId);
     const body = { endpoint: "chat_history", action: "update", id, messages };
@@ -16693,6 +16761,15 @@ function lastUserMessageText(messages) {
     if (response.status === 409) {
       const payload = await response.json().catch(() => null);
       if (payload?.code === "conflict") {
+        if (!conflictRetried && Array.isArray(messages)) {
+          // loadChatHistory 会顺手记下云端当前版本，重写时 expected 就对上了。
+          let remote;
+          try { remote = await loadChatHistory(id); } catch (_e) { remote = null; }
+          if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
+          if (remote && chatMessagesSubsumedBy(remote.messages, messages)) {
+            return doUpdateChatHistoryRow(id, messages, title, true);
+          }
+        }
         return forkChatHistoryRow(id, messages, title, payload.data);
       }
     }
@@ -16858,7 +16935,17 @@ function lastUserMessageText(messages) {
         headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
         body,
         keepalive: true,
-      }).then((response) => response.ok).catch(() => false);
+      }).then(async (response) => {
+        if (!response.ok) return false;
+        // 2026-10-22：页面只是「进入后台」（切到桌面端 / 别的窗口）时文档还活着，
+        // 这次写入推进了行的 updated_at。以前不记版本 ⇒ 下一次增量保存拿旧
+        // expected_updated_at 撞 409 ⇒ 自己跟自己冲突、分叉出「（冲突副本）」重复会话。
+        try {
+          const { data } = await response.json();
+          noteChatRowVersion({ ...data, id: data?.id || id });
+        } catch (_e) {}
+        return true;
+      }).catch(() => false);
     } catch (_e) {
       return false;
     }
@@ -19843,6 +19930,91 @@ function lastUserMessageText(messages) {
     if (document.hidden) flushActiveGenerationsBestEffort();
   });
   window.addEventListener("pagehide", flushActiveGenerationsBestEffort);
+
+  // ── 2026-10-22 跨端近实时同步（桌面端 ⇄ 网页端）────────────────────────
+  // 以前网页端只靠 BroadcastChannel 感知「同浏览器的另一个标签」，桌面端写进来的
+  // 内容要整页刷新才看得到。现在：可见时每 30s、切回窗口时立即拉一次列表摘要；
+  // 正在看的对话被**别的端**改过（版本号与本端记下的不一致）就静默重载；之后
+  // 45s 内按 4s 跟拉，对面在续写时几乎同步出现。只读、只在可见时跑，不碰写路径。
+  const REMOTE_SYNC_POLL_MS = 30000;
+  const REMOTE_SYNC_HOT_POLL_MS = 4000;
+  const REMOTE_SYNC_HOT_WINDOW_MS = 45000;
+  const REMOTE_SYNC_FOCUS_MIN_GAP_MS = 4000;
+  let remoteSyncLastAt = 0;
+  let remoteSyncBusy = false;
+  let remoteSyncHotUntil = 0;
+  let remoteSyncHotTimer = null;
+
+  function chatSummarySignature(list) {
+    if (!Array.isArray(list)) return "";
+    return list.map((c) => `${c?.id}|${c?.title || ""}|${c?.updated_at || ""}`).join("\n");
+  }
+
+  function sameRowVersion(a, b) {
+    const ta = Date.parse(String(a || ""));
+    const tb = Date.parse(String(b || ""));
+    return Number.isFinite(ta) && Number.isFinite(tb) && ta === tb;
+  }
+
+  function userIsEditingInside(container) {
+    const el = document.activeElement;
+    if (!el || !container || !container.contains(el)) return false;
+    return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable;
+  }
+
+  async function syncRemoteChatChanges() {
+    if (remoteSyncBusy || document.hidden || !authUserId) return;
+    if (typeof hasSharedConversationHash === "function" && hasSharedConversationHash()) return;
+    remoteSyncBusy = true;
+    remoteSyncLastAt = Date.now();
+    try {
+      const before = chatSummarySignature(chatHistoryList);
+      const epoch = authSessionEpoch;
+      const chats = await loadChatHistoryList({ quiet: true });
+      if (epoch !== authSessionEpoch || !Array.isArray(chats)) return;
+      const listContainer = document.getElementById("chatHistoryList");
+      if (chatSummarySignature(chats) !== before && !userIsEditingInside(listContainer)) {
+        void renderChatHistoryList({ refresh: false });
+      }
+      const chatId = currentChatId;
+      if (!chatId || state.isStreaming || getGenerationByChatId(chatId)) return;
+      const summary = chats.find((c) => c && c.id === chatId);
+      const known = chatRowVersions.get(chatId);
+      if (!summary?.updated_at || !known || sameRowVersion(summary.updated_at, known)) return;
+      // 版本对不上 = 别的端写过这一行（本端自己的写入都会记版本）。
+      remoteSyncHotUntil = Date.now() + REMOTE_SYNC_HOT_WINDOW_MS;
+      if (userIsEditingInside(chatMessages)) return;
+      if (!isChatViewVisible()) return;
+      await loadChat(chatId, { silent: true, skipSkeleton: true });
+    } catch (_e) {
+      // 静默：下一轮再试
+    } finally {
+      remoteSyncBusy = false;
+      scheduleRemoteSyncHotPoll();
+    }
+  }
+
+  function scheduleRemoteSyncHotPoll() {
+    if (remoteSyncHotTimer) return;
+    if (Date.now() >= remoteSyncHotUntil || document.hidden) return;
+    remoteSyncHotTimer = setTimeout(() => {
+      remoteSyncHotTimer = null;
+      void syncRemoteChatChanges();
+    }, REMOTE_SYNC_HOT_POLL_MS);
+  }
+
+  function syncRemoteOnReturn() {
+    if (document.hidden) return;
+    if (Date.now() - remoteSyncLastAt < REMOTE_SYNC_FOCUS_MIN_GAP_MS) return;
+    void syncRemoteChatChanges();
+  }
+  window.addEventListener("focus", syncRemoteOnReturn);
+  document.addEventListener("visibilitychange", syncRemoteOnReturn);
+  setInterval(() => {
+    if (!document.hidden && Date.now() - remoteSyncLastAt >= REMOTE_SYNC_POLL_MS - 500) {
+      void syncRemoteChatChanges();
+    }
+  }, REMOTE_SYNC_POLL_MS);
   
   // 加载并渲染聊天记录列表
   if (!hasSharedConversationHash()) {

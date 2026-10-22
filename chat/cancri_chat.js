@@ -12573,25 +12573,29 @@
 	});
 	async function renameChatHistory(chatId, newTitle) {
 		try {
-			const response = await proxyFetch(EDGE_FUNCTION_URL, {
-				method: "POST",
-				headers: await proxyHeaders(),
-				body: JSON.stringify({
-					endpoint: "chat_history",
-					action: "update",
-					id: resolveChatRowId(chatId),
-					title: newTitle
-				})
-			});
-			if (!response.ok) throw new Error("重命名失败");
-			const { data } = await response.json().catch(() => ({}));
-			if (data) {
-				noteChatRowVersion({
+			const rowKey = resolveChatRowId(chatId);
+			const run = (chatRowWriteChains.get(rowKey) || Promise.resolve()).then(async () => {
+				const response = await proxyFetch(EDGE_FUNCTION_URL, {
+					method: "POST",
+					headers: await proxyHeaders(),
+					body: JSON.stringify({
+						endpoint: "chat_history",
+						action: "update",
+						id: resolveChatRowId(chatId),
+						title: newTitle
+					})
+				});
+				if (!response.ok) throw new Error("重命名失败");
+				const { data } = await response.json().catch(() => ({}));
+				if (data) noteChatRowVersion({
 					...data,
 					id: data.id || resolveChatRowId(chatId)
 				});
-				upsertCachedChatSummary(data);
-			}
+				return data;
+			});
+			chatRowWriteChains.set(rowKey, run.catch(() => {}));
+			const data = await run;
+			if (data) upsertCachedChatSummary(data);
 			const resolvedId = resolveChatRowId(chatId);
 			if (currentChatId === chatId || currentChatId === resolvedId) dispatchChatTitleUpdated(newTitle, resolvedId);
 			renderChatHistoryList();
@@ -12964,6 +12968,9 @@
 							text: event.text || "",
 							thinking: false
 						});
+						block.segmentText = event.text || "";
+						block._timelineEvent = event;
+						parts.lastReasoningBlock = block;
 						block.thinkBlock.classList.remove("is-collapsed");
 						if (block.thinkHeader) block.thinkHeader.setAttribute("aria-expanded", "true");
 						parts.timelineContainer.appendChild(block.thinkBlock);
@@ -12975,9 +12982,11 @@
 						parts.timeline.push(event);
 					}
 				});
+				const restoredReasoning = typeof message.reasoning === "string" && !timeline.length ? message.reasoning : "";
+				if (parts) parts.restoredReasoningText = typeof message.reasoning === "string" ? message.reasoning : "";
 				updateAssistantMessage(id, {
 					answer: content,
-					reasoning: typeof message.reasoning === "string" && !timeline.length ? message.reasoning : "",
+					reasoning: restoredReasoning,
 					thinking: false
 				});
 			}
@@ -13627,7 +13636,7 @@
 		if (code === "invalid_session") authSessionPromise = null;
 		return friendlyMessageFromBackend(parsed, response.status) || `请求失败 (${response.status})`;
 	}
-	async function loadChatHistoryList() {
+	async function loadChatHistoryList({ quiet = false } = {}) {
 		const epoch = authSessionEpoch;
 		try {
 			const response = await proxyFetch(EDGE_FUNCTION_URL, {
@@ -13651,7 +13660,7 @@
 			if (epoch !== authSessionEpoch) return [];
 			console.error("加载聊天记录列表失败:", error);
 			const msg = error instanceof Error ? error.message : "加载聊天记录列表失败";
-			if (msg && msg !== "请先登录后再使用。" && !isAuthOverlayVisible()) showToast(msg);
+			if (!quiet && msg && msg !== "请先登录后再使用。" && !isAuthOverlayVisible()) showToast(msg);
 			const cached = readCachedChatHistoryList();
 			if (cached.length) {
 				chatHistoryList = cached;
@@ -18409,6 +18418,7 @@
 					timelineContainer.appendChild(block.thinkBlock);
 					timeline.push(event);
 					parts.currentReasoningBlock = block;
+					parts.lastReasoningBlock = block;
 				}
 			} else if (rawDelta) {
 				const block = parts.currentReasoningBlock;
@@ -19633,6 +19643,22 @@
 			renderMessagesAdoptLiveGen = false;
 		}
 	}
+	function resumeLiveReasoningState(parts) {
+		if (!parts) return;
+		const timeline = Array.isArray(parts.timeline) ? parts.timeline : [];
+		if (!timeline.some((e) => e && e.type === "reasoning")) return;
+		const gen = getVisibleLiveGeneration();
+		const full = String(gen?.partialReasoning || "");
+		const snap = String(parts.restoredReasoningText || "");
+		let committed = parts.committedReasoningLength || 0;
+		if (snap && full.startsWith(snap)) committed = snap.length;
+		else if (snap.trim() && full.indexOf(snap.trim()) >= 0) committed = full.indexOf(snap.trim()) + snap.trim().length;
+		else committed = Math.max(committed, full.length);
+		parts.committedReasoningLength = committed;
+		const last = timeline[timeline.length - 1];
+		const block = parts.lastReasoningBlock;
+		parts.currentReasoningBlock = last && last.type === "reasoning" && block && block._timelineEvent === last ? block : null;
+	}
 	function adoptLiveGenerationNode(tailAssistantId) {
 		if (!tailAssistantId) return;
 		const gen = getVisibleLiveGeneration();
@@ -19642,6 +19668,7 @@
 		const node = document.getElementById(tailAssistantId);
 		if (!node) return;
 		node.id = gen.assistantMessageId;
+		resumeLiveReasoningState(node._parts);
 		if (PORT_SKIN) portSetStreaming(node, true);
 		else node.classList.add("is-generating");
 	}
@@ -19702,6 +19729,7 @@
 		const fork = await createChatHistoryRow(messages, currentModel || conflictRow?.model || void 0, `${baseTitle || "新对话"}（冲突副本）`);
 		if (!fork?.id) throw new Error("更新聊天记录失败");
 		chatRowRedirects.set(chatId, fork.id);
+		for (const g of activeGenerations.values()) if (g.chatId === chatId) g.chatId = fork.id;
 		if (currentChatId === chatId) {
 			currentChatId = fork.id;
 			persistSessionNav();
@@ -19711,7 +19739,26 @@
 		postCrossTabMessage("history-changed");
 		return fork;
 	}
-	async function doUpdateChatHistoryRow(chatId, messages, title) {
+	function countImageParts(content) {
+		if (!Array.isArray(content)) return 0;
+		return content.filter((p) => p && typeof p === "object" && /image/.test(String(p.type || ""))).length;
+	}
+	function chatMessagesSubsumedBy(remote, local) {
+		if (!Array.isArray(remote) || !remote.length) return true;
+		if (!Array.isArray(local) || remote.length > local.length) return false;
+		for (let i = 0; i < remote.length; i++) {
+			const r = remote[i] || {};
+			const l = local[i] || {};
+			if (String(r.role || "") !== String(l.role || "")) return false;
+			const rText = extractMessageText(r.content).trim();
+			if (!extractMessageText(l.content).trim().startsWith(rText)) return false;
+			const rReason = String(r.reasoning || "").trim();
+			if (!String(l.reasoning || "").trim().startsWith(rReason)) return false;
+			if (countImageParts(r.content) > countImageParts(l.content)) return false;
+		}
+		return true;
+	}
+	async function doUpdateChatHistoryRow(chatId, messages, title, conflictRetried = false) {
 		const epoch = authSessionEpoch;
 		const id = resolveChatRowId(chatId);
 		const body = {
@@ -19732,7 +19779,19 @@
 		});
 		if (response.status === 409) {
 			const payload = await response.json().catch(() => null);
-			if (payload?.code === "conflict") return forkChatHistoryRow(id, messages, title, payload.data);
+			if (payload?.code === "conflict") {
+				if (!conflictRetried && Array.isArray(messages)) {
+					let remote;
+					try {
+						remote = await loadChatHistory(id);
+					} catch (_e) {
+						remote = null;
+					}
+					if (epoch !== authSessionEpoch) throw createAbortError("登录账号已改变。");
+					if (remote && chatMessagesSubsumedBy(remote.messages, messages)) return doUpdateChatHistoryRow(id, messages, title, true);
+				}
+				return forkChatHistoryRow(id, messages, title, payload.data);
+			}
 		}
 		if (!response.ok) throw new Error("更新聊天记录失败");
 		const { data } = await response.json();
@@ -19866,7 +19925,17 @@
 				},
 				body,
 				keepalive: true
-			}).then((response) => response.ok).catch(() => false);
+			}).then(async (response) => {
+				if (!response.ok) return false;
+				try {
+					const { data } = await response.json();
+					noteChatRowVersion({
+						...data,
+						id: data?.id || id
+					});
+				} catch (_e) {}
+				return true;
+			}).catch(() => false);
 		} catch (_e) {
 			return false;
 		}
@@ -21881,6 +21950,75 @@
 		if (document.hidden) flushActiveGenerationsBestEffort();
 	});
 	window.addEventListener("pagehide", flushActiveGenerationsBestEffort);
+	var REMOTE_SYNC_POLL_MS = 3e4;
+	var REMOTE_SYNC_HOT_POLL_MS = 4e3;
+	var REMOTE_SYNC_HOT_WINDOW_MS = 45e3;
+	var REMOTE_SYNC_FOCUS_MIN_GAP_MS = 4e3;
+	var remoteSyncLastAt = 0;
+	var remoteSyncBusy = false;
+	var remoteSyncHotUntil = 0;
+	var remoteSyncHotTimer = null;
+	function chatSummarySignature(list) {
+		if (!Array.isArray(list)) return "";
+		return list.map((c) => `${c?.id}|${c?.title || ""}|${c?.updated_at || ""}`).join("\n");
+	}
+	function sameRowVersion(a, b) {
+		const ta = Date.parse(String(a || ""));
+		const tb = Date.parse(String(b || ""));
+		return Number.isFinite(ta) && Number.isFinite(tb) && ta === tb;
+	}
+	function userIsEditingInside(container) {
+		const el = document.activeElement;
+		if (!el || !container || !container.contains(el)) return false;
+		return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable;
+	}
+	async function syncRemoteChatChanges() {
+		if (remoteSyncBusy || document.hidden || !authUserId) return;
+		if (typeof hasSharedConversationHash === "function" && hasSharedConversationHash()) return;
+		remoteSyncBusy = true;
+		remoteSyncLastAt = Date.now();
+		try {
+			const before = chatSummarySignature(chatHistoryList);
+			const epoch = authSessionEpoch;
+			const chats = await loadChatHistoryList({ quiet: true });
+			if (epoch !== authSessionEpoch || !Array.isArray(chats)) return;
+			const listContainer = document.getElementById("chatHistoryList");
+			if (chatSummarySignature(chats) !== before && !userIsEditingInside(listContainer)) renderChatHistoryList({ refresh: false });
+			const chatId = currentChatId;
+			if (!chatId || state.isStreaming || getGenerationByChatId(chatId)) return;
+			const summary = chats.find((c) => c && c.id === chatId);
+			const known = chatRowVersions.get(chatId);
+			if (!summary?.updated_at || !known || sameRowVersion(summary.updated_at, known)) return;
+			remoteSyncHotUntil = Date.now() + REMOTE_SYNC_HOT_WINDOW_MS;
+			if (userIsEditingInside(chatMessages)) return;
+			if (!isChatViewVisible()) return;
+			await loadChat(chatId, {
+				silent: true,
+				skipSkeleton: true
+			});
+		} catch (_e) {} finally {
+			remoteSyncBusy = false;
+			scheduleRemoteSyncHotPoll();
+		}
+	}
+	function scheduleRemoteSyncHotPoll() {
+		if (remoteSyncHotTimer) return;
+		if (Date.now() >= remoteSyncHotUntil || document.hidden) return;
+		remoteSyncHotTimer = setTimeout(() => {
+			remoteSyncHotTimer = null;
+			syncRemoteChatChanges();
+		}, REMOTE_SYNC_HOT_POLL_MS);
+	}
+	function syncRemoteOnReturn() {
+		if (document.hidden) return;
+		if (Date.now() - remoteSyncLastAt < REMOTE_SYNC_FOCUS_MIN_GAP_MS) return;
+		syncRemoteChatChanges();
+	}
+	window.addEventListener("focus", syncRemoteOnReturn);
+	document.addEventListener("visibilitychange", syncRemoteOnReturn);
+	setInterval(() => {
+		if (!document.hidden && Date.now() - remoteSyncLastAt >= REMOTE_SYNC_POLL_MS - 500) syncRemoteChatChanges();
+	}, REMOTE_SYNC_POLL_MS);
 	if (!hasSharedConversationHash()) renderChatHistoryList();
 	else {
 		const listContainer = document.getElementById("chatHistoryList");
