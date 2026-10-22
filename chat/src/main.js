@@ -10113,7 +10113,14 @@ function lastUserMessageText(messages) {
   }
 
   let crossTabHistoryReloadTimer = null;
+  let crossTabHistoryDirty = false;
   function scheduleCrossTabHistoryReload() {
+    // 后台标签只记一笔，切回来再拉：否则 N 个标签在同一毫秒各打一次列表，
+    // 成簇 GET 会撞服务端防刷闸（2026-10-22 实测被误封 1 小时）。
+    if (document.hidden) {
+      crossTabHistoryDirty = true;
+      return;
+    }
     if (crossTabHistoryReloadTimer) return;
     // 合并抖动：对面一个标签连发多条（建行 + 改名 + 完成）只重拉一次列表。
     crossTabHistoryReloadTimer = setTimeout(() => {
@@ -10182,6 +10189,11 @@ function lastUserMessageText(messages) {
     });
     setInterval(heartbeatTab, TAB_HEARTBEAT_MS);
     window.addEventListener("pagehide", releaseTab);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden || !crossTabHistoryDirty) return;
+      crossTabHistoryDirty = false;
+      scheduleCrossTabHistoryReload();
+    });
   }
 
   // ── 输入框草稿（按标签，不跨标签）─────────────────────────────────

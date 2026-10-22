@@ -15442,7 +15442,12 @@
 		} catch (_) {}
 	}
 	var crossTabHistoryReloadTimer = null;
+	var crossTabHistoryDirty = false;
 	function scheduleCrossTabHistoryReload() {
+		if (document.hidden) {
+			crossTabHistoryDirty = true;
+			return;
+		}
 		if (crossTabHistoryReloadTimer) return;
 		crossTabHistoryReloadTimer = setTimeout(() => {
 			crossTabHistoryReloadTimer = null;
@@ -15498,6 +15503,11 @@
 		});
 		setInterval(heartbeatTab, TAB_HEARTBEAT_MS);
 		window.addEventListener("pagehide", releaseTab);
+		document.addEventListener("visibilitychange", () => {
+			if (document.hidden || !crossTabHistoryDirty) return;
+			crossTabHistoryDirty = false;
+			scheduleCrossTabHistoryReload();
+		});
 	}
 	var COMPOSER_DRAFT_STORAGE_KEY = "cancri_composer_draft_v1";
 	var composerDraftSaveTimer = null;

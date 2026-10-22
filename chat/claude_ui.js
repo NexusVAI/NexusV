@@ -4611,17 +4611,31 @@
                         var chat = chats[i];
                         if (progress) progress.textContent = '正在导出 ' + (i + 1) + ' / ' + chats.length + '…';
                         try {
-                            var dResp = await fetch(SUPABASE_URL + '/functions/v1/chat-gateway', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token },
-                                body: JSON.stringify({ endpoint: 'chat_history', action: 'get', id: chat.id, __auth_token: token })
-                            });
+                            var fetchDetail = function () {
+                                return fetch(SUPABASE_URL + '/functions/v1/chat-gateway', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token },
+                                    body: JSON.stringify({ endpoint: 'chat_history', action: 'get', id: chat.id, __auth_token: token })
+                                });
+                            };
+                            var dResp = await fetchDetail();
+                            // 网关每用户 60 次/分钟（DO 限流）；撞上就按 Retry-After 等一轮再试一次。
+                            if (dResp.status === 429) {
+                                var waitSec = Math.min(60, Math.max(1, Number(dResp.headers.get('Retry-After')) || 30));
+                                if (progress) progress.textContent = '请求过快，' + waitSec + ' 秒后继续导出 ' + (i + 1) + ' / ' + chats.length + '…';
+                                await new Promise(function (r) { setTimeout(r, waitSec * 1000); });
+                                dResp = await fetchDetail();
+                            }
                             var dJson = await dResp.json().catch(function () { return {}; });
-                            full.push({ id: chat.id, title: chat.title || '', created_at: chat.created_at, updated_at: chat.updated_at, messages: (dJson.data && dJson.data.messages) || [] });
+                            var detail = { id: chat.id, title: chat.title || '', created_at: chat.created_at, updated_at: chat.updated_at, messages: (dJson.data && dJson.data.messages) || [] };
+                            // 失败不能静默导出成空对话：带上错误，用户才知道这条没拿到。
+                            if (!dResp.ok) detail._error = 'HTTP ' + dResp.status + (dJson.code ? ' ' + dJson.code : '');
+                            full.push(detail);
                         } catch (e) {
                             full.push({ id: chat.id, title: chat.title || '', created_at: chat.created_at, updated_at: chat.updated_at, messages: [], _error: String(e.message || e) });
                         }
-                        if (i < chats.length - 1) await new Promise(function (r) { setTimeout(r, 120); });
+                        // 1 秒一条 → 稳定低于网关 60 次/分钟的每用户上限（原 120ms 会撞限流）。
+                        if (i < chats.length - 1) await new Promise(function (r) { setTimeout(r, 1000); });
                     }
                     var blob = new Blob([JSON.stringify(full, null, 2)], { type: 'application/json' });
                     var url = URL.createObjectURL(blob);
