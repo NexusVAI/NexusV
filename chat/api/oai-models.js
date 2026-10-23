@@ -34,6 +34,10 @@
   // 只能钉在免费区，禁止再放进这张名单（否则会从免费区「掉」到下面的旗舰区）。
   // 禁止非名单补位（曾冒出 gemini-3.1-flash-lite）。
   var FEATURED_ORDER = [
+    // 2026-10-23: Claude Opus 5.5（¥0.8 / ¥4）与 Sonnet 5.5（¥0.4 / ¥2）改挂 codexsss 复活，钉到旗舰区首位。
+    // 两条都是自建单卡组（opus 组里另两条 Kiro 线已下架），钉的就是自己的卡。
+    "claude-opus-5-5",
+    "claude-sonnet-5-5",
     // 2026-09-30: GPT-6.1 Sol 上架（moyuu，¥0.5 / ¥2），钉到旗舰区首位。它不分组，钉的就是自己的卡。
     // 同批的 claude-opus-5-5-kiro（Kiro 分组，¥1 / ¥5）与下面已钉的 claude-opus-5-5（Max 分组）
     // 同 group_id 折叠成一张卡，代表仍是 claude-opus-5-5 —— 不用再钉，钉了也会被 seenTop 去重。
@@ -51,12 +55,9 @@
     "deepseek-v4.1-flash",
     "claude-opus-4-6-thinking",
     "claude-opus-5",
-    "claude-opus-5-5",
     // 2026-10-08: 按运营方要求，Kiro 分组在旗舰区单独成卡（见 FEATURED_STANDALONE）。
     "claude-opus-5-5-kiro",
-    // 2026-10-02: Claude Sonnet 5.5 上架（prorisehub，¥1 / ¥5）。自建单卡组
-    // （group_id='claude-sonnet-5-5'，唯一成员），钉的就是自己的卡。
-    "claude-sonnet-5-5",
+    // 2026-10-02: Claude Sonnet 5.5 上架（prorisehub，¥1 / ¥5）；2026-10-23 改挂 codexsss，移到本名单首部。
     // 2026-09-02: Claude Fable 5.1 上架，钉进旗舰区。它**不分组**（group_id 为空），
     // 所以这里钉的就是它自己的卡 id，不会被折叠到 claude-fable-5 那张卡上。
     "claude-fable-5-1",
@@ -86,6 +87,8 @@
   // （MiniMax-M2.7 属 minimax-m2.7 组，页面上落到代表卡 minimax-m2.7）。
   // 顺序 = 运营方给定顺序。名单外禁止补位（同旗舰区：曾冒出 gemini-3.1-flash-lite）。
   var PARETO_ORDER = [
+    // 2026-10-23: Claude Haiku 5.5 上架（codexsss，阶梯价 ≤100K ¥0.08 / ¥0.09，>100K ¥0.09 / ¥0.45），钉首位。
+    "claude-haiku-5-5",
     "claude-opus-4-6-thinking",
     "claude-sonnet-4-6-thinking",
     "gpt-6-sol",
