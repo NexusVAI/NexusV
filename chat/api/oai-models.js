@@ -39,6 +39,11 @@
     // 2026-10-24: 改挂 sskiro，站内 id 换成带点号的 claude-*-5.5（-5-5 三条已下架）。
     "claude-opus-5.5",
     "claude-sonnet-5.5",
+    // 2026-10-24: 按运营方要求补入 Kimi K3.1 Pro（mzeapi，¥2 / ¥11）与 Gemini 4 Argon（mzeapi，¥0.58 / ¥2.8），
+    // 同时移出 kimi-k3 与 gemini-3.8-flash-high（只撤出旗舰区，模型本身照常在售）。
+    // 名单只钉 catalog 里存在的 id：gemini-4-argon 未上架前不出卡，上架后自动出现。
+    "kimi-k3.1-pro",
+    "gemini-4-argon",
     // 2026-09-30: GPT-6.1 Sol 上架（moyuu，¥0.5 / ¥2），钉到旗舰区首位。它不分组，钉的就是自己的卡。
     // 同批的 claude-opus-5-5-kiro（Kiro 分组，¥1 / ¥5）与下面已钉的 claude-opus-5-5（Max 分组）
     // 同 group_id 折叠成一张卡，代表仍是 claude-opus-5-5 —— 不用再钉，钉了也会被 seenTop 去重。
@@ -66,8 +71,7 @@
     // 2026-09-02: gemini-3.7-flash 换成 gemini-3.8-flash-high（prorisehub 新线，
     // 上游实测 1.98s vs 3.7 的 6.2s）。3.7 只是撤出旗舰区，**没有下架**，
     // 仍在全量网格和 /v1/models 里，老调用方不受影响。
-    "gemini-3.8-flash-high",
-    "kimi-k3",
+    // 2026-10-24: gemini-3.8-flash-high 与 kimi-k3 按运营方要求移出旗舰区（换成上面的 kimi-k3.1-pro / gemini-4-argon）。
   ];
   // 旗舰区里**不折叠**、按成员自身单独出卡的 id（只影响旗舰区；全量网格照旧折叠）。
   // 不在这里登记的组成员会被 repId 折算成代表卡，再被 seenTop 去重掉。
@@ -93,7 +97,8 @@
     "claude-haiku-5.5",
     "claude-opus-4-6-thinking",
     "claude-sonnet-4-6-thinking",
-    "gpt-6-sol",
+    // 2026-10-24: gpt-6-sol 按运营方要求换成 gpt-6.1-sol。
+    "gpt-6.1-sol",
     "kimi-k3",
     // 2026-09-28: glm-5.3 随 tokenrouter 上游退役，从本名单移除（免费线的 glm-5.3-fp8-free 不补位）。
     "composer-2.5-fast",
@@ -104,7 +109,8 @@
     "glm-5.3-flash",
     "glm-5.3-flashx",
     "qwen3.8-flash",
-    "gemini-3.8-flash-high",
+    // 2026-10-24: gemini-3.8-flash-high 按运营方要求移出，换成 gemini-4-argon（未上架前不出卡）。
+    "gemini-4-argon",
     "mimo-v2.6-flash",
     "mimo-v2.6-pro",
   ];
