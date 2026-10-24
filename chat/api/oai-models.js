@@ -36,8 +36,9 @@
   var FEATURED_ORDER = [
     // 2026-10-23: Claude Opus 5.5（¥0.8 / ¥4）与 Sonnet 5.5（¥0.4 / ¥2）改挂 codexsss 复活，钉到旗舰区首位。
     // 两条都是自建单卡组（opus 组里另两条 Kiro 线已下架），钉的就是自己的卡。
-    "claude-opus-5-5",
-    "claude-sonnet-5-5",
+    // 2026-10-24: 改挂 sskiro，站内 id 换成带点号的 claude-*-5.5（-5-5 三条已下架）。
+    "claude-opus-5.5",
+    "claude-sonnet-5.5",
     // 2026-09-30: GPT-6.1 Sol 上架（moyuu，¥0.5 / ¥2），钉到旗舰区首位。它不分组，钉的就是自己的卡。
     // 同批的 claude-opus-5-5-kiro（Kiro 分组，¥1 / ¥5）与下面已钉的 claude-opus-5-5（Max 分组）
     // 同 group_id 折叠成一张卡，代表仍是 claude-opus-5-5 —— 不用再钉，钉了也会被 seenTop 去重。
@@ -88,7 +89,8 @@
   // 顺序 = 运营方给定顺序。名单外禁止补位（同旗舰区：曾冒出 gemini-3.1-flash-lite）。
   var PARETO_ORDER = [
     // 2026-10-23: Claude Haiku 5.5 上架（codexsss，阶梯价 ≤100K ¥0.08 / ¥0.09，>100K ¥0.09 / ¥0.45），钉首位。
-    "claude-haiku-5-5",
+    // 2026-10-24: 改挂 sskiro（¥0.09 / ¥0.2，不再分阶梯），站内 id 换成 claude-haiku-5.5。
+    "claude-haiku-5.5",
     "claude-opus-4-6-thinking",
     "claude-sonnet-4-6-thinking",
     "gpt-6-sol",
