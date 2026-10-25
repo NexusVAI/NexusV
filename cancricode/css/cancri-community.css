@@ -1,0 +1,222 @@
+/**
+ * Bottom-right community entry (B站 / QQ / 小红书 QR popover).
+ * Ported from A.CancriCode/GitHub chat/api/oai-community.css (api_models page).
+ * Colors follow the site's filled pill tokens (--cancri-pill-fill / --cancri-pill-label),
+ * so the widget inverts with the light/dark theme like the nav CTA.
+ * Shapes are Apple-style Bezier corners clipped by js/cancri-community.js;
+ * border-radius is the fallback.
+ */
+.cancri-community {
+  --community-bg: var(--cancri-pill-fill, #0d0d0d);
+  --community-bg-hover: color-mix(in srgb, var(--community-bg) 86%, var(--community-fg));
+  --community-fg: var(--cancri-pill-label, #ffffff);
+  --community-fg-muted: color-mix(in srgb, var(--community-fg) 72%, transparent);
+  --community-line: color-mix(in srgb, var(--community-fg) 20%, transparent);
+  --community-chip: color-mix(in srgb, var(--community-fg) 14%, transparent);
+  --community-icon-filter: brightness(0) invert(1);
+  position: fixed;
+  right: max(24px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  z-index: 46;
+  font-family: var(--cancri-font-sans, inherit);
+  line-height: 1.5;
+}
+html[data-cancri-theme="dark"] .cancri-community {
+  --community-icon-filter: brightness(0);
+}
+.cancri-community button {
+  font-family: inherit;
+  line-height: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cancri-community__trigger {
+  display: flex;
+  width: 48px;
+  height: 48px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--community-bg);
+  color: var(--community-fg);
+  transition: background-color 160ms;
+}
+.cancri-community__trigger:hover,
+.cancri-community__trigger[aria-expanded="true"] {
+  background: var(--community-bg-hover);
+}
+.cancri-community__trigger svg {
+  width: 21px;
+  height: 21px;
+}
+.cancri-community__trigger span {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+/* Transparent padding bridges the pointer path from the control to the card. */
+.cancri-community__panel {
+  position: absolute;
+  right: 100%;
+  bottom: 0;
+  width: 312px;
+  padding-right: 12px;
+  box-sizing: border-box;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 160ms ease, visibility 0s linear 160ms;
+}
+.cancri-community__panel[data-open="true"] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 160ms ease, visibility 0s;
+}
+.cancri-community__card {
+  max-height: calc(100dvh - 100px);
+  overflow-y: auto;
+  padding: 18px 16px 20px;
+  border-radius: 32px;
+  background: var(--community-bg);
+  color: var(--community-fg);
+}
+.cancri-community__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: inherit;
+}
+.cancri-community__intro {
+  margin: 6px 0 0;
+  color: var(--community-fg-muted);
+  font-size: 12px;
+}
+.cancri-community__platforms {
+  display: flex;
+  justify-content: space-around;
+  gap: 16px;
+  margin-top: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px dashed var(--community-line);
+}
+.cancri-community__platform {
+  display: flex;
+  min-width: 56px;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--community-fg-muted);
+  font-size: 12px;
+}
+.cancri-community__platform[aria-pressed="true"] {
+  color: var(--community-fg);
+}
+.cancri-community__icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--community-chip);
+  transition: background-color 140ms, transform 140ms;
+}
+.cancri-community__platform[aria-pressed="true"] .cancri-community__icon {
+  background: var(--community-accent, #0785ff);
+  transform: translateY(-1px);
+}
+.cancri-community__platform--bilibili {
+  --community-accent: #f16c8d;
+}
+.cancri-community__platform--xiaohongshu {
+  --community-accent: #ff2842;
+}
+.cancri-community__icon img {
+  display: block;
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+  filter: var(--community-icon-filter);
+}
+.cancri-community__platform[aria-pressed="true"] .cancri-community__icon img {
+  filter: brightness(0) invert(1);
+}
+.cancri-community__platform--qq img {
+  width: 21px;
+  height: 24px;
+}
+.cancri-community__platform--xiaohongshu img {
+  width: 26px;
+  height: 26px;
+}
+.cancri-community__qr-frame {
+  width: 158px;
+  height: 158px;
+  margin: 18px auto 0;
+  padding: 10px;
+  border-radius: 35px;
+  background: color-mix(in srgb, var(--community-fg) 8%, transparent);
+  box-sizing: border-box;
+}
+.cancri-community__qr-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 6px;
+  border-radius: 25px;
+  background: #fff;
+  object-fit: contain;
+  box-sizing: border-box;
+}
+.cancri-community__caption {
+  margin: 10px 0 0;
+  color: var(--community-fg-muted);
+  font-size: 12px;
+  text-align: center;
+}
+.cancri-community button:focus-visible {
+  outline: 2px solid #85baff;
+  outline-offset: 4px;
+}
+/* Once clipped, the clip-path is the only corner shape: a rounded background would leave
+ * the extra squircle area unpainted. */
+.cancri-community .sq-active {
+  border-radius: 0;
+}
+/* The clip-path would cut an outer ring, so draw it inside the trigger. */
+.cancri-community__trigger:focus-visible {
+  outline-offset: -4px;
+}
+@media (max-width: 480px) {
+  .cancri-community {
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+  }
+  .cancri-community__panel {
+    right: 0;
+    bottom: 100%;
+    width: min(300px, calc(100vw - 32px));
+    padding: 0 0 12px;
+  }
+  .cancri-community__card {
+    max-height: calc(100dvh - 160px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cancri-community *,
+  .cancri-community *::before,
+  .cancri-community *::after {
+    animation: none;
+    transition: none;
+  }
+}

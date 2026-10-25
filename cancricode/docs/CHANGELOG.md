@@ -182,3 +182,6 @@
 - 2026-09-27：核心难题区大卡片覆盖链接由 `/path-to-hope` 改为 `https://www.nexusvai.xyz/article?id=cancriCode3`。
 - 2026-10-01：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.0.8/Cancri-Code_3.0.8_x64-setup.exe`（3 处）。
 - 2026-10-09：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.1.0/Cancri-Code_3.1.0_x64-setup.exe`（3 处；客户端 `cancri-code` tauri 版本 3.1.0，CDN 实测 200）。
+- 2026-10-14：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.2.0/Cancri-Code_3.2.0_x64-setup.exe`（3 处；客户端 `cancri-code` tauri 版本 3.2.0，CDN 实测 200，sha256 与本地构建一致）。
+- 2026-10-25：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.3.0/Cancri-Code_3.3.0_x64-setup.exe`（3 处；客户端 `cancri-code` tauri 版本 3.3.0，CDN 实测 200，MD5 与 R2 ETag 一致）。
+- 2026-10-26：顶部公告横幅由模板橄榄绿改为主题蓝 `--cancri-brand` + 白字（`css/cancri-social.css`），文案 GPT-6-Luna → HaiKu 5.5。移除顶栏 QQ 图标悬浮卡（桌面 + 移动各一份，及其 CSS 与 `initQqNav`），改为右下角社区入口 `[data-cancri-section="community"]`（`css/cancri-community.css` + `js/cancri-community.js`，含 Apple 贝塞尔 squircle 裁切）。来源：`A.CancriCode/GitHub/chat/api_models.html` + `chat/api/oai-community.{css,js}`（去掉欢迎引导；配色改用 `--cancri-pill-*`）；二维码与图标复制自 `chat/assets/community/` 到 `images/community/`。
