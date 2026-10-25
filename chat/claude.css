@@ -12261,3 +12261,12 @@ html, body {
         contain: none !important;
     }
 }
+
+/* 2026-10-25 免费计划 / Bot 云电脑额度行：付费用户 hidden。.claude-form-row 的 display:flex
+   与 #claudeSettingsView.active .claude-form-row{display:grid !important} 都会压过 [hidden]，
+   选择器特异性必须高于后者 (1,2,0)。 */
+#claudeSettingsView .claude-form-row.claude-freeplan-row[hidden],
+.claude-form-row.claude-freeplan-row[hidden],
+#claudeSettingsView .claude-snav-target[data-free-plan="1"] .claude-form-row[data-quota-plan-row] {
+    display: none !important;
+}
