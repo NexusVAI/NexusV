@@ -727,6 +727,8 @@ function lastUserMessageText(messages) {
     // 不含任何上游字节。
     allowance_exhausted: null,          // 套餐额度用尽且钱包不足以溢出
     plan_required: null,                // 未订阅套餐却调付费模型
+    // 2026-10-25 免费计划 24h 滚动额度用尽（429）。后端 message 自带重置时间，不进白名单就只剩「请求过于频繁」。
+    free_plan_exhausted: null,
     // Specialised paths (handled elsewhere — return "" so caller falls through)
     challenge_required: null, // formatSecurityGuardMessage path
     access_blocked: null,
@@ -767,6 +769,7 @@ function lastUserMessageText(messages) {
     // F-SUB-402-GENERIC：套餐轨的两个 402 同样要立刻刷新配额面板。
     "allowance_exhausted",
     "plan_required",
+    "free_plan_exhausted",
   ]);
   const UPGRADE_MODAL_TRIGGER_CODES = new Set([
     "free_pool_exhausted",

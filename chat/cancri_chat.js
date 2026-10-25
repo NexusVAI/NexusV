@@ -8758,6 +8758,7 @@
 		model_pro_required: null,
 		allowance_exhausted: null,
 		plan_required: null,
+		free_plan_exhausted: null,
 		challenge_required: null,
 		access_blocked: null,
 		anonymous_not_allowed: null,
@@ -8780,7 +8781,8 @@
 		"model_pro_max_required",
 		"model_pro_required",
 		"allowance_exhausted",
-		"plan_required"
+		"plan_required",
+		"free_plan_exhausted"
 	]);
 	var UPGRADE_MODAL_TRIGGER_CODES = new Set([
 		"free_pool_exhausted",
