@@ -929,6 +929,10 @@
             if (metaEl) metaEl.textContent = '订阅套餐后，付费模型将从套餐月度额度扣费。';
             if (barEl) barEl.style.width = '0%';
         }
+        // 2026-10-25：免费计划块会改写档位名，套餐状态重绘后再叠一次（付费用户 exempt → 自动隐藏）。
+        if (window.CancriFreePlanUI && typeof window.CancriFreePlanUI.rerender === 'function') {
+            try { window.CancriFreePlanUI.rerender(); } catch (e) { /* ignore */ }
+        }
     }
 
     function bindAccountPlanSync() {
@@ -5003,4 +5007,231 @@
     } else {
         boot();
     }
+})();
+
+// ── 2026-10-25 免费计划（账户级 24h 滚动窗积分）+ Bot 云电脑积分（设置 →「额度」页）──────────────
+// 数据：chat-gateway `free_plan_status`（include_bot_computer=true）。1 积分 = 1 万 token，口径全在服务端，
+// 这里只做展示。付费用户（exempt=true）整块隐藏，只显示他自己的套餐额度。
+// 刷新：打开额度页 / 每轮对话保存后 / 回到前台 / 其它标签广播（BroadcastChannel）/ 额度页可见时每 15s。
+(function () {
+    'use strict';
+    var ENDPOINT = 'free_plan_status';
+    var CHANNEL = 'cancri-free-plan-sync';
+    var POLL_MS = 15000;
+    var last = null;
+    var lastAt = 0;
+    var inflight = null;
+    var debounceTimer = 0;
+    var channel = null;
+
+    function $(id) { return document.getElementById(id); }
+    function token() {
+        try {
+            var raw = localStorage.getItem('cancri_supabase_auth');
+            var p = raw ? JSON.parse(raw) : null;
+            return p && p.access_token ? String(p.access_token) : '';
+        } catch (e) { return ''; }
+    }
+    function fmt(n) { return Math.max(0, Math.floor(Number(n) || 0)).toLocaleString('en-US'); }
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function resetLabel(ms, now) {
+        var d = new Date(ms);
+        var hm = pad(d.getHours()) + ':' + pad(d.getMinutes());
+        var day = function (t) { return new Date(t).setHours(0, 0, 0, 0); };
+        var diff = Math.round((day(ms) - day(now)) / 86400000);
+        if (diff === 0) return '今天 ' + hm;
+        if (diff === 1) return '明天 ' + hm;
+        return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + hm;
+    }
+    function countdown(ms, now) {
+        var s = Math.max(0, Math.round((ms - now) / 1000));
+        var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+        if (h) return h + ' 小时 ' + m + ' 分钟后';
+        if (m) return m + ' 分钟后';
+        return '即将';
+    }
+    function injectStyle() {
+        if ($('claudeFreePlanStyle')) return;
+        var st = document.createElement('style');
+        st.id = 'claudeFreePlanStyle';
+        st.textContent = [
+            '.claude-snav-target[data-free-plan="1"] [data-quota-plan-row]{display:none!important}',
+            '.claude-freeplan-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px}',
+            '.claude-freeplan-bar{position:relative;height:8px;border-radius:999px;background:var(--border-default,rgba(128,128,128,.2));overflow:hidden}',
+            '.claude-freeplan-bar>i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:var(--accent,#c96442);transition:width .3s}',
+            '.claude-freeplan-bar.is-out>i{background:var(--danger,#d14343)}',
+            '.claude-botq-row{margin-top:8px}',
+            '.claude-botq-line{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;margin-bottom:4px}',
+            '.claude-botq-line em{font-style:normal;opacity:.7}'
+        ].join('\n');
+        document.head.appendChild(st);
+    }
+
+    function renderFreePlan(fp, now) {
+        var row = $('claudeFreePlanRow');
+        if (!row) return;
+        var section = row.closest('.claude-snav-target');
+        var show = !!(fp && fp.exempt === false && fp.available !== false && Number(fp.limit_credits) > 0);
+        row.hidden = !show;
+        if (section) section.setAttribute('data-free-plan', show ? '1' : '0');
+        if (!show) return;
+        var limit = Number(fp.limit_credits) || 0;
+        var resetsAt = Number(fp.resets_at_ms) || 0;
+        var live = resetsAt > now;
+        var used = live ? Math.min(limit, Math.max(0, Number(fp.used_credits) || 0)) : 0;
+        var remaining = live ? Math.max(0, Math.min(limit, Number(fp.remaining_credits != null ? fp.remaining_credits : limit - used))) : limit;
+        var pct = limit > 0 ? Math.min(100, Math.max(0, used / limit * 100)) : 0;
+        var out = live && remaining <= 0;
+        var hours = Number(fp.window_hours) || 24;
+        var nameEl = $('claudeQuotaPlanName');
+        if (nameEl) nameEl.textContent = '免费计划';
+        var numEl = $('claudeFreePlanNum');
+        if (numEl) numEl.textContent = (out ? '已用完 · ' : '剩余 ') + fmt(remaining) + ' / ' + fmt(limit) + ' 积分';
+        var bar = $('claudeFreePlanBar');
+        if (bar) {
+            bar.style.width = pct + '%';
+            var wrap = bar.parentNode;
+            if (wrap) {
+                wrap.classList.toggle('is-out', out);
+                wrap.setAttribute('aria-valuenow', String(Math.round(pct)));
+            }
+        }
+        var meta = $('claudeFreePlanMeta');
+        if (meta) {
+            meta.textContent = live
+                ? '已用 ' + fmt(used) + ' 积分 · ' + resetLabel(resetsAt, now) + ' 重置（' + countdown(resetsAt, now) + '）· 所有免费模型、网页 / 桌面 / Bot / API 共享'
+                : '额度已满 · ' + hours + ' 小时窗口从下一次使用时开始计时 · 所有免费模型、网页 / 桌面 / Bot / API 共享';
+        }
+    }
+
+    function botRow(label, w, pph, idle, now) {
+        var toPts = function (sec) { return Math.round((Number(sec) || 0) * pph / 3600); };
+        var total = toPts(w.quota_seconds);
+        var used = Math.min(toPts(w.used_seconds), total);
+        var left = total - used;
+        var pct = total > 0 ? Math.round(used / total * 100) : 100;
+        var out = left <= 0;
+        var at = w.resets_at ? Date.parse(w.resets_at) : NaN;
+        var sub = (isFinite(at) && at > now) ? resetLabel(at, now) + ' 重置' : idle;
+        return '<div class="claude-botq-row">'
+            + '<div class="claude-botq-line"><span>' + label + '</span><span>' + (out ? '已用完' : '剩余 <b>' + fmt(left) + '</b>') + '<em> / ' + fmt(total) + ' 积分</em></span></div>'
+            + '<div class="claude-freeplan-bar' + (out ? ' is-out' : '') + '" role="progressbar" aria-label="' + label + '已用" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>'
+            + (sub ? '<span class="claude-form-help">' + sub + '</span>' : '')
+            + '</div>';
+    }
+
+    function renderBot(bc, now) {
+        var row = $('claudeBotQuotaRow');
+        var host = $('claudeBotQuotaRows');
+        if (!row || !host) return;
+        var ok = !!(bc && bc.eligible === true && bc.window && bc.week && Number(bc.points_per_hour) > 0);
+        row.hidden = !ok;
+        if (!ok) { host.innerHTML = ''; return; }
+        var pph = Number(bc.points_per_hour);
+        host.innerHTML = botRow('每 5 小时', bc.window, pph, '首次使用后开始计时', now) + botRow('每周', bc.week, pph, '', now);
+    }
+
+    function render() {
+        if (!last) return;
+        var now = Date.now();
+        renderFreePlan(last.free_plan, now);
+        renderBot(last.bot_computer, now);
+    }
+
+    function apply(data, fromPeer) {
+        if (!data || typeof data !== 'object') return;
+        last = { free_plan: data.free_plan || null, bot_computer: data.bot_computer || null };
+        lastAt = Date.now();
+        render();
+        if (!fromPeer && channel) {
+            try { channel.postMessage({ type: 'free_plan', data: last, at: lastAt }); } catch (e) { /* ignore */ }
+        }
+    }
+
+    function fetchStatus() {
+        var t = token();
+        if (!t) {
+            last = null;
+            var a = $('claudeFreePlanRow'), b = $('claudeBotQuotaRow');
+            if (a) a.hidden = true;
+            if (b) b.hidden = true;
+            return Promise.resolve(null);
+        }
+        if (inflight) return inflight;
+        var base = window.__SUPABASE_URL__ || '';
+        if (!base) return Promise.resolve(null);
+        inflight = fetch(base + '/functions/v1/chat-gateway', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': window.__SUPABASE_ANON_KEY__ || '',
+                'Authorization': 'Bearer ' + t,
+            },
+            body: JSON.stringify({ endpoint: ENDPOINT, include_bot_computer: true, __auth_token: t }),
+            cache: 'no-store',
+        }).then(function (r) {
+            return r && r.ok ? r.json().catch(function () { return null; }) : null;
+        }).then(function (data) {
+            if (data && data.ok) apply(data, false);
+            return data;
+        }).catch(function () { return null; }).then(function (d) { inflight = null; return d; });
+        return inflight;
+    }
+
+    function refreshSoon(delay) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(fetchStatus, typeof delay === 'number' ? delay : 600);
+    }
+
+    function quotaVisible() {
+        var row = $('claudeFreePlanRow');
+        var section = row && row.closest('.claude-snav-target');
+        return !!(section && section.offsetParent !== null);
+    }
+
+    function init() {
+        if (!$('claudeFreePlanRow')) return;
+        injectStyle();
+        if (typeof BroadcastChannel !== 'undefined') {
+            try {
+                channel = new BroadcastChannel(CHANNEL);
+                channel.onmessage = function (ev) {
+                    var m = ev && ev.data;
+                    if (!m) return;
+                    if (m.type === 'free_plan' && m.data && Number(m.at) > lastAt) apply(m.data, true);
+                    else if (m.type === 'usage_changed') refreshSoon(400);
+                };
+            } catch (e) { channel = null; }
+        }
+        window.addEventListener('cancri:auth-changed', function () { refreshSoon(300); });
+        // 每轮对话落库后（含流式结束）——免费模型用量刚提交到 DO，立即刷新并广播给其它标签。
+        window.addEventListener('cancri:chat-history-saved', function () { refreshSoon(800); });
+        document.addEventListener('click', function (ev) {
+            var t = ev.target && ev.target.closest && ev.target.closest('[data-snav="quota"]');
+            if (t) refreshSoon(0);
+        }, true);
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') refreshSoon(200);
+        });
+        window.addEventListener('focus', function () { if (Date.now() - lastAt > 5000) refreshSoon(200); });
+        setInterval(function () {
+            if (document.visibilityState !== 'visible') return;
+            if (quotaVisible() && Date.now() - lastAt >= POLL_MS) fetchStatus();
+            else render();
+        }, 5000);
+        fetchStatus();
+    }
+
+    window.CancriFreePlanUI = {
+        refresh: function () { return fetchStatus(); },
+        notifyUsageChanged: function () {
+            refreshSoon(300);
+            if (channel) { try { channel.postMessage({ type: 'usage_changed', at: Date.now() }); } catch (e) { /* ignore */ } }
+        },
+        getSnapshot: function () { return last; },
+        rerender: function () { render(); },
+    };
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
 })();

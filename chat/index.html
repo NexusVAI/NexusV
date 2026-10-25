@@ -1804,18 +1804,38 @@
                                             <span class="claude-form-label-strong" id="claudeQuotaPlanName">加载中…</span>
                                         </div>
                                     </div>
-                                    <div class="claude-form-row">
+                                    <div class="claude-form-row" data-quota-plan-row>
                                         <span class="claude-form-label">已用额度</span>
                                         <div class="claude-form-control">
                                             <span class="claude-form-label-strong" id="claudeQuotaRemaining" style="font-size:18px">¥—</span>
                                         </div>
                                     </div>
-                                    <div class="claude-form-row">
+                                    <div class="claude-form-row" data-quota-plan-row>
                                         <div class="claude-form-stacked" style="width:100%">
                                             <div style="height:8px;border-radius:999px;background:var(--border-default,rgba(128,128,128,.2));overflow:hidden">
                                                 <div id="claudeQuotaBar" style="height:100%;width:0%;border-radius:999px;background:var(--accent,#c96442);transition:width .3s"></div>
                                             </div>
                                             <span class="claude-form-help" id="claudeQuotaMeta">正在加载套餐状态…</span>
+                                        </div>
+                                    </div>
+                                    <!-- 2026-10-25 免费计划（24h 滚动窗积分）+ Bot 云电脑积分：claude_ui.js CancriFreePlanUI 注入；付费用户整块隐藏 -->
+                                    <div class="claude-form-row claude-freeplan-row" id="claudeFreePlanRow" hidden>
+                                        <div class="claude-form-stacked" style="width:100%">
+                                            <div class="claude-freeplan-head">
+                                                <span class="claude-form-label">免费计划 · 每日积分</span>
+                                                <span class="claude-form-label-strong" id="claudeFreePlanNum">—</span>
+                                            </div>
+                                            <div class="claude-freeplan-bar" role="progressbar" aria-label="免费计划积分已用" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="claudeFreePlanBar"></i></div>
+                                            <span class="claude-form-help" id="claudeFreePlanMeta">正在加载免费计划额度…</span>
+                                        </div>
+                                    </div>
+                                    <div class="claude-form-row claude-freeplan-row" id="claudeBotQuotaRow" hidden>
+                                        <div class="claude-form-stacked" style="width:100%">
+                                            <div class="claude-freeplan-head">
+                                                <span class="claude-form-label">Bot 云电脑 · 免费额度</span>
+                                                <span class="claude-tier-chip is-free">限时试用</span>
+                                            </div>
+                                            <div id="claudeBotQuotaRows"></div>
                                         </div>
                                     </div>
                                     <div class="claude-form-row">
@@ -2805,7 +2825,7 @@
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
         <script defer src="./celebrate_invite_capture.js?v=20260818-opus5-paid"></script>
-        <script defer src="./claude_ui.js?v=20261022-export429"></script>
+        <script defer src="./claude_ui.js?v=20261025-freeplan"></script>
         <!-- 2026-06-25：钱包余额预警 ribbon + 升级弹窗。此前漏挂载+部署白名单文件名写错，
              导致 window.CancriUpgradeQuotaUI 永远 undefined、聊天页低余额警报从不显示。 -->
         <script defer src="./claude_upgrade_quota_ui.js?v=20261014-dl320"></script>

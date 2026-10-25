@@ -1506,6 +1506,19 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
             请求频次与 token 吞吐分别独立计数，任一项触顶均返回 <code>429</code>。日窗口按 UTC+8 自然日重置。
           </p>
 
+          <h3 id="免费模型额度">免费模型额度（免费计划）</h3>
+          <p>
+            自 2026-10-25 起，<strong>免费模型</strong>（模型目录中标注为免费的模型）的调用计入账户级的<strong>免费计划额度</strong>：
+            每个账户每 24 小时 <strong>10,000 积分</strong>（1 积分 = 1 万 token，按输入 + 输出 token 合计）。
+            额度由同一账户在网页端、桌面端 Agent、云端 Bot 与 API 的免费模型调用<strong>共享</strong>。
+          </p>
+          <ul>
+            <li><strong>滚动窗口，不按自然日重置</strong>：窗口从本周期<strong>第一次</strong>产生用量的时刻起算，24 小时后整窗重置；重置后不自动续窗，直到下一次调用再以那一刻重新起算。</li>
+            <li><strong>豁免</strong>：累计充值达到 <strong>Tier 1（≥ ¥10）及以上</strong>，或账户有生效中的套餐，API 调用免费模型不受此额度限制。上表的并发、RPM、TPM / TPD 等速率限制<strong>仍然生效</strong>。</li>
+            <li>额度用尽后返回 <code>429</code>，<code>code</code> 为 <code>free_plan_exhausted</code>，并带 <code>Retry-After</code> 响应头与 <code>resets_at</code>（ISO 8601）字段，表示本窗口的重置时刻。</li>
+            <li>桌面端 / Bot 专属的免费模型（如 Claude Haiku 5.5 FREE）<strong>不对 API 开放</strong>，通过 API 调用会被拒绝。</li>
+          </ul>
+
           <h3 id="响应头">响应头</h3>
           <p>
             部分响应会带 <code>X-RateLimit-*-Minute</code>、<code>X-RateLimit-*-Hour</code>、<code>X-RateLimit-*-Day</code>，
@@ -1527,6 +1540,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
               <tr><td><code>concurrent_limit_exceeded</code></td><td>Key 维度的并发触顶</td><td>等待在途请求返回后再发起</td></tr>
               <tr><td><code>model_queue_full</code></td><td>该模型排队已满，响应中 <code>queue_position</code> 给出排位</td><td>稍后重试或更换模型</td></tr>
               <tr><td><code>upstream_rate_limit</code></td><td>上游模型繁忙，与账户档位无关</td><td>更换模型。同一模型短时间内重试通常无效</td></tr>
+              <tr><td><code>free_plan_exhausted</code></td><td>免费计划 24 小时额度（10,000 积分）已用完，仅影响免费模型</td><td>按 <code>Retry-After</code> / <code>resets_at</code> 等待重置，或充值至 Tier 1 及以上</td></tr>
               <tr><td><code>welfare_global_rpm_exceeded</code></td><td>福利模型的全站每分钟配额已用尽</td><td>稍后重试或改用普通模型</td></tr>
             </tbody>
           </table>
