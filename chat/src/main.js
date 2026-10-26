@@ -4,7 +4,6 @@ import { escapeHtml } from "./utils/html.js";
 import { MODEL_CATALOG_FALLBACK } from "./data/model-catalog-fallback.js";
 import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
 import { mountHeroMascot } from "./grok-bot/hero-mascot.js";
-import loginIslandHtml from "../claude-login-island.html?raw";
 import {
   classifyModelMenuLayers,
   getModelCostLevel,
@@ -5542,16 +5541,13 @@ function lastUserMessageText(messages) {
   let authFlowController = null;
 
   // 登录 iframe 懒加载：HTML 里只写 data-src，真正要展示登录页时才注入 src。
-  // file: 协议下父页与 iframe 不同源，contentDocument 取不到（authDoc 会退化成父文档、
-  // 表单定制全部失效），所以那条分支仍走 srcdoc 内联。
+  // 2026-10-26：原先 file: 协议分支用 srcdoc 内联整份登录页（?raw import），
+  // 线上从不走这条路，却让每个访客多下 ~275KB(br)。已移除；file: 下登录页定制
+  // 会失效（父页与 iframe 不同源），本地调试请用 vite dev / preview:local。
   function ensureAuthLoginFrameLoaded() {
     const frame = document.getElementById("authLoginFrame");
     if (!frame || frame.dataset.cancriLoaded === "true") return;
     frame.dataset.cancriLoaded = "true";
-    if (location.protocol === "file:") {
-      frame.srcdoc = loginIslandHtml;
-      return;
-    }
     const src = frame.getAttribute("data-src");
     if (src) frame.setAttribute("src", src);
   }
