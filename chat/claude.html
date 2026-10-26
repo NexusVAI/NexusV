@@ -64,14 +64,10 @@
         <!-- 2026-05-15：聊天正文 serif 字体。Anthropic Serif（Claude 自家付费字体）
              的最佳免费替代是 Adobe 开源的 Source Serif 4。font-display=swap 让
              文本先用 fallback Georgia 立即可见，woff2 下载好再热切换，避免 FOIT。
-             加载 weight 400 / 500 / 600 covers body / heading / strong。CSP
-             已允许 fonts.googleapis.com (style-src) + fonts.gstatic.com (font-src)。 -->
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link
-            rel="stylesheet"
-            href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600&display=swap"
-        />
+             加载 weight 400 / 500 / 600 covers body / heading / strong。
+             2026-10-26：改为自托管（/fonts/gf/），fonts.googleapis.com 在大陆不可达，
+             作为渲染阻塞样式表会让首屏白屏到超时。 -->
+        <link rel="stylesheet" href="/fonts/gf/sourceserif4.css" />
         <script src="./cancri_config.js?v=20260829-relay-failover"></script>
         <!-- 2026-05-29 积分化：全站统一 token→积分换算（1 积分 = 1 万 token）。
              同步加载，确保在 cancri_chat 之前定义。-->
@@ -83,12 +79,10 @@
         <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
         <!-- supabase-js: 2026-05-13 审查后固定到具体 minor 版本。原 `@2` floating
              tag 会被 jsdelivr 任意 redirect 到当前最新 v2.x，被劫持时无法察觉。
-             TODO: 添加 SRI integrity hash 完成防劫持：
-               curl -sL https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js \
-                 | openssl dgst -sha384 -binary | openssl base64 -A
-             把结果加成 integrity="sha384-XXX" -->
+             2026-10-26：改为同源自托管 /js/vendor/supabase-js-2.46.1.js（与 npm 包
+             dist/umd/supabase.js 逐字节一致，sha384-L+Ilv…uviE），不再依赖 jsdelivr。 -->
         <script
-            src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+            src="/js/vendor/supabase-js-2.46.1.js"
             crossorigin="anonymous"
         ></script>
         <link rel="stylesheet" href="./cancri_chat.css?v=20260925-attachment-label" />

@@ -23,8 +23,6 @@
         <link rel="manifest" href="/site.webmanifest" />
         <link rel="preload" as="image" href="../Logo/Cancri1.jpg" fetchpriority="high" />
         <link rel="preload" as="image" href="../Logo/Cancri.png" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <script src="./api/_anti-debug.js"></script>
         <link rel="stylesheet" href="./api/api-platform.css?v=20260620-claude-ui" />
         <script src="./api/api-platform.js?v=20261001-discord"></script>
@@ -745,7 +743,7 @@
         <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见 js/fingerprint.js 顶部注释。 -->
         <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
         <script
-            src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+            src="/js/vendor/supabase-js-2.46.1.js"
             crossorigin="anonymous"
         ></script>
         <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/api-keys-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->

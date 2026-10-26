@@ -26,12 +26,7 @@
   <meta name="referrer" content="no-referrer" />
   <link rel="icon" type="image/svg+xml" href="assets/nexusvai-N-logo-tight.svg" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600&display=swap"
-  />
+  <link rel="stylesheet" href="/fonts/gf/sourceserif4.css" />
   <script src="./cancri_config.js"></script>
   <!-- 2026-08-14 人机验证：本页此前完全没挂 Turnstile，桌面端登录（走系统浏览器
        打开本页 → signInWithOtp）因此从不携带 captcha_token，只能靠服务端 soft
@@ -45,7 +40,7 @@
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
   <script src="./cancri_turnstile_bridge.js?v=20260905-iframe-realm-fix"></script>
   <script
-    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+    src="/js/vendor/supabase-js-2.46.1.js"
     integrity="sha384-L+IlvYRlq83Yqv9kTm92qOc1xXxFuPatpFkRtF+Ov87zhKKV6gcx9GvTURw6uviE"
     crossorigin="anonymous"
   ></script>
