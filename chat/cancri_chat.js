@@ -12129,6 +12129,16 @@
 		})();
 		return authSessionInflight;
 	}
+	function hasStoredRefreshToken() {
+		try {
+			const raw = localStorage.getItem("cancri_supabase_auth");
+			if (!raw) return false;
+			const parsed = JSON.parse(raw);
+			return !!(parsed && parsed.refresh_token);
+		} catch (_e) {
+			return false;
+		}
+	}
 	async function forceRefreshAuthSession() {
 		const epoch = authSessionEpoch;
 		authSessionPromise = null;
@@ -12173,7 +12183,7 @@
 		const refreshed = await forceRefreshAuthSession();
 		if (epoch !== authSessionEpoch || refreshed && refreshed.user?.id !== session.user?.id) throw createAbortError("登录账号已改变。");
 		if (!refreshed) {
-			showAuthOverlay();
+			if (!hasStoredRefreshToken()) showAuthOverlay();
 			return response;
 		}
 		const retried = await send(refreshed);
@@ -12234,7 +12244,12 @@
 		} catch (_e) {}
 		(async () => {
 			try {
-				const { data } = await getSupabaseClient().auth.getSession();
+				let { data } = await getSupabaseClient().auth.getSession();
+				for (let attempt = 0; attempt < 2 && !data?.session?.user && hasStoredRefreshToken(); attempt++) {
+					await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)));
+					const recovered = await forceRefreshAuthSession();
+					if (recovered?.user) data = { session: recovered };
+				}
 				if (data?.session?.user) {
 					updateAccountInfo(data.session.user);
 					hideAuthOverlay();
