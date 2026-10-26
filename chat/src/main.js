@@ -5799,6 +5799,20 @@ function lastUserMessageText(messages) {
   // 带着旧 JWT 打到网关 → 401 invalid_session → toast。此时 refresh_token 通常
   // 还是有效的，强制刷一次就能恢复，用户根本不该看到那条错误。
   // 这里只做「强制刷新」这一件事；是否重试由调用方决定。
+  // supabase-js 只有在服务端明确拒绝刷新（4xx / 500，非 502/503/504、非网络错误）时才会
+  // 清掉 localStorage 里的会话；网络抖动、超时、503 之类的瞬时失败会原样保留。
+  // 所以「刷新失败后 refresh_token 还在」= 只是暂时没刷成，不等于登录已失效。
+  function hasStoredRefreshToken() {
+    try {
+      const raw = localStorage.getItem("cancri_supabase_auth");
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      return !!(parsed && parsed.refresh_token);
+    } catch (_e) {
+      return false;
+    }
+  }
+
   async function forceRefreshAuthSession() {
     const epoch = authSessionEpoch;
     authSessionPromise = null;
@@ -5853,7 +5867,9 @@ function lastUserMessageText(messages) {
     }
     if (!refreshed) {
       // refresh_token 也废了 —— 这才是真的掉线，给登录浮层而不是只丢一条 toast。
-      showAuthOverlay();
+      // 但若 SDK 没清会话（refresh_token 仍在），说明只是这次刷新遇到网络抖动：
+      // 不弹登录浮层把人踢去重登，保留原响应，让调用方按普通错误处理、稍后自然重试。
+      if (!hasStoredRefreshToken()) showAuthOverlay();
       return response;
     }
     const retried = await send(refreshed);
@@ -5951,7 +5967,15 @@ function lastUserMessageText(messages) {
     (async () => {
       try {
         const client = getSupabaseClient();
-        const { data } = await client.auth.getSession();
+        let { data } = await client.auth.getSession();
+        // 冷启动时 access_token 必然已过期，getSession 要先走一次刷新；这次刷新碰上网络抖动
+        // 会返回空会话，但 localStorage 里的 refresh_token 还在（30 天有效）。
+        // 以前直接弹登录浮层，用户就以为「登录丢了」。这里先再刷新两次，仍失败才让用户重登。
+        for (let attempt = 0; attempt < 2 && !data?.session?.user && hasStoredRefreshToken(); attempt++) {
+          await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)));
+          const recovered = await forceRefreshAuthSession();
+          if (recovered?.user) data = { session: recovered };
+        }
         if (data?.session?.user) {
           updateAccountInfo(data.session.user);
           hideAuthOverlay();
