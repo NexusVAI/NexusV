@@ -1,0 +1,154 @@
+/**
+ * cancri-hscroll.css — 粘性横向滚动卡片带（OWNED）
+ * ------------------------------------------------------------
+ * 交互参考 trae.cn 首页「为你解锁全新可能」：区块吸顶，纵向滚动驱动卡片横移，
+ * 横移距离走完后解除吸顶继续向下。实现为 sticky + transform，
+ * 不依赖 GSAP pin；逻辑见 js/cancri-hscroll.js。
+ *
+ * 锚点：[data-cancri-section="codex-workflow"] [data-cancri-role="hscroll"]
+ * 状态：.is-pinned 由 JS 在桌面宽度（>=768px）且未开启减少动态效果时添加；
+ *       否则（含无 JS）退化为卡片区原生横向滚动 + scroll-snap。
+ */
+
+[data-cancri-role="hscroll"] {
+  --cancri-hscroll-top: var(--nav--height, 4.25rem);
+  --cancri-hscroll-card: clamp(300px, calc((100vh - var(--cancri-hscroll-top)) * 0.55), 620px);
+  position: relative;
+  width: 100%;
+  font-family: var(--cancri-font-sans);
+  color: var(--cancri-ink);
+}
+
+[data-cancri-role="hscroll"] .cancri-hscroll__sticky {
+  position: relative;
+  width: 100%;
+}
+
+[data-cancri-role="hscroll"] .cancri-hscroll__track {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 32px;
+  padding: 0 24px;
+}
+
+[data-cancri-role="hscroll"] .cancri-hscroll__title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--cancri-ink);
+}
+
+[data-cancri-role="hscroll"] .cancri-hscroll__cards {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-cancri-role="hscroll"] .cancri-hscroll__card {
+  flex: 0 0 min(82vw, var(--cancri-hscroll-card));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-snap-align: start;
+}
+
+[data-cancri-role="hscroll"] .cancri-hscroll__num {
+  font-family: var(--_typography---font--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--cancri-brand);
+}
+
+[data-cancri-role="hscroll"] .cancri-hscroll__card-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--cancri-ink);
+}
+
+[data-cancri-role="hscroll"] .cancri-hscroll__media {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  margin: 12px 0;
+  overflow: hidden;
+  border-radius: 20px;
+  background-color: var(--cancri-surface);
+  background-size: cover;
+  background-position: center;
+}
+
+[data-cancri-role="hscroll"] .cancri-hscroll__media--task {
+  background-image: url('../images/New/new1.webp');
+}
+
+[data-cancri-role="hscroll"] .cancri-hscroll__media--agents {
+  background-image: url('../images/New/new2.webp');
+}
+
+[data-cancri-role="hscroll"] .cancri-hscroll__media--demo {
+  background-image: url('../images/New/new3.webp');
+}
+
+[data-cancri-role="hscroll"] .cancri-hscroll__media img,
+[data-cancri-role="hscroll"] .cancri-hscroll__media video {
+  display: block;
+  width: 76%;
+  height: auto;
+  max-height: 80%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 18px 36px -12px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.16);
+}
+
+[data-cancri-role="hscroll"] .cancri-hscroll__desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--cancri-muted);
+}
+
+/* ---- 吸顶横移模式（JS 添加 .is-pinned） ---- */
+[data-cancri-role="hscroll"].is-pinned .cancri-hscroll__sticky {
+  position: sticky;
+  top: var(--cancri-hscroll-top);
+  height: calc(100vh - var(--cancri-hscroll-top));
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+[data-cancri-role="hscroll"].is-pinned .cancri-hscroll__track {
+  flex-direction: row;
+  align-items: center;
+  gap: clamp(64px, 10vw, 152px);
+  width: max-content;
+  padding: 0 clamp(64px, 10vw, 160px);
+  will-change: transform;
+}
+
+[data-cancri-role="hscroll"].is-pinned .cancri-hscroll__title {
+  white-space: nowrap;
+}
+
+[data-cancri-role="hscroll"].is-pinned .cancri-hscroll__cards {
+  width: auto;
+  overflow: visible;
+  scroll-snap-type: none;
+  padding-bottom: 0;
+}
+
+[data-cancri-role="hscroll"].is-pinned .cancri-hscroll__card {
+  flex-basis: var(--cancri-hscroll-card);
+  width: var(--cancri-hscroll-card);
+}

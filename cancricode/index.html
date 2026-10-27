@@ -77,6 +77,7 @@
 <link href="./css/cancri-gold-ticket.css?v=gold6" rel="stylesheet" type="text/css"/>
 <link href="./css/cancri-rimlight.css" rel="stylesheet" type="text/css"/>
 <link href="./css/cancri-integration.css" rel="stylesheet" type="text/css"/>
+<link href="./css/cancri-hscroll.css" rel="stylesheet" type="text/css"/>
 <link href="./css/cancri-motion.css" rel="stylesheet" type="text/css"/><link href="./css/cancri-hero-collage.css" rel="stylesheet" type="text/css"/>
 <link href="./css/cancri-liquid-glass.css" rel="stylesheet" type="text/css"/>
 <script>
@@ -867,39 +868,35 @@
       <h2 style="font-size: clamp(2rem, 1.50235vw + 1.64789rem, 3rem); font-weight: 500; line-height: clamp(2.28rem, calc(2.28rem + 1.2 * ((100vw - 23.4375rem)/66.5625)), 3.48rem); letter-spacing: clamp(-0.03em, calc(-0.03em + 0.02 * ((90rem - 100vw)/66.5625)), -0.01em); color: #000000; margin: 0;">使用智能体进行构建的<span class="cancri-brand-ink">最佳方式</span></h2>
     </div>
 
-    <!-- Feature Row 1: Text Left, Image Right -->
-    <div class="codex-row" style="display: flex; flex-direction: column; gap: 40px; align-items: center; margin-bottom: 144px;">
-      <div class="codex-col-text" style="flex: 0 0 28%; width: 100%; max-width: 350px;">
-        <h3 style="font-size: clamp(1.5rem, 0.56338vw + 1.36796rem, 1.875rem); font-weight: 500; line-height: clamp(1.98rem, calc(1.98rem + 0.495 * ((100vw - 23.4375rem)/66.5625)), 2.475rem); letter-spacing: -0.01em; color: #2200ff; margin: 0 0 20px 0;">为真实的软件工程而生</h3>
-        <p style="font-size: 1.0625rem; font-weight: 400; line-height: 1.74994rem; letter-spacing: -0.01em; color: #4a4a4a; margin: 0;">从日常静态审计，到最贴近生产环境的核心测试，Cancri Code 为你提供完整的端到端任务支持——弹性云沙箱加持，上线压测、安全渗透、代码迁移，一站搞定。</p>
-      </div>
-      <div class="codex-col-img" data-cancri-corner="100" style="flex: 0 0 72%; width: 100%; box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);">
-        <img src="./images/one.png" alt="Codex 任务界面" style="width: 100%; height: auto; display: block;" />
+  </div>
+
+  <!-- 粘性横向滚动卡片带：css/cancri-hscroll.css + js/cancri-hscroll.js -->
+  <div class="cancri-hscroll" data-cancri-role="hscroll">
+    <div class="cancri-hscroll__sticky">
+      <div class="cancri-hscroll__track">
+        <h3 class="cancri-hscroll__title">Cancri Code<br />为你解锁全新可能</h3>
+        <div class="cancri-hscroll__cards">
+          <article class="cancri-hscroll__card">
+            <div class="cancri-hscroll__num">[00]</div>
+            <h4 class="cancri-hscroll__card-title">为真实的软件工程而生</h4>
+            <div class="cancri-hscroll__media cancri-hscroll__media--task"><img src="./images/one.png" alt="Cancri Code 任务界面" loading="lazy" /></div>
+            <p class="cancri-hscroll__desc">从日常静态审计，到最贴近生产环境的核心测试，Cancri Code 为你提供完整的端到端任务支持——弹性云沙箱加持，上线压测、安全渗透、代码迁移，一站搞定。</p>
+          </article>
+          <article class="cancri-hscroll__card">
+            <div class="cancri-hscroll__num">[01]</div>
+            <h4 class="cancri-hscroll__card-title">专为多Agent工作流而设计</h4>
+            <div class="cancri-hscroll__media cancri-hscroll__media--agents"><img src="./images/two.png" alt="Cancri Code 多智能体工作空间" loading="lazy" /></div>
+            <p class="cancri-hscroll__desc">Cancri Code 是Agent Coding的指挥中心。凭借内置工作树与弹性云沙箱，智能体可在多个项目间并行推进——从代码开发到上线压测、安全测试，将原本耗时数周的任务压缩至几天内完成。</p>
+          </article>
+          <article class="cancri-hscroll__card">
+            <div class="cancri-hscroll__num">[02]</div>
+            <h4 class="cancri-hscroll__card-title">图片没意思，上视频</h4>
+            <div class="cancri-hscroll__media cancri-hscroll__media--demo"><video src="./videos/CancriCode3-Intro.mp4" autoplay loop muted playsinline></video></div>
+            <p class="cancri-hscroll__desc">看完了内心怎么想？不急——我们继续下滑</p>
+          </article>
+        </div>
       </div>
     </div>
-
-    <!-- Feature Row 2: Image Left, Text Right -->
-    <div class="codex-row codex-row-reverse" style="display: flex; flex-direction: column; gap: 40px; align-items: center;">
-      <div class="codex-col-text" style="flex: 0 0 28%; width: 100%; max-width: 350px;">
-        <h3 style="font-size: clamp(1.5rem, 0.56338vw + 1.36796rem, 1.875rem); font-weight: 500; line-height: clamp(1.98rem, calc(1.98rem + 0.495 * ((100vw - 23.4375rem)/66.5625)), 2.475rem); letter-spacing: -0.01em; color: #2200ff; margin: 0 0 20px 0;">专为多Agent工作流而设计</h3>
-        <p style="font-size: 1.0625rem; font-weight: 400; line-height: 1.74994rem; letter-spacing: -0.01em; color: #4a4a4a; margin: 0;">Cancri Code 是Agent Coding的指挥中心。凭借内置工作树与弹性云沙箱，智能体可在多个项目间并行推进——从代码开发到上线压测、安全测试，将原本耗时数周的任务压缩至几天内完成。</p>
-      </div>
-      <div class="codex-col-img" data-cancri-corner="100" style="flex: 0 0 72%; width: 100%; box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);">
-        <img src="./images/two.png" alt="Codex 多智能体工作空间" style="width: 100%; height: auto; display: block;" />
-      </div>
-    </div>
-
-    <!-- Feature Row 3: Text Left, Video Right -->
-    <div class="codex-row" style="display: flex; flex-direction: column; gap: 40px; align-items: center; margin-top: 144px;">
-      <div class="codex-col-text" style="flex: 0 0 28%; width: 100%; max-width: 350px;">
-        <h3 style="font-size: clamp(1.5rem, 0.56338vw + 1.36796rem, 1.875rem); font-weight: 500; line-height: clamp(1.98rem, calc(1.98rem + 0.495 * ((100vw - 23.4375rem)/66.5625)), 2.475rem); letter-spacing: -0.01em; color: #2200ff; margin: 0 0 20px 0;">图片没意思，上视频</h3>
-        <p style="font-size: 1.0625rem; font-weight: 400; line-height: 1.74994rem; letter-spacing: -0.01em; color: #4a4a4a; margin: 0;">看完了内心怎么想？不急——我们继续下滑</p>
-      </div>
-      <div class="codex-col-img" data-cancri-corner="100" style="flex: 0 0 72%; width: 100%; box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);">
-        <video src="./videos/CancriCode3-Intro.mp4" autoplay loop muted playsinline style="width: 100%; height: auto; display: block;"></video>
-      </div>
-    </div>
-
   </div>
 </section>
 
@@ -1411,6 +1408,7 @@
 <script defer src="./js/cancri-cornerkit.js"></script>
 <script defer src="./js/cancri-rimlight.js"></script>
 <script defer src="./js/cancri-integration.js"></script>
+<script defer src="./js/cancri-hscroll.js"></script>
 <aside class="cancri-community" data-cancri-section="community" data-community-widget aria-label="NexusVAI 社区">
   <button type="button" class="cancri-community__trigger" data-community-trigger aria-label="关注 NexusVAI 社区" aria-controls="cancri-community-panel" aria-expanded="false">
     <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
