@@ -2,7 +2,7 @@
 // 每个 .prose > section[id] 是一页；hash 切换页，只显示当前页内容。
 (function () {
     const pages = Array.from(
-        document.querySelectorAll(".prose > section[id]"),
+        document.querySelectorAll(".prose > section[id], .live-doc > section[id]"),
     );
     if (!pages.length) return;
 
