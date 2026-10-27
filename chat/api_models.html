@@ -126,6 +126,52 @@
                 <div id="cancri-pareto" data-cancri-limit="16" class="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-x-10 xl:grid-cols-3"></div>
               </div>
 
+              <!-- ─── 实时语音（2026-10-27）：gpt-live-1 是 WebSocket 语音接口，不是对话模型，
+                   故意不进 model_catalog（进了就会出现在网页菜单 / /v1/models 并被当 chat 调用）。
+                   卡片静态写在这里，点进接入文档。data-model-id 只挂在封面上：让 grok-fluid-covers.js
+                   给它播封面，同时整卡是 <a>，oai-models.js 的卡片点击 / 回车跳详情都不会接管它。 ─── -->
+              <div id="cancri-live-section" data-cancri-browse class="mb-7 flex w-full flex-col gap-7 scroll-mt-24">
+                <div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                  <div class="flex max-w-[980px] flex-col gap-1 pr-2">
+                    <h2 class="text-3xl font-semibold tracking-tight">实时语音</h2>
+                    <div class="text-secondary text-sm">OpenAI 官方 GPT-Live，边听边说的全双工语音。走 WebSocket 接口，不能用 Chat Completions 调用，接入方式见文档。</div>
+                  </div>
+                  <div class="mt-2 md:mt-0">
+                    <a href="./api_docs_live.html" class="_Button_6dmow_1" data-color="primary" data-variant="outline" data-pill data-size="xl"><span class="_ButtonInner_6dmow_4">接入文档</span></a>
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-x-10 xl:grid-cols-3">
+                  <a href="./api_docs_live.html" class="flex flex-col text-emphasis hover:text-emphasis" id="model-gpt-live-1">
+                    <div class="w-full" data-model-id="gpt-live-1" style="height:230px">
+                      <div class="cancri-thumb flex h-full w-full flex-1 flex-row items-center justify-center gap-4 rounded-lg" style="background-image:url('./assets/oai.logo/3.png')">
+                        <span class="cancri-thumb__name">GPT-Live 1</span>
+                      </div>
+                    </div>
+                    <div class="mt-5 flex flex-col gap-1">
+                      <div class="flex items-center gap-1.5 text-base font-semibold text-emphasis">
+                        <span>GPT-Live 1</span>
+                        <div class="_Badge_10t5o_1" data-color="success" data-size="md" data-pill data-variant="soft">实时语音</div>
+                      </div>
+                      <div class="text-sm text-secondary">OpenAI 官方实时语音。后端可选 GPT-6-Luna（可联网）、任意站内模型，或接你自己的 Agent。</div>
+                      <div class="cancri-spec mt-3">
+                        <div class="cancri-spec__row">
+                          <span class="cancri-spec__key">Model ID</span>
+                          <button type="button" class="cancri-id" data-copy="gpt-live-1" title="点击复制 model ID"><span class="cancri-id__text">gpt-live-1</span></button>
+                        </div>
+                        <div class="cancri-spec__row">
+                          <span class="cancri-spec__key">接口</span>
+                          <span class="cancri-spec__val">WebSocket /v1/live/sessions</span>
+                        </div>
+                        <div class="cancri-spec__row">
+                          <span class="cancri-spec__key">价格</span>
+                          <span class="cancri-spec__val cancri-price">¥0.009 / 秒（¥0.54 / 分钟），后端另计</span>
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+              </div>
+
               <div data-cancri-browse class="h-px w-full bg-primary-soft"></div>
 
               <!-- ─── 专项模型（按提供商分类）─── -->
