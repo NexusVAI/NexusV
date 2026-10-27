@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="zh-CN" class="dark" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" /><script src="/js/clean-url.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- CSP 与 api_models.html 同口径：禁 inline JS，允许 inline style。 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://cn.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <title>实时语音 GPT-Live | NexusVAI API</title>
+    <meta name="description" content="NexusVAI 实时语音接入文档：gpt-live-1 WebSocket 协议、三种后端模式（官方 GPT-6-Luna / 站内模型 / 只买语音层）、事件参考、计费与限速。" />
+    <link rel="canonical" href="https://www.nexusvai.xyz/chat/api_docs_live" />
+    <meta property="og:title" content="实时语音 GPT-Live | NexusVAI API">
+    <meta property="og:description" content="gpt-live-1 实时语音：与 OpenAI Live 协议兼容的 WebSocket 接口，按秒计费。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.nexusvai.xyz/chat/api_docs_live">
+    <meta property="og:image" content="https://www.nexusvai.xyz/Logo/nexusvai-og.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="./api/oai-platform.css?v=20260622-models" />
+    <link rel="stylesheet" href="./api/oai-cancri.css?v=20261010-qqnav" />
+    <link rel="stylesheet" href="./api/oai-cjk-fonts.css?v=20260921-local-fonts" />
+    <script src="./api/oai-shell-nav.js?v=20261027-live"></script>
+    <script src="./api/oai-platform.js?v=20260917-ping-warmup"></script>
+    <style>
+      .live-doc { max-width: 860px; color: var(--color-text-default, inherit); line-height: 1.75; font-size: 15px; }
+      .live-doc section { scroll-margin-top: 88px; padding-top: 8px; }
+      .live-doc h1 { font-size: 2.25rem; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 12px; color: var(--color-text-emphasis); }
+      .live-doc h2 { font-size: 1.6rem; font-weight: 600; margin: 48px 0 12px; color: var(--color-text-emphasis); }
+      .live-doc h3 { font-size: 1.15rem; font-weight: 600; margin: 28px 0 8px; color: var(--color-text-emphasis); }
+      .live-doc p, .live-doc li { color: var(--color-text-secondary); }
+      .live-doc p { margin: 10px 0; }
+      .live-doc ul, .live-doc ol { margin: 8px 0 12px; padding-left: 1.4em; }
+      .live-doc ul { list-style: disc; }
+      .live-doc ol { list-style: decimal; }
+      .live-doc li { margin: 4px 0; }
+      .live-doc strong { color: var(--color-text-emphasis); font-weight: 600; }
+      .live-doc a { text-decoration: underline; text-underline-offset: 3px; }
+      .live-doc code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86em; padding: 1px 6px; border-radius: 6px; background: var(--color-background-primary-soft, rgba(127,127,127,.15)); color: var(--color-text-emphasis); word-break: break-word; }
+      .live-doc pre { margin: 12px 0 18px; padding: 16px 18px; border-radius: 12px; background: #0d0d0d; border: 1px solid var(--color-border-primary-surface, #333); overflow-x: auto; }
+      .live-doc pre code { padding: 0; background: none; color: #e6e6e6; font-size: 13px; line-height: 1.65; word-break: normal; white-space: pre; }
+      .live-doc .code-title { margin: 16px 0 -6px; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--color-text-secondary); text-transform: uppercase; }
+      .live-doc table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 14px; display: block; overflow-x: auto; }
+      .live-doc th, .live-doc td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--color-border-primary-surface, #333); }
+      .live-doc th { color: var(--color-text-emphasis); font-weight: 600; white-space: nowrap; }
+      .live-doc td { color: var(--color-text-secondary); }
+      .live-doc .callout { margin: 16px 0; padding: 14px 18px; border-radius: 14px; border: 1px solid var(--color-border-primary-surface, #333); background: var(--color-background-primary-soft, rgba(127,127,127,.08)); }
+      .live-doc .callout p { margin: 4px 0; }
+      .live-doc .callout--warn { border-color: rgba(245, 158, 11, .55); }
+      .live-doc .endpoint { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 14px 0; padding: 12px 16px; border-radius: 14px; border: 1px solid var(--color-border-primary-surface, #333); }
+      .live-doc .endpoint .method { font-weight: 700; font-size: 12px; padding: 2px 8px; border-radius: 6px; background: #16a34a; color: #fff; }
+      .live-doc .endpoint button { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; text-align: left; word-break: break-all; color: var(--color-text-emphasis); }
+      .live-doc .muted { font-size: 13px; }
+    </style>
+  </head>
+
+  <body class="overflow-x-hidden" data-oai-page="docs" data-cancri-base="" data-cancri-logobase="../Logo/" data-cancri-artbase="./assets/oai.logo/">
+<link rel="stylesheet" type="text/css" href="assets/p2m-loader.css?v=20260814-paint" />
+<div id="p2m-loader" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="-80 -80 1184 1184" width="180" height="180" role="img" aria-label="N logo" overflow="visible" id="p2m-logo">
+    <g id="mark" fill="#111111" fill-rule="evenodd">
+      <path id="part-main" d="M760 252 L760 645 L372 330 L371 613 L262 722 L262 222 L422 222 L535 324 L695 460 L696 325 Z"/>
+      <path id="part-tr" d="M562 318 L562 222 L760 222 L672 313 L672 413 Z"/>
+      <path id="part-diag" d="M395 378 L758 671 L760 735 L641 735 L397 551 L394 548 Z"/>
+      <path id="part-bl" d="M395 578 L472 638 L472 735 L287 736 L395 627 Z"/>
+    </g>
+  </svg>
+</div>
+<script src="assets/p2m-loader.js?v=20260814-paint" defer></script>
+
+    <!-- oai-shell: shared header/search/drawer -->
+    <div id="oai-mount-header"></div>
+    <div id="oai-mount-search"></div>
+    <div id="oai-mount-drawer"></div>
+
+    <div class="min-h-dvh">
+      <div class="flex pt-16">
+        <div class="hidden md:flex md:flex-col w-[218px] px-3 pb-6 pt-2 md:fixed md:top-16 md:bottom-0 md:z-40 bg-surface dark:bg-black" id="oai-mount-sidebar"></div>
+        <main class="min-w-0 flex-1 md:pl-[240px]">
+          <div class="mx-auto w-full max-w-6xl px-4 py-10 md:px-12 xl:px-4">
+            <article class="live-doc">
+
+<!-- ═══════════════════════════ 概述 ═══════════════════════════ -->
+<section id="intro">
+  <h1>实时语音：GPT-Live</h1>
+  <p><code>gpt-live-1</code> 是 OpenAI 官方的全双工实时语音模型：你持续推麦克风音频，它边听边说，同时给出双向转写。NexusVAI 用一条 <strong>WebSocket</strong> 接口把它开放出来，<strong>事件格式与 OpenAI Live 协议一致</strong>，只是 Base URL 和 API Key 换成我们的。</p>
+  <p>gpt-live-1 只负责「听和说」。需要思考、查资料、调工具时，它把任务<strong>委派</strong>给一个后端。你可以选三种后端之一：</p>
+  <table>
+    <thead><tr><th>模式</th><th>怎么写</th><th>谁来回答</th><th>适合</th></tr></thead>
+    <tbody>
+      <tr><td><strong>官方后端</strong>（默认）</td><td>不写 <code>delegation</code>，或 <code>responses.model = "gpt-6-luna"</code></td><td>OpenAI GPT-6-Luna，可开联网搜索与函数工具</td><td>开箱即用的语音助手</td></tr>
+      <tr><td><strong>站内模型</strong></td><td><code>responses.model</code> 填 <a href="./api_models.html">模型广场</a> 里任意模型 id，例如 <code>claude-haiku-5.5</code></td><td>你选的站内模型（按它自己的价格计费）</td><td>想要特定模型的口吻 / 能力</td></tr>
+      <tr><td><strong>只买语音层</strong></td><td><code>delegation.type = "client"</code></td><td>你自己的程序 / Agent</td><td>已有 Agent，只缺语音外壳</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <p><strong>一句话记住计费：</strong>语音按秒收（¥0.009/秒，即 ¥0.54/分钟），后端另算。官方后端按 Luna token 和联网次数收，站内模型按那个模型的价格收，只买语音层没有后端费。详见 <a href="#pricing">计费</a>。</p>
+  </div>
+  <div class="callout callout--warn">
+    <p><strong>当前不提供：</strong>WebRTC 接入（请用 WebSocket）、其它官方后端模型（gpt-6-sol / gpt-6-astra 等一律拒绝）、Fast/priority 档、Decisions 委派、会话存储与录音下载（<code>store</code> 只能为 <code>false</code>）、代码解释器 / shell / 生图等容器类工具。</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ 连接与认证 ═══════════════════════════ -->
+<section id="connect">
+  <h2>连接与认证</h2>
+  <div class="endpoint">
+    <span class="method">GET</span>
+    <button type="button" data-copy="wss://chat.nexusvai.xyz/functions/v1/api-gateway/v1/live/sessions" title="点击复制">wss://chat.nexusvai.xyz/functions/v1/api-gateway/v1/live/sessions</button>
+  </div>
+  <div class="callout callout--warn">
+    <p><code>cn.nexusvai.xyz</code> 加速地址<strong>暂不支持</strong> WebSocket 升级，连上去会得到 <code>426 websocket_required</code>。实时语音请固定使用上面的 <code>chat.nexusvai.xyz</code> 地址。普通 HTTP 接口仍可继续用 <code>cn.nexusvai.xyz</code>。</p>
+  </div>
+
+  <h3>API Key 放在哪</h3>
+  <table>
+    <thead><tr><th>方式</th><th>写法</th><th>场景</th></tr></thead>
+    <tbody>
+      <tr><td>请求头（推荐）</td><td><code>Authorization: Bearer cancri_sk_...</code>（或 <code>x-api-key: cancri_sk_...</code>）</td><td>服务端：Node / Python / Go 等</td></tr>
+      <tr><td>WebSocket 子协议</td><td><code>openai-insecure-api-key.cancri_sk_...</code>（别名 <code>cancri-key.cancri_sk_...</code>）</td><td>浏览器（浏览器的 WebSocket 不能自定义请求头）</td></tr>
+    </tbody>
+  </table>
+  <p>用子协议传 Key 时，建议再附一个普通子协议（例如 <code>cancri-live</code>），服务端会选回这个普通子协议，Key 不会出现在响应头里：</p>
+  <pre><code>new WebSocket(url, ["cancri-live", "openai-insecure-api-key." + key]);</code></pre>
+  <div class="callout callout--warn">
+    <p><strong>别把正式 Key 写进公开网页。</strong>浏览器直连只适合本地调试。上线时请让浏览器连你自己的服务端，由服务端带 Key 转发；或者给前端单独发一把设了额度上限、只放行 <code>gpt-live-1</code> 的 Key（控制台 → API 密钥 → 模型白名单 / 累计额度）。</p>
+  </div>
+
+  <h3>Key 的模型限制</h3>
+  <ul>
+    <li>Key 设了<strong>模型白名单</strong>时，白名单里必须有 <code>gpt-live-1</code>，否则握手返回 <code>403 model_not_in_whitelist</code>。用站内模型做后端时，那个模型也要在白名单里（后端调用走同一把 Key）。</li>
+    <li>Key 绑定了<strong>模型分组</strong>时，目前不能用于实时语音（<code>403 model_not_in_group</code>），请另开一把不绑分组的 Key。</li>
+    <li>Key 的累计 token / 请求次数上限已用完时，握手返回 <code>429</code>。</li>
+  </ul>
+
+  <h3>会话流程</h3>
+  <ol>
+    <li>建立 WebSocket。鉴权、封禁、限速都在握手阶段检查，不通过就直接返回 HTTP 错误（见 <a href="#errors">错误码</a>）。</li>
+    <li><strong>20 秒内</strong>发送第一条事件 <code>session.start</code>，超时会收到 <code>session_start_timeout</code> 并断开。</li>
+    <li>网关先预扣第一段（30 秒）语音费，再连上游。余额不足时收到 <code>error</code>（<code>insufficient_balance</code>）后断开，<strong>不产生费用</strong>。</li>
+    <li>收到 <code>session.started</code> 和 <code>cancri.session.created</code> 后，开始持续发送 <code>session.input_audio.append</code>。</li>
+    <li>结束时发 <code>session.close</code>，等 <code>session.closed</code>（里面有最终计费秒数）和 <code>cancri.billing.updated</code>（<code>final: true</code>）。</li>
+  </ol>
+  <p class="muted">在 <code>session.started</code> 之前发来的事件会先排队，开始后按顺序转发，最多排 200 条。</p>
+</section>
+
+<!-- ═══════════════════════════ 快速开始 ═══════════════════════════ -->
+<section id="quickstart">
+  <h2>快速开始</h2>
+  <h3>Node.js（服务端，<code>npm i ws</code>）</h3>
+  <p>读一个 24 kHz、单声道、16 位的 PCM WAV 文件，按真实速度（每 100 ms 一块）推上去，打印转写，把回复音频存成文件：</p>
+  <pre><code>import WebSocket from "ws";
+import { readFileSync, writeFileSync } from "node:fs";
+
+const URL = "wss://chat.nexusvai.xyz/functions/v1/api-gateway/v1/live/sessions";
+const ws = new WebSocket(URL, { headers: { Authorization: `Bearer ${process.env.CANCRI_API_KEY}` } });
+
+const pcm = readFileSync("question.wav").subarray(44); // 跳过 44 字节 WAV 头
+const out = [];
+
+ws.on("open", () =&gt; {
+  ws.send(JSON.stringify({
+    type: "session.start",
+    session: {
+      model: "gpt-live-1",
+      instructions: "你是一个简洁的中文语音助手。",
+      audio: { format: { type: "audio/pcm", rate: 24000 }, output: { voice: "marin" } },
+      // 不写 delegation = 默认官方 GPT-6-Luna 后端
+    },
+  }));
+});
+
+ws.on("message", async (buf) =&gt; {
+  const e = JSON.parse(buf.toString());
+  switch (e.type) {
+    case "session.started": {
+      for (let i = 0; i &lt; pcm.length; i += 4800) {          // 4800 字节 = 100 ms
+        ws.send(JSON.stringify({ type: "session.input_audio.append", audio: pcm.subarray(i, i + 4800).toString("base64") }));
+        await new Promise((r) =&gt; setTimeout(r, 100));
+      }
+      setTimeout(() =&gt; ws.send(JSON.stringify({ type: "session.close" })), 15000);
+      break;
+    }
+    case "session.output_audio.delta": out.push(Buffer.from(e.delta, "base64")); break;
+    case "session.input_transcript.delta": process.stdout.write(`[你] ${e.delta}\n`); break;
+    case "session.output_transcript.delta": process.stdout.write(`[AI] ${e.delta}\n`); break;
+    case "cancri.billing.updated": if (e.final) console.log("本次费用 ¥", e.total_cny, "计费秒数", e.seconds); break;
+    case "error": console.error("error", e.error); break;
+  }
+});
+
+ws.on("close", (code, reason) =&gt; {
+  writeFileSync("answer.pcm", Buffer.concat(out)); // 24 kHz / 16 位 / 单声道裸 PCM
+  console.log("closed", code, reason.toString());
+});</code></pre>
+  <p class="muted">「静音」也是音频。真实对话里麦克风一直在推帧，所以模型能判断你什么时候说完；只推一段录音就停，模型可能一直等你继续说。示例里推完录音后不再发帧，靠 15 秒后的 <code>session.close</code> 收尾。</p>
+
+  <h3>Python（服务端，<code>pip install websockets</code>）</h3>
+  <pre><code>import asyncio, base64, json, os, websockets
+
+URL = "wss://chat.nexusvai.xyz/functions/v1/api-gateway/v1/live/sessions"
+
+async def main():
+    headers = {"Authorization": f"Bearer {os.environ['CANCRI_API_KEY']}"}
+    async with websockets.connect(URL, additional_headers=headers, max_size=None) as ws:
+        await ws.send(json.dumps({
+            "type": "session.start",
+            "session": {
+                "model": "gpt-live-1",
+                "audio": {"format": {"type": "audio/pcm", "rate": 24000}},
+                "delegation": {"type": "responses", "responses": {
+                    "model": "gpt-6-luna",
+                    "tools": [{"type": "web_search"}],
+                }},
+            },
+        }))
+        pcm = open("question.wav", "rb").read()[44:]
+        async for raw in ws:
+            e = json.loads(raw)
+            if e["type"] == "session.started":
+                async def pump():
+                    for i in range(0, len(pcm), 4800):
+                        await ws.send(json.dumps({"type": "session.input_audio.append",
+                                                  "audio": base64.b64encode(pcm[i:i+4800]).decode()}))
+                        await asyncio.sleep(0.1)
+                    await asyncio.sleep(15)
+                    await ws.send(json.dumps({"type": "session.close"}))
+                asyncio.create_task(pump())
+            elif e["type"].endswith("transcript.delta"):
+                print(e["type"], e["delta"])
+            elif e["type"] == "cancri.billing.updated" and e["final"]:
+                print("费用 ¥", e["total_cny"])
+            elif e["type"] == "error":
+                print("error", e["error"])
+
+asyncio.run(main())</code></pre>
+  <p class="muted"><code>websockets</code> 14 以上用 <code>additional_headers</code>，老版本叫 <code>extra_headers</code>。</p>
+
+  <h3>浏览器（麦克风 + 播放，仅限本地调试）</h3>
+  <pre><code>const KEY = "cancri_sk_...";   // ⚠ 只用于本地调试，见上方安全提示
+const URL = "wss://chat.nexusvai.xyz/functions/v1/api-gateway/v1/live/sessions";
+const ctx = new AudioContext({ sampleRate: 24000 });
+let playAt = 0;
+
+const ws = new WebSocket(URL, ["cancri-live", "openai-insecure-api-key." + KEY]);
+ws.onopen = () =&gt; ws.send(JSON.stringify({
+  type: "session.start",
+  session: { model: "gpt-live-1", audio: { format: { type: "audio/pcm", rate: 24000 } } },
+}));
+
+ws.onmessage = async (ev) =&gt; {
+  const e = JSON.parse(ev.data);
+  if (e.type === "session.started") startMic();
+  if (e.type === "session.output_audio.delta") play(e.delta);
+  if (e.type === "error") console.error(e.error);
+};
+
+async function startMic() {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true } });
+  const src = ctx.createMediaStreamSource(stream);
+  const proc = ctx.createScriptProcessor(2048, 1, 1);   // 上下文已是 24 kHz，无需重采样
+  proc.onaudioprocess = (ev) =&gt; {
+    const f32 = ev.inputBuffer.getChannelData(0);
+    const i16 = new Int16Array(f32.length);
+    for (let i = 0; i &lt; f32.length; i++) i16[i] = Math.max(-1, Math.min(1, f32[i])) * 0x7fff;
+    if (ws.readyState === 1) ws.send(JSON.stringify({ type: "session.input_audio.append", audio: b64(i16.buffer) }));
+  };
+  src.connect(proc); proc.connect(ctx.destination);
+}
+
+function play(b64data) {
+  const bytes = Uint8Array.from(atob(b64data), (c) =&gt; c.charCodeAt(0));
+  const i16 = new Int16Array(bytes.buffer);
+  const buf = ctx.createBuffer(1, i16.length, 24000);
+  const ch = buf.getChannelData(0);
+  for (let i = 0; i &lt; i16.length; i++) ch[i] = i16[i] / 0x8000;
+  const node = ctx.createBufferSource();
+  node.buffer = buf; node.connect(ctx.destination);
+  playAt = Math.max(playAt, ctx.currentTime); node.start(playAt); playAt += buf.duration;
+}
+
+function b64(ab) {
+  let s = ""; const u8 = new Uint8Array(ab);
+  for (let i = 0; i &lt; u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  return btoa(s);
+}</code></pre>
+  <p class="muted">浏览器需要用户先点一下页面才允许播放声音（可在点击时调用 <code>ctx.resume()</code>）。生产环境建议换成 AudioWorklet，并在用户打断时清空播放队列。</p>
+</section>
+
+<!-- ═══════════════════════════ session.start ═══════════════════════════ -->
+<section id="session-start">
+  <h2>session.start 参数</h2>
+  <p>第一条、且只能发一次。未列出的字段一律拒绝（<code>unknown_parameter</code>），不会静默忽略。</p>
+  <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>session.model</code></td><td>string</td><td>只能是 <code>gpt-live-1</code>，可省略。</td></tr>
+      <tr><td><code>session.instructions</code></td><td>string</td><td>语音层的系统提示：语气、人设、语言等。≤ 64,000 字符。</td></tr>
+      <tr><td><code>session.audio.format</code></td><td>object</td><td>输入输出音频格式：<code>{"type":"audio/pcm","rate":24000}</code>（默认）或 <code>rate: 16000</code>；电话线路可用 <code>audio/pcmu</code> / <code>audio/pcma</code>，<code>rate: 8000</code>。PCM 为 16 位小端、单声道。</td></tr>
+      <tr><td><code>session.audio.output.voice</code></td><td>string</td><td>音色名，例如 <code>marin</code>。可用音色以 OpenAI 官方 GPT-Live 文档为准。</td></tr>
+      <tr><td><code>session.input</code></td><td>array</td><td>预置对话历史，最多 128 条，每条 <code>role</code> 为 <code>developer</code> / <code>user</code> / <code>assistant</code>。</td></tr>
+      <tr><td><code>session.store</code></td><td>false</td><td>只能为 <code>false</code> 或省略。</td></tr>
+      <tr><td><code>session.triggers</code></td><td>[]</td><td>只能是空数组或省略（不提供 Decisions）。</td></tr>
+      <tr><td><code>session.delegation</code></td><td>object</td><td>后端设置，见 <a href="#backends">三种后端模式</a>。省略 = 官方 GPT-6-Luna。</td></tr>
+      <tr><td><code>session.delegation.acknowledgement_delay_ms</code></td><td>integer</td><td>委派开始后，过多久让语音层先说一句「好的，我查一下」之类的话。0–10000。</td></tr>
+      <tr><td><code>event_id</code></td><td>string</td><td>可选，≤128 字符。出错时会在 <code>error.client_event_id</code> 里原样带回。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════ 三种后端 ═══════════════════════════ -->
+<section id="backends">
+  <h2>三种后端模式</h2>
+
+  <h3 id="backend-official">① 官方后端：GPT-6-Luna（默认）</h3>
+  <pre><code>{
+  "type": "session.start",
+  "session": {
+    "model": "gpt-live-1",
+    "instructions": "你是旅行助手，回答简短。",
+    "delegation": {
+      "type": "responses",
+      "responses": {
+        "model": "gpt-6-luna",
+        "instructions": "需要实时信息时先联网搜索。",
+        "tools": [
+          { "type": "web_search" },
+          { "type": "function", "name": "get_order", "description": "查订单状态",
+            "parameters": { "type": "object", "properties": { "order_id": { "type": "string" } }, "required": ["order_id"] } }
+        ],
+        "tool_choice": "auto",
+        "reasoning": { "effort": "low" },
+        "max_output_tokens": 2048
+      }
+    }
+  }
+}</code></pre>
+  <table>
+    <thead><tr><th><code>delegation.responses.*</code></th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>model</code></td><td>只能是 <code>gpt-6-luna</code>（省略即此）。填其它 OpenAI 官方模型返回 <code>live_backend_model_not_allowed</code>；填站内模型 id 则进入站内模式（见 ②）。</td></tr>
+      <tr><td><code>instructions</code></td><td>后端的系统提示，≤ 64,000 字符。</td></tr>
+      <tr><td><code>tools</code></td><td>最多 32 个，类型只能是 <code>web_search</code>（按次计费）、<code>function</code>、<code>custom</code>（由你执行，无工具费）。其它类型返回 <code>live_tool_not_allowed</code>。</td></tr>
+      <tr><td><code>tool_choice</code></td><td><code>auto</code> / <code>none</code> / <code>required</code>，或指向上面某个工具。</td></tr>
+      <tr><td><code>parallel_tool_calls</code></td><td>boolean。</td></tr>
+      <tr><td><code>max_output_tokens</code></td><td>16–128000。</td></tr>
+      <tr><td><code>reasoning.effort</code></td><td><code>none</code> / <code>low</code> / <code>medium</code> / <code>high</code> / <code>xhigh</code> / <code>max</code>。越高越慢，输出 token 越多，费用越高。</td></tr>
+      <tr><td><code>service_tier</code></td><td>只能是 <code>default</code>（不提供 Fast / priority）。</td></tr>
+      <tr><td><code>text</code></td><td>object，按 Responses API 原义透传。</td></tr>
+    </tbody>
+  </table>
+  <p><strong>会话中途修改后端：</strong>只有官方后端模式可以用 <code>session.update</code>，而且只能改 <code>delegation.responses</code>（同样受上表约束），其它字段（音色、格式、instructions 等）开始后都不能改。</p>
+  <pre><code>{ "type": "session.update", "session": { "delegation": { "responses": { "reasoning": { "effort": "medium" } } } } }</code></pre>
+  <p><strong>函数工具：</strong>后端调用你的函数时，<code>response.event</code> 里会出现 <code>function_call</code> 输出项。你执行完把结果交回，再让它继续：</p>
+  <pre><code>{ "type": "response.item.create", "item": { "type": "function_call_output", "call_id": "call_...", "output": "{\"status\":\"已发货\"}" } }
+{ "type": "response.create" }</code></pre>
+  <p class="muted"><code>response.item.create</code> 只接受 <code>function_call_output</code> / <code>custom_tool_call_output</code> 两种 item。</p>
+
+  <h3 id="backend-site">② 站内模型做后端</h3>
+  <p><code>responses.model</code> 填 <code>GET /v1/models</code> 列表里的任意 id，语音层仍是 gpt-live-1，思考交给你选的模型：</p>
+  <pre><code>{
+  "type": "session.start",
+  "session": {
+    "model": "gpt-live-1",
+    "delegation": {
+      "type": "responses",
+      "responses": { "model": "claude-haiku-5.5", "instructions": "用中文一两句话回答。", "max_output_tokens": 512 }
+    }
+  }
+}</code></pre>
+  <ul>
+    <li>工作方式：语音层判断需要回答时发出委派，网关把<strong>到目前为止的双向转写</strong>（最近 60 轮、约 24,000 字符）整理成对话，用<strong>你这把 Key</strong> 调一次 <code>/v1/chat/completions</code>，再把答案交给语音层念出来。</li>
+    <li>只接受 <code>model</code> / <code>instructions</code> / <code>max_output_tokens</code>（16–4096，默认 1024）。<strong>不支持工具</strong>，传 <code>tools</code> 等字段返回 <code>live_site_backend_unsupported_parameter</code>。需要联网请用官方后端。</li>
+    <li>模型不在 <code>/v1/models</code> 里时，会话不会开始（<code>live_backend_model_not_allowed</code>），不收费。</li>
+    <li>后端调用和普通 API 调用完全一样：按该模型价格计费，出现在用量记录里，受 Key 的白名单 / 额度约束。</li>
+    <li>每次回答完成后你会收到 <code>cancri.delegation.completed</code>（含模型原文、耗时、token），方便显示或记录。</li>
+    <li>后端看到的是语音识别出来的文字，可能有错字；同一时刻最多 2 个回答在途，再多时语音层会请用户稍等；单次回答 90 秒超时。</li>
+    <li>站内模式不能用 <code>session.update</code> 改后端，也不能用 <code>response.*</code> 事件。</li>
+  </ul>
+
+  <h3 id="backend-client">③ 只买语音层（自带 Agent）</h3>
+  <pre><code>{ "type": "session.start", "session": { "model": "gpt-live-1", "delegation": { "type": "client" } } }</code></pre>
+  <p>语音层需要答案时会发：</p>
+  <pre><code>{ "type": "session.delegation.created", "delegation": { "id": "item_9tA2bF3h7K9m2P5q8R1s4", "type": "delegation", "target": "client" } }</code></pre>
+  <p>你根据转写（<code>session.input_transcript.delta</code>）自己算出答案，用同一个 <code>delegation_id</code> 交回：</p>
+  <pre><code>{ "type": "session.commentary.append", "event_id": "result_1", "delegation_id": "item_9tA2bF3h7K9m2P5q8R1s4", "content": "订单今天已发货，明天送达。" }</code></pre>
+  <ul>
+    <li><code>session.commentary.append</code>：要念出来的结果（语音层可能会转述）。</li>
+    <li><code>session.thinking.append</code>：只给语音层看、不念出来的进度或事实；<code>content</code> 传 <code>""</code> 可取消自动的「好的，我查一下」。</li>
+    <li><code>session.instructions.append</code> 且 <code>delegation_id: null</code>：追加会话级指令。</li>
+    <li>同一个委派可以多次追加；每条 <code>content</code> ≤ 8,000 字符（官方限制约 500 token，太长请分段）。追加成功会收到对应的 <code>session.*.appended</code> 确认。</li>
+    <li>这三个 append 事件在官方后端与站内模式下也可以用，例如随时补充背景信息。</li>
+  </ul>
+  <p>此模式只收语音费。</p>
+</section>
+
+<!-- ═══════════════════════════ 事件参考 ═══════════════════════════ -->
+<section id="events">
+  <h2>事件参考</h2>
+  <p>所有事件都是 JSON 文本帧（不接受二进制帧）。网关对客户端事件做<strong>白名单</strong>检查：下表以外的类型、或带了不认识字段的事件，会在本地收到 <code>error</code>，不会发往上游，也不收费。</p>
+
+  <h3>客户端 → 服务端</h3>
+  <table>
+    <thead><tr><th>type</th><th>字段</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>session.start</code></td><td><code>session</code></td><td>第一条，见上文。</td></tr>
+      <tr><td><code>session.input_audio.append</code></td><td><code>audio</code>（base64）</td><td>持续推麦克风音频。单条 base64 ≤ 2,000,000 字符，建议 20–100 ms 一块。</td></tr>
+      <tr><td><code>session.input_audio.mute</code> / <code>.unmute</code></td><td>—</td><td>暂停 / 恢复收音。</td></tr>
+      <tr><td><code>session.output_audio.fixture.play</code></td><td><code>audio</code></td><td>OpenAI 协议原有事件，按官方文档原义转发（单条 base64 上限同上）。</td></tr>
+      <tr><td><code>session.commentary.append</code> / <code>session.thinking.append</code> / <code>session.instructions.append</code></td><td><code>content</code>, <code>delegation_id</code></td><td>见 <a href="#backend-client">只买语音层</a>。</td></tr>
+      <tr><td><code>session.update</code></td><td><code>session.delegation.responses</code></td><td>仅官方后端模式。</td></tr>
+      <tr><td><code>response.item.create</code></td><td><code>item</code></td><td>仅官方后端模式，交回函数结果。</td></tr>
+      <tr><td><code>response.create</code></td><td>—</td><td>仅官方后端模式，让后端继续生成。</td></tr>
+      <tr><td><code>session.close</code></td><td>—</td><td>结束会话。服务端回 <code>session.closed</code> 后断开。</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">所有客户端事件都可以带 <code>event_id</code>（≤128 字符）。被拒绝时 <code>error.client_event_id</code> 会带回它，方便对应。</p>
+
+  <h3>服务端 → 客户端（OpenAI 原生事件，原样转发）</h3>
+  <table>
+    <thead><tr><th>type</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>session.started</code></td><td>会话已开始；<code>session.id</code> 是上游会话 id。</td></tr>
+      <tr><td><code>session.output_audio.delta</code></td><td><code>delta</code>：回复音频（base64，格式同 <code>audio.format</code>）。</td></tr>
+      <tr><td><code>session.input_transcript.delta</code></td><td><code>delta</code>：用户语音转写。</td></tr>
+      <tr><td><code>session.output_transcript.delta</code></td><td><code>delta</code>：回复转写。</td></tr>
+      <tr><td><code>session.delegation.created</code></td><td>语音层发起了一次委派。</td></tr>
+      <tr><td><code>session.commentary.appended</code> 等</td><td>append 的确认，<code>client_event_id</code> 对应你的 <code>event_id</code>。</td></tr>
+      <tr><td><code>response.event</code></td><td>官方后端模式下，嵌套的 Responses 流式事件（<code>event</code> 字段），含工具调用与 <code>response.completed</code>（带 usage）。</td></tr>
+      <tr><td><code>session.usage.updated</code></td><td><code>usage.seconds</code>：<strong>累计</strong>计费秒数（不要相加）。</td></tr>
+      <tr><td><code>session.closed</code></td><td>会话结束，<code>usage.seconds</code> 为最终秒数，<code>reason</code> 为结束原因。</td></tr>
+      <tr><td><code>error</code></td><td>与 OpenAI 同形：<code>{"type":"error","error":{"type","code","message","param","client_event_id"}}</code>。</td></tr>
+    </tbody>
+  </table>
+
+  <h3>服务端 → 客户端（NexusVAI 扩展事件，前缀 <code>cancri.</code>）</h3>
+  <p>只为方便你显示费用和状态，忽略它们不影响协议兼容。</p>
+  <pre><code>// 会话开始时一次
+{ "type": "cancri.session.created", "session_id": "live_9c93…", "upstream_session_id": "live_u7_…",
+  "mode": "official",                       // official | site | voice_only
+  "backend_model": "gpt-6-luna",
+  "limits": { "max_duration_seconds": 1800, "idle_timeout_seconds": 90, "segment_seconds": 30 },
+  "pricing": { "currency": "CNY", "voice_per_second": 0.009,
+               "backend_input_per_million": 1.2, "backend_cached_input_per_million": 0.12,
+               "backend_output_per_million": 6, "web_search_per_call": 0.12 } }
+
+// 约每 10 秒一次，结束时 final: true
+{ "type": "cancri.billing.updated", "final": false, "estimated": true,
+  "seconds": 21, "prepaid_through_seconds": 30,
+  "voice_cny": 0.189, "backend_tokens": { "input": 5161, "output": 272 }, "backend_cny": 0.007825,
+  "web_search_calls": 1, "web_search_cny": 0.12, "total_cny": 0.316825 }
+
+// 服务端即将结束会话（超时 / 余额不足 / 上游断开…）
+{ "type": "cancri.session.closing", "reason": "insufficient_balance", "closes_in_seconds": 12 }
+
+// 站内模型模式：每次回答完成
+{ "type": "cancri.delegation.completed", "delegation_id": "item_…", "model": "claude-haiku-5.5", "ok": true,
+  "latency_ms": 6995, "usage": { "prompt_tokens": 8727, "completion_tokens": 66 }, "text": "…" }</code></pre>
+  <p class="muted"><code>cancri.billing.updated</code> 里的 <code>backend_*</code> 只统计官方后端；站内模型的费用按普通 API 调用单独记账，请看 <code>cancri.delegation.completed</code> 或控制台用量。</p>
+</section>
+
+<!-- ═══════════════════════════ 计费 ═══════════════════════════ -->
+<section id="pricing">
+  <h2>计费</h2>
+  <table>
+    <thead><tr><th>项目</th><th>价格</th><th>适用模式</th></tr></thead>
+    <tbody>
+      <tr><td>语音（gpt-live-1）</td><td><strong>¥0.009 / 秒</strong>（¥0.54 / 分钟）</td><td>全部</td></tr>
+      <tr><td>GPT-6-Luna 输入</td><td>¥1.2 / 百万 token</td><td>官方后端</td></tr>
+      <tr><td>GPT-6-Luna 缓存输入</td><td>¥0.12 / 百万 token</td><td>官方后端</td></tr>
+      <tr><td>GPT-6-Luna 输出</td><td>¥6 / 百万 token</td><td>官方后端</td></tr>
+      <tr><td>联网搜索</td><td>¥0.12 / 次</td><td>官方后端（启用 <code>web_search</code> 且实际搜索时）</td></tr>
+      <tr><td>站内模型</td><td>按该模型在 <a href="./api_models.html">模型广场</a> 的价格</td><td>站内模型</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">价格以会话开始时 <code>cancri.session.created.pricing</code> 返回的数值为准。</p>
+
+  <h3>怎么扣钱</h3>
+  <ul>
+    <li><strong>按会话时长计费，不按说话时长。</strong>从 <code>session.started</code> 到会话结束，每一秒都计费，包括双方都沉默的时间。不用时请及时 <code>session.close</code>。</li>
+    <li><strong>分段预扣：</strong>开始前预扣 30 秒（¥0.27），快用完时再预扣下一段，结束后按实际秒数多退少补。余额连一段都不够时会话不会开始。</li>
+    <li><strong>秒数以上游为准：</strong>最终秒数取 <code>session.closed.usage.seconds</code>（向上取整）。异常断开、拿不到最终值时，取最后一次 <code>usage.seconds</code> 与网关计时中较大的一个。</li>
+    <li><strong>没开始不收费：</strong>鉴权失败、参数被拒、余额不足、上游连接失败等，在 <code>session.started</code> 之前结束的会话全额退回预扣。</li>
+    <li><strong>后端 token 按次结算：</strong>官方后端每完成一次回答（<code>response.completed</code>）按 usage 扣一次；联网按实际搜索次数扣。注意每轮回答都会带上此前的对话作为输入，长会话的输入 token 会逐轮变多。</li>
+    <li><strong>余额用完：</strong>续段预扣失败时收到 <code>cancri.session.closing</code>（<code>reason: "insufficient_balance"</code>，带 <code>closes_in_seconds</code>），已预付的时长用完后断开，WebSocket 关闭码 <code>4402</code>。</li>
+  </ul>
+  <h3>费用估算</h3>
+  <table>
+    <thead><tr><th>场景</th><th>大约费用</th></tr></thead>
+    <tbody>
+      <tr><td>只买语音层，10 分钟</td><td>¥5.4</td></tr>
+      <tr><td>官方后端闲聊，10 分钟（Luna token 很少）</td><td>约 ¥5.5</td></tr>
+      <tr><td>官方后端，每分钟一次联网问答，10 分钟</td><td>约 ¥5.4 + 10 × ¥0.12 + Luna token ≈ ¥6.7</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════ 限速 ═══════════════════════════ -->
+<section id="limits">
+  <h2>限速与时长</h2>
+  <p>语音是长连接，所以按<strong>会话</strong>限：同时几路、每分钟开几个、单个最长多久。档位与 API 速率限制同一口径：按<strong>累计充值</strong>升档，有有效套餐至少按 T1。</p>
+  <table>
+    <thead><tr><th>档位</th><th>累计充值</th><th>同时会话</th><th>每分钟新建</th><th>单会话最长</th></tr></thead>
+    <tbody>
+      <tr><td>T0</td><td>&lt; ¥10</td><td>1</td><td>4</td><td>10 分钟</td></tr>
+      <tr><td>T1</td><td>≥ ¥10（或有效套餐）</td><td>2</td><td>8</td><td>20 分钟</td></tr>
+      <tr><td>T2</td><td>≥ ¥30</td><td>3</td><td>12</td><td>30 分钟</td></tr>
+      <tr><td>T3</td><td>≥ ¥80</td><td>5</td><td>20</td><td>30 分钟</td></tr>
+      <tr><td>T4</td><td>≥ ¥300</td><td>10</td><td>40</td><td>60 分钟</td></tr>
+      <tr><td>T5</td><td>≥ ¥1000</td><td>20</td><td>60</td><td>60 分钟</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>限额按<strong>账户</strong>算（团队 Key 按团队），同一账户下所有 Key 共享。</li>
+    <li>充值后档位约 1 分钟内生效。</li>
+    <li>被限速时，握手响应头带 <code>X-Cancri-Live-Tier</code>、<code>X-Cancri-Live-Max-Concurrent</code>、<code>X-Cancri-Live-Max-Duration</code>（秒），以及 <code>Retry-After</code>。</li>
+    <li>平台整体容量也有上限，满载时返回 <code>503 live_capacity_exhausted</code>，请稍后重试。</li>
+  </ul>
+  <h3>会话会被服务端结束的情况</h3>
+  <table>
+    <thead><tr><th>reason</th><th>触发条件</th></tr></thead>
+    <tbody>
+      <tr><td><code>max_duration</code></td><td>达到本档单会话最长时长。需要更长请在客户端自动重开会话（可用 <code>session.input</code> 带上历史）。</td></tr>
+      <tr><td><code>idle_timeout</code></td><td>90 秒内没有任何转写、回复或非音频事件。只推静音不算活动。</td></tr>
+      <tr><td><code>insufficient_balance</code></td><td>余额不足以续下一段（关闭码 4402）。</td></tr>
+      <tr><td><code>billing_unavailable</code></td><td>计费服务暂时不可用，已预付时长用完时结束，防止产生未结算的费用。</td></tr>
+      <tr><td><code>upstream_closed</code> / <code>upstream_error</code></td><td>上游 OpenAI 断开。按已用秒数结算。</td></tr>
+      <tr><td><code>start_timeout</code></td><td>连接后 20 秒内没发 <code>session.start</code>。</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">平台更新时，进行中的会话可能被断开（按已用秒数结算）。建议客户端在非主动关闭时自动重连。</p>
+</section>
+
+<!-- ═══════════════════════════ 错误码 ═══════════════════════════ -->
+<section id="errors">
+  <h2>错误码</h2>
+  <h3>握手阶段（HTTP 响应，WebSocket 未建立）</h3>
+  <p class="muted">浏览器的 WebSocket 拿不到握手失败的状态码与响应体，只会看到 <code>onerror</code> / 关闭码 1006。排查时请用服务端客户端或 <code>curl</code> 看具体原因。</p>
+  <table>
+    <thead><tr><th>HTTP</th><th>code</th><th>原因</th></tr></thead>
+    <tbody>
+      <tr><td>400</td><td><code>live_webrtc_not_supported</code></td><td>用了 POST（WebRTC 建会话方式），请改用 WebSocket。</td></tr>
+      <tr><td>426</td><td><code>websocket_required</code></td><td>不是 WebSocket 升级请求（或用了 <code>cn.nexusvai.xyz</code>）。</td></tr>
+      <tr><td>401</td><td><code>invalid_api_key</code></td><td>Key 缺失、格式不对或已停用。</td></tr>
+      <tr><td>403</td><td><code>account_suspended</code></td><td>账户已被封禁。</td></tr>
+      <tr><td>403</td><td><code>model_not_in_whitelist</code> / <code>model_not_in_group</code></td><td>Key 的模型限制不包含 <code>gpt-live-1</code>。</td></tr>
+      <tr><td>429</td><td><code>key_token_quota_exhausted</code> / <code>key_request_quota_exhausted</code></td><td>Key 的累计额度已用完。</td></tr>
+      <tr><td>429</td><td><code>live_rate_limited</code></td><td>每分钟新建会话超过本档上限。</td></tr>
+      <tr><td>429</td><td><code>live_concurrency_limit</code></td><td>同时会话数达到本档上限。</td></tr>
+      <tr><td>503</td><td><code>live_capacity_exhausted</code> / <code>service_unavailable</code> / <code>live_disabled</code></td><td>平台繁忙或暂不可用，按 <code>Retry-After</code> 重试。</td></tr>
+    </tbody>
+  </table>
+
+  <h3>会话中（<code>error</code> 事件）</h3>
+  <table>
+    <thead><tr><th>code</th><th>是否断开</th><th>原因</th></tr></thead>
+    <tbody>
+      <tr><td><code>insufficient_balance</code></td><td>是</td><td>余额不足一段（30 秒）语音费，未收费。</td></tr>
+      <tr><td><code>session_start_timeout</code></td><td>是</td><td>20 秒内没收到 <code>session.start</code>。</td></tr>
+      <tr><td><code>invalid_request</code> / <code>invalid_json</code></td><td>首条时是</td><td>首条不是合法的 <code>session.start</code>，或事件不是 JSON 文本帧。</td></tr>
+      <tr><td><code>unknown_parameter</code> / <code>invalid_value</code></td><td>首条时是</td><td>字段不认识或取值不合法，<code>param</code> 指出具体字段。</td></tr>
+      <tr><td><code>model_not_found</code></td><td>是</td><td><code>session.model</code> 不是 <code>gpt-live-1</code>。</td></tr>
+      <tr><td><code>live_backend_model_not_allowed</code></td><td>首条时是</td><td>后端模型不是 <code>gpt-6-luna</code>，也不在 <code>/v1/models</code> 里。</td></tr>
+      <tr><td><code>live_tool_not_allowed</code></td><td>首条时是</td><td>工具类型不在 <code>web_search</code> / <code>function</code> / <code>custom</code> 内。</td></tr>
+      <tr><td><code>live_service_tier_not_allowed</code></td><td>首条时是</td><td><code>service_tier</code> 不是 <code>default</code>。</td></tr>
+      <tr><td><code>live_store_not_allowed</code> / <code>live_decisions_not_allowed</code></td><td>首条时是</td><td>不提供会话存储 / Decisions。</td></tr>
+      <tr><td><code>live_site_backend_unsupported_parameter</code></td><td>是</td><td>站内模型后端传了不支持的字段（如 <code>tools</code>）。</td></tr>
+      <tr><td><code>immutable_field_update</code></td><td>否</td><td><code>session.update</code> 试图改不可改的字段，或非官方后端模式下改后端。</td></tr>
+      <tr><td><code>live_event_not_allowed</code> / <code>live_item_not_allowed</code></td><td>否</td><td>事件类型 / item 类型不受支持。</td></tr>
+      <tr><td><code>live_not_priced</code> / <code>quota_check_failed</code> / <code>live_upstream_unavailable</code></td><td>是</td><td>平台侧暂时不可用，未收费，稍后重试。</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">「否」表示只拒绝这一条事件，会话继续。上游 OpenAI 自己返回的 <code>error</code> 也按同样格式转发。</p>
+
+  <h3>FAQ</h3>
+  <ul>
+    <li><strong>能直接用 OpenAI 官方 SDK 吗？</strong>事件格式一致，任何能连 WebSocket 并收发 JSON 的客户端都能用，把地址换成上面的端点、Key 换成 <code>cancri_sk_</code> 即可。SDK 里写死的 WebRTC 流程不能用。</li>
+    <li><strong>模型一直不说话？</strong>确认你在持续推音频帧（包括静音），且格式与 <code>audio.format</code> 一致（默认 24 kHz、16 位、单声道 PCM）。</li>
+    <li><strong>怎么省钱？</strong>不说话时尽快 <code>session.close</code>；不需要联网就别开 <code>web_search</code>；<code>reasoning.effort</code> 用 <code>none</code> / <code>low</code>；纯语音外壳用「只买语音层」。</li>
+  </ul>
+  <p class="pt-6"><a href="./api_docs_detail.html#intro">← 返回 API 文档</a> · <a href="./api/billing.html">充值</a> · <a href="./api/keys.html">API 密钥</a></p>
+</section>
+
+            </article>
+          </div>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

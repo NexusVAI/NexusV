@@ -231,6 +231,10 @@
         "</span></a></li>"
       );
     }
+    // 实时语音单独一页（api_docs_live.html），不进 api_docs_detail 的分页器
+    function liveItem(hash, label) {
+      return item(hash, label).replace(base + "#", "./api_docs_live.html#");
+    }
     function group(title, items) {
       return (
         '<div><h3 class="mb-2 ml-3 mt-4 text-sm font-semibold select-none">' +
@@ -257,6 +261,16 @@
           item("chat", "Chat Completions") +
           item("messages", "Messages（Anthropic 协议）") +
           item("responses", "Responses（OpenAI 新协议）"),
+      ) +
+      group(
+        "实时语音",
+        liveItem("intro", "GPT-Live 概述") +
+          liveItem("connect", "连接与认证") +
+          liveItem("backends", "三种后端模式") +
+          liveItem("events", "事件参考") +
+          liveItem("pricing", "计费") +
+          liveItem("limits", "限速与时长") +
+          liveItem("errors", "错误码"),
       ) +
       group(
         "CLI 接入",
