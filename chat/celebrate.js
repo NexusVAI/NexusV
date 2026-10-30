@@ -302,9 +302,10 @@
                     return;
                 }
                 copyToClipboard(invite.invite_url);
-                var s = invite.summary || { total: 0, qualified: 0, paid: 0 };
+                // 2026-10-30：get_invite 只回 summary.total（邀请改为只记录人数）。
+                var s = invite.summary || { total: 0 };
                 showToast(
-                    "邀请链接已复制 · 已邀 " + s.total + " 人 / 合格 " + s.qualified + " / 付费 " + s.paid
+                    "邀请链接已复制 · 已邀请 " + Number(s.total || 0) + " 人"
                 );
             })
             .catch(function (err) {

@@ -886,7 +886,8 @@
       { label: "账号设置", sub: "在聊天页打开", act: function () { window.location.href = CHAT_SETTINGS_URL + "&pane=account"; } },
       // 2026-08-18 晚：邀请奖励从「重置卡」改为「¥1 API 额度」；「重置卡」这一项
       // 整条删除（重置卡系统下线，billing.html#reset 已不存在）。
-      { label: "邀请奖励", sub: "邀请好友得 ¥1 API 额度", act: function () { window.location.href = CHAT_SETTINGS_URL + "&pane=invite"; } },
+      // 2026-10-30：邀请改为只记录人数、奖励人工发放，不再自动送额度。
+      { label: "邀请好友", sub: "查看邀请链接与人数", act: function () { window.location.href = CHAT_SETTINGS_URL + "&pane=invite"; } },
       { label: "退出登录", sub: "", act: function () { doSignOut(); } },
     ];
     var m = el("div");

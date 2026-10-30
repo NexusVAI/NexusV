@@ -4009,16 +4009,12 @@
         return { browser: browser, os: os };
     }
 
-    function microToCny(micro) {
-        var n = Number(micro || 0);
-        if (!Number.isFinite(n)) return '0.00';
-        return (n / 1e6).toFixed(2);
-    }
-
+    // 2026-10-30：邀请改为只记录人数、奖励人工发放。后端 get_invite 只回
+    // invite_url / visit_count / summary.total / recent[{invitee_id_masked, created_at}]，
+    // 奖励流水、返利、规则字段都不再下发，这里也不再渲染。
     function loadClaudeInviteSection() {
         var urlEl = document.getElementById('claudeInviteUrl');
         var sumEl = document.getElementById('claudeInviteSummary');
-        var grantsEl = document.getElementById('claudeInviteGrants');
         var logEl = document.getElementById('claudeInviteLog');
         var copyBtn = document.getElementById('claudeInviteCopyBtn');
         if (!urlEl || !sumEl) return;
@@ -4044,7 +4040,6 @@
         if (!token) {
             urlEl.value = '请先登录';
             sumEl.textContent = '登录后可查看邀请数据';
-            if (grantsEl) grantsEl.innerHTML = '<p class="claude-billing-empty">—</p>';
             if (logEl) logEl.innerHTML = '<p class="claude-billing-empty">—</p>';
             return;
         }
@@ -4060,96 +4055,33 @@
             body: JSON.stringify({ action: 'get_invite' })
         }).then(function (r) { return r.json().catch(function () { return {}; }); })
         .then(function (data) {
-            var inv = (data && data.invite) || {};
+            var inv = data && data.ok && data.invite;
+            if (!inv) {
+                urlEl.value = '';
+                sumEl.textContent = '加载失败，请稍后重试';
+                if (logEl) logEl.innerHTML = '<p class="claude-billing-empty">—</p>';
+                return;
+            }
             urlEl.value = inv.invite_url || '';
-            var s = inv.summary || {};
-            var visits = Number(inv.visit_count || 0);
-            var rewardMicro = Number(s.reward_micro_total || 0);
-            if (!rewardMicro && inv.grants && inv.grants.length) {
-                rewardMicro = inv.grants.reduce(function (a, g) { return a + Number(g.delta_micro || 0); }, 0);
-            }
-            // 奖励物变更史：¥1 钱包余额（→08-15）→ 1 张重置卡（08-15~08-18）→
-            // **¥1 赠送余额**（2026-08-18 晚起，重置卡系统下线）。
-            // celebrate_grants 的 delta_micro 在重置卡时期恒为 0，所以这里不能只靠它求和；
-            // 现在钱重新走 wallet_ledger 的 voucher_grant，而 celebrate_grants 仍记 0
-            //（那张表只作幂等与审计），因此活跃奖金额仍按「已活跃人数 × ¥1」换算。
-            // 首充返利走另一条路（真金额在 reward_micro_total 里），单独列出。
-            var qualified = Number(s.qualified || 0);
+            var total = Number((inv.summary && inv.summary.total) || 0);
             sumEl.innerHTML =
-                '链接访问量 <strong>' + visits + '</strong> · ' +
-                '已邀 <strong>' + Number(s.total || 0) + '</strong> · ' +
-                '已活跃 <strong>' + qualified + '</strong> · ' +
-                '活跃奖 <strong>¥' + qualified + '</strong> · ' +
-                '已返利人数 <strong>' + Number(s.rebated || 0) + '</strong> · ' +
-                '返利合计 <strong>¥' + microToCny(rewardMicro) + '</strong>';
-
-            var rules = inv.rules;
-            var rulesEl = document.getElementById('claudeInviteRules');
-            if (rulesEl && rules) {
-                // 规则文案必须跟着后端 celebrate_config 走（三处历史过时教训：奖励物、
-                // API 门槛、新号窗口）。2026-08-18 晚：奖励物从「重置卡」改为「¥1 API 额度」。
-                //   · require_api_approved 已在 celebrate_config 里显式关掉，不再要求申请 API
-                //   · 新号闸：绑定时账号年龄 < invitee_max_account_age_days(7) 天
-                var newDays = rules.invitee_max_account_age_days || 7;
-                rulesEl.textContent =
-                    '好友通过你的链接注册（需为 ' + newDays + ' 天内的新账号）、验证邮箱，并累计 ' +
-                    (rules.activity_min_days || 3) +
-                    ' 天有正常 Chat/API 流量后，双方各得 ¥1 API 额度（自动入账）。' +
-                    '该额度可用于公开 API 调用，不可提现，也不计入充值档位。' +
-                    '同设备 / 同网段 / 重复设备指纹不计。' +
-                    '好友首充另返利 ' + Math.round((Number(rules.rebate_rate || 0.2) * 100)) +
-                    '% 给你（最多 ' + (rules.rebate_max_people || 5) +
-                    ' 人，返利总额上限 ¥' + (rules.rebate_total_cap_cny || 100) + '）。';
-            }
-
-            if (grantsEl) {
-                var grants = inv.grants || [];
-                if (!grants.length) {
-                    grantsEl.innerHTML = '<p class="claude-billing-empty">暂无奖励流水</p>';
-                } else {
-                    var gh = '<table class="claude-billing-table"><thead><tr><th>类型</th><th>金额</th><th>时间</th></tr></thead><tbody>';
-                    grants.forEach(function (g) {
-                        var kind = String(g.kind || '');
-                        var label =
-                            kind === 'activity_inviter' ? '活跃奖（邀请人）' :
-                            kind === 'activity_invitee' ? '活跃奖（被邀请）' :
-                            kind === 'first_recharge_rebate' ? '首充返利' :
-                            kind.indexOf('legacy') === 0 ? '历史 token 奖励' : kind || '其他';
-                        // 三个时期的奖励物混在同一张表里，判据只能用 payload.reward ——
-                        // 历史 ¥1 奖励的 g.kind 同样是 activity_inviter（payload 里 cny:1、
-                        // delta_micro=1000000），按 kind 判会把旧钱奖励错标。
-                        //   · reward='reset_card'（08-15~08-18）：delta_micro 恒 0
-                        //   · reward='voucher_1cny'（08-18 晚起）：delta_micro 也是 0，
-                        //     真金额在 wallet_ledger 的 voucher_grant 行里，这张表只作幂等/审计
-                        var reward = g.payload && g.payload.reward;
-                        var amt = Number(g.delta_micro || 0) > 0
-                            ? ('¥' + microToCny(g.delta_micro))
-                            : (g.delta_tokens ? (Number(g.delta_tokens).toLocaleString() + ' tokens')
-                                : (reward === 'voucher_1cny' ? '¥1 API 额度'
-                                    : (reward === 'reset_card' ? '1 张重置卡（已下线）' : '—')));
-                        var t = g.granted_at ? String(g.granted_at).replace('T', ' ').slice(0, 19) : '—';
-                        gh += '<tr><td>' + esc(label) + '</td><td>' + esc(amt) + '</td><td>' + esc(t) + '</td></tr>';
-                    });
-                    gh += '</tbody></table>';
-                    grantsEl.innerHTML = gh;
-                }
-            }
+                '已邀请 <strong>' + total + '</strong> 人 · ' +
+                '链接访问 <strong>' + Number(inv.visit_count || 0) + '</strong> 次';
 
             if (logEl) {
                 var recent = inv.recent || [];
                 if (!recent.length) {
                     logEl.innerHTML = '<p class="claude-billing-empty">暂无邀请记录</p>';
                 } else {
-                    var lh = '<table class="claude-billing-table"><thead><tr><th>被邀请人</th><th>状态</th><th>时间</th></tr></thead><tbody>';
+                    var lh = '<table class="claude-billing-table"><thead><tr><th>被邀请人</th><th>加入时间</th></tr></thead><tbody>';
                     recent.forEach(function (r) {
-                        var st = String(r.status || '');
-                        if (r.activity_rewarded_at) st = '已活跃发奖';
-                        if (r.rebate_rewarded_at) st += (st ? ' / ' : '') + '已返利';
-                        if (r.rejected_reason) st = '拒绝:' + r.rejected_reason;
                         var t = r.created_at ? String(r.created_at).replace('T', ' ').slice(0, 19) : '—';
-                        lh += '<tr><td>' + esc(r.invitee_id_masked || '—') + '</td><td>' + esc(st || '—') + '</td><td>' + esc(t) + '</td></tr>';
+                        lh += '<tr><td>' + esc(r.invitee_id_masked || '—') + '</td><td>' + esc(t) + '</td></tr>';
                     });
                     lh += '</tbody></table>';
+                    if (total > recent.length) {
+                        lh += '<p class="claude-form-help" style="margin-top:6px">仅显示最近 ' + recent.length + ' 条</p>';
+                    }
                     logEl.innerHTML = lh;
                 }
             }
