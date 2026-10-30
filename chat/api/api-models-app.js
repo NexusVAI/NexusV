@@ -157,7 +157,7 @@ function modelPriceInfo(m) {
     // 返回 { kind: 'free'|'priced'|'unpriced', short, full }
     const isFree = (m.gateCostTier === "free") || (m.costTier === "free" && !m.priceDisplay);
     if (isFree) {
-        return { kind: "free", short: "免费", full: "该模型免费使用（受并发 / 速率限流保护），不计费。" };
+        return { kind: "free", short: "免费", full: "该模型免费使用，不计费；受速率限制与免费额度约束。" };
     }
     if (typeof m.perCallPrice === "number") {
         return { kind: "priced", short: `￥${m.perCallPrice}/次`, full: m.priceDisplay || `￥${m.perCallPrice} / 次` };
@@ -1019,8 +1019,10 @@ const API_BASE_URL =
 
 const COST_TIER_EXPLAIN = {
     // 2026-08-15 修漂移：原写「并发 1 / 20 RPM / 50 万 TPM / 150 万 TPD」是 2026-08-10
-    // 放宽前的旧值。权威源 = cf-gateway/src/rate-limiter.ts 的 TIER_LIMITS。
-    free: "FREE 档：价格为 0 的模型可免余额调用；仍受账户限速档约束（默认 Tier0：并发 3 / 60 RPM / 200 万 TPM / 2000 万 TPD，详见速率限制文档）。",
+    // 放宽前的旧值。
+    // 2026-10-30 限速 v2：只剩 RPM / TPM（并发与 TPD 已删除），免费模型总量改由免费额度管。
+    // 权威源 = cf-gateway/src/tier-limits.ts 的 TIER_LIMITS（rpm / tpm 两列）。
+    free: "FREE 档：价格为 0 的模型可免余额调用；受速率限制（Tier 0：60 RPM / 200 万 TPM）与免费额度约束，详见速率限制文档。",
     cheap: "Cheap：1× 倍率。轻量、低成本模型；价格友好。",
     normal: "Normal：3× 倍率。GPT-4 类标准模型 / Doubao / Kimi / Haiku 等。",
     expensive:
@@ -1144,7 +1146,7 @@ function populateDrawer(m) {
     if (explainEl) {
         // 2026-07-07 审计 C4a：按 wallet_v3 真实 ¥ 价说明，替换旧「配额 × 倍率」口径。
         if (priceInfo.kind === "free") {
-            explainEl.innerHTML = "该模型<b>免费</b>使用，不计费；仅受并发 / 速率限流保护。";
+            explainEl.innerHTML = "该模型<b>免费</b>使用，不计费；受速率限制与免费额度约束。";
         } else if (priceInfo.kind === "unpriced") {
             explainEl.innerHTML = "该模型<b>尚未配置价格</b>（未定价），暂不可通过 API 计费调用。";
         } else {

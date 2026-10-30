@@ -243,7 +243,7 @@
       ) +
       group(
         "核心概念",
-        item("common-misunderstandings", "易混淆点") +
+        item("common-misunderstandings", "使用约定") +
           item("chat", "Chat Completions") +
           item("messages", "Messages（Anthropic 协议）") +
           item("responses", "Responses（OpenAI 新协议）"),
@@ -255,7 +255,7 @@
           liveItem("backends", "三种后端模式") +
           liveItem("events", "事件参考") +
           liveItem("pricing", "计费") +
-          liveItem("limits", "限速与时长") +
+          liveItem("limits", "速率限制与时长") +
           liveItem("errors", "错误码"),
       ) +
       group(
@@ -282,7 +282,7 @@
       group(
         "配额与限制",
         item("quota", "计费与余额") +
-          item("free-model-limits", "免费模型限额") +
+          item("free-model-limits", "免费模型与免费额度") +
           item("ratelimit", "速率限制"),
       ) +
       group("参考", item("errors", "错误码") + item("faq", "FAQ"))

@@ -40,7 +40,7 @@ html:not([data-model-ready]) main.min-w-0{visibility:hidden;}
 })();
 </script>
 <link rel="stylesheet" href="./oai-cancri.css?v=20261010-qqnav" />
-<script src="./oai-shell-nav.js?v=20261010-qqnav"></script>
+<script src="./oai-shell-nav.js?v=20261030-rl2"></script>
 <script src="./oai-platform.js?v=20260917-ping-warmup"></script>
 <script src="../assets/p2m-loader.js" defer></script>
 </head>
@@ -145,41 +145,37 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
     var col = header.nextElementSibling;
     col.innerHTML =
       '<div class="text-sm leading-6 text-secondary">' +
-      '为了保证所有人都能稳定使用，每个账户都有速率限制。' +
-      '限制按<strong>累计真实充值</strong>分成 Tier 0–5；档位越高，并发、每分钟请求数（RPM）与 token 吞吐（TPM / TPD）越高。' +
+      '速率限制按账户生效，所有模型共用一组限额。档位由累计充值决定；有效套餐按对应档位计算（Go = Tier 1，Plus = Tier 2，Pro = Tier 3），与累计充值档位取较高者。' +
       '</div>' +
       '<div class="overflow-x-auto rounded-lg border border-default">' +
       '<table class="w-full border-collapse text-sm">' +
       '<thead><tr class="border-b border-default text-left text-secondary">' +
       '<th class="px-4 py-2 whitespace-nowrap">档位</th>' +
       '<th class="px-4 py-2 text-right whitespace-nowrap">累计充值</th>' +
-      '<th class="px-4 py-2 text-right whitespace-nowrap">并发</th>' +
       '<th class="px-4 py-2 text-right whitespace-nowrap">RPM</th>' +
       '<th class="px-4 py-2 text-right whitespace-nowrap">TPM</th>' +
-      '<th class="px-4 py-2 text-right whitespace-nowrap">TPD</th>' +
       '</tr></thead><tbody>' +
       [
         // 2026-08-15 修漂移：原写 1/20/500,000/1,500,000 是 2026-08-10 放宽前的旧值。
-        // 权威源 = cf-gateway/src/rate-limiter.ts 的 TIER_LIMITS（DO 里真正兑现的那份）。
-        ['Tier 0', '¥0', '3', '60', '2,000,000', '20,000,000'],
-        ['Tier 1', '≥ ¥10', '10', '120', '2,000,000', '100,000,000'],
-        ['Tier 2', '≥ ¥30', '100', '500', '3,000,000', '不限'],
-        ['Tier 3', '≥ ¥80', '200', '5,000', '3,000,000', '不限'],
-        ['Tier 4', '≥ ¥300', '400', '5,000', '4,000,000', '不限'],
-        ['Tier 5', '≥ ¥1,000', '1,000', '10,000', '5,000,000', '不限']
+        // 2026-10-30 限速 v2：只剩 RPM / TPM，并发与 TPD 已删除。
+        // 权威源 = cf-gateway/src/tier-limits.ts 的 TIER_LIMITS（rpm / tpm 两列）。
+        ['Tier 0', '¥0', '60', '2,000,000'],
+        ['Tier 1', '≥ ¥10', '120', '2,000,000'],
+        ['Tier 2', '≥ ¥30', '500', '3,000,000'],
+        ['Tier 3', '≥ ¥80', '5,000', '3,000,000'],
+        ['Tier 4', '≥ ¥300', '5,000', '4,000,000'],
+        ['Tier 5', '≥ ¥1,000', '10,000', '5,000,000']
       ].map(function (r) {
         return '<tr class="border-b border-default text-sm text-emphasis">' +
           '<td class="px-4 py-2 whitespace-nowrap">' + r[0] + '</td>' +
           '<td class="px-4 py-2 text-right font-mono">' + r[1] + '</td>' +
           '<td class="px-4 py-2 text-right font-mono">' + r[2] + '</td>' +
-          '<td class="px-4 py-2 text-right font-mono">' + r[3] + '</td>' +
-          '<td class="px-4 py-2 text-right font-mono">' + r[4] + '</td>' +
-          '<td class="px-4 py-2 text-right font-mono">' + r[5] + '</td></tr>';
+          '<td class="px-4 py-2 text-right font-mono">' + r[3] + '</td></tr>';
       }).join('') +
       '</tbody></table></div>' +
       '<div class="text-sm leading-6 text-secondary">' +
-      '<strong>RPM</strong> = 每分钟请求数；<strong>TPM</strong> = 每分钟 token；<strong>TPD</strong> = 每天 token（UTC+8 自然日）。' +
-      '只有真实充值计入累计档位；折现、代金券不抬档。详见 ' +
+      '<strong>RPM</strong> = 每分钟请求数；<strong>TPM</strong> = 每分钟 token 数，输入与输出合计。' +
+      '代金券与赠送额度不计入累计充值。免费模型另受免费额度限制。详见 ' +
       '<a class="_TextLink_ssta1_1" data-underline="always" href="../api_docs_detail.html#ratelimit">API 文档 · 速率限制</a>。' +
       '</div>';
   }
