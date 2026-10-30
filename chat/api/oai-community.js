@@ -4,7 +4,45 @@
 (function () {
   "use strict";
 
-  var widget = document.querySelector("[data-community-widget]");
+  // 页面里没写死结构时，按 <div data-community-mount data-asset-base="…/assets/community/"> 现场生成。
+  // 结构与 api_models.html 那份一致（api_models 另带欢迎引导，仍写在 HTML 里）。
+  function mountFromTemplate() {
+    var mount = document.querySelector("[data-community-mount]");
+    if (!mount) return null;
+    var a = mount.getAttribute("data-asset-base") || "./assets/community/";
+    function platform(key, name, qr, alt, desc, icon, w, h, pressed) {
+      return (
+        '<button type="button" class="cancri-community__platform cancri-community__platform--' + key +
+        '" data-community-platform="' + key + '" data-community-qr-src="' + a + qr +
+        '" data-community-qr-alt="' + alt + '" data-community-description="' + desc +
+        '" aria-pressed="' + pressed + '"><span class="cancri-community__icon"><img src="' + a + icon +
+        '" width="' + w + '" height="' + h + '" alt="" /></span><span>' + name + "</span></button>"
+      );
+    }
+    var aside = document.createElement("aside");
+    aside.className = "cancri-community";
+    aside.setAttribute("data-community-widget", "");
+    aside.setAttribute("aria-label", "NexusVAI 社区");
+    aside.innerHTML =
+      '<button type="button" class="cancri-community__trigger" data-community-trigger aria-label="关注 NexusVAI 社区" aria-controls="cancri-community-panel" aria-expanded="false">' +
+      '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M11.335 12.0829C11.3347 9.97236 9.44966 8.16498 7 8.16498C4.55034 8.16498 2.66527 9.97236 2.66504 12.0829C2.66504 12.8512 2.90887 13.5703 3.33691 14.1796C3.4302 14.3124 3.47218 14.4744 3.4541 14.6357C3.40535 15.0677 3.31415 15.4842 3.19922 15.8876C3.66136 15.8097 4.10651 15.6986 4.54297 15.5507L4.66699 15.5214C4.79159 15.5044 4.91938 15.5237 5.03516 15.5771C5.62294 15.848 6.2901 16.0019 7 16.0019C9.44981 16.0019 11.335 14.1937 11.335 12.0829ZM17.335 7.91302C17.3348 5.80241 15.4497 3.99506 13 3.99506C11.5595 3.99506 10.298 4.62919 9.51465 5.5849C9.28182 5.86885 8.86214 5.91044 8.57812 5.67767C8.29409 5.44487 8.25257 5.0252 8.48535 4.74115C9.52649 3.47088 11.1693 2.66498 13 2.66498C16.0729 2.66498 18.6648 4.96132 18.665 7.91302C18.665 8.87524 18.3824 9.77402 17.8984 10.5458C17.9867 11.1152 18.1604 11.6766 18.3848 12.2568C18.4665 12.468 18.4355 12.7068 18.3018 12.8896C18.1681 13.0722 17.9505 13.1738 17.7246 13.1601C16.8659 13.1075 16.0585 12.9616 15.2734 12.7177C15.1054 12.786 14.9347 12.8511 14.7588 12.9042C14.4073 13.0103 14.036 12.8113 13.9297 12.4599C13.8235 12.1084 14.0226 11.7371 14.374 11.6308C14.5782 11.5691 14.7758 11.4943 14.9648 11.4072L15.084 11.3652C15.2063 11.335 15.3361 11.3398 15.457 11.3808C15.8932 11.5286 16.338 11.6398 16.7998 11.7177C16.6849 11.3144 16.5946 10.8977 16.5459 10.4658C16.5278 10.3045 16.5698 10.1425 16.6631 10.0097C17.0911 9.40042 17.335 8.68125 17.335 7.91302ZM12.665 12.0829C12.665 15.0348 10.073 17.332 7 17.332C6.19184 17.332 5.42143 17.1731 4.72266 16.8886C4.04698 17.0982 3.35521 17.2365 2.62793 17.3036L2.27539 17.33C2.04946 17.3438 1.83192 17.2422 1.69824 17.0595C1.56452 16.8767 1.53354 16.638 1.61523 16.4267L1.79297 15.9374C1.93133 15.5278 2.03737 15.1237 2.10059 14.7158C1.61678 13.944 1.33496 13.045 1.33496 12.0829C1.33519 9.13127 3.92709 6.8349 7 6.8349C10.0729 6.8349 12.6648 9.13127 12.665 12.0829Z" /></svg>' +
+      "<span>社区</span></button>" +
+      '<section id="cancri-community-panel" class="cancri-community__panel" aria-labelledby="cancri-community-title" data-open="false"><div class="cancri-community__card">' +
+      '<h2 id="cancri-community-title" class="cancri-community__title">关注 NexusVAI</h2>' +
+      '<p class="cancri-community__intro">及时获取产品动态、更新与专属福利</p>' +
+      '<div class="cancri-community__platforms" role="group" aria-label="选择社区平台">' +
+      platform("bilibili", "B站", "Bilibili.jpg", "B站关注二维码", "B站 · 扫一扫关注我们", "bilibili.svg", 23, 23, false) +
+      platform("qq", "QQ", "QQ.jpg", "QQ 交流群二维码", "QQ · 扫一扫进群", "tencent-qq.svg", 21, 24, true) +
+      platform("xiaohongshu", "小红书", "XiaoHongShu.jpg", "小红书关注二维码", "小红书 · 扫一扫关注我们", "xiaohongshu.svg", 26, 26, false) +
+      "</div>" +
+      '<div class="cancri-community__qr-frame"><img src="' + a + 'QQ.jpg" data-community-qr alt="QQ 交流群二维码" width="138" height="138" loading="lazy" /></div>' +
+      '<p class="cancri-community__caption" data-community-caption aria-live="polite" aria-atomic="true">QQ · 扫一扫进群</p>' +
+      "</div></section>";
+    mount.replaceWith(aside);
+    return aside;
+  }
+
+  var widget = document.querySelector("[data-community-widget]") || mountFromTemplate();
   if (!widget) return;
 
   var trigger = widget.querySelector("[data-community-trigger]");

@@ -177,6 +177,34 @@
     ];
   }
 
+  /**
+   * 只在有关键词时参与匹配的条目：控制台各页 / 功能入口 + 文档全部章节。
+   * kw 是不显示的同义词，帮「新建密钥」「邀请成员」这类说法找到对应页面。
+   */
+  function extraTargets() {
+    var base = pageBase();
+    var list = [
+      { name: "控制台", sub: "控制台 · 首页", href: base + "api/console.html", kw: "console dashboard" },
+      { name: "日志", sub: "控制台 · 调用日志", href: base + "api/logs.html", kw: "logs 请求记录 调用记录" },
+      { name: "团队", sub: "控制台 · 团队详情与成员", href: base + "api/team.html", kw: "team 成员 邀请成员 添加成员 退出团队" },
+      { name: "团队用量", sub: "控制台 · 团队 · 管理", href: base + "api/team.html#manage/usage", kw: "team usage" },
+      { name: "团队 Keys", sub: "控制台 · 团队 · 管理", href: base + "api/team.html#manage/keys", kw: "team key 团队密钥" },
+      { name: "团队余额", sub: "控制台 · 团队 · 管理", href: base + "api/team.html#manage/balance", kw: "team balance 划转" },
+      { name: "团队设置", sub: "控制台 · 团队 · 管理", href: base + "api/team.html#manage/settings", kw: "team settings 公告" },
+      { name: "新建 API Key", sub: "控制台 · API 密钥", href: base + "api/keys.html", kw: "create key 创建密钥 新建密钥 apikey token" },
+      { name: "我的订单", sub: "控制台 · 充值与订单记录", href: base + "api/billing.html#bills", kw: "orders bills 订单" },
+      { name: "余额", sub: "控制台 · 充值", href: base + "api/billing.html", kw: "balance wallet 钱包 付款 支付" },
+      { name: "计费倍率", sub: "模型 · 价格与倍率", href: base + "api_docs.html#pricing", kw: "pricing price 价格 倍率" },
+      { name: "返回聊天", sub: "回到 NexusV 对话", href: base || "./", kw: "chat 聊天" },
+    ];
+    (window.__CANCRI_DOCS_TOC__ || []).forEach(function (g) {
+      g[2].forEach(function (it) {
+        list.push({ name: it[1], sub: "文档 · " + g[0], href: base + g[1] + "#" + it[0], kw: it[0] });
+      });
+    });
+    return list;
+  }
+
   function initSearchOverlay() {
     var overlay = document.getElementById("header-search-overlay");
     if (!overlay) return;
@@ -259,10 +287,10 @@
         results.innerHTML = '<div class="px-4 py-6 text-sm text-secondary">模型目录正在加载…</div>';
         return;
       }
-      var pool = scope === "models" ? models : items.concat(models);
+      var pool = scope === "models" ? models : items.concat(extraTargets(), models);
       var filtered = q
         ? pool.filter(function (it) {
-            return (it.name + " " + it.sub).toLowerCase().indexOf(q) !== -1;
+            return (it.name + " " + it.sub + " " + (it.kw || "")).toLowerCase().indexOf(q) !== -1;
           })
         : (scope === "models" ? models : items);
       if (scope !== "models") filtered = filtered.slice(0, 40);
@@ -324,7 +352,30 @@
     });
     btn.addEventListener("click", toggle);
     drawer.addEventListener("click", function (e) {
-      if (e.target === drawer || e.target.hasAttribute("data-drawer-dismiss")) toggle();
+      if (e.target === drawer || e.target.hasAttribute("data-drawer-dismiss")) {
+        toggle();
+        return;
+      }
+      // 分组手风琴（同主站 js/menu.js：同一时间只开一组）
+      var head = e.target.closest && e.target.closest("[data-expandable]");
+      if (head && drawer.contains(head)) {
+        var sub = head.nextElementSibling;
+        if (!sub || !sub.classList.contains("cnc-msub")) return;
+        var willOpen = !sub.classList.contains("open");
+        drawer.querySelectorAll(".cnc-msub.open").forEach(function (other) {
+          if (other === sub) return;
+          other.classList.remove("open");
+          other.previousElementSibling.classList.remove("expanded");
+          other.previousElementSibling.setAttribute("aria-expanded", "false");
+        });
+        sub.classList.toggle("open", willOpen);
+        head.classList.toggle("expanded", willOpen);
+        head.setAttribute("aria-expanded", String(willOpen));
+        return;
+      }
+      // 文档页的链接只改 hash（分页器原地翻页），不会离开页面 —— 点了要把抽屉收起来
+      var a = e.target.closest && e.target.closest("a[href]");
+      if (a && drawer.getAttribute("data-open") === "true") toggle();
     });
   }
 

@@ -156,6 +156,25 @@
 .ctp-status{margin-bottom:16px;padding:12px 14px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text-secondary);font-size:14px}
 .ctp-status[data-error="true"]{border-color:var(--color-border-danger-surface,var(--color-border));background:var(--color-background-danger-soft);color:var(--color-text-danger)}
 
+/* ---------- 首次加载：流光骨架（team-page.js showSkeleton） ---------- */
+.ctp-skel{--sk:color-mix(in srgb,currentColor 7%,transparent);--sk-hi:color-mix(in srgb,currentColor 15%,transparent);display:flex;flex-direction:column;gap:28px;margin-bottom:24px;color:var(--color-text,inherit)}
+.ctp-skel__b{display:block;border-radius:8px;background:linear-gradient(90deg,var(--sk) 25%,var(--sk-hi) 37%,var(--sk) 63%);background-size:400% 100%;animation:ctp-skel-flow 1.4s ease infinite}
+.ctp-skel__row{display:flex;gap:8px}
+.ctp-skel__pill{width:84px;height:30px;border-radius:999px}
+.ctp-skel__sec{display:flex;flex-direction:column;gap:14px}
+.ctp-skel__title{width:160px;height:18px}
+.ctp-skel__people{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.ctp-skel__person{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--color-border,var(--sk));border-radius:12px}
+.ctp-skel__avatar{flex:none;width:36px;height:36px;border-radius:50%}
+.ctp-skel__col{display:flex;flex:1;flex-direction:column;gap:8px;min-width:0}
+.ctp-skel__line{width:70%;height:12px}
+.ctp-skel__line--s{width:42%;height:10px}
+.ctp-skel__cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.ctp-skel__card{height:92px;border-radius:12px}
+.ctp-skel__keyrow{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-bottom:1px solid var(--color-border,var(--sk))}
+@keyframes ctp-skel-flow{0%{background-position:100% 50%}100%{background-position:0 50%}}
+@media (prefers-reduced-motion:reduce){.ctp-skel__b{animation:none}}
+
 /* ---------- 未入团 ---------- */
 .ctp-join{display:flex;flex-direction:column;gap:16px;max-width:640px}
 .ctp-card{display:flex;flex-direction:column;gap:12px;padding:20px;border:1px solid var(--color-border);border-radius:var(--radius-xl);background:var(--color-surface)}

@@ -571,7 +571,7 @@ body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] 
   transform: none;
 }
 
-/* 移动端：顶部贴满全屏宽、上方直角、下方圆角，从顶部下滑 / 上滑收起 */
+/* 移动端：顶部贴满全屏宽、四角直角（2026-10-30 去掉下方圆角），从顶部下滑 / 上滑收起 */
 @media (max-width: 767px) {
   #header-search-overlay:not([data-search-scope="models"]) {
     padding: 0;
@@ -580,7 +580,7 @@ body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] 
   #header-search-overlay:not([data-search-scope="models"]) > .cancri-overlay-backdrop + div {
     max-width: none;
     border-width: 0 0 1px;
-    border-radius: 0 0 28px 28px;
+    border-radius: 0;
     transform: translateY(-100%);
     opacity: 1;
   }
@@ -693,18 +693,200 @@ body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] 
   visibility: visible;
   transform: translateY(0);
 }
-#drawer [data-mobile-nav-panels] { overflow-x: hidden; }
-#drawer .cnc-sidebar--mobile > * > * {
+/* ── 2026-10-30 抽屉内容：骨架与交互整套搬自主站博客 css/mobile-menu.css ──────────
+   条目 22px + 发丝分隔线、⌄ 分组手风琴（高度用 grid-template-rows 0fr→1fr 过渡，
+   文档目录很长，博客的 max-height:600px 装不下）、条目错峰浮现、悬停时其余条目变淡、
+   底部两颗胶囊按钮。颜色变量取博客 variables.css 的浅 / 深两套值。 */
+#drawer.cnc-mdrawer {
+  --m-text: #000;
+  --m-secondary: rgba(0, 0, 0, 0.44);
+  --m-border: rgba(0, 0, 0, 0.12);
+  --m-bg: #fff;
+  background: var(--m-bg);
+  color: var(--m-text);
+}
+html.dark #drawer.cnc-mdrawer {
+  --m-text: #fff;
+  --m-secondary: rgba(255, 255, 255, 0.44);
+  --m-border: rgba(255, 255, 255, 0.12);
+  --m-bg: #000;
+}
+.cnc-mdrawer__scroll {
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px 20px 100px;
+}
+.cnc-mdrawer .cnc-mnav-item {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 14px 0;
+  border: 0;
+  border-bottom: 1px solid var(--m-border);
+  background: none;
+  color: var(--m-text);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease, color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+#drawer.active .cnc-mnav-item {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (hover: hover) {
+  #drawer.active .cnc-mdrawer__scroll:hover .cnc-mnav-item {
+    opacity: 0.5;
+    color: var(--m-secondary);
+  }
+  #drawer.active .cnc-mdrawer__scroll .cnc-mnav-item:hover {
+    opacity: 1;
+    color: var(--m-text);
+  }
+}
+.cnc-mdrawer .cnc-mnav-item:focus-visible {
+  outline: 2px solid var(--m-text);
+  outline-offset: 2px;
+}
+.cnc-mdrawer .cnc-mnav-item[data-expandable]::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 10px;
+  border-right: 1.5px solid var(--m-secondary);
+  border-bottom: 1.5px solid var(--m-secondary);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cnc-mdrawer .cnc-mnav-item[data-expandable].expanded::after {
+  transform: rotate(-135deg) translateY(-2px);
+}
+.cnc-mdrawer .cnc-msub {
+  display: grid;
+  grid-template-rows: 0fr;
+  padding: 0;
+  transition: grid-template-rows 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cnc-mdrawer .cnc-msub.open {
+  grid-template-rows: 1fr;
+  padding: 8px 0 16px;
+}
+.cnc-mdrawer .cnc-msub__inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.cnc-mdrawer .cnc-msub__label {
+  margin: 6px 0 2px;
+  padding-top: 12px;
+  border-top: 1px solid var(--m-border);
+  color: var(--m-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.cnc-mdrawer .cnc-msub__inner > .cnc-msub__label:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.cnc-mdrawer .cnc-msub a {
+  display: block;
+  padding: 8px 0;
+  color: var(--m-secondary);
+  font-size: 15px;
+  font-weight: 400;
+  text-decoration: none;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: color 0.2s, opacity 0.25s ease, transform 0.25s ease;
+}
+.cnc-mdrawer .cnc-msub.open a {
+  opacity: 1;
+  transform: translateX(0);
+}
+.cnc-mdrawer .cnc-msub a:hover,
+.cnc-mdrawer .cnc-msub a[aria-current="page"],
+.cnc-mdrawer .cnc-mnav-item[aria-current="page"] {
+  color: var(--m-text);
+}
+.cnc-mdrawer .cnc-msub a[aria-current="page"] { font-weight: 500; }
+.cnc-mdrawer .cnc-mactions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 32px;
   opacity: 0;
   transform: translateY(10px);
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
-#drawer.active .cnc-sidebar--mobile > * > * { opacity: 1; transform: translateY(0); }
-#drawer.active .cnc-sidebar--mobile > * > *:nth-child(2) { transition-delay: 40ms; }
-#drawer.active .cnc-sidebar--mobile > * > *:nth-child(3) { transition-delay: 80ms; }
-#drawer.active .cnc-sidebar--mobile > * > *:nth-child(4) { transition-delay: 120ms; }
-#drawer.active .cnc-sidebar--mobile > * > *:nth-child(5) { transition-delay: 160ms; }
-#drawer.active .cnc-sidebar--mobile > * > *:nth-child(n+6) { transition-delay: 200ms; }
+#drawer.active .cnc-mactions {
+  opacity: 1;
+  transform: translateY(0);
+}
+.cnc-mdrawer .cnc-mactions a {
+  display: block;
+  padding: 12px 24px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.cnc-mdrawer .cnc-mlogin {
+  border: 1px solid var(--m-border);
+  color: var(--m-text);
+}
+.cnc-mdrawer .cnc-mlogin:hover {
+  border-color: var(--m-text);
+  background: var(--m-text);
+  color: var(--m-bg);
+}
+.cnc-mdrawer .cnc-mcta {
+  background: var(--m-text);
+  color: var(--m-bg);
+}
+.cnc-mdrawer .cnc-mcta:hover {
+  background: var(--m-bg);
+  color: var(--m-text);
+  box-shadow: 0 0 0 1px var(--m-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cnc-mdrawer .cnc-mnav-item,
+  .cnc-mdrawer .cnc-msub,
+  .cnc-mdrawer .cnc-msub a,
+  .cnc-mdrawer .cnc-mactions { transition: none; }
+}
+/* 顶栏搜索按钮在移动端换成博客那颗 34px 描边圆钮 */
+@media (max-width: 767px) {
+  #header [data-header-search-button][aria-label="搜索"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--color-border-primary-surface);
+    border-radius: 999px;
+    transition: background-color 0.15s ease;
+  }
+}
+/* 桌面侧栏分组收起时，箭头立刻转回（open 要等收起动画播完才去掉） */
+.nav-disclosure.is-closing > summary .nav-disclosure-chevron {
+  transform: none;
+}
 /* ── 2026-09-23 模型页：左栏发丝线 + 右侧筛选栏 + 卡片分组胶囊 ─────── */
 body[data-oai-page="models"] #oai-mount-sidebar {
   border-right: 1px solid var(--color-border-primary-surface);

@@ -64,6 +64,16 @@
                     ha === pageId,
                 );
             });
+        // 移动端抽屉（oai-shell-nav.js buildDrawer）里同一章节也标成当前页
+        document.querySelectorAll("#drawer .cnc-msub a[href]").forEach((a) => {
+            const href = a.getAttribute("href") || "";
+            // clean-url.js 会把地址栏的 .html 去掉，两边都去掉再比
+            const base = (p) => (p.split("/").pop() || "").replace(/\.html$/, "");
+            const sameDoc = base(href.split("#")[0]) === base(location.pathname);
+            const ha = href.includes("#") ? href.split("#")[1] : "";
+            if (sameDoc && ha === pageId) a.setAttribute("aria-current", "page");
+            else a.removeAttribute("aria-current");
+        });
     }
 
     function buildPager(prevSec, nextSec) {
@@ -200,32 +210,13 @@
         showPage(PAGE_IDS[0]);
     }
 
-    (function initMobileDrawer() {
-        const drawer = document.getElementById("drawer");
-        const sidebar = document.querySelector(
-            "#oai-mount-sidebar nav.cnc-sidebar",
-        );
-        const panel = drawer?.querySelector("[data-mobile-nav-panels]");
-        if (!drawer || !sidebar || !panel) return;
-
-        const tabBar = drawer.querySelector('[role="tablist"]')?.closest(".px-6");
-        if (tabBar) tabBar.style.display = "none";
-
-        panel.innerHTML = "";
-        panel.className =
-            "flex-1 w-full overflow-y-auto px-4 py-4 flex flex-col gap-2";
-
-        const clone = sidebar.cloneNode(true);
-        clone.classList.add("cnc-sidebar--mobile");
-        clone.querySelectorAll("a[href]").forEach((a) => {
-            a.addEventListener("click", () => {
-                drawer.classList.remove("translate-x-0");
-                drawer.classList.add("translate-x-full");
-                drawer.setAttribute("data-open", "false");
-                drawer.classList.add("hidden");
-                drawer.classList.remove("flex");
-            });
+    // 侧栏 / 抽屉由 oai-shell-nav.js 在 DOMContentLoaded 才挂上，比本脚本晚；挂上后补标一次当前章节
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => {
+            setSidebarActive(resolvePageId(location.hash.slice(1)));
         });
-        panel.appendChild(clone);
-    })();
+    }
+
+    // 2026-10-30：移动端抽屉不再在这里克隆侧栏 —— 抽屉由 oai-shell-nav.js buildDrawer 统一生成
+    // （博客同款骨架，文档目录同一份 DOCS_TOC），点链接收起抽屉在 oai-platform.js initMobileDrawer。
 })();

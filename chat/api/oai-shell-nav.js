@@ -203,90 +203,61 @@
     );
   }
 
-  /** Docs TOC — single source; hash targets work with api-docs-pager. */
+  /**
+   * Docs TOC — single source for the desktop sidebar, the mobile drawer and the header search
+   * (oai-platform.js reads window.__CANCRI_DOCS_TOC__). Hash targets work with api-docs-pager.
+   * 实时语音单独一页（api_docs_live.html），不进 api_docs_detail 的分页器。
+   */
+  var DOCS_PAGE = "api_docs_detail.html";
+  var LIVE_PAGE = "api_docs_live.html";
+  var DOCS_TOC = [
+    ["开始使用", DOCS_PAGE, [
+      ["intro", "概述"], ["quickstart", "快速开始"], ["migration", "迁移支持"], ["auth", "认证"],
+      ["models", "列出模型"], ["balance", "查询余额与用量"], ["sdk", "SDK"],
+    ]],
+    ["核心概念", DOCS_PAGE, [
+      ["common-misunderstandings", "使用约定"], ["chat", "Chat Completions"],
+      ["messages", "Messages（Anthropic 协议）"], ["responses", "Responses（OpenAI 新协议）"],
+    ]],
+    ["实时语音", LIVE_PAGE, [
+      ["intro", "GPT-Live 概述"], ["connect", "连接与认证"], ["backends", "三种后端模式"],
+      ["events", "事件参考"], ["pricing", "计费"], ["limits", "速率限制与时长"], ["errors", "错误码"],
+    ]],
+    ["CLI 接入", DOCS_PAGE, [
+      ["cli-codex", "Codex CLI"], ["cli-claude", "Claude Code"], ["cli-opencode", "OpenCode"],
+      ["cli-openclaw", "OpenClaw"], ["cli-aider", "Aider"],
+    ]],
+    ["客户端接入", DOCS_PAGE, [
+      ["client-cherry", "Cherry Studio"], ["client-sillytavern", "SillyTavern"], ["client-ccswitch", "CC Switch"],
+      ["client-chatbox", "Chatbox"], ["client-lobechat", "LobeChat"], ["client-cursor", "Cursor"],
+      ["client-cline", "Cline"], ["client-continue", "Continue"], ["client-faq", "常见问题"],
+    ]],
+    ["团队协作", DOCS_PAGE, [["team", "团队（Team）"]]],
+    ["配额与限制", DOCS_PAGE, [
+      ["quota", "计费与余额"], ["free-model-limits", "免费模型与免费额度"], ["ratelimit", "速率限制"],
+    ]],
+    ["参考", DOCS_PAGE, [["errors", "错误码"], ["faq", "FAQ"]]],
+  ];
+  window.__CANCRI_DOCS_TOC__ = DOCS_TOC;
+
   function docsTocHtml() {
-    var base = "./api_docs_detail.html";
-    function item(hash, label) {
-      return (
-        '<li><a href="' +
-        base +
-        "#" +
-        hash +
-        '" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default pl-5 block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">' +
-        label +
-        "</span></a></li>"
-      );
-    }
-    // 实时语音单独一页（api_docs_live.html），不进 api_docs_detail 的分页器
-    function liveItem(hash, label) {
-      return item(hash, label).replace(base + "#", "./api_docs_live.html#");
-    }
-    function group(title, items) {
+    return DOCS_TOC.map(function (g) {
+      var items = g[2].map(function (it) {
+        return (
+          '<li><a href="./' + g[1] + "#" + it[0] +
+          '" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default pl-5 block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">' +
+          it[1] +
+          "</span></a></li>"
+        );
+      }).join("");
       return (
         '<div><h3 class="mb-2 ml-3 mt-4 text-sm font-semibold select-none">' +
-        title +
+        g[0] +
         '</h3><ul class="flex flex-col gap-0.25 text-sm text-default w-full">' +
         items +
         "</ul></div>"
       );
-    }
-    return (
-      group(
-        "开始使用",
-        item("intro", "概述") +
-          item("quickstart", "快速开始") +
-          item("migration", "迁移支持") +
-          item("auth", "认证") +
-          item("models", "列出模型") +
-          item("balance", "查询余额与用量") +
-          item("sdk", "SDK"),
-      ) +
-      group(
-        "核心概念",
-        item("common-misunderstandings", "使用约定") +
-          item("chat", "Chat Completions") +
-          item("messages", "Messages（Anthropic 协议）") +
-          item("responses", "Responses（OpenAI 新协议）"),
-      ) +
-      group(
-        "实时语音",
-        liveItem("intro", "GPT-Live 概述") +
-          liveItem("connect", "连接与认证") +
-          liveItem("backends", "三种后端模式") +
-          liveItem("events", "事件参考") +
-          liveItem("pricing", "计费") +
-          liveItem("limits", "速率限制与时长") +
-          liveItem("errors", "错误码"),
-      ) +
-      group(
-        "CLI 接入",
-        item("cli-codex", "Codex CLI") +
-          item("cli-claude", "Claude Code") +
-          item("cli-opencode", "OpenCode") +
-          item("cli-openclaw", "OpenClaw") +
-          item("cli-aider", "Aider"),
-      ) +
-      group(
-        "客户端接入",
-        item("client-cherry", "Cherry Studio") +
-          item("client-sillytavern", "SillyTavern") +
-          item("client-ccswitch", "CC Switch") +
-          item("client-chatbox", "Chatbox") +
-          item("client-lobechat", "LobeChat") +
-          item("client-cursor", "Cursor") +
-          item("client-cline", "Cline") +
-          item("client-continue", "Continue") +
-          item("client-faq", "常见问题"),
-      ) +
-      group("团队协作", item("team", "团队（Team）")) +
-      group(
-        "配额与限制",
-        item("quota", "计费与余额") +
-          item("free-model-limits", "免费模型与免费额度") +
-          item("ratelimit", "速率限制"),
-      ) +
-      group("参考", item("errors", "错误码") + item("faq", "FAQ"))
-    );
+    }).join("");
   }
 
   function disclosure(id, title, open, innerHtml) {
@@ -370,16 +341,104 @@
     );
   }
 
+  /**
+   * 移动端抽屉：骨架与交互搬自主站博客 js/menu.js + css/mobile-menu.css —— 大字号条目 + 发丝分隔线、
+   * 带 ⌄ 的分组手风琴展开（oai-platform.js initMobileDrawer 绑定）、条目错峰浮现、悬停时其余条目变淡、
+   * 底部两颗胶囊按钮。样式见 oai-cancri.css「cnc-m*」。当前页所在的分组默认展开。
+   */
   function buildDrawer() {
+    var row = 0;
+    function delay() {
+      return ' style="transition-delay:' + Math.min(row++, 6) * 40 + 'ms"';
+    }
+    function sub(links) {
+      var idx = 0;
+      return (
+        '<div class="cnc-msub"><div class="cnc-msub__inner">' +
+        links.map(function (l) {
+          if (l.label) return '<div class="cnc-msub__label">' + l.label + "</div>";
+          var d = ' style="transition-delay:' + Math.min(idx++, 8) * 40 + 'ms"';
+          return '<a href="' + l.href + '"' + d + (l.current ? ' aria-current="page"' : "") + ">" + l.text + "</a>";
+        }).join("") +
+        "</div></div>"
+      );
+    }
+    function group(title, open, links) {
+      return (
+        '<button type="button" class="cnc-mnav-item' + (open ? " expanded" : "") + '" data-expandable aria-expanded="' + open + '"' + delay() + ">" +
+        title + "</button>" + sub(links).replace('class="cnc-msub"', 'class="cnc-msub' + (open ? " open" : "") + '"')
+      );
+    }
+    function link(href, text, current) {
+      return '<a href="' + href + '" class="cnc-mnav-item"' + (current ? ' aria-current="page"' : "") + delay() + ">" + text + "</a>";
+    }
+    var docsLinks = [];
+    DOCS_TOC.forEach(function (g) {
+      docsLinks.push({ label: g[0] });
+      g[2].forEach(function (it) {
+        docsLinks.push({ href: "./" + g[1] + "#" + it[0], text: it[1] });
+      });
+    });
     return (
-      '<div id="drawer" data-open="false" aria-hidden="true" class="fixed inset-0 z-[60] hidden flex-col bg-white dark:bg-black pt-16 md:hidden">' +
-      '<div class="flex-1 overflow-y-auto p-4" data-mobile-nav-panels>' +
-      buildSidebarNav({ anchorDocs: false }).replace(
-        'class="cnc-sidebar flex-1 overflow-y-auto overflow-x-visible pt-4"',
-        'class="cnc-sidebar cnc-sidebar--mobile flex-1 overflow-y-auto overflow-x-visible"',
-      ) +
+      '<div id="drawer" data-open="false" aria-hidden="true" class="cnc-mdrawer fixed inset-0 z-[60] hidden flex-col md:hidden">' +
+      '<div class="cnc-mdrawer__scroll" data-mobile-nav-panels>' +
+      link("./api/index.html", "概览", PAGE === "overview") +
+      group("模型", IS_MODELS, [
+        { href: "./api_models.html", text: "模型广场", current: IS_MODELS },
+        { href: "./api_docs.html#pricing", text: "计费倍率" },
+      ]) +
+      group("API 文档", IS_DOCS, docsLinks) +
+      group("控制台", false, [
+        { href: "./api/keys.html", text: "API 密钥" },
+        { href: "./api/usage.html", text: "用量" },
+        { href: "./api/billing.html", text: "充值" },
+        { href: "./api/billing.html#bills", text: "我的订单" },
+      ]) +
+      link("./api_apply.html", "联系我们", false) +
+      '<div class="cnc-mactions">' +
+      '<a href="./" class="cnc-mlogin">返回聊天</a>' +
+      '<a href="./api/console.html" class="cnc-mcta">控制台 <span aria-hidden="true">↗</span></a>' +
+      "</div>" +
       "</div></div>"
     );
+  }
+
+  /**
+   * 桌面侧栏 <details> 分组的展开 / 收起动画。原生 <details> 只能瞬切，这里接管 summary 点击：
+   * 先量内容高度，用 Web Animations 过渡 height + opacity，收起动画播完再去掉 open。
+   * 设 open 仍会触发原生 toggle 事件，bindDisclosurePersistence 的记忆不受影响。
+   */
+  var DISCLOSURE_EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
+  function bindDisclosureAnimation(root) {
+    if (!root || typeof Element === "undefined" || !Element.prototype.animate) return;
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
+    root.querySelectorAll("details.nav-disclosure").forEach(function (d) {
+      var summary = d.querySelector(":scope > summary");
+      var body = summary && summary.nextElementSibling;
+      if (!summary || !body) return;
+      var anim = null;
+      summary.addEventListener("click", function (e) {
+        if (reduce && reduce.matches) return;
+        e.preventDefault();
+        var opening = !d.open || d.classList.contains("is-closing");
+        var from = anim ? body.getBoundingClientRect().height : (d.open ? body.offsetHeight : 0);
+        if (anim) anim.cancel();
+        d.classList.toggle("is-closing", !opening);
+        if (opening) d.open = true;
+        var to = opening ? body.scrollHeight : 0;
+        body.style.overflow = "hidden";
+        anim = body.animate(
+          [{ height: from + "px", opacity: opening ? 0.2 : 1 }, { height: to + "px", opacity: opening ? 1 : 0 }],
+          { duration: opening ? 320 : 240, easing: DISCLOSURE_EASE },
+        );
+        anim.onfinish = function () {
+          anim = null;
+          body.style.overflow = "";
+          d.classList.remove("is-closing");
+          if (!opening) d.open = false;
+        };
+      });
+    });
   }
 
   function replaceMount(id, html) {
@@ -437,6 +496,7 @@
     );
     syncApiDocsDisclosure();
     bindDisclosurePersistence(side);
+    bindDisclosureAnimation(side);
   }
 
   // Register before oai-platform.js so mount wins the DOMContentLoaded FIFO

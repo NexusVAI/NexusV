@@ -89,6 +89,10 @@ html.dark .cancri-community {
   font-size: 14px;
   font-weight: 600;
 }
+/* 控制台页的全局 h2 规则会把标题染成页面文字色（深色主题下白字落在浅色卡上） */
+.cancri-community .cancri-community__title {
+  color: var(--community-fg);
+}
 .cancri-community__intro {
   margin: 6px 0 0;
   color: var(--community-fg-muted);

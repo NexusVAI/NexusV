@@ -89,10 +89,39 @@
     return dom.status;
   }
   function setStatus(text, isError) {
+    hideSkeleton();
     var s = statusBox();
     s.hidden = !text;
     s.textContent = text || "";
     s.setAttribute("data-error", isError ? "true" : "false");
+  }
+
+  // 首次加载：照「团队详情」的版式铺一层流光骨架（成员行 / 用量卡 / Key 列表），数据到了或出错就撤掉
+  function showSkeleton() {
+    if (dom.skel) return;
+    var sk = el("div", "ctp-skel");
+    sk.setAttribute("role", "status");
+    sk.setAttribute("aria-label", "正在加载团队信息");
+    var i = function (cls) { return '<i class="ctp-skel__b ' + cls + '"></i>'; };
+    var rep = function (n, html) { return new Array(n + 1).join(html); };
+    sk.innerHTML =
+      '<div class="ctp-skel__row">' + i("ctp-skel__pill") + i("ctp-skel__pill") + "</div>" +
+      '<div class="ctp-skel__sec">' + i("ctp-skel__title") +
+      '<div class="ctp-skel__people">' +
+      rep(4, '<div class="ctp-skel__person">' + i("ctp-skel__avatar") + '<div class="ctp-skel__col">' + i("ctp-skel__line") + i("ctp-skel__line ctp-skel__line--s") + "</div></div>") +
+      "</div></div>" +
+      '<div class="ctp-skel__sec">' + i("ctp-skel__title") +
+      '<div class="ctp-skel__cards">' + rep(3, i("ctp-skel__card")) + "</div></div>" +
+      '<div class="ctp-skel__sec">' + i("ctp-skel__title") +
+      rep(3, '<div class="ctp-skel__keyrow">' + i("ctp-skel__line") + i("ctp-skel__line ctp-skel__line--s") + "</div>") +
+      "</div>";
+    dom.detail.insertBefore(sk, dom.detail.firstChild);
+    dom.skel = sk;
+  }
+  function hideSkeleton() {
+    if (!dom.skel) return;
+    dom.skel.remove();
+    dom.skel = null;
   }
 
   // ---------- 未入团：建团 / 凭邀请入团 ----------
@@ -872,7 +901,8 @@
       if (mgr) mgr.relayout();
     });
 
-    setStatus("正在加载团队信息…");
+    setStatus("");
+    showSkeleton();
     T.onData(render);
     T.ensureData().catch(function (e) {
       setStatus(
