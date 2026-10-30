@@ -1860,7 +1860,7 @@
                                 <div class="claude-settings-section claude-snav-target" data-snav-target="invite">
                                     <h2 class="claude-settings-h2">邀请好友</h2>
                                     <p class="claude-form-help" id="claudeInviteRules" style="margin:0 0 16px;line-height:1.55">
-                                        把专属链接发给朋友，对方通过链接注册并登录后，会计入你的邀请人数。
+                                        把专属链接发给朋友，对方通过链接注册新账号并登录后，会计入你的邀请人数；已有账号不计入。
                                         邀请奖励由官方根据邀请人数人工核定发放，不再自动入账；多账号自邀、刷量等在核定时不计入，具体以公告为准。
                                     </p>
                                     <div class="claude-form-row">
@@ -2593,8 +2593,8 @@
                                         <p><strong>如何使用？</strong></p>
                                         <ul><li>点击左下角「头像」→「自定义」。</li><li>进入页面后点击「邀请」，页面上会自动显示你的专属邀请链接。</li><li>发送给朋友注册即可。</li></ul>
                                         <p><strong>规则</strong></p>
-                                        <ul><li>好友通过你的链接注册并登录后，计入你的邀请人数，可在「邀请」页查看。</li><li>邀请奖励由官方根据邀请人数<strong>人工核定发放</strong>，不再自动入账，具体以公告为准。</li></ul>
-                                        <p><small>2026-10-30 起停止自动发放「双方各得 ¥1 API 额度」和「首充返利」，此前已入账的额度不受影响。多账号自邀、刷量等在人工核定时不计入。</small></p>
+                                        <ul><li>好友通过你的链接注册新账号并登录后，计入你的邀请人数，可在「邀请」页查看。</li><li>邀请奖励由官方根据邀请人数<strong>人工核定发放</strong>，不再自动入账，具体以公告为准。</li></ul>
+                                        <p><small>2026-10-30 起停止自动发放「双方各得 ¥1 API 额度」和「首充返利」，此前已入账的额度不受影响。已有账号点链接不计入；多账号自邀、刷量等在人工核定时不计入。</small></p>
                                     </div>
                                     <button type="button" class="zm-ann-expand" data-zm-expand hidden>展开</button>
                                     <a class="zm-ann-cta" href="./claude.html" data-zm-action="open-invite"><span>去邀请</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
@@ -2811,7 +2811,7 @@
         <script defer src="./cancri_announcement.js?v=20260811-ann-expand"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./celebrate_invite_capture.js?v=20261030-invite2"></script>
+        <script defer src="./celebrate_invite_capture.js?v=20261030-invite3"></script>
         <script defer src="./claude_ui.js?v=20261030-invite"></script>
         <!-- 2026-06-25：钱包余额预警 ribbon + 升级弹窗。此前漏挂载+部署白名单文件名写错，
              导致 window.CancriUpgradeQuotaUI 永远 undefined、聊天页低余额警报从不显示。 -->

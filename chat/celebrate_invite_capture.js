@@ -224,7 +224,7 @@
         if (box) {
             // 仅显示前 8 位避免冗长
             var masked = String(inviterId || "").slice(0, 8) + "···";
-            box.textContent = "✓ 已捕获邀请关系（" + masked + "），登录后自动计入邀请人数。";
+            box.textContent = "✓ 已捕获邀请关系（" + masked + "），注册新账号并登录后自动计入邀请人数；已有账号不计入。";
             box.hidden = false;
         }
         if (details && !details.open) details.open = true;
