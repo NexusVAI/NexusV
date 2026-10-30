@@ -364,21 +364,23 @@
 
     var FOOTER_COLUMNS = [
         ["产品", [
-            ["SentienceV5.2 Mens", "https://www.nexusvai.xyz/article.html?id=sentienceV52mens"],
-            ["SentienceV4.1 Omni", "https://www.nexusvai.xyz/article.html?id=sentienceV4ob"],
-            ["Sentience V4C", "https://www.nexusvai.xyz/article.html?id=sentienceV4C"],
-            ["NexusV V5", "https://www.nexusvai.xyz/article.html?id=nexusv5"],
-            ["NexusV V4", "https://www.nexusvai.xyz/article.html?id=n3"],
-            ["CancriV1-0.1B", "https://www.nexusvai.xyz/article.html?id=cancriV1_0_1b"],
+            // 2.5 Flash 与 2.1 Flash 是同一篇发布文章
+            ["Cancri 2.5 Flash", "https://www.nexusvai.xyz/article.html?id=cancri25flash"],
+            ["Cancri 2.1 Flash", "https://www.nexusvai.xyz/article.html?id=cancri25flash"],
             ["CancriV2-0.5B", "https://www.modelscope.cn/models/guxingyu88730882/CancriV2-0.5B-Chat"],
-            ["TACTFR 6.0.0 Beta.2.9", "https://www.wanjiadongli.com/mods/292895"],
-            ["TACTFR 6.0.0 Beta.2.8", "https://www.nexusvai.xyz/article.html?id=tactfr628"],
-            ["TACTFR 6.0.0 Beta.2.7", "https://www.nexusvai.xyz/article.html?id=tactfr627"],
-            ["TACTFR 6.0.0 Beta.2", "https://www.nexusvai.xyz/article.html?id=tactfr600"],
-            ["TACTFR V4", "https://www.nexusvai.xyz/article.html?id=n4"],
-            ["Cancri Code", "https://nexusvai.xyz/cancricode"],
+            ["Cancri Bot", "https://www.nexusvai.xyz/article.html?id=cancriBot"],
+            ["Cancri Code 3", "https://www.nexusvai.xyz/article.html?id=cancriCode3"],
+            ["Cancri Code 首次登场", "https://www.nexusvai.xyz/article.html?id=cancriCode"],
         ], "cancri-footer-products"],
-        ["友情链接", [["玩家动力", "https://www.wanjiadongli.com/"], ["Agnes", "https://agnes-ai.com/"]], ""],
+        ["友情链接", [
+            ["玩家动力", "https://www.wanjiadongli.com/"],
+            ["Agnes", "https://agnes-ai.com/"],
+            ["奇绩创坛", "https://www.miracleplus.com/"],
+            ["魔搭社区", "https://www.modelscope.cn/"],
+            ["AMD 开发者平台", "https://developer.amd.com.cn/"],
+            ["汽游", "https://moddown.com/"],
+            ["知乎", "https://www.zhihu.com/"],
+        ], ""],
         ["资源", [["NexusV", "https://www.nexusvai.xyz/"], ["NexusVAI", "https://www.nexusvai.xyz/chat/api/"]], ""],
     ];
 
@@ -664,11 +666,20 @@
         var sending = false;
         var verifying = false;
 
-        function setBusy(button, busy) {
+        // 进行中：禁用 + aria-busy（登录岛 CSS 据此变灰）+ 换成「正在…」文案，松开后还原原文案。
+        function setBusy(button, busy, busyText) {
             if (!button) return;
             button.disabled = !!busy;
             if (busy) button.setAttribute("aria-busy", "true");
             else button.removeAttribute("aria-busy");
+            var label = button.querySelector(".inline-flex.min-w-0") || button;
+            if (busy && busyText) {
+                if (label.dataset.idleText === undefined) label.dataset.idleText = label.textContent;
+                label.textContent = busyText;
+            } else if (!busy && label.dataset.idleText !== undefined) {
+                label.textContent = label.dataset.idleText;
+                delete label.dataset.idleText;
+            }
         }
 
         function setError(message) {
@@ -707,8 +718,8 @@
                 return false;
             }
             sending = true;
-            setBusy(refs.sendButton, true);
-            setBusy(refs.resendButton, true);
+            setBusy(refs.sendButton, true, "正在发送…");
+            setBusy(refs.resendButton, true, "正在发送…");
             setError("");
             try {
                 var captchaToken = typeof options.getCaptchaToken === "function"
@@ -756,7 +767,7 @@
                 return false;
             }
             verifying = true;
-            setBusy(refs.verifyButton, true);
+            setBusy(refs.verifyButton, true, "正在验证…");
             setError("");
             try {
                 var result = await getClient().auth.verifyOtp({
