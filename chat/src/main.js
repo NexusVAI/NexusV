@@ -5572,7 +5572,11 @@ function lastUserMessageText(messages) {
       overlay.setAttribute("data-theme", "claude");
       overlay.setAttribute("data-mode", "dark");
     }
+    // 登录岛 iframe 还没加载好时 authDoc() 回落到主页面 document；不能拿它改主页面
+    // <html> 的主题——否则登录后整页卡在 data-theme="claude"（--c-* 深色、--text-* 浅色），
+    // 深色下顶栏图标变黑、浅色用户被锁成深色（2026-10-30 实报）。登录岛自己的 <html> 已写死 claude/dark。
     const doc = authDoc();
+    if (doc === document) return;
     if (doc && doc.documentElement) {
       doc.documentElement.setAttribute("data-theme", "claude");
       doc.documentElement.setAttribute("data-mode", "dark");

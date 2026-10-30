@@ -108,7 +108,7 @@ import { hubErrorText, hubImageKey } from "./bot-cloud";
 // ⛔ 只许 import type：这两个文件调用 Tauri，网页端移植（npm run sync:bot）不跟进 type 导入
 import type { BotDeviceHandle, DeviceMedia } from "./bot-device-types";
 
-const NAME_OPTIONS = ["小云", "Cancri", BOT_DEFAULT_NAME];
+const NAME_OPTIONS = ["小蟹", "Cancri", BOT_DEFAULT_NAME];
 const ONBOARDING_STEPS = 3;
 /** 引导页上人不会一直动鼠标，别让它 11 秒就哭丧着脸 */
 const BOT_TUNING = { ...DEFAULT_TUNING, idleToSadMs: 10 * 60_000 };
@@ -540,8 +540,8 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
   };
 
   /**
-   * 带 key 的云朵（列表头像 / 顶部胶囊 / 右侧面板）跨重渲染常驻：renderList 等会 innerHTML 整块重写，
-   * 旧插槽随之丢弃；这里把常驻的 holder 搬进新插槽，svg 与引擎不重建，所以切会话不会闪回初始。
+   * 带 key 的小蟹（列表头像 / 顶部胶囊 / 右侧面板）跨重渲染常驻：renderList 等会 innerHTML 整块重写，
+   * 旧插槽随之丢弃；这里把常驻的 holder 搬进新插槽，小蟹不重建，所以切会话不会闪回初始。
    */
   const keepers = new Map<string, { holder: HTMLElement; handle: MascotHandle | null; dead: boolean }>();
 
@@ -574,7 +574,7 @@ export function createBotView(stage: HTMLElement, deps: BotViewDeps = {}): BotVi
         if (k.holder.parentElement !== slot) slot.appendChild(k.holder);
         return;
       }
-      if (mascots.has(slot) || slot.querySelector("svg")) return;
+      if (mascots.has(slot) || slot.querySelector("cancri-crab")) return;
       mascots.set(slot, { setLoginActive() {}, destroy() {} });
       void mountMascot(slot, BOT_TUNING).then((h) => {
         if (!slot.isConnected || !visible) {

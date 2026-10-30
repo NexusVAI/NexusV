@@ -11,18 +11,9 @@ export default [
       "cancri_chat.js",
       "dist/**",
       "*.config.js",
-      // src/grok-bot 下 9 个文件是 vendor 自 cancri-code 的引擎（IIFE + globalThis
-      // 串联），必须保持与上游逐字一致以便 diff；维护代码（hero-mascot/mood-director
-      // /测试）不在此列，照常 lint。
-      "src/grok-bot/geometry-data.js",
-      "src/grok-bot/math.js",
-      "src/grok-bot/tables.js",
-      "src/grok-bot/pose.js",
-      "src/grok-bot/tricks.js",
-      "src/grok-bot/fx.js",
-      "src/grok-bot/eyes.js",
-      "src/grok-bot/character.js",
-      "src/grok-bot/engine.js",
+      // src/grok-bot/cancri-crab.js 是 vendor 自 cancri-code 的小蟹组件，必须保持与上游
+      // 逐字一致以便 diff；维护代码（hero-mascot / crab-* / mood-director / 测试）照常 lint。
+      "src/grok-bot/cancri-crab.js",
       // npm run sync:bot 从 cancri-code 原样拷来的 Bot 界面（勿手改，见 scripts/sync-bot-port.mjs）
       "src/bot-port/**",
     ],

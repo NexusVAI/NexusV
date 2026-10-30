@@ -6,15 +6,15 @@
  *
  * 1. **宿主元素必须活过重渲染。** `ChatPane.renderAll` / `refreshStreamingMessageDom`
  *    会 innerHTML / replaceWith 整块换掉气泡。所以气泡里渲染的只是一个空插槽
- *    `[data-mascot-slot]`，真正的 `<svg>` 由本模块长期持有，重渲染后 `adopt()` 把它
- *    再 appendChild 回新插槽。元素被 reparent 不会重建，引擎的 rAF 和弹簧状态全都连续。
- *    如果哪天改成把 svg 直接写进 renderBubble 的 HTML 字符串里，动画会每帧重启。
+ *    `[data-mascot-slot]`，真正的 `<cancri-crab>` 由本模块长期持有，重渲染后 `adopt()` 把它
+ *    再 appendChild 回新插槽。元素不重建，状态、装饰、眨眼计时都留着。
+ *    如果哪天改成把小蟹直接写进 renderBubble 的 HTML 字符串里，每次重渲染都会新建一只。
  *
  * 2. **表情切换一律过 MoodDirector。** agent 事件在一轮里能抖几十次，直接 setState
  *    等于每个动作都播一半被砍。见 mood-director.ts。
  *
- * 3. **进度环只在拿得到真实时长时才画。** 拿不到就退回引擎自己的循环动画，
- *    绝不编一个假时长——环走完了还在等，比没有环更糟。
+ * 3. **ChatMood → 小蟹动作走 crabStateForMood。** 表情的判定（agent-mood.ts）和
+ *    「画成哪个动作」分开：干活类表情用本轮常驻动作，闲下来的随机，其余查 CHAT_MOOD_STATE。
  */
 import type { AgentEvent } from "../../agent/types";
 import {
@@ -28,7 +28,8 @@ import {
   type MoodThresholds,
   type TurnPhase,
 } from "./agent-mood";
-import type { GrokCharacter as GrokCharacterType } from "./engine.js";
+import { CrabDriver, createCrabElement, loadCrab, type CrabState } from "./crab-body";
+import { attachPersonalizePill } from "./crab-personalize";
 import {
   DEFAULT_FLOOR_MS,
   createDirector,
@@ -41,11 +42,60 @@ import {
 
 export const MASCOT_SLOT_ATTR = "data-mascot-slot";
 
+/** 每个表情画成小蟹的哪个动作 */
+export const CHAT_MOOD_STATE: Record<ChatMood, CrabState> = {
+  alerting: "error",
+  notifying: "question",
+  listening: "heart",
+  progress: "headphones",
+  confused: "sweat",
+  loading: "bubble",
+  writing: "laptop",
+  working: "work",
+  receiving: "phone",
+  searching: "think",
+  dictating: "idle",
+  humming: "dumbbell",
+  thinking: "think",
+  happy: "happy",
+  sad: "sulk",
+  drowsy: "sleep",
+  idle: "idle",
+};
+
+/**
+ * 一轮里「在干活」的这些表情不再各画各的：每轮开场随机挑 RESIDENT_POSES 之一常驻到收尾，
+ * 免得想 / 查 / 写 / 跑命令来回换动作看着乱。流式重连（confused）也归这里——
+ * 重连是内部机制，画成流汗只会让人以为出了什么事（用户实报「莫名其妙在流汗」）。
+ */
+export const RESIDENT_POSES: readonly CrabState[] = ["work", "laptop"];
+export const RESIDENT_MOODS: ReadonlySet<ChatMood> = new Set<ChatMood>([
+  "thinking", "searching", "writing", "working", "receiving", "confused",
+]);
+/** 「好一阵没动静 / 跑了很久」这两种闲下来的表情，每次进入时从这里随机挑一个 */
+export const IDLE_FUN_MOODS: ReadonlySet<ChatMood> = new Set<ChatMood>(["loading", "humming"]);
+export const IDLE_FUN_POSES: readonly CrabState[] = ["bubble", "dumbbell", "headphones", "phone", "chicken"];
+
+export function pickPose(pool: readonly CrabState[], rand: () => number = Math.random): CrabState {
+  return pool[Math.min(pool.length - 1, Math.floor(rand() * pool.length))];
+}
+
+/** 表情 → 这一刻实际画的动作（常驻 / 随机 / 查表三选一） */
+export function crabStateForMood(
+  mood: ChatMood,
+  resident: CrabState,
+  rand: () => number = Math.random,
+): CrabState {
+  if (RESIDENT_MOODS.has(mood)) return resident;
+  if (IDLE_FUN_MOODS.has(mood)) return pickPose(IDLE_FUN_POSES, rand);
+  return CHAT_MOOD_STATE[mood];
+}
+
 /**
  * holdMs = 这个表情的入场动画至少要播多久；urgency = 谁能打断谁。
  *
- * 会改 body 形状的（progress/loading/writing/notifying/alerting）给得更长——它们要走
- * 一次形变弹簧再走回来，砍在中间是最难看的。urgency 顺序刻意和 decideChatMood 的
+ * 带入场段的动作（loading 吹泡泡、writing 掏电脑、alerting 抖动）给得更长，砍在中间最难看。
+ * urgency 顺序刻意和 decideChatMood 的
  * 优先级一致，避免出现「映射说该换、调度器却不让抢」的拧巴组合。
  */
 export const CHAT_MOOD_CONFIG: DirectorConfig<ChatMood> = {
@@ -81,20 +131,21 @@ const FADE_MS = 420;
 /** 空闲时的兜底轮询；有待切换时会按 msUntilSwitchable 提前醒 */
 const IDLE_TICK_MS = 500;
 
-export function inkForScheme(scheme: string | null): string {
-  return scheme === "light" ? "#2A92FE" : "#4AA6FF";
-}
-
 export interface ChatMascotOptions {
   thresholds?: MoodThresholds;
   config?: DirectorConfig<ChatMood>;
+  /** 悬停时渐显「个性化」胶囊（主对话流开，Bot 视图不开） */
+  personalize?: boolean;
 }
 
 export class ChatMascot {
   private host: HTMLElement | null = null;
-  private engine: GrokCharacterType | null = null;
+  private body: CrabDriver | null = null;
   private loading = false;
+  private readonly personalize: boolean;
 
+  /** 本轮常驻动作，turn-start 时重抽 */
+  private resident: CrabState = pickPose(RESIDENT_POSES);
   private signals: AgentSignals = createSignals(0);
   private director: DirectorState<ChatMood>;
   private readonly cfg: DirectorConfig<ChatMood>;
@@ -102,14 +153,13 @@ export class ChatMascot {
 
   private timer: number | null = null;
   private outroTimer: number | null = null;
-  private schemeObserver: MutationObserver | null = null;
-  /** 正在等待的工具 callId → 声明时长，用来在 tool-result 时精确销掉窗口 */
+  /** 正在等待的工具 callId，用来在 tool-result 时精确销掉等待窗口 */
   private waitCallId: string | null = null;
-  private burstPending = false;
 
   constructor(opts: ChatMascotOptions = {}) {
     this.cfg = opts.config ?? CHAT_MOOD_CONFIG;
     this.th = opts.thresholds ?? DEFAULT_THRESHOLDS;
+    this.personalize = opts.personalize ?? false;
     this.director = createDirector<ChatMood>("thinking", now());
     this.signals = createSignals(now());
   }
@@ -118,7 +168,7 @@ export class ChatMascot {
 
   /**
    * 把宿主挂进（或重新挂回）当前气泡的插槽。renderAll / refreshStreamingMessageDom
-   * 之后必须调一次，否则插槽是新的、svg 还挂在被丢弃的旧节点上。
+   * 之后必须调一次，否则插槽是新的、小蟹还挂在被丢弃的旧节点上。
    */
   adopt(root: ParentNode): void {
     if (!findMascotSlot(root)) return;
@@ -126,67 +176,43 @@ export class ChatMascot {
     if (!this.host) {
       this.host = document.createElement("div");
       this.host.className = "chat-mascot";
+      if (this.personalize) attachPersonalizePill(this.host);
     }
     adoptInto(root, this.host);
-    if (fresh) void this.ensureEngine();
+    if (fresh) void this.ensureBody();
   }
 
-  private async ensureEngine(): Promise<void> {
-    if (this.engine || this.loading || !this.host) return;
+  private async ensureBody(): Promise<void> {
+    if (this.body || this.loading || !this.host) return;
     this.loading = true;
     try {
-      const mod = await import("./engine.js");
+      await loadCrab();
       if (!this.host) return;
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.setAttribute("class", "chat-mascot-svg");
-      svg.setAttribute("role", "img");
-      svg.setAttribute("aria-label", "Cancri 运行状态");
-      this.host.appendChild(svg);
-      this.engine = new mod.GrokCharacter(svg, {
-        shape: "cloud",
-        color: "blue",
-        mode: "hold",
-        state: this.director.applied,
-        followPointer: true,
-        inkFlat: inkForScheme(document.documentElement.getAttribute("data-scheme")),
-        eyeColor: "var(--cc-mascot-eye, var(--bg-primary, #ffffff))",
-      });
-      this.watchScheme();
-      // 引擎是异步来的，这期间调度器可能已经切过好几次表情了（applyMood 在没有引擎时
-      // 只更新状态、不下发）。这里补一次，否则进度环窗口和 data-mood 会漏掉，
+      const crab = createCrabElement("chat-mascot-crab");
+      this.host.prepend(crab);
+      this.body = new CrabDriver(crab, crabStateForMood(this.director.applied, this.resident));
+      // 组件是异步来的，这期间调度器可能已经切过好几次表情了（applyMood 在没有身体时
+      // 只更新状态、不下发）。这里补一次，否则 data-mood 会漏掉，
       // 表情停在构造时的初值直到下一次切换。
-      this.applyMood(this.director.applied, now());
+      this.applyMood(this.director.applied);
       this.startTimer();
     } catch (err) {
-      console.warn("[chat-mascot] 引擎加载失败，本轮不显示吉祥物：", err);
+      console.warn("[chat-mascot] 小蟹组件加载失败，本轮不显示吉祥物：", err);
     } finally {
       this.loading = false;
     }
   }
 
-  private watchScheme(): void {
-    if (this.schemeObserver) return;
-    this.schemeObserver = new MutationObserver(() => {
-      this.engine?.setInk(inkForScheme(document.documentElement.getAttribute("data-scheme")));
-    });
-    this.schemeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-scheme"],
-    });
-  }
-
   /**
-   * 拆掉引擎和 DOM，但对象本身可以复用：下一轮 adopt() 会重新建一份。
-   * 之所以不常驻——引擎是 rAF 循环，回合结束后留着就是每帧空转。
+   * 拆掉小蟹和 DOM，但对象本身可以复用：下一轮 adopt() 会重新建一份。
+   * 之所以不常驻——回合结束后留着，它的动画和计时器就一直空转。
    */
   destroy(): void {
     this.stopTimer();
     if (this.outroTimer !== null) window.clearTimeout(this.outroTimer);
     this.outroTimer = null;
-    this.schemeObserver?.disconnect();
-    this.schemeObserver = null;
-    this.engine?.destroy();
-    this.engine = null;
+    this.body?.destroy();
+    this.body = null;
     this.host?.remove();
     this.host = null;
   }
@@ -200,7 +226,7 @@ export class ChatMascot {
   }
 
   /**
-   * 喂一条 agent 事件。只更新信号，不直接碰引擎——表情由 pump/tick 统一决定。
+   * 喂一条 agent 事件。只更新信号，不直接碰小蟹——表情由 pump/tick 统一决定。
    */
   onAgentEvent(ev: AgentEvent): void {
     const t = now();
@@ -210,11 +236,13 @@ export class ChatMascot {
       case "turn-start":
         s = { ...createSignals(t), phase: "running", turnStartedAt: t, lastEventAt: t };
         this.waitCallId = null;
-        this.burstPending = false;
         this.cancelOutro();
-        // 新一轮从 thinking 重新起算，否则上一轮的收尾表情会拿着它的 holdMs 压住开场
+        // 新一轮从 thinking 重新起算，否则上一轮的收尾表情会拿着它的 holdMs 压住开场。
+        // 下面这句和 createDirector 是一对：新调度器 applied 已是 thinking、不会再 emit，
+        // 不在这里直接下发，小蟹会停在上一轮的收尾动作上。
         this.director = createDirector<ChatMood>("thinking", t);
-        this.engine?.setState("thinking");
+        this.resident = pickPose(RESIDENT_POSES);
+        this.body?.setState(crabStateForMood("thinking", this.resident));
         break;
 
       case "stream-retry":
@@ -274,9 +302,6 @@ export class ChatMascot {
         s.awaitingApproval = false;
         s.retrying = false;
         this.waitCallId = null;
-        // 粒子是一次性特效，不占状态槽——攒到表情真正切过去那一刻再放，
-        // 否则会在上一个表情还没播完时就先炸一次。
-        this.burstPending = s.phase === "done-ok";
         this.scheduleOutro();
         break;
 
@@ -302,29 +327,15 @@ export class ChatMascot {
 
     const res = tickDirector(this.director, this.cfg, t);
     this.director = res.state;
-    if (res.emit) this.applyMood(res.emit, t);
+    if (res.emit) this.applyMood(res.emit);
 
     this.startTimer();
   }
 
-  private applyMood(mood: ChatMood, t: number): void {
-    const engine = this.engine;
-    if (!engine) return;
-
-    // 进度环：只有拿到真实时长才接管，否则让引擎走自己的循环动画
-    if (mood === "progress" && this.signals.wait?.durationMs) {
-      engine.setProgressWindow(this.signals.wait.durationMs, t - this.signals.wait.startedAt);
-    } else {
-      engine.setProgressWindow(null);
-    }
-
-    engine.setState(mood);
+  private applyMood(mood: ChatMood): void {
+    if (!this.body) return;
+    this.body.setState(crabStateForMood(mood, this.resident));
     this.host?.setAttribute("data-mood", mood);
-
-    if (this.burstPending) {
-      this.burstPending = false;
-      engine.burstOnce();
-    }
   }
 
   private startTimer(): void {
@@ -365,7 +376,7 @@ function now(): number {
   return typeof performance !== "undefined" ? performance.now() : Date.now();
 }
 
-/** 气泡里那块占位；真正的 svg 由 ChatMascot.adopt 塞进来。 */
+/** 气泡里那块占位；真正的小蟹由 ChatMascot.adopt 塞进来。 */
 export function renderMascotSlot(phase: TurnPhase): string {
   if (phase !== "running") return "";
   return `<span class="chat-mascot-slot" ${MASCOT_SLOT_ATTR} aria-hidden="true"></span>`;
@@ -383,7 +394,7 @@ export function findMascotSlot(root: ParentNode): HTMLElement | null {
 
 /**
  * 把宿主搬进当前插槽。**必须是搬（appendChild）而不是重建**：reparent 保住同一个
- * DOM 元素，引擎的 rAF、弹簧、正在飞的转圈全都连续；重建等于每次重渲染动画从头再来。
+ * DOM 元素，状态、装饰、眨眼计时全都留着；重建等于每次重渲染都换一只新的小蟹。
  * 返回是否发生了搬动，方便调用方判断/测试。
  */
 export function adoptInto(root: ParentNode, host: HTMLElement): boolean {

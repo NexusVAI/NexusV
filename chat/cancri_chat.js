@@ -919,6 +919,719 @@
 		get_open_platform: "查询开放平台信息"
 	};
 	//#endregion
+	//#region src/grok-bot/crab-outfit.js
+	/**
+	* 小蟹的装饰搭配：用户选、全局生效、本地持久化。
+	* 移植自 cancri-code/src/ui/grok-bot/crab-outfit.ts（去掉类型，逻辑与存储键逐字一致，
+	* 同一浏览器里主站首页与 Bot 页的小蟹穿同一套）。
+	*
+	* 互斥按「占用部位」判：选一件就挤掉和它共用任一部位的旧装饰（帽子只能戴一顶、右钳只能拿一样）。
+	* 生日 = 帽子 + 蛋糕，同时占头顶和右钳；墨镜金链同时占眼部和脖子。
+	* 状态（思考 / 干活 / 出错…）由系统驱动，不在这里。
+	*/
+	/** icon：单件图标的 viewBox，取自 cancri-crab.js 里该装饰图形的坐标范围 */
+	var ACCESSORIES = [
+		{
+			id: "wizard",
+			label: "魔法帽",
+			slots: ["head"],
+			icon: "38 -26 68 68"
+		},
+		{
+			id: "cowboy",
+			label: "牛仔帽",
+			slots: ["head"],
+			icon: "28 -19 88 88"
+		},
+		{
+			id: "cap",
+			label: "鸭舌帽",
+			slots: ["head"],
+			icon: "46 -12 74 74"
+		},
+		{
+			id: "crown",
+			label: "皇冠",
+			slots: ["head"],
+			icon: "41 -3 62 62"
+		},
+		{
+			id: "santa",
+			label: "圣诞帽",
+			slots: ["head"],
+			icon: "36 -15 72 72"
+		},
+		{
+			id: "birthday",
+			label: "生日帽和蛋糕",
+			slots: ["head", "clawR"],
+			icon: "48 -35 102 102"
+		},
+		{
+			id: "glasses",
+			label: "眼镜",
+			slots: ["eyes"],
+			icon: "28 21 88 88"
+		},
+		{
+			id: "bling",
+			label: "墨镜和金链",
+			slots: ["eyes", "neck"],
+			icon: "34 43 76 76"
+		},
+		{
+			id: "stache",
+			label: "胡子",
+			slots: ["mouth"],
+			icon: "44 54 56 56"
+		},
+		{
+			id: "magnifier",
+			label: "放大镜",
+			slots: ["clawL"],
+			icon: "-10 -4 62 62"
+		},
+		{
+			id: "coffee",
+			label: "咖啡",
+			slots: ["clawR"],
+			icon: "100 -13 56 56"
+		},
+		{
+			id: "baton",
+			label: "指挥棒",
+			slots: ["clawR"],
+			icon: "96 -20 58 58"
+		},
+		{
+			id: "zongzi",
+			label: "粽子",
+			slots: ["clawR"],
+			icon: "100 -2 48 48"
+		},
+		{
+			id: "mooncake",
+			label: "月饼",
+			slots: ["clawR"],
+			icon: "100 1 46 46"
+		}
+	];
+	var BY_ID = new Map(ACCESSORIES.map((a) => [a.id, a]));
+	function isAccessoryId(v) {
+		return typeof v === "string" && BY_ID.has(v);
+	}
+	function conflicts(a, b) {
+		const sa = BY_ID.get(a).slots;
+		return BY_ID.get(b).slots.some((s) => sa.includes(s));
+	}
+	/** 穿上 id，挤掉同部位的旧装饰 */
+	function wearAccessory(outfit, id) {
+		return [...outfit.filter((x) => x !== id && !conflicts(x, id)), id];
+	}
+	/** 网格点一下：穿着就脱，没穿就穿 */
+	function toggleAccessory(outfit, id) {
+		return outfit.includes(id) ? outfit.filter((x) => x !== id) : wearAccessory(outfit, id);
+	}
+	/** 存储里读出来的东西不可信：丢掉未知项，按顺序穿（后者挤掉同部位的前者） */
+	function normalizeOutfit(raw) {
+		if (!Array.isArray(raw)) return [];
+		return raw.filter(isAccessoryId).reduce((acc, id) => wearAccessory(acc, id), []);
+	}
+	function sameOutfit(a, b) {
+		return a.length === b.length && a.every((x) => b.includes(x));
+	}
+	/** 左右箭头轮换的预设套装 */
+	var OUTFIT_PRESETS = [
+		{
+			name: "素颜",
+			items: []
+		},
+		{
+			name: "魔法师",
+			items: ["wizard", "baton"]
+		},
+		{
+			name: "牛仔侦探",
+			items: ["cowboy", "magnifier"]
+		},
+		{
+			name: "学霸",
+			items: ["glasses", "coffee"]
+		},
+		{
+			name: "国王",
+			items: ["crown", "stache"]
+		},
+		{
+			name: "嘻哈",
+			items: ["cap", "bling"]
+		},
+		{
+			name: "圣诞",
+			items: ["santa"]
+		},
+		{
+			name: "生日",
+			items: ["birthday"]
+		},
+		{
+			name: "端午",
+			items: ["zongzi"]
+		},
+		{
+			name: "中秋",
+			items: ["mooncake"]
+		}
+	];
+	/** 当前搭配在预设里的位置；自己搭的（对不上任何预设）返回 -1 */
+	function presetIndexOf(outfit) {
+		return OUTFIT_PRESETS.findIndex((p) => sameOutfit(p.items, outfit));
+	}
+	/** 从当前搭配往 dir 方向走一格；自己搭的往右从第一个开始、往左从最后一个开始 */
+	function stepPreset(outfit, dir) {
+		const n = OUTFIT_PRESETS.length;
+		const at = presetIndexOf(outfit);
+		if (at < 0) return dir === 1 ? 0 : n - 1;
+		return (at + dir + n) % n;
+	}
+	var OUTFIT_STORAGE_KEY = "cancri.mascot.outfit";
+	var listeners = /* @__PURE__ */ new Set();
+	function getOutfit(storage = localStorage) {
+		try {
+			return normalizeOutfit(JSON.parse(storage.getItem("cancri.mascot.outfit") ?? "[]"));
+		} catch {
+			return [];
+		}
+	}
+	function setOutfit(outfit, storage = localStorage) {
+		const next = normalizeOutfit(outfit);
+		try {
+			storage.setItem(OUTFIT_STORAGE_KEY, JSON.stringify(next));
+		} catch {}
+		for (const fn of listeners) fn(next);
+	}
+	function subscribeOutfit(fn) {
+		listeners.add(fn);
+		return () => listeners.delete(fn);
+	}
+	/** 给一只小蟹穿上当前搭配，并跟随后续修改；返回解绑函数 */
+	function bindCrabOutfit(el) {
+		el.setAttribute("accessory", getOutfit().join(" "));
+		return subscribeOutfit((o) => el.setAttribute("accessory", o.join(" ")));
+	}
+	//#endregion
+	//#region src/grok-bot/cancri-crab.js
+	var cancri_crab_exports = /* @__PURE__ */ __exportAll({});
+	var init_cancri_crab = __esmMin((() => {
+		/*! CancriCode 吉祥物小蟹 <cancri-crab> — 零依赖 Web Component
+		* 用法: <script src="cancri-crab.js"><\/script>
+		*       <cancri-crab state="idle" style="width:160px"></cancri-crab>
+		* state: 单选，idle | think | talk | work | happy | error | sleep | crazy 癫狂 | sulk 生气不理人
+		*   smoke 抽烟 | phone 刷手机 | laptop 掏电脑 | headphones 听音乐 | gun 掏枪耍枪吹气
+		*   heart 比心 | sweat 流汗 | question 头顶问号 | hearts 冒爱心 | bubble 吹泡泡糖
+		*   dumbbell 举哑铃 | chicken 捏尖叫鸡 | money 见钱眼开撒钱
+		* accessory: 装饰，可多个空格隔开: wizard 魔法帽 | cowboy 牛仔帽 | cap 鸭舌帽 | glasses 眼镜 | stache 胡子
+		*   magnifier 放大镜 | coffee 咖啡杯 | crown 皇冠 | bling 墨镜金链
+		*   santa 圣诞帽 | birthday 生日帽蛋糕 | zongzi 粽子 | mooncake 月饼 | baton 指挥棒
+		*   例: <cancri-crab state="bubble" accessory="cowboy stache"></cancri-crab>
+		*   装饰用 data-to 挂到身体/脸/左钳/右钳上，随部件动画一起动。
+		*   laptop、gun 切换到其他状态后再切回可重播；音乐为视觉动画，不播放音频。
+		* 属性: follow（眼睛跟随鼠标，默认开，设 follow="off" 关闭）
+		* 换色: CSS 变量 --crab / --crab-shade / --crab-eye / --crab-spark
+		*/
+		(function() {
+			const ACTION_STATES = [
+				"smoke",
+				"phone",
+				"laptop",
+				"headphones",
+				"gun",
+				"heart",
+				"sweat",
+				"question",
+				"hearts",
+				"bubble",
+				"dumbbell",
+				"chicken",
+				"money"
+			];
+			const STATES = [
+				"idle",
+				"think",
+				"talk",
+				"work",
+				"happy",
+				"error",
+				"sleep",
+				"crazy",
+				"sulk",
+				...ACTION_STATES
+			];
+			const ACCS = [
+				"wizard",
+				"cowboy",
+				"cap",
+				"glasses",
+				"stache",
+				"magnifier",
+				"coffee",
+				"crown",
+				"bling",
+				"santa",
+				"birthday",
+				"zongzi",
+				"mooncake",
+				"baton"
+			];
+			const EXTRA_CSS = `
+.cc .new-face{display:none}
+.cc.s-crazy .cc-eyes,.cc.s-sulk .cc-eyes{display:none}
+.cc.s-crazy .face-crazy,.cc.s-sulk .face-sulk{display:inline}
+.cc.s-crazy .cc-all{animation:cc-mad .32s steps(2,end) infinite}
+.cc.s-crazy .cc-claw-l{animation:cc-wave .24s steps(2,end) infinite alternate}
+.cc.s-crazy .cc-claw-r{animation:cc-wave .24s steps(2,end) infinite alternate-reverse}
+.cc.s-sulk .cc-face{transform:translate(-9px,3px)}
+.cc.s-sulk .cc-claw-l{transform:translate(15px,42px) rotate(-25deg)}
+.cc.s-sulk .cc-claw-r{transform:translate(-15px,42px) rotate(25deg)}
+.cc.s-sulk .cc-all{animation:cc-huff 2.4s var(--st) infinite}
+${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`).join("\n")}
+.cc.s-laptop .cc-body{animation:cc-breathe 2.4s var(--st) infinite}
+.cc.s-headphones .cc-eyes{display:none}
+.cc.s-headphones .cc-eyes-happy{display:inline}
+.cc.a-headphones .cc-all{animation:cc-dance .8s steps(2,end) infinite}
+.cc .note{animation:cc-float 1.6s steps(4,end) infinite}
+.cc .note.second{animation-delay:-.8s}
+.cc .drop{animation:cc-drip 1.4s steps(4,end) infinite}
+.cc .coffee-steam{animation:cc-float 2s steps(4,end) infinite}
+.cc .love-puff{animation:cc-love 2s steps(5,end) infinite;transform-origin:72px 30px}
+.cc .love-puff.second{animation-delay:-1s}
+.cc.a-heart .cc-claw-l{animation:cc-heart-l 1.8s steps(3,end) infinite}
+.cc.a-heart .cc-claw-r{animation:cc-heart-r 1.8s steps(3,end) infinite}
+.cc.a-heart .hand-heart{animation:cc-heart-pop 1.8s var(--st) infinite}
+.cc .baton-stick{transform-origin:126px 27px;animation:cc-conduct .8s steps(3,end) infinite}
+.cc .cc-gun-rig{transform-origin:114px 60px}
+.cc.a-gun .cc-claw-r,.cc.a-gun .cc-gun-rig{animation:cc-gun-hand 4.8s steps(3,end) forwards!important}
+.cc .revolver{transform-origin:120px 28px;animation:cc-gun 4.8s steps(4,end) forwards}
+.cc .gun-flash,.cc .gun-smoke,.cc .gun-blow{opacity:0}
+.cc .gun-flash{animation:cc-gun-flash 4.8s steps(1,end) forwards}
+.cc .gun-smoke{animation:cc-gun-smoke 4.8s steps(4,end) forwards}
+.cc .gun-blow{animation:cc-gun-blow 4.8s steps(1,end) forwards}
+.cc.a-gun .cc-face{animation:cc-gun-face 4.8s var(--st) forwards!important}
+.cc.a-gun .cc-all{animation:cc-gun-body 4.8s var(--st) forwards}
+.cc .gum{transform-origin:72px 86px;animation:cc-gum 3s steps(6,end) infinite}
+.cc .gum-pop{opacity:0;animation:cc-gum-pop 3s steps(1,end) infinite}
+.cc.a-bubble .cc-eyes{animation:cc-gum-eyes 3s steps(1,end) infinite!important;transform-origin:72px 66px}
+.cc.a-dumbbell .cc-eyes,.cc.a-dumbbell .cc-eyes-happy,.cc.a-dumbbell .cc-eyes-x,.cc.a-dumbbell .cc-eyes-closed,.cc.a-dumbbell .new-face,.cc.a-dumbbell .cc-mouth{display:none!important}
+.cc.a-dumbbell .cc-claw-l{animation:cc-lift 1.2s steps(2,end) infinite!important}
+.cc.a-dumbbell .cc-claw-r{animation:cc-lift 1.2s steps(2,end) infinite -.6s!important}
+.cc.a-dumbbell .cc-all{animation:cc-strain .15s steps(2,end) infinite}
+.cc .strain-drop{animation:cc-drip 1.2s steps(4,end) infinite}
+.cc .chick{transform-origin:120px 45px;animation:cc-squeeze 1s steps(1,end) infinite}
+.cc .beak-open,.cc .squawk{opacity:0;animation:cc-squawk 1s steps(1,end) infinite}
+.cc .beak{animation:cc-squawk-off 1s steps(1,end) infinite}
+.cc.a-chicken .cc-claw-r{animation:cc-squeeze-hand 1s steps(1,end) infinite!important}
+.cc.a-chicken .cc-all{animation:cc-flinch 1s steps(1,end) infinite}
+.cc.a-money .cc-eyes,.cc.a-money .cc-eyes-happy,.cc.a-money .cc-eyes-x,.cc.a-money .cc-eyes-closed,.cc.a-money .new-face{display:none!important}
+.cc.a-money .cc-all{animation:cc-jump 1.2s var(--st) infinite}
+.cc.a-money .cc-claw-r{animation:cc-make-rain .4s steps(1,end) infinite!important}
+.cc .bill{opacity:0;animation:cc-bill 1.2s steps(5,end) infinite}
+.cc .bill.b2{animation-delay:-.4s}.cc .bill.b3{animation-delay:-.8s}
+@keyframes cc-mad{0%,100%{transform:translate(-3px,0) rotate(-4deg)}50%{transform:translate(3px,-3px) rotate(4deg)}}
+@keyframes cc-wave{from{transform:rotate(-25deg)}to{transform:rotate(25deg) translateY(-9px)}}
+@keyframes cc-huff{0%,80%,100%{transform:translateX(0)}85%{transform:translateX(-3px)}90%{transform:translateX(3px)}}
+@keyframes cc-dance{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg) translateY(-3px)}}
+@keyframes cc-float{0%{opacity:0;transform:translateY(9px)}25%,70%{opacity:1}100%{opacity:0;transform:translateY(-12px)}}
+@keyframes cc-drip{0%{opacity:0;transform:translateY(-6px)}25%{opacity:1}100%{opacity:0;transform:translateY(21px)}}
+@keyframes cc-love{0%{opacity:0;transform:translateY(12px) scale(.5)}25%{opacity:1}100%{opacity:0;transform:translateY(-24px) scale(1)}}
+@keyframes cc-heart-l{0%,100%{transform:translate(0,0)}30%,75%{transform:translate(36px,48px) rotate(-15deg)}}
+@keyframes cc-heart-r{0%,100%{transform:translate(0,0)}30%,75%{transform:translate(-36px,48px) rotate(15deg)}}
+@keyframes cc-heart-pop{0%,100%{opacity:0}30%,75%{opacity:1}}
+@keyframes cc-conduct{0%,100%{transform:rotate(-25deg)}50%{transform:rotate(30deg)}}
+@keyframes cc-gun-hand{0%{transform:translate(-6px,48px)}8%{transform:translate(0,-9px)}12%{transform:translate(0,0)}22%{transform:translate(0,-3px)}30%{transform:translate(0,0)}38%{transform:translate(0,-3px)}46%{transform:translate(0,0)}52%,57%{transform:translate(6px,-3px)}58%{transform:translate(6px,-6px) rotate(-22deg)}62%,65%{transform:translate(6px,-3px)}66%{transform:translate(6px,-6px) rotate(-22deg)}70%{transform:translate(6px,-3px)}76%,94%{transform:translate(-18px,36px)}100%{transform:translate(0,0)}}
+@keyframes cc-gun{0%,5%{opacity:0;transform:rotate(0deg)}6%,14%{opacity:1;transform:rotate(0deg)}22%{transform:rotate(360deg)}30%{transform:rotate(720deg)}38%{transform:rotate(1080deg)}46%,70%{transform:rotate(1440deg)}76%,94%{transform:rotate(1350deg)}100%{opacity:1;transform:rotate(1440deg)}}
+@keyframes cc-gun-flash{0%{opacity:0}58%{opacity:1}61%{opacity:0}66%{opacity:1}69%,100%{opacity:0}}
+@keyframes cc-gun-smoke{0%,74%{opacity:0;transform:translateY(6px)}78%{opacity:1;transform:translateY(0)}94%{opacity:.6;transform:translateY(-9px)}100%{opacity:0;transform:translateY(-12px)}}
+@keyframes cc-gun-blow{0%{opacity:0}80%{opacity:1}94%,100%{opacity:0}}
+@keyframes cc-gun-face{0%,48%{transform:translate(0,0)}52%,72%{transform:translate(4.5px,0)}76%,94%{transform:translate(6px,-3px)}100%{transform:translate(0,0)}}
+@keyframes cc-gun-body{0%,57%{transform:translateX(0)}58%{transform:translateX(-4.5px)}62%,65%{transform:translateX(0)}66%{transform:translateX(-4.5px)}70%,100%{transform:translateX(0)}}
+@keyframes cc-gum{0%{transform:scale(.1)}70%{transform:scale(1.5)}72%,100%{transform:scale(0)}}
+@keyframes cc-gum-pop{0%{opacity:0}72%{opacity:1}84%,100%{opacity:0}}
+@keyframes cc-gum-eyes{0%{transform:scaleY(1)}55%{transform:scaleY(.4)}72%{transform:scale(1.25,1.15)}88%,100%{transform:scaleY(1)}}
+@keyframes cc-lift{0%{transform:translateY(9px)}50%{transform:translateY(-6px)}}
+@keyframes cc-strain{0%{transform:translateX(-1.5px)}50%{transform:translateX(1.5px)}}
+@keyframes cc-squeeze{0%{transform:scale(1)}40%{transform:scale(1.12,.7)}60%{transform:scale(1)}}
+@keyframes cc-squawk{0%{opacity:0}40%{opacity:1}60%,100%{opacity:0}}
+@keyframes cc-squawk-off{0%{opacity:1}40%{opacity:0}60%,100%{opacity:1}}
+@keyframes cc-squeeze-hand{0%{transform:translate(0,0)}40%{transform:translate(0,6px)}60%{transform:translate(0,0)}}
+@keyframes cc-flinch{0%{transform:translate(0,0)}40%{transform:translate(-3px,-6px) rotate(-3deg)}60%{transform:translate(0,0)}}
+@keyframes cc-make-rain{0%{transform:translate(0,0)}50%{transform:translate(-3px,-6px) rotate(-12deg)}}
+@keyframes cc-bill{0%{opacity:1;transform:translate(0,0) rotate(0deg)}40%{opacity:1;transform:translate(-24px,-30px) rotate(-30deg)}100%{opacity:0;transform:translate(-60px,6px) rotate(-90deg)}}
+/* ▼ CANCRI PATCH：思考点与 zzz 画在身体外、落在页面底色上，改走 --crab-fx（默认仍是眼睛色），深色主题由宿主页面覆盖，见 crab-personalize.css */
+/* ▼ CANCRI PATCH：动作状态占用头顶 / 双钳时，先收起同部位的用户装饰，不然帽子和问号、耳机叠在一起，钳子里的咖啡和手机、电脑叠在一起 */
+.cc:is(.s-question,.s-headphones,.s-hearts) :is(.acc-wizard,.acc-cowboy,.acc-cap,.acc-crown,.acc-santa,.acc-birthday[data-to="body"]){display:none!important}
+.cc:is(.s-phone,.s-laptop,.s-heart,.s-dumbbell,.s-chicken,.s-money,.s-gun) :is(.acc-magnifier,.acc-coffee,.acc-baton,.acc-zongzi,.acc-mooncake,.acc-birthday[data-to="clawR"]){display:none!important}
+@media(prefers-reduced-motion:reduce){.cc *{animation:none!important}.cc .revolver,.cc .hand-heart{opacity:1}.cc .gum{transform:scale(.8)}}
+`;
+			const heartPath = "M0 3h3V0h6v3h3V0h6v3h3v6h-3v3h-3v3h-3v3H9v-3H6v-3H3V9H0z";
+			const EXTRA_SVG = `
+<g class="acc acc-headphones" data-to="body" fill="#292B42"><path d="M42 57V33h6v-6h48v6h6v24h-6V36H48v21z"/><path fill="#8C70EC" d="M39 48h12v24H39zM93 48h12v24H93z"/><g fill="#8C70EC" class="note"><path d="M12 -12h18v6H18v18h-9V6h6V-6h-3z"/></g><g fill="#38B6AD" class="note second"><path d="M117 -15h18v6h-12V9h-9V3h6V-9h-3z"/></g></g>
+<g class="acc acc-gun" data-to="gun"><g class="revolver"><path fill="#493225" d="M114 24h12v21h-9v-9h-3z"/><path fill="#333844" d="M108 12h39v12h-21v9h-15v-6h9v-3h-12z"/><path fill="#B7C5CC" d="M108 12h36v6h-36z"/><path fill="#77868E" d="M111 18h12v9h-12z"/><path fill="#E6BA64" d="M117 33h6v6h-6z"/><g class="gun-flash"><path fill="#FFB020" d="M147 6h6v6h-6zM150 15h12v6h-12zM147 24h6v6h-6zM156 3h3v3h-3zM156 30h3v3h-3z"/><path fill="#FFF2B0" d="M147 15h6v6h-6z"/></g></g><g class="gun-smoke" fill="#C9CCD2"><rect class="p1" x="107" y="-6" width="5" height="5"/><rect class="p2" x="110" y="-16" width="6" height="6"/><rect class="p3" x="105" y="-27" width="7" height="7"/></g></g>
+<g class="acc acc-gun" data-to="face"><g class="gun-blow"><rect x="69" y="80" width="6" height="6" rx="1" fill="var(--crab-eye,#2A1512)"/><path fill="#ABD9DF" d="M80 74h4v3h-4zM84 62h4v3h-4zM88 50h4v3h-4z"/></g></g>
+<g class="acc acc-heart"><path class="hand-heart" transform="translate(61 72)" fill="#FF92B4" d="${heartPath}"/></g>
+<g class="acc acc-sweat" data-to="face" fill="#69CDE9"><path class="drop" d="M102 45h3v6h3v9h-9v-9h3z"/></g>
+<g class="acc acc-magnifier" data-to="clawL"><path fill="#825633" d="M18 27h6v27h-6z"/><path fill="#343F53" d="M9 0h24v6h6v21h-6v6H9v-6H3V6h6z"/><path fill="#A9DFEB" d="M12 6h18v3h3v15h-3v3H12v-3H9V9h3z"/><path fill="#E7FBFF" d="M12 9h9v3h-6v9h-3z"/></g>
+<g class="acc acc-coffee" data-to="clawR"><path fill="#754F35" d="M111 12h24v6h12v18h-12v6h-24z"/><path fill="#F7E3BC" d="M114 18h18v21h-18zM135 21h6v9h-6z"/><path fill="#70452B" d="M114 15h18v6h-18z"/><path class="coffee-steam" fill="#B6B8BE" d="M117 -3h3v9h-3zM126 -9h3V3h-3z"/></g>
+<g class="acc acc-crown" data-to="body"><path fill="#E9AA25" d="M45 15h9v9h12V12h12v12h12v-9h9v27H45z"/><path fill="#FFE07A" d="M45 36h54v6H45z"/><path fill="#EE5379" d="M69 27h6v6h-6z"/></g>
+<g class="acc acc-bling" data-to="face"><path fill="#252332" d="M42 54h27v6h6v-6h27v18H78v-9H66v9H42z"/><path fill="#657888" d="M45 57h9v3h-9zM81 57h9v3h-9z"/></g>
+<g class="acc acc-bling" data-to="body"><path fill="none" stroke="#F1C44C" stroke-width="4" d="M39 84v9h9v6h48v-6h9v-9"/><path fill="#FFD96A" d="M66 96h12v12H66z"/></g>
+<g class="acc acc-question" data-to="body" fill="#8E73DC"><path d="M63 -12h18v6h6V6h-6v6h-6v6h-6V6h6V0h6v-6H63v6h-6v-6h6zM69 24h6v6h-6z"/></g>
+<g class="acc acc-santa" data-to="body"><path fill="#D83C4B" d="M42 33h60V21h-9V9H75V0H57v12h-9v9h-6z"/><path fill="#FFF0DD" d="M39 30h66v12H39zM72 0h12v12H72z"/></g>
+<g class="acc acc-birthday" data-to="body"><path fill="#9572D8" d="M69 -12h6V0h6v12h6v12h6v12H51V24h6V12h6V0h6z"/><path fill="#F8D465" d="M69 -18h6v6h-6zM63 9h6v6h-6zM75 24h6v6h-6z"/></g>
+<g class="acc acc-birthday" data-to="clawR"><path fill="#F1ACBC" d="M108 18h36v24h-36z"/><path fill="#FFF0D4" d="M105 18h42v6h-42zM105 42h42v6h-42z"/><path fill="#6EBCCA" d="M123 6h6v12h-6z"/><path fill="#FFB43F" d="M123 0h6v6h-6z"/></g>
+<g class="acc acc-zongzi" data-to="clawR"><path fill="#397D4A" d="M120 3h6v6h6v9h6v9h6v12h-39V27h6V15h6V9h3z"/><path fill="#63A05A" d="M117 15h6v9h6v9h-18v-6h6z"/><path fill="#EFDBA1" d="M108 27h30v3h-30zM123 9h3v30h-3z"/></g>
+<g class="acc acc-mooncake" data-to="clawR"><path fill="#B97830" d="M111 6h24v6h6v24h-6v6h-24v-6h-6V12h6z"/><path fill="#EDB35A" d="M114 12h18v3h3v18h-3v3h-18v-3h-3V15h3z"/><path fill="none" stroke="#B97830" stroke-width="3" d="M117 18h12v12h-12zM123 15v18M114 24h18"/></g>
+<g class="acc acc-baton" data-to="clawR"><g class="baton-stick"><path fill="#F4E6CF" d="M123 -18h3v45h-3z"/><path fill="#453742" d="M120 21h9v15h-9z"/></g></g>
+<g class="acc acc-hearts" data-to="body" fill="#F778A2"><g class="love-puff"><path transform="translate(42 9)" d="${heartPath}"/></g><g class="love-puff second"><path transform="translate(84 0)" d="${heartPath}"/></g></g>
+<g class="acc acc-bubble" data-to="face"><rect x="68" y="83" width="8" height="5" fill="#FF8DC7"/><g class="gum"><circle cx="72" cy="86" r="10" fill="#FF8DC7"/><rect x="66" y="81" width="4" height="4" fill="#FFD0E8"/></g><g class="gum-pop" fill="#FF8DC7"><path d="M54 80h6v3h-6zM84 80h6v3h-6zM58 92h4v4h-4zM82 92h4v4h-4zM70 97h4v4h-4zM62 74h3v3h-3zM80 74h3v3h-3z"/></g></g>
+<g class="acc acc-dumbbell" data-to="clawL"><path fill="#9AA3AE" d="M3 18h36v6h-36z"/><path fill="#3A3F4A" d="M-6 9h9v24h-9zM39 9h9v24h-9z"/></g><g class="acc acc-dumbbell" data-to="clawR"><path fill="#9AA3AE" d="M105 18h36v6h-36z"/><path fill="#3A3F4A" d="M96 9h9v24h-9zM141 9h9v24h-9z"/></g>
+<g class="acc acc-dumbbell" data-to="face"><g fill="none" stroke="var(--crab-eye,#2A1512)" stroke-width="4.5" stroke-linecap="square"><path d="M50 59 L62 66 L50 73"/><path d="M94 59 L82 66 L94 73"/></g><path fill="var(--crab-eye,#2A1512)" d="M63 82h18v3h-18z"/><path class="strain-drop" fill="#69CDE9" d="M40 50h3v4h3v6h-9v-6h3z"/></g>
+<g class="acc acc-chicken" data-to="clawR"><g class="chick"><path fill="#FFD23F" d="M108 12h24v18h-24zM111 30h18v6h-18zM129 0h12v15h-12z"/><path fill="#E8443A" d="M132 -6h6v6h-6z"/><path fill="#1E1B18" d="M135 3h3v3h-3z"/><path fill="#FF9F1C" d="M114 36h3v9h-3zM123 36h3v9h-3z"/><path class="beak" fill="#FF9F1C" d="M141 6h9v4h-9z"/><path class="beak-open" fill="#FF9F1C" d="M141 1h10v3h-10zM141 10h10v3h-10z"/></g><g class="squawk" fill="#E8443A"><path d="M138 -28h4v10h-4zM138 -15h4v4h-4zM146 -30h4v10h-4zM146 -17h4v4h-4z"/></g></g>
+<g class="acc acc-money" data-to="face"><path fill="#2FA84F" d="M51 59h11v3h-8v4h8v7h-11v-3h8v-4h-8zM55 56h3v19h-3zM82 59h11v3h-8v4h8v7h-11v-3h8v-4h-8zM86 56h3v19h-3z"/></g><g class="acc acc-money" data-to="clawR"><path fill="#2FA84F" d="M108 15h27v15h-27z"/><path fill="#A8E0A0" d="M117 19h9v7h-9z"/><g class="bill b1"><path fill="#2FA84F" d="M120 6h15v9h-15z"/><path fill="#A8E0A0" d="M125 8h5v5h-5z"/></g><g class="bill b2"><path fill="#2FA84F" d="M120 6h15v9h-15z"/><path fill="#A8E0A0" d="M125 8h5v5h-5z"/></g><g class="bill b3"><path fill="#2FA84F" d="M120 6h15v9h-15z"/><path fill="#A8E0A0" d="M125 8h5v5h-5z"/></g></g>
+`;
+			const EXTRA_FACE = `<g class="new-face face-crazy" fill="none" stroke="var(--crab-eye,#2A1512)" stroke-width="3"><path d="M48 57h18v18H51V60h12v12h-9v-6h6M81 57h18v18H84V60h12v12h-9v-6h6M57 81v9h30v-9M63 84v6m9-6v6m9-6v6"/></g><g class="new-face face-sulk" fill="var(--crab-eye,#2A1512)"><path d="M48 57h6v3h12v6H54v-3h-6zM81 60h12v-3h6v6h-6v3H81zM54 69h12v3H54zM81 69h12v3H81zM69 84h12v3H69z"/></g>`;
+			class CancriCrab extends HTMLElement {
+				static get observedAttributes() {
+					return ["state", "accessory"];
+				}
+				constructor() {
+					super();
+					const root = this.attachShadow({ mode: "open" });
+					root.innerHTML = "<style>:host{display:inline-block;aspect-ratio:168/150}\n.cc{--st:steps(1,end)}\n.cc svg{display:block;overflow:visible}\n.cc g{transform-box:view-box}\n.cc .cc-shut,.cc .cc-eyes-happy,.cc .cc-eyes-x,.cc .cc-eyes-closed,.cc .cc-mouth,.cc .cc-fx-think,.cc .cc-fx-zzz,.cc .cc-fx-spark{display:none}\n.cc .cc-claw-l{transform-origin:30px 60px}.cc .cc-claw-r{transform-origin:114px 60px}\n.cc .cc-body{transform-origin:72px 108px}.cc .cc-face{transform-origin:72px 66px}\n.cc .cc-eyes{transform-origin:72px 66px}.cc .cc-mouth{transform-origin:72px 83px}\n.cc .cc-all{transform-origin:72px 108px}\n/* idle */\n.cc.s-idle .cc-body{animation:cc-breathe 2.4s var(--st) infinite}\n.cc.s-idle .cc-claw-l{animation:cc-bob 2.4s var(--st) infinite}\n.cc.s-idle .cc-claw-r{animation:cc-bob 2.4s var(--st) infinite .6s}\n.cc.s-idle .cc-eyes,.cc.s-think .cc-eyes,.cc.s-talk .cc-eyes{animation:cc-blink 5.3s var(--st) infinite}\n.cc.js-blink .cc-eyes{animation:none!important}\n.cc.js-blink.blinking .cc-eyes{transform:scaleY(.15)}\n/* think */\n.cc.s-think .cc-face{transform:translate(4.5px,-3px)}\n.cc.s-think .cc-claw-r{animation:cc-tap .8s var(--st) infinite}\n.cc.s-think .cc-fx-think{display:inline}\n.cc.s-think .cc-fx-think .d1{animation:cc-dot 1.6s var(--st) infinite}\n.cc.s-think .cc-fx-think .d2{animation:cc-dot 1.6s var(--st) infinite .4s}\n.cc.s-think .cc-fx-think .d3{animation:cc-dot 1.6s var(--st) infinite .8s}\n/* talk */\n.cc.s-talk .cc-mouth{display:inline;animation:cc-mouth .36s var(--st) infinite}\n.cc.s-talk .cc-body{animation:cc-breathe .72s var(--st) infinite}\n.cc.s-talk .cc-claw-l{animation:cc-bob .72s var(--st) infinite}\n.cc.s-talk .cc-claw-r{animation:cc-bob .72s var(--st) infinite .36s}\n/* work */\n.cc.s-work .cc-eyes{transform:scaleY(.6)}\n.cc.s-work .cc-claw-l .cc-open{animation:cc-show .5s var(--st) infinite}\n.cc.s-work .cc-claw-l .cc-shut{display:inline;animation:cc-hide .5s var(--st) infinite}\n.cc.s-work .cc-claw-r .cc-open{animation:cc-show .5s var(--st) infinite .25s}\n.cc.s-work .cc-claw-r .cc-shut{display:inline;animation:cc-hide .5s var(--st) infinite .25s}\n.cc.s-work .cc-all{animation:cc-scuttle .5s var(--st) infinite}\n.cc.s-work .cc-legs-l,.cc.s-work .cc-legs-r{animation:cc-leg .25s var(--st) infinite}\n/* happy */\n.cc.s-happy .cc-eyes{display:none}.cc.s-happy .cc-eyes-happy{display:inline}\n.cc.s-happy .cc-all{animation:cc-jump 1s var(--st) infinite}\n.cc.s-happy .cc-claw-l{transform:translate(-3px,-6px)}.cc.s-happy .cc-claw-r{transform:translate(3px,-6px)}\n.cc.s-happy .cc-fx-spark{display:inline;animation:cc-blinkfx .5s var(--st) infinite}\n.cc.s-happy .cc-fx-spark .s2{animation:cc-blinkfx .5s var(--st) infinite .25s}\n/* error */\n.cc.s-error .cc-eyes{display:none}.cc.s-error .cc-eyes-x{display:inline}\n.cc.s-error .cc-all{animation:cc-shake 1.6s var(--st) infinite}\n.cc.s-error .cc-claw-l,.cc.s-error .cc-claw-r{transform:translateY(6px)}\n/* sleep */\n.cc.s-sleep .cc-eyes{display:none}.cc.s-sleep .cc-eyes-closed{display:inline}\n.cc.s-sleep .cc-body{animation:cc-breathe 3.6s var(--st) infinite}\n.cc.s-sleep .cc-claw-l,.cc.s-sleep .cc-claw-r{transform:translateY(9px)}\n.cc.s-sleep .cc-fx-zzz{display:inline}\n.cc.s-sleep .cc-fx-zzz .z1{animation:cc-dot 3.6s var(--st) infinite}\n.cc.s-sleep .cc-fx-zzz .z2{animation:cc-dot 3.6s var(--st) infinite 1.2s}\n@keyframes cc-breathe{0%{transform:translateY(0)}50%{transform:translateY(1.5px)}}\n@keyframes cc-bob{0%{transform:translateY(0)}50%{transform:translateY(-3px)}}\n@keyframes cc-tap{0%{transform:translateY(0)}50%{transform:translateY(-4.5px)}}\n@keyframes cc-blink{0%{transform:scaleY(1)}40%{transform:scaleY(.15)}42%{transform:scaleY(1)}86%{transform:scaleY(.15)}87.5%{transform:scaleY(1)}89%{transform:scaleY(.15)}90.5%{transform:scaleY(1)}}\n@keyframes cc-dot{0%{opacity:0}25%{opacity:1}75%{opacity:0}}\n@keyframes cc-mouth{0%{transform:scaleY(.4)}50%{transform:scaleY(1.4)}}\n@keyframes cc-show{0%{opacity:1}50%{opacity:0}}\n@keyframes cc-hide{0%{opacity:0}50%{opacity:1}}\n@keyframes cc-scuttle{0%{transform:translateX(0)}25%{transform:translateX(3px)}50%{transform:translateX(0)}75%{transform:translateX(-3px)}}\n@keyframes cc-leg{0%{transform:translateY(0)}50%{transform:translateY(-3px)}}\n@keyframes cc-jump{0%{transform:translateY(0)}10%{transform:translateY(3px) scaleY(.94)}20%{transform:translateY(-12px)}30%{transform:translateY(-15px)}45%{transform:translateY(-6px)}55%{transform:translateY(0)}60%{transform:translateY(1.5px) scaleY(.96)}70%{transform:translateY(0)}}\n@keyframes cc-blinkfx{0%{opacity:1}50%{opacity:0}}\n@keyframes cc-shake{0%{transform:translateX(0)}5%{transform:translateX(-4.5px)}10%{transform:translateX(4.5px)}15%{transform:translateX(-4.5px)}20%{transform:translateX(4.5px)}25%{transform:translateX(0)}}\n@media (prefers-reduced-motion:reduce){.cc *{animation:none!important}}\n\n.cc .acc{display:none}\n.cc.a-wizard .acc-wizard,.cc.a-cowboy .acc-cowboy,.cc.a-cap .acc-cap,.cc.a-glasses .acc-glasses,.cc.a-stache .acc-stache,.cc.a-smoke .acc-smoke,.cc.a-phone .acc-phone,.cc.a-laptop .acc-laptop{display:inline}\n.cc.a-stache .cc-mouth,.cc.a-smoke .cc-mouth{display:none}\n.cc.a-smoke .cc-eyes{transform:scaleY(.65)}\n.cc.a-smoke .ember{animation:cc-ember 1.2s var(--st) infinite}\n.cc.a-smoke .sm1{animation:cc-dot 2s var(--st) infinite}\n.cc.a-smoke .sm2{animation:cc-dot 2s var(--st) infinite .4s}\n.cc.a-smoke .sm3{animation:cc-dot 2s var(--st) infinite .8s}\n.cc.a-smoke .sm4{animation:cc-dot 2s var(--st) infinite 1.2s}\n.cc.a-phone .cc-claw-l{animation:none!important;transform:translate(30px,46px)}.cc.a-phone .cc-claw-r{animation:none!important;transform:translate(-30px,46px)}\n.cc.a-phone .cc-face{transform:translateY(4.5px)}\n.cc.a-phone .scrA{animation:cc-show .6s var(--st) infinite}\n.cc.a-phone .scrB{animation:cc-hide .6s var(--st) infinite}\n.cc.a-laptop .lap-peek{opacity:0;animation:cc-lap-peek 2.4s var(--st) forwards}\n.cc.a-laptop .lap-base{opacity:0;animation:cc-lap-base 2.4s var(--st) forwards}\n.cc.a-laptop .lap-lid{animation:cc-lap-lid 2.4s var(--st) forwards}\n.cc.a-laptop .lap-half{opacity:0;animation:cc-lap-half 2.4s var(--st) forwards}\n.cc.a-laptop .lap-open{opacity:0;animation:cc-lap-open 2.4s var(--st) forwards}\n.cc.a-laptop .lap-hands{opacity:0;animation:cc-lap-base 2.4s var(--st) forwards}\n.cc.a-laptop .hand-l{animation:cc-type .32s var(--st) infinite 2.4s}\n.cc.a-laptop .hand-r{animation:cc-type .32s var(--st) infinite 2.56s}\n.cc.a-laptop .cc-claw-l{animation:cc-lap-cl 2.4s var(--st) forwards!important}\n.cc.a-laptop .cc-claw-r{animation:cc-lap-cr 2.4s var(--st) forwards!important}\n.cc.a-laptop .cc-face{animation:cc-lap-look 2.4s var(--st) forwards}\n.cc.a-laptop.s-idle .cc-body{animation:cc-breathe 2.4s var(--st) infinite}\n@keyframes cc-ember{0%{fill:#FF6A2A}50%{fill:#FFB020}}\n@keyframes cc-type{0%{transform:translateY(0)}50%{transform:translateY(-3px)}}\n@keyframes cc-lap-peek{0%{opacity:0}25%{opacity:1}40%{opacity:0}100%{opacity:0}}\n@keyframes cc-lap-base{0%{opacity:0}40%{opacity:1}100%{opacity:1}}\n@keyframes cc-lap-lid{0%{opacity:1}55%{opacity:0}100%{opacity:0}}\n@keyframes cc-lap-half{0%{opacity:0}55%{opacity:1}70%{opacity:0}100%{opacity:0}}\n@keyframes cc-lap-open{0%{opacity:0}70%{opacity:1}100%{opacity:1}}\n@keyframes cc-lap-glow{0%{opacity:0}70%{opacity:.28}100%{opacity:.28}}\n@keyframes cc-lap-cl{0%{transform:translate(0,0)}40%{transform:translate(30px,46px)}100%{transform:translate(30px,46px)}}\n@keyframes cc-lap-cr{0%{transform:translate(0,0)}12%{transform:translate(-12px,24px)}20%{transform:translate(-30px,46px)}25%{transform:translate(0,3px)}40%{transform:translate(-30px,46px)}100%{transform:translate(-30px,46px)}}\n@keyframes cc-lap-look{0%{transform:translate(0,0)}70%{transform:translate(0,4.5px)}100%{transform:translate(0,4.5px)}}\n</style><div class=\"cc js-blink\" style=\"width:100%;height:100%\"><svg role=\"img\" aria-label=\"CancriCode 小蟹\" width=\"100%\" height=\"100%\" viewBox=\"-12 -30 168 150\">\n<g class=\"cc-all\">\n<g class=\"acc acc-laptop lap-peek\"><rect x=\"103\" y=\"14\" width=\"22\" height=\"34\" rx=\"2\" fill=\"#D7DBE3\" stroke=\"#8E95A3\" stroke-width=\"3\"/><rect x=\"111\" y=\"28\" width=\"6\" height=\"6\" fill=\"#F2532F\"/></g>\n<g class=\"cc-legs-l\"><path class=\"\" d=\"M12 66h12v6h-12zM12 78h12v6h-12zM18 90h6v6h-6z\" fill=\"var(--crab-shade,#D63B22)\" stroke=\"var(--crab-shade,#D63B22)\" stroke-width=\"3\" stroke-linejoin=\"round\"/></g><g class=\"cc-legs-r\"><path class=\"\" d=\"M120 66h12v6h-12zM120 78h12v6h-12zM120 90h6v6h-6z\" fill=\"var(--crab-shade,#D63B22)\" stroke=\"var(--crab-shade,#D63B22)\" stroke-width=\"3\" stroke-linejoin=\"round\"/></g>\n<g class=\"cc-claw-l\"><path class=\"\" d=\"M24 36h12v6h-12zM24 42h12v6h-12zM24 48h12v6h-12zM24 54h12v6h-12z\" fill=\"var(--crab-shade,#D63B22)\" stroke=\"var(--crab-shade,#D63B22)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><g class=\"cc-open\"><path class=\"\" d=\"M12 0h24v6h-24zM6 6h36v6h-36zM0 12h18v6h-18zM0 18h12v6h-12zM0 24h12v6h-12zM30 24h12v6h-12zM0 30h42v6h-42zM6 36h30v6h-30z\" fill=\"var(--crab,#F2532F)\" stroke=\"var(--crab,#F2532F)\" stroke-width=\"3\" stroke-linejoin=\"round\"/></g><g class=\"cc-shut\"><path class=\"\" d=\"M12 0h24v6h-24zM6 6h36v6h-36zM0 12h42v6h-42zM0 18h42v6h-42zM0 24h42v6h-42zM0 30h42v6h-42zM6 36h30v6h-30z\" fill=\"var(--crab,#F2532F)\" stroke=\"var(--crab,#F2532F)\" stroke-width=\"3\" stroke-linejoin=\"round\"/></g></g>\n<g class=\"cc-claw-r\"><path class=\"\" d=\"M108 36h12v6h-12zM108 42h12v6h-12zM108 48h12v6h-12zM108 54h12v6h-12z\" fill=\"var(--crab-shade,#D63B22)\" stroke=\"var(--crab-shade,#D63B22)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><g class=\"cc-open\"><path class=\"\" d=\"M108 0h24v6h-24zM102 6h36v6h-36zM126 12h18v6h-18zM132 18h12v6h-12zM102 24h12v6h-12zM132 24h12v6h-12zM102 30h42v6h-42zM108 36h30v6h-30z\" fill=\"var(--crab,#F2532F)\" stroke=\"var(--crab,#F2532F)\" stroke-width=\"3\" stroke-linejoin=\"round\"/></g><g class=\"cc-shut\"><path class=\"\" d=\"M108 0h24v6h-24zM102 6h36v6h-36zM102 12h42v6h-42zM102 18h42v6h-42zM102 24h42v6h-42zM102 30h42v6h-42zM108 36h30v6h-30z\" fill=\"var(--crab,#F2532F)\" stroke=\"var(--crab,#F2532F)\" stroke-width=\"3\" stroke-linejoin=\"round\"/></g></g>\n<g class=\"cc-body\"><path class=\"\" d=\"M60 36h24v6h-24zM48 42h48v6h-48zM36 48h72v6h-72zM30 54h84v6h-84zM30 60h84v6h-84zM24 66h96v6h-96zM24 72h96v6h-96zM24 78h96v6h-96zM24 84h96v6h-96zM30 90h84v6h-84zM36 96h72v6h-72zM48 102h48v6h-48z\" fill=\"var(--crab,#F2532F)\" stroke=\"var(--crab,#F2532F)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><path class=\"\" d=\"M30 90h84v6h-84zM36 96h72v6h-72zM48 102h48v6h-48z\" fill=\"var(--crab-shade,#D63B22)\" stroke=\"var(--crab-shade,#D63B22)\" stroke-width=\"3\" stroke-linejoin=\"round\"/>\n<g class=\"cc-look\"><g class=\"cc-face\">\n<g class=\"cc-eyes\"><rect x=\"50\" y=\"56\" width=\"13\" height=\"19\" rx=\"3\" fill=\"var(--crab-eye,#2A1512)\"/><rect x=\"81\" y=\"56\" width=\"13\" height=\"19\" rx=\"3\" fill=\"var(--crab-eye,#2A1512)\"/></g>\n<g class=\"cc-eyes-happy\" fill=\"none\" stroke=\"var(--crab-eye,#2A1512)\" stroke-width=\"4.5\" stroke-linecap=\"square\" stroke-linejoin=\"miter\"><path d=\"M49 72 L56.5 63 L64 72\"/><path d=\"M80 72 L87.5 63 L95 72\"/></g>\n<g class=\"cc-eyes-x\" fill=\"none\" stroke=\"var(--crab-eye,#2A1512)\" stroke-width=\"4\" stroke-linecap=\"square\"><path d=\"M51 59 L62 72 M62 59 L51 72\"/><path d=\"M82 59 L93 72 M93 59 L82 72\"/></g>\n<g class=\"cc-eyes-closed\" fill=\"var(--crab-eye,#2A1512)\"><rect x=\"49\" y=\"66\" width=\"15\" height=\"4.5\" rx=\"1\"/><rect x=\"80\" y=\"66\" width=\"15\" height=\"4.5\" rx=\"1\"/></g>\n<rect class=\"cc-mouth\" x=\"66\" y=\"80\" width=\"12\" height=\"6\" rx=\"1\" fill=\"var(--crab-eye,#2A1512)\"/>\n</g></g></g>\n<g class=\"acc acc-wizard\" data-to=\"body\"><path d=\"M48 28h48v6h-48zM51 22h42v6h-42zM54 16h36v6h-36zM57 10h30v6h-30zM60 4h24v6h-24zM63 -2h18v6h-18zM66 -8h12v6h-12zM69 -14h9v6h-9zM75 -20h9v6h-9zM81 -23h6v6h-6z\" fill=\"#6A3FD0\"/><path d=\"M42 34h60v6h-60z\" fill=\"#4B2A9E\"/><path d=\"M66 16h12v3h-12zM70.5 11.5h3v12h-3z\" fill=\"#FFC83D\"/><path d=\"M81 1h3v3h-3zM60 22h3v3h-3z\" fill=\"#FFE48A\"/></g><g class=\"acc acc-cowboy\" data-to=\"body\"><path d=\"M51 16h42v18h-42zM54 10h15v6h-15zM75 10h15v6h-15z\" fill=\"#A8642F\"/><path d=\"M51 27h42v5h-42z\" fill=\"#3B2414\"/><path d=\"M36 34h72v6h-72zM30 28h9v9h-9zM105 28h9v9h-9z\" fill=\"#7A4520\"/></g><g class=\"acc acc-cap\" data-to=\"body\"><path d=\"M60 16h24v6h-24zM54 22h36v6h-36zM48 28h48v10h-48z\" fill=\"#6A3FD0\"/><path d=\"M69 12h6v4h-6z\" fill=\"#4B2A9E\"/><path d=\"M90 33h28v6h-28z\" fill=\"#4B2A9E\"/><path d=\"M66 23h9v3h-9zM66 23h3v10h-3zM66 30h9v3h-9z\" fill=\"#FFFFFF\"/></g><g class=\"acc acc-glasses\" data-to=\"face\"><rect x=\"46\" y=\"53\" width=\"21\" height=\"23\" fill=\"rgba(170,215,255,.22)\" stroke=\"#1E1B18\" stroke-width=\"3\"/><rect x=\"77\" y=\"53\" width=\"21\" height=\"23\" fill=\"rgba(170,215,255,.22)\" stroke=\"#1E1B18\" stroke-width=\"3\"/><path d=\"M67 60h10v3h-10zM30 57h16v3h-16zM98 57h16v3h-16z\" fill=\"#1E1B18\"/><path d=\"M50 57h3v6h-3zM81 57h3v6h-3z\" fill=\"#FFFFFF\" opacity=\".85\"/></g><g class=\"acc acc-stache\" data-to=\"face\"><path d=\"M60 79h24v6h-24zM54 82h9v6h-9zM81 82h9v6h-9zM48 76h6v9h-6zM90 76h6v9h-6z\" fill=\"#3A2318\"/></g><g class=\"acc acc-smoke\" data-to=\"face\"><path d=\"M78 82h18v4h-18z\" fill=\"#F4F1EA\"/><path d=\"M78 82h6v4h-6z\" fill=\"#E3B072\"/><rect class=\"ember\" x=\"96\" y=\"82\" width=\"4\" height=\"4\" fill=\"#FF6A2A\"/><g fill=\"#B8B2AA\"><rect class=\"sm1\" x=\"100\" y=\"73\" width=\"3\" height=\"3\"/><rect class=\"sm2\" x=\"104\" y=\"65\" width=\"4\" height=\"4\"/><rect class=\"sm3\" x=\"100\" y=\"56\" width=\"4\" height=\"4\"/><rect class=\"sm4\" x=\"106\" y=\"46\" width=\"5\" height=\"5\"/></g></g><g class=\"acc acc-phone\"><rect x=\"58\" y=\"78\" width=\"28\" height=\"32\" rx=\"3\" fill=\"#1E1B18\"/><rect x=\"61\" y=\"82\" width=\"22\" height=\"24\" fill=\"#7FD0FF\"/><g class=\"scrA\" fill=\"#FFFFFF\"><rect x=\"64\" y=\"85\" width=\"16\" height=\"3\"/><rect x=\"64\" y=\"97\" width=\"11\" height=\"3\"/></g><g class=\"scrB\" fill=\"#FFFFFF\"><rect x=\"64\" y=\"91\" width=\"13\" height=\"3\"/><rect x=\"64\" y=\"103\" width=\"16\" height=\"3\"/></g><path d=\"M52 90h9v12h-9zM83 90h9v12h-9z\" fill=\"#F2532F\"/><path d=\"M52 99h9v3h-9zM83 99h9v3h-9z\" fill=\"#D63B22\"/></g><g class=\"acc acc-laptop\"><g class=\"lap-open\"><rect x=\"44\" y=\"80\" width=\"56\" height=\"20\" rx=\"2\" fill=\"#D7DBE3\" stroke=\"#8E95A3\" stroke-width=\"3\"/><rect x=\"69\" y=\"87\" width=\"6\" height=\"6\" fill=\"#F2532F\"/></g><g class=\"lap-half\"><rect x=\"44\" y=\"89\" width=\"56\" height=\"11\" rx=\"2\" fill=\"#D7DBE3\" stroke=\"#8E95A3\" stroke-width=\"3\"/></g><g class=\"lap-base\"><rect x=\"38\" y=\"100\" width=\"68\" height=\"6\" fill=\"#C9CED8\"/><rect x=\"38\" y=\"106\" width=\"68\" height=\"3\" fill=\"#8E95A3\"/><rect class=\"lap-lid\" x=\"38\" y=\"96\" width=\"68\" height=\"4\" fill=\"#D7DBE3\"/></g><g class=\"lap-hands\"><path d=\"M42 92h12v9h-12z\" fill=\"#F2532F\" class=\"hand-l\"/><path d=\"M90 92h12v9h-12z\" fill=\"#F2532F\" class=\"hand-r\"/></g></g>\n<g class=\"cc-fx-think\" fill=\"var(--crab-fx,var(--crab-eye,#2A1512))\"><rect class=\"d1\" x=\"120\" y=\"-6\" width=\"6\" height=\"6\"/><rect class=\"d2\" x=\"132\" y=\"-15\" width=\"6\" height=\"6\"/><rect class=\"d3\" x=\"144\" y=\"-24\" width=\"6\" height=\"6\"/></g>\n<g class=\"cc-fx-zzz\" fill=\"var(--crab-fx,var(--crab-eye,#2A1512))\"><path class=\"z1\" d=\"M112 -2h12v3l-8 7h8v3h-12v-3l8-7h-8z\"/><path class=\"z2\" d=\"M128 -18h9v2.5l-6 5h6v2.5h-9v-2.5l6-5h-6z\"/></g>\n<g class=\"cc-fx-spark\" fill=\"var(--crab-spark,#FFB020)\"><path class=\"s1\" d=\"M-4 30h6v-6h3v6h6v3h-6v6h-3v-6h-6z\"/><path class=\"s2\" d=\"M137 24h6v-6h3v6h6v3h-6v6h-3v-6h-6z\"/><path class=\"s3\" d=\"M66 -18h4v-4h3v4h4v3h-4v4h-3v-4h-4z\"/></g>\n</g>\n</svg></div>";
+					this.$ = root.querySelector(".cc");
+					this.$look = root.querySelector(".cc-look");
+					this.$svg = root.querySelector("svg");
+					root.querySelector("style").textContent += EXTRA_CSS;
+					this.$svg.querySelector(".cc-all").insertAdjacentHTML("beforeend", EXTRA_SVG);
+					this.$svg.querySelector(".cc-face").insertAdjacentHTML("beforeend", EXTRA_FACE);
+					const all = this.$svg.querySelector(".cc-all"), rig = document.createElementNS("http://www.w3.org/2000/svg", "g");
+					rig.setAttribute("class", "cc-gun-rig");
+					all.appendChild(rig);
+					const to = {
+						body: ".cc-body",
+						face: ".cc-face",
+						clawL: ".cc-claw-l",
+						clawR: ".cc-claw-r"
+					};
+					this.$svg.querySelectorAll("[data-to]").forEach((el) => {
+						const d = el.getAttribute("data-to");
+						(d === "gun" ? rig : this.$svg.querySelector(to[d])).appendChild(el);
+					});
+					this._onMove = this._onMove.bind(this);
+				}
+				connectedCallback() {
+					this._apply();
+					window.addEventListener("pointermove", this._onMove, { passive: true });
+					this._scheduleBlink();
+				}
+				disconnectedCallback() {
+					window.removeEventListener("pointermove", this._onMove);
+					clearTimeout(this._bt);
+				}
+				attributeChangedCallback() {
+					this._apply();
+				}
+				get state() {
+					return this.getAttribute("state") || "idle";
+				}
+				set state(v) {
+					this.setAttribute("state", v);
+				}
+				/** 临时切换状态，ms 后回到之前的状态（比如任务完成 happy 1.5 秒） */
+				flash(s, ms = 1500) {
+					const prev = this.state;
+					this.state = s;
+					clearTimeout(this._ft);
+					this._ft = setTimeout(() => {
+						this.state = prev;
+					}, ms);
+				}
+				_apply() {
+					if (!this.$) return;
+					const s = STATES.includes(this.state) ? this.state : "idle";
+					STATES.forEach((x) => this.$.classList.toggle("s-" + x, x === s));
+					const acc = (this.getAttribute("accessory") || "").split(/\s+/).filter(Boolean);
+					ACCS.forEach((a) => this.$.classList.toggle("a-" + a, acc.includes(a)));
+					ACTION_STATES.forEach((a) => this.$.classList.toggle("a-" + a, a === s));
+					if (s !== "idle" && this.$look) this.$look.removeAttribute("transform");
+				}
+				_onMove(e) {
+					if (this.getAttribute("follow") === "off" || this.state !== "idle") return;
+					const r = this.$svg.getBoundingClientRect();
+					if (!r.width) return;
+					const cx = r.left + r.width * .5, cy = r.top + r.height * .62;
+					const nx = Math.max(-1, Math.min(1, (e.clientX - cx) / (r.width * 1.5)));
+					const ny = Math.max(-1, Math.min(1, (e.clientY - cy) / (r.height * 1.5)));
+					const q = (v) => Math.round(v * 3) * 1.5;
+					this.$look.setAttribute("transform", "translate(" + q(nx) + " " + q(ny) * .67 + ")");
+				}
+				_scheduleBlink() {
+					const wait = 2500 + Math.random() * 3500;
+					this._bt = setTimeout(() => {
+						const blink = () => {
+							this.$.classList.add("blinking");
+							setTimeout(() => this.$.classList.remove("blinking"), 110);
+						};
+						blink();
+						if (Math.random() < .2) setTimeout(blink, 220);
+						this._scheduleBlink();
+					}, wait);
+				}
+			}
+			if (!customElements.get("cancri-crab")) customElements.define("cancri-crab", CancriCrab);
+		})();
+	}));
+	//#endregion
+	//#region src/grok-bot/crab-body.js
+	/**
+	* 小蟹身体：加载 `<cancri-crab>` 组件 + 给宿主一个「基础状态 + 临时动作」的驱动。
+	* 移植自 cancri-code/src/ui/grok-bot/crab-body.ts（去掉类型，逻辑一致）。
+	*
+	* 基础状态由宿主的 mood-director 决定；`pulse` 是戳一下、闲着耍个宝这类一次性动作，
+	* 播完回到**最新的**基础状态（组件自带的 flash 回到的是切换前那一个，期间调度器换过表情就会回错）。
+	*/
+	var loading = null;
+	/** 组件只在第一次需要时加载；失败后允许下次重试 */
+	function loadCrab() {
+		loading ?? (loading = Promise.resolve().then(() => (init_cancri_crab(), cancri_crab_exports)).catch((err) => {
+			loading = null;
+			throw err;
+		}));
+		return loading.then(() => void 0);
+	}
+	/** 必须在 loadCrab() 之后调用，否则拿到的是未升级的元素 */
+	function createCrabElement(className) {
+		const el = document.createElement("cancri-crab");
+		el.className = className;
+		return el;
+	}
+	var CrabDriver = class {
+		constructor(el, initial) {
+			this.el = el;
+			this.base = initial;
+			this.pulseTimer = null;
+			el.state = initial;
+			this.unbindOutfit = bindCrabOutfit(el);
+		}
+		setState(state) {
+			this.base = state;
+			if (this.pulseTimer === null) this.el.state = state;
+		}
+		pulse(state, ms) {
+			this.clearPulse();
+			this.el.state = state;
+			this.pulseTimer = window.setTimeout(() => {
+				this.pulseTimer = null;
+				this.el.state = this.base;
+			}, ms);
+		}
+		destroy() {
+			this.clearPulse();
+			this.unbindOutfit();
+			this.el.remove();
+		}
+		clearPulse() {
+			if (this.pulseTimer !== null) window.clearTimeout(this.pulseTimer);
+			this.pulseTimer = null;
+		}
+	};
+	//#endregion
+	//#region src/grok-bot/crab-personalize.css?raw
+	var crab_personalize_default = "/* ============================================================================\n   小蟹「个性化」胶囊 + 弹窗（crab-personalize.js 以 ?raw 注入）\n   移植自 cancri-code/src/ui/grok-bot/crab-personalize.css，数值一致；改动只有三处：\n   1. 深色判定：桌面端看 :root[data-scheme]，网页看 html[data-theme=\"dark|black\"]\n      （搬运皮肤是 data-theme=\"claude\" + data-mode=\"dark\"）。\n   2. 遮罩：桌面端复用全局 .modal-backdrop，网页没有那套，这里自带定位与底色。\n   3. 字体走网页的 --c-font。\n   ============================================================================ */\n\n/* 小蟹的思考点 / zzz 画在身体外、落在页面底色上：深色底改浅色，不然看不见 */\nhtml[data-theme=\"dark\"] cancri-crab,\nhtml[data-theme=\"black\"] cancri-crab,\nhtml[data-theme=\"claude\"][data-mode=\"dark\"] cancri-crab { --crab-fx: #c9cad1; }\n\n/* ---------- 悬停渐显的胶囊 ---------- */\n.crab-personalize-host {\n  position: relative;\n}\n.crab-personalize-pill {\n  position: absolute;\n  left: calc(100% - 6px);\n  bottom: -6px;\n  z-index: 3;\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  height: 22px;\n  padding: 0 8px 0 7px;\n  border: 1px solid rgba(17, 17, 19, 0.1);\n  border-radius: 11px;\n  background: #ffffff;\n  color: #4b4d55;\n  font: 500 11.5px/1 var(--c-font, system-ui, sans-serif);\n  letter-spacing: 0;\n  white-space: nowrap;\n  box-shadow: 0 2px 8px rgba(15, 18, 30, 0.1);\n  opacity: 0;\n  transform: translateY(2px);\n  pointer-events: none;\n  cursor: pointer;\n  transition: opacity 0.18s ease, transform 0.18s ease, color 0.14s ease;\n}\n.crab-personalize-pill svg { flex: 0 0 auto; }\n.crab-personalize-host:hover .crab-personalize-pill,\n.crab-personalize-pill:focus-visible {\n  opacity: 1;\n  transform: none;\n  pointer-events: auto;\n}\n.crab-personalize-pill:hover { color: #111113; }\n.crab-personalize-pill:focus-visible { outline: 2px solid #2f80ed; outline-offset: 1px; }\nhtml[data-theme=\"dark\"] .crab-personalize-pill,\nhtml[data-theme=\"black\"] .crab-personalize-pill,\nhtml[data-theme=\"claude\"][data-mode=\"dark\"] .crab-personalize-pill {\n  border-color: rgba(255, 255, 255, 0.1);\n  background: #2a2a2d;\n  color: #c9cad1;\n  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);\n}\nhtml[data-theme=\"dark\"] .crab-personalize-pill:hover,\nhtml[data-theme=\"black\"] .crab-personalize-pill:hover,\nhtml[data-theme=\"claude\"][data-mode=\"dark\"] .crab-personalize-pill:hover { color: #ffffff; }\n\n/* ---------- 弹窗 ---------- */\n.cc-crab-backdrop {\n  position: fixed;\n  inset: 0;\n  z-index: 10000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 24px;\n  box-sizing: border-box;\n  background: rgba(0, 0, 0, 0.32);\n  animation: cc-crab-fade 0.2s ease-out;\n}\n.cc-crab-backdrop.is-leaving {\n  opacity: 0;\n  transition: opacity 0.16s ease-in;\n}\n.cc-crab-shell {\n  filter: drop-shadow(0 24px 48px rgb(15 18 30 / 0.22)) drop-shadow(0 4px 12px rgb(15 18 30 / 0.12));\n  animation: cc-crab-pop 0.34s cubic-bezier(0.22, 1, 0.36, 1);\n  max-width: 100%;\n  max-height: 100%;\n}\n\n.cc-crab-card {\n  --cc-crab-bg: #ffffff;\n  --cc-crab-ink: #111113;\n  --cc-crab-ink-2: #6b6d75;\n  --cc-crab-rule: rgba(17, 17, 19, 0.08);\n  --cc-crab-tint: rgba(17, 17, 19, 0.045);\n  --cc-crab-tile: rgba(17, 17, 19, 0.05);\n  --cc-crab-tile-hover: rgba(17, 17, 19, 0.09);\n  --cc-crab-accent: #2f80ed;\n  position: relative;\n  box-sizing: border-box;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  width: 560px;\n  max-width: calc(100vw - 48px);\n  max-height: calc(100vh - 48px);\n  overflow: auto;\n  padding: 28px 28px 22px;\n  border: 1px solid var(--cc-crab-rule);\n  border-radius: 24px;\n  background: var(--cc-crab-bg);\n  color: var(--cc-crab-ink);\n  font-family: var(--c-font, system-ui, sans-serif);\n}\n.cc-crab-card:focus { outline: none; }\nhtml[data-theme=\"dark\"] .cc-crab-card,\nhtml[data-theme=\"black\"] .cc-crab-card,\nhtml[data-theme=\"claude\"][data-mode=\"dark\"] .cc-crab-card {\n  --cc-crab-bg: #1f1f22;\n  --cc-crab-ink: #f4f4f6;\n  --cc-crab-ink-2: #a8aab3;\n  --cc-crab-rule: rgba(255, 255, 255, 0.09);\n  --cc-crab-tint: rgba(255, 255, 255, 0.05);\n  --cc-crab-tile: rgba(255, 255, 255, 0.05);\n  --cc-crab-tile-hover: rgba(255, 255, 255, 0.1);\n  --cc-crab-accent: #4a95ff;\n}\nhtml[data-theme=\"black\"] .cc-crab-card { --cc-crab-bg: #141416; }\n\n.cc-crab-close {\n  position: absolute;\n  top: 12px;\n  right: 12px;\n  width: 30px;\n  height: 30px;\n  padding: 0;\n  border: 0;\n  border-radius: 15px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  background: var(--cc-crab-tint);\n  color: var(--cc-crab-ink-2);\n  cursor: pointer;\n  transition: background-color 0.14s ease, color 0.14s ease;\n}\n.cc-crab-close:hover,\n.cc-crab-close:focus-visible {\n  outline: none;\n  background: var(--cc-crab-tile-hover);\n  color: var(--cc-crab-ink);\n}\n\n.cc-crab-title {\n  margin: 0 0 14px;\n  font-size: 20px;\n  font-weight: 650;\n  line-height: 28px;\n  letter-spacing: -0.01em;\n  text-align: center;\n  color: inherit;\n}\n\n/* 舞台：左右箭头 + 视口。视口两侧渐隐，滑走的那只淡出边缘而不是被一刀切掉 */\n.cc-crab-stage {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 20px;\n}\n.cc-crab-nav {\n  flex: 0 0 auto;\n  width: 32px;\n  height: 32px;\n  padding: 0;\n  border: 0;\n  border-radius: 16px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  background: var(--cc-crab-tint);\n  color: var(--cc-crab-ink-2);\n  cursor: pointer;\n  transition: background-color 0.14s ease, color 0.14s ease;\n}\n.cc-crab-nav:hover,\n.cc-crab-nav:focus-visible {\n  outline: none;\n  background: var(--cc-crab-tile-hover);\n  color: var(--cc-crab-ink);\n}\n.cc-crab-viewport {\n  position: relative;\n  width: 240px;\n  height: 168px;\n  overflow: hidden;\n  -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);\n  mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);\n}\n.cc-crab-viewport::before {\n  content: \"\";\n  position: absolute;\n  left: 50%;\n  top: 50%;\n  width: 132px;\n  height: 132px;\n  margin: -58px 0 0 -66px;\n  border-radius: 50%;\n  background: var(--cc-crab-tint);\n}\n.cc-crab-frame {\n  position: absolute;\n  inset: 0;\n  display: grid;\n  place-items: center;\n}\n.cc-crab-preview {\n  width: 168px;\n  height: 150px;\n}\n.cc-crab-frame.is-enter-right { animation: cc-crab-slide-in-right 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }\n.cc-crab-frame.is-enter-left { animation: cc-crab-slide-in-left 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }\n.cc-crab-frame.is-leave-left { animation: cc-crab-slide-out-left 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }\n.cc-crab-frame.is-leave-right { animation: cc-crab-slide-out-right 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }\n\n.cc-crab-name {\n  box-sizing: border-box;\n  width: 200px;\n  height: 36px;\n  margin: 6px 0 20px;\n  border: 1px solid var(--cc-crab-rule);\n  border-radius: 18px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: var(--cc-crab-tint);\n  font-size: 13.5px;\n  font-weight: 550;\n}\n\n.cc-crab-grid {\n  box-sizing: border-box;\n  width: 100%;\n  display: grid;\n  grid-template-columns: repeat(7, minmax(0, 1fr));\n  gap: 8px;\n  padding: 12px;\n  border-radius: 18px;\n  background: var(--cc-crab-tint);\n}\n.cc-crab-tile {\n  height: 56px;\n  padding: 0;\n  border: 0;\n  border-radius: 12px;\n  display: grid;\n  place-items: center;\n  background: var(--cc-crab-tile);\n  cursor: pointer;\n  transition: background-color 0.14s ease, box-shadow 0.14s ease;\n}\n.cc-crab-tile svg {\n  width: 36px;\n  height: 36px;\n  overflow: visible;\n}\n/* 眼镜、胡子是近黑色，深色格子上会消失：给图标描一圈贴纸白边 */\nhtml[data-theme=\"dark\"] .cc-crab-tile svg,\nhtml[data-theme=\"black\"] .cc-crab-tile svg,\nhtml[data-theme=\"claude\"][data-mode=\"dark\"] .cc-crab-tile svg {\n  filter: drop-shadow(0 0 0.7px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 0.7px rgba(255, 255, 255, 0.9));\n}\n.cc-crab-tile:hover { background: var(--cc-crab-tile-hover); }\n.cc-crab-tile:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--cc-crab-ink-2); }\n.cc-crab-tile[aria-pressed=\"true\"] { box-shadow: inset 0 0 0 2px var(--cc-crab-accent); }\n\n.cc-crab-actions {\n  align-self: stretch;\n  display: flex;\n  justify-content: flex-end;\n  gap: 8px;\n  margin-top: 18px;\n}\n.cc-crab-reset,\n.cc-crab-done {\n  height: 32px;\n  padding: 0 14px;\n  border: 0;\n  border-radius: 10px;\n  font: 600 13px/1 var(--c-font, system-ui, sans-serif);\n  cursor: pointer;\n  transition: background-color 0.14s ease, filter 0.14s ease;\n}\n.cc-crab-reset {\n  background: transparent;\n  color: var(--cc-crab-ink);\n}\n.cc-crab-reset:hover,\n.cc-crab-reset:focus-visible { outline: none; background: var(--cc-crab-tint); }\n.cc-crab-done {\n  background: var(--cc-crab-accent);\n  color: #ffffff;\n}\n.cc-crab-done:hover { filter: brightness(1.08); }\n.cc-crab-done:focus-visible { outline: 2px solid var(--cc-crab-accent); outline-offset: 2px; }\n\n/* 窄屏：7 列网格挤不下，改 5 列 */\n@media (max-width: 520px) {\n  .cc-crab-card { padding: 24px 16px 18px; }\n  .cc-crab-stage { gap: 8px; }\n  .cc-crab-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }\n}\n\n@keyframes cc-crab-fade {\n  from { opacity: 0; }\n  to { opacity: 1; }\n}\n@keyframes cc-crab-pop {\n  from { opacity: 0; transform: translateY(6px) scale(0.975); }\n  to { opacity: 1; transform: none; }\n}\n@keyframes cc-crab-slide-in-right {\n  from { opacity: 0; transform: translateX(70%); }\n  to { opacity: 1; transform: none; }\n}\n@keyframes cc-crab-slide-in-left {\n  from { opacity: 0; transform: translateX(-70%); }\n  to { opacity: 1; transform: none; }\n}\n@keyframes cc-crab-slide-out-left {\n  from { opacity: 1; transform: none; }\n  to { opacity: 0; transform: translateX(-70%); }\n}\n@keyframes cc-crab-slide-out-right {\n  from { opacity: 1; transform: none; }\n  to { opacity: 0; transform: translateX(70%); }\n}\n@media (prefers-reduced-motion: reduce) {\n  .cc-crab-backdrop,\n  .cc-crab-shell,\n  .cc-crab-frame { animation: none !important; }\n  .cc-crab-frame.is-leave-left,\n  .cc-crab-frame.is-leave-right { visibility: hidden; }\n  .crab-personalize-pill { transition: none; }\n}\n";
+	//#endregion
+	//#region src/grok-bot/crab-personalize.js
+	/**
+	* 「个性化」胶囊 + 个性化弹窗。移植自 cancri-code/src/ui/grok-bot/crab-personalize.ts，
+	* 交互与版式一致；桌面端依赖的 dialog-keyboard / overlay-dismiss 在这里各留一个最小等价实现。
+	*
+	* 胶囊：挂在首页小蟹的宿主上，悬停宿主时渐显，点击开弹窗。
+	* 弹窗：中间大小蟹，左右箭头轮换预设套装（左右滑入滑出）；下面网格逐件开关装饰，
+	*   同部位互斥由 crab-outfit 判。改动先进草稿，「完成」才写盘并广播给所有在场的小蟹；
+	*   × / Esc / 点遮罩 = 放弃草稿。
+	*/
+	/** 与 crab-personalize.css 的 cc-crab-slide-* 动画时长一致 */
+	var SLIDE_MS = 320;
+	/** 与 .cc-crab-backdrop.is-leaving 的淡出时长一致 */
+	var LEAVE_MS = 170;
+	var SVG_NS$1 = "http://www.w3.org/2000/svg";
+	var PEN_SVG = "<svg viewBox=\"0 0 16 16\" width=\"12\" height=\"12\" aria-hidden=\"true\"><path d=\"M10.6 2.6l2.8 2.8-7.6 7.6H3v-2.8z M9.2 4l2.8 2.8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\" stroke-linejoin=\"round\"/></svg>";
+	var CLOSE_SVG = "<svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" aria-hidden=\"true\"><path d=\"M3.5 3.5l9 9M12.5 3.5l-9 9\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg>";
+	var chevron = (d) => `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+	var FOCUSABLE = "a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
+	/** 样式随 cancri_chat.js 一起打包（库模式不单独产出 CSS），首次用到时注入一次 */
+	function ensureCrabStyles() {
+		if (document.getElementById("cancriCrabPersonalizeStyles")) return;
+		const style = document.createElement("style");
+		style.id = "cancriCrabPersonalizeStyles";
+		style.textContent = crab_personalize_default;
+		document.head.appendChild(style);
+	}
+	/** 给小蟹宿主挂上悬停渐显的「个性化」胶囊 */
+	function attachPersonalizePill(host) {
+		ensureCrabStyles();
+		host.classList.add("crab-personalize-host");
+		const btn = document.createElement("button");
+		btn.type = "button";
+		btn.className = "crab-personalize-pill";
+		btn.innerHTML = `${PEN_SVG}<span>个性化</span>`;
+		btn.addEventListener("click", (e) => {
+			e.stopPropagation();
+			e.preventDefault();
+			openCrabPersonalizeDialog().catch((err) => console.warn("[crab-personalize] 打不开个性化弹窗：", err));
+		});
+		btn.addEventListener("pointerdown", (e) => e.stopPropagation());
+		host.appendChild(btn);
+		return btn;
+	}
+	var opening = null;
+	/** 打开个性化弹窗；已经开着时返回同一个 Promise，关闭（开始淡出）时 resolve */
+	function openCrabPersonalizeDialog() {
+		opening ?? (opening = showDialog().catch((err) => {
+			opening = null;
+			throw err;
+		}));
+		return opening;
+	}
+	/** 单件装饰图标：从组件 shadow DOM 里复制该装饰的图形，按 icon 视框裁出来 */
+	function accessoryIcon(proto, id, viewBox) {
+		const svg = document.createElementNS(SVG_NS$1, "svg");
+		svg.setAttribute("viewBox", viewBox);
+		svg.setAttribute("aria-hidden", "true");
+		proto.shadowRoot?.querySelectorAll(`.acc-${id}`).forEach((g) => {
+			const copy = g.cloneNode(true);
+			copy.removeAttribute("class");
+			svg.appendChild(copy);
+		});
+		return svg;
+	}
+	async function showDialog() {
+		ensureCrabStyles();
+		await loadCrab();
+		return new Promise((resolve) => {
+			const previousFocus = document.activeElement;
+			let draft = getOutfit();
+			let done = false;
+			let downOnBackdrop = false;
+			const backdrop = document.createElement("div");
+			backdrop.className = "cc-crab-backdrop";
+			backdrop.innerHTML = `<div class="cc-crab-shell"><div class="cc-crab-card" role="dialog" aria-modal="true" aria-labelledby="cc-crab-title" tabindex="-1"><button type="button" class="cc-crab-close" aria-label="关闭">${CLOSE_SVG}</button><h2 class="cc-crab-title" id="cc-crab-title">个性化你的 Cancri</h2><div class="cc-crab-stage"><button type="button" class="cc-crab-nav" data-dir="-1" aria-label="上一套装扮">${chevron("M10 3.5 5.5 8l4.5 4.5")}</button><div class="cc-crab-viewport"></div><button type="button" class="cc-crab-nav" data-dir="1" aria-label="下一套装扮">${chevron("M6 3.5 10.5 8 6 12.5")}</button></div><div class="cc-crab-name">Cancri</div><div class="cc-crab-grid" role="group" aria-label="装饰"></div><div class="cc-crab-actions"><button type="button" class="cc-crab-reset">重置</button><button type="button" class="cc-crab-done">完成</button></div></div></div>`;
+			const card = backdrop.querySelector(".cc-crab-card");
+			const viewport = card.querySelector(".cc-crab-viewport");
+			const grid = card.querySelector(".cc-crab-grid");
+			const makeFrame = (outfit) => {
+				const frame = document.createElement("div");
+				frame.className = "cc-crab-frame";
+				const crab = createCrabElement("cc-crab-preview");
+				crab.state = "idle";
+				crab.setAttribute("accessory", outfit.join(" "));
+				frame.appendChild(crab);
+				return frame;
+			};
+			let frame = makeFrame(draft);
+			viewport.appendChild(frame);
+			const proto = createCrabElement("");
+			const tiles = ACCESSORIES.map((def) => {
+				const tile = document.createElement("button");
+				tile.type = "button";
+				tile.className = "cc-crab-tile";
+				tile.dataset.acc = def.id;
+				tile.title = def.label;
+				tile.setAttribute("aria-label", def.label);
+				tile.appendChild(accessoryIcon(proto, def.id, def.icon));
+				grid.appendChild(tile);
+				return tile;
+			});
+			const repaint = () => {
+				frame.querySelector("cancri-crab")?.setAttribute("accessory", draft.join(" "));
+				for (const tile of tiles) tile.setAttribute("aria-pressed", String(draft.includes(tile.dataset.acc)));
+			};
+			/** dir=1：旧的向左滑走、新的从右边进来；dir=-1 反过来 */
+			const slideTo = (outfit, dir) => {
+				draft = [...outfit];
+				const old = frame;
+				old.classList.add(dir === 1 ? "is-leave-left" : "is-leave-right");
+				window.setTimeout(() => old.remove(), SLIDE_MS);
+				frame = makeFrame(draft);
+				frame.classList.add(dir === 1 ? "is-enter-right" : "is-enter-left");
+				viewport.appendChild(frame);
+				repaint();
+			};
+			repaint();
+			const finish = (commit) => {
+				if (done) return;
+				done = true;
+				if (commit) setOutfit(draft);
+				document.removeEventListener("keydown", onKey, true);
+				const restoreFocus = card.contains(document.activeElement);
+				backdrop.classList.add("is-leaving");
+				window.setTimeout(() => backdrop.remove(), LEAVE_MS);
+				opening = null;
+				resolve();
+				if (restoreFocus && previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus({ preventScroll: true });
+			};
+			const trapTab = (e) => {
+				const list = [...card.querySelectorAll(FOCUSABLE)].filter((el) => !el.closest("[hidden]"));
+				if (!list.length) return;
+				const first = list[0];
+				const last = list[list.length - 1];
+				const active = document.activeElement;
+				const inside = active instanceof HTMLElement && card.contains(active);
+				if (e.shiftKey ? !inside || active === first : !inside || active === last) {
+					e.preventDefault();
+					(e.shiftKey ? last : first).focus({ preventScroll: true });
+				}
+			};
+			const onKey = (e) => {
+				if (e.isComposing || e.defaultPrevented) return;
+				if (!(e.target instanceof Node && card.contains(e.target) || e.target === document.body || e.target === document.documentElement || e.target === document)) return;
+				if (e.key === "Tab") {
+					trapTab(e);
+					return;
+				}
+				if (e.key === "Escape") {
+					e.preventDefault();
+					e.stopPropagation();
+					finish(false);
+				}
+			};
+			card.querySelectorAll(".cc-crab-nav").forEach((btn) => {
+				btn.addEventListener("click", () => {
+					const dir = btn.dataset.dir === "-1" ? -1 : 1;
+					slideTo(OUTFIT_PRESETS[stepPreset(draft, dir)].items, dir);
+				});
+			});
+			for (const tile of tiles) tile.addEventListener("click", () => {
+				draft = toggleAccessory(draft, tile.dataset.acc);
+				repaint();
+			});
+			card.querySelector(".cc-crab-reset").addEventListener("click", () => {
+				draft = [];
+				repaint();
+			});
+			card.querySelector(".cc-crab-done").addEventListener("click", () => finish(true));
+			card.querySelector(".cc-crab-close").addEventListener("click", () => finish(false));
+			backdrop.addEventListener("pointerdown", (e) => {
+				downOnBackdrop = e.target === backdrop;
+			});
+			backdrop.addEventListener("click", (e) => {
+				if (downOnBackdrop && e.target === backdrop) finish(false);
+				downOnBackdrop = false;
+			});
+			document.addEventListener("keydown", onKey, true);
+			document.body.appendChild(backdrop);
+			card.focus({ preventScroll: true });
+		});
+	}
+	//#endregion
 	//#region src/grok-bot/mood-director.js
 	function createDirector(initial, now) {
 		return {
@@ -965,6563 +1678,30 @@
 		};
 	}
 	//#endregion
-	//#region src/grok-bot/geometry-data.js
-	var init_geometry_data = __esmMin((() => {
-		globalThis.GROK_GEO = {
-			"Re": 114.2705,
-			"G9e": 21,
-			"VJt": 5,
-			"viewBox": {
-				"minX": -15,
-				"minY": -15,
-				"width": 259,
-				"height": 259
-			},
-			"blobPath": "M228.541 114.228C228.541 130.133 225.184 145.994 218.738 160.534C212.674 174.217 203.904 186.669 193.065 196.988C155.933 232.34 99.497 238.596 55.5255 212.24C45.097 205.99 35.6851 198.072 27.7451 188.866C19.1926 178.953 12.3686 167.569 7.65781 155.351C2.60712 142.264 0 128.257 0 114.228C0 98.3219 3.35751 82.4611 9.80315 67.9215C15.8672 54.2382 24.6377 41.7862 35.4767 31.4668C72.6081 -3.88483 129.044 -10.1413 173.016 16.2153C183.444 22.4653 192.856 30.3829 200.796 39.5896C209.349 49.5018 216.173 60.8859 220.883 73.1037C225.934 86.1906 228.541 100.198 228.541 114.228Z",
-			"starPath": "M0.000 -1.000L0.247 -0.340L0.951 -0.309L0.399 0.130L0.588 0.809L0.000 0.420L-0.588 0.809L-0.399 0.130L-0.951 -0.309L-0.247 -0.340Z",
-			"starColor": "#f4c34e",
-			"palette": {
-				"black": {
-					"light": "#000000",
-					"dark": "#FFFFFF"
-				},
-				"brown": {
-					"light": "#A27952",
-					"dark": "#855C36"
-				},
-				"red": {
-					"light": "#FF3E51",
-					"dark": "#E02135"
-				},
-				"orange": {
-					"light": "#FF781C",
-					"dark": "#FF6700"
-				},
-				"yellow": {
-					"light": "#FFAF38",
-					"dark": "#FF9800"
-				},
-				"green": {
-					"light": "#00C972",
-					"dark": "#009957"
-				},
-				"cyan": {
-					"light": "#1CC3B0",
-					"dark": "#00A592"
-				},
-				"blue": {
-					"light": "#2A92FE",
-					"dark": "#0E74E0"
-				},
-				"violet": {
-					"light": "#A97EFE",
-					"dark": "#804EE0"
-				},
-				"magenta": {
-					"light": "#FF5EB1",
-					"dark": "#E02A88"
-				},
-				"gray": {
-					"light": "#959595",
-					"dark": "#777777"
-				}
-			},
-			"eyes": [
-				[[
-					[130.36, 45.98],
-					[132.71, 46.19],
-					[134.98, 46.81],
-					[137.11, 47.83],
-					[138.97, 49.28],
-					[140.47, 51.09],
-					[141.68, 53.12],
-					[142.73, 55.23],
-					[143.76, 57.36],
-					[144.78, 59.49],
-					[145.79, 61.62],
-					[146.79, 63.76],
-					[147.76, 65.91],
-					[148.71, 68.07],
-					[149.63, 70.25],
-					[150.52, 72.43],
-					[151.37, 74.63],
-					[151.99, 76.91],
-					[152.1, 79.26],
-					[151.64, 81.57],
-					[150.59, 83.68],
-					[149.04, 85.45],
-					[147.1, 86.78],
-					[144.9, 87.62],
-					[142.56, 87.93],
-					[140.22, 87.71],
-					[137.98, 86.99],
-					[135.93, 85.82],
-					[134.17, 84.24],
-					[132.78, 82.34],
-					[131.69, 80.25],
-					[130.77, 78.08],
-					[129.87, 75.89],
-					[128.94, 73.72],
-					[128, 71.56],
-					[127.03, 69.4],
-					[126.05, 67.26],
-					[125.05, 65.12],
-					[124.03, 62.99],
-					[122.93, 60.9],
-					[121.87, 58.79],
-					[121.03, 56.59],
-					[120.72, 54.26],
-					[121.1, 51.93],
-					[122.15, 49.83],
-					[123.75, 48.1],
-					[125.76, 46.89],
-					[128.01, 46.19]
-				], [
-					[176.61, 37.08],
-					[178.72, 37.59],
-					[180.7, 38.48],
-					[182.52, 39.65],
-					[184.2, 41.03],
-					[185.71, 42.59],
-					[187.03, 44.31],
-					[188.2, 46.14],
-					[189.26, 48.03],
-					[190.27, 49.96],
-					[191.26, 51.89],
-					[192.23, 53.84],
-					[193.16, 55.8],
-					[194.05, 57.78],
-					[194.92, 59.77],
-					[195.74, 61.78],
-					[196.53, 63.8],
-					[197.27, 65.84],
-					[197.97, 67.9],
-					[198.47, 70.01],
-					[198.63, 72.18],
-					[198.4, 74.33],
-					[197.58, 76.33],
-					[195.95, 77.72],
-					[193.83, 78.08],
-					[191.71, 77.65],
-					[189.76, 76.69],
-					[188.03, 75.38],
-					[186.53, 73.82],
-					[185.28, 72.05],
-					[184.25, 70.13],
-					[183.4, 68.14],
-					[182.63, 66.11],
-					[181.87, 64.07],
-					[181.07, 62.05],
-					[180.25, 60.04],
-					[179.39, 58.05],
-					[178.49, 56.07],
-					[177.57, 54.1],
-					[176.61, 52.15],
-					[175.62, 50.22],
-					[174.59, 48.31],
-					[173.53, 46.41],
-					[172.54, 44.48],
-					[171.86, 42.42],
-					[171.76, 40.26],
-					[172.62, 38.3],
-					[174.45, 37.19]
-				]],
-				[[
-					[86.14, 124.79],
-					[89.16, 124.92],
-					[92.06, 125.76],
-					[94.68, 127.27],
-					[96.86, 129.36],
-					[98.48, 131.92],
-					[99.51, 134.76],
-					[100.12, 137.73],
-					[100.56, 140.72],
-					[101.01, 143.72],
-					[101.52, 146.71],
-					[102.06, 149.69],
-					[102.62, 152.67],
-					[103.2, 155.64],
-					[103.81, 158.61],
-					[104.44, 161.57],
-					[105.11, 164.52],
-					[105.81, 167.47],
-					[106.49, 170.42],
-					[106.72, 173.44],
-					[106.01, 176.37],
-					[104.37, 178.9],
-					[102.03, 180.81],
-					[99.26, 181.99],
-					[96.27, 182.46],
-					[93.25, 182.25],
-					[90.34, 181.43],
-					[87.65, 180.04],
-					[85.32, 178.11],
-					[83.51, 175.7],
-					[82.37, 172.9],
-					[81.66, 169.96],
-					[80.98, 167],
-					[80.32, 164.05],
-					[79.69, 161.08],
-					[79.08, 158.12],
-					[78.5, 155.14],
-					[77.94, 152.16],
-					[77.4, 149.18],
-					[76.89, 146.2],
-					[76.4, 143.21],
-					[75.93, 140.21],
-					[75.56, 137.21],
-					[75.7, 134.19],
-					[76.6, 131.3],
-					[78.22, 128.76],
-					[80.47, 126.74],
-					[83.18, 125.4]
-				], [
-					[147.23, 112.87],
-					[150.24, 113.13],
-					[153.07, 114.19],
-					[155.53, 115.94],
-					[157.46, 118.26],
-					[158.73, 121.01],
-					[159.53, 123.93],
-					[160.21, 126.88],
-					[160.88, 129.84],
-					[161.52, 132.8],
-					[162.15, 135.76],
-					[162.74, 138.73],
-					[163.32, 141.71],
-					[163.87, 144.69],
-					[164.39, 147.67],
-					[164.9, 150.66],
-					[165.39, 153.65],
-					[165.8, 156.65],
-					[165.76, 159.67],
-					[164.98, 162.59],
-					[163.56, 165.26],
-					[161.61, 167.58],
-					[159.23, 169.45],
-					[156.52, 170.77],
-					[153.57, 171.46],
-					[150.55, 171.4],
-					[147.67, 170.52],
-					[145.19, 168.79],
-					[143.45, 166.33],
-					[142.57, 163.44],
-					[142.08, 160.45],
-					[141.61, 157.46],
-					[141.11, 154.47],
-					[140.59, 151.48],
-					[140.04, 148.5],
-					[139.47, 145.53],
-					[138.87, 142.56],
-					[138.25, 139.59],
-					[137.6, 136.63],
-					[136.94, 133.68],
-					[136.25, 130.72],
-					[135.59, 127.77],
-					[135.47, 124.75],
-					[136.07, 121.78],
-					[137.34, 119.04],
-					[139.19, 116.65],
-					[141.53, 114.74],
-					[144.26, 113.44]
-				]],
-				[[
-					[104.84, 104.08],
-					[109.39, 104.89],
-					[113.63, 106.73],
-					[117.32, 109.5],
-					[120.25, 113.08],
-					[122.22, 117.25],
-					[123.15, 121.77],
-					[122.92, 126.39],
-					[121.86, 130.89],
-					[120.61, 135.35],
-					[119.37, 139.81],
-					[118.15, 144.27],
-					[116.94, 148.74],
-					[115.74, 153.21],
-					[114.56, 157.69],
-					[113.39, 162.17],
-					[112.24, 166.65],
-					[111.13, 171.15],
-					[110.04, 175.65],
-					[108.89, 180.13],
-					[106.98, 184.33],
-					[103.8, 187.67],
-					[99.75, 189.87],
-					[95.25, 190.93],
-					[90.63, 190.93],
-					[86.11, 189.97],
-					[81.86, 188.16],
-					[78.05, 185.54],
-					[74.89, 182.18],
-					[72.62, 178.16],
-					[71.54, 173.67],
-					[71.94, 169.08],
-					[73.01, 164.57],
-					[74.13, 160.08],
-					[75.26, 155.59],
-					[76.42, 151.11],
-					[77.59, 146.63],
-					[78.77, 142.15],
-					[79.97, 137.68],
-					[81.18, 133.22],
-					[82.41, 128.75],
-					[83.65, 124.29],
-					[84.87, 119.83],
-					[86.33, 115.43],
-					[88.67, 111.46],
-					[91.9, 108.15],
-					[95.83, 105.72],
-					[100.23, 104.35]
-				], [
-					[174.26, 115.55],
-					[178.59, 116.54],
-					[182.37, 118.86],
-					[185.31, 122.2],
-					[187.23, 126.21],
-					[188.12, 130.57],
-					[188.06, 135.02],
-					[187.52, 139.44],
-					[186.86, 143.85],
-					[186.11, 148.25],
-					[185.25, 152.62],
-					[184.3, 156.98],
-					[183.24, 161.31],
-					[182.07, 165.61],
-					[180.79, 169.88],
-					[179.39, 174.12],
-					[177.89, 178.31],
-					[176.27, 182.47],
-					[174.47, 186.55],
-					[172.17, 190.35],
-					[169.21, 193.68],
-					[165.73, 196.46],
-					[161.84, 198.64],
-					[157.66, 200.16],
-					[153.27, 200.91],
-					[148.83, 200.69],
-					[144.65, 199.19],
-					[141.47, 196.14],
-					[140.18, 191.91],
-					[140.82, 187.53],
-					[142.46, 183.38],
-					[144.16, 179.26],
-					[145.73, 175.09],
-					[147.18, 170.87],
-					[148.51, 166.62],
-					[149.73, 162.33],
-					[150.84, 158.01],
-					[151.84, 153.67],
-					[152.74, 149.3],
-					[153.54, 144.91],
-					[154.24, 140.51],
-					[154.85, 136.1],
-					[155.58, 131.7],
-					[156.93, 127.46],
-					[159.15, 123.6],
-					[162.12, 120.29],
-					[165.73, 117.68],
-					[169.84, 116]
-				]],
-				[[
-					[44.72, 103.35],
-					[47.95, 103.93],
-					[51.04, 105.05],
-					[53.93, 106.62],
-					[56.58, 108.57],
-					[58.97, 110.83],
-					[61.09, 113.35],
-					[62.93, 116.07],
-					[64.5, 118.97],
-					[65.79, 121.99],
-					[66.8, 125.13],
-					[67.52, 128.34],
-					[67.94, 131.6],
-					[68.08, 134.89],
-					[67.9, 138.17],
-					[67.4, 141.42],
-					[66.56, 144.6],
-					[65.33, 147.66],
-					[63.71, 150.52],
-					[61.69, 153.11],
-					[59.3, 155.36],
-					[56.54, 157.16],
-					[53.51, 158.42],
-					[50.29, 159.07],
-					[47, 159.09],
-					[43.76, 158.5],
-					[40.67, 157.39],
-					[37.78, 155.82],
-					[35.13, 153.87],
-					[32.75, 151.6],
-					[30.63, 149.09],
-					[28.78, 146.36],
-					[27.21, 143.47],
-					[25.92, 140.44],
-					[24.92, 137.31],
-					[24.2, 134.1],
-					[23.77, 130.84],
-					[23.64, 127.55],
-					[23.81, 124.27],
-					[24.31, 121.01],
-					[25.16, 117.84],
-					[26.38, 114.78],
-					[28, 111.92],
-					[30.02, 109.33],
-					[32.42, 107.08],
-					[35.17, 105.28],
-					[38.21, 104.02],
-					[41.43, 103.37]
-				], [
-					[114.62, 83.64],
-					[118.31, 83.88],
-					[121.94, 84.6],
-					[125.44, 85.77],
-					[128.77, 87.38],
-					[131.86, 89.4],
-					[134.67, 91.81],
-					[137.13, 94.56],
-					[139.2, 97.62],
-					[140.85, 100.93],
-					[142.05, 104.42],
-					[142.79, 108.05],
-					[143.05, 111.73],
-					[142.83, 115.42],
-					[142.13, 119.05],
-					[140.95, 122.55],
-					[139.34, 125.88],
-					[137.3, 128.96],
-					[134.88, 131.75],
-					[132.11, 134.2],
-					[129.05, 136.27],
-					[125.75, 137.93],
-					[122.25, 139.13],
-					[118.63, 139.86],
-					[114.94, 140.1],
-					[111.25, 139.86],
-					[107.63, 139.14],
-					[104.12, 137.97],
-					[100.8, 136.36],
-					[97.7, 134.34],
-					[94.9, 131.93],
-					[92.44, 129.18],
-					[90.36, 126.12],
-					[88.72, 122.81],
-					[87.51, 119.31],
-					[86.78, 115.69],
-					[86.52, 112.01],
-					[86.74, 108.32],
-					[87.44, 104.69],
-					[88.61, 101.18],
-					[90.23, 97.86],
-					[92.27, 94.78],
-					[94.69, 91.99],
-					[97.45, 89.54],
-					[100.51, 87.47],
-					[103.82, 85.81],
-					[107.31, 84.61],
-					[110.94, 83.88]
-				]],
-				[[
-					[90.44, 99.25],
-					[93.11, 99.26],
-					[95.74, 99.79],
-					[98.37, 100.3],
-					[101, 100.82],
-					[103.64, 101.33],
-					[106.27, 101.85],
-					[108.9, 102.37],
-					[111.53, 102.89],
-					[114.16, 103.41],
-					[116.79, 103.94],
-					[119.42, 104.47],
-					[122.06, 105],
-					[124.69, 105.53],
-					[127.32, 106.06],
-					[129.94, 106.6],
-					[132.57, 107.14],
-					[135.2, 107.68],
-					[137.65, 108.73],
-					[139.5, 110.65],
-					[140.44, 113.14],
-					[140.36, 115.81],
-					[139.35, 118.28],
-					[137.48, 120.18],
-					[135, 121.14],
-					[132.32, 121.11],
-					[129.7, 120.56],
-					[127.08, 120],
-					[124.45, 119.46],
-					[121.82, 118.93],
-					[119.19, 118.4],
-					[116.56, 117.87],
-					[113.93, 117.35],
-					[111.29, 116.83],
-					[108.66, 116.32],
-					[106.02, 115.82],
-					[103.39, 115.31],
-					[100.76, 114.79],
-					[98.12, 114.28],
-					[95.49, 113.75],
-					[92.86, 113.22],
-					[90.23, 112.68],
-					[87.77, 111.66],
-					[85.93, 109.74],
-					[85.01, 107.24],
-					[85.06, 104.57],
-					[86.07, 102.1],
-					[87.96, 100.22]
-				], [
-					[156.6, 112.56],
-					[158.91, 112.66],
-					[161.18, 113.15],
-					[163.45, 113.64],
-					[165.72, 114.13],
-					[167.99, 114.62],
-					[170.26, 115.12],
-					[172.53, 115.62],
-					[174.8, 116.12],
-					[177.07, 116.62],
-					[179.34, 117.13],
-					[181.6, 117.64],
-					[183.87, 118.15],
-					[186.14, 118.67],
-					[188.4, 119.18],
-					[190.67, 119.7],
-					[192.94, 120.2],
-					[195.12, 120.96],
-					[196.7, 122.63],
-					[197.45, 124.82],
-					[197.53, 127.14],
-					[197.07, 129.41],
-					[196.08, 131.51],
-					[194.49, 133.18],
-					[192.33, 133.97],
-					[190.04, 133.68],
-					[187.79, 133.09],
-					[185.52, 132.57],
-					[183.26, 132.05],
-					[180.99, 131.54],
-					[178.72, 131.03],
-					[176.45, 130.53],
-					[174.18, 130.03],
-					[171.91, 129.54],
-					[169.64, 129.05],
-					[167.37, 128.56],
-					[165.1, 128.07],
-					[162.83, 127.58],
-					[160.56, 127.08],
-					[158.29, 126.57],
-					[156.02, 126.05],
-					[153.9, 125.14],
-					[152.26, 123.51],
-					[151.32, 121.4],
-					[151.08, 119.1],
-					[151.53, 116.82],
-					[152.65, 114.8],
-					[154.41, 113.31]
-				]],
-				[[
-					[79.94, 130.44],
-					[83.08, 130.57],
-					[86.11, 131.41],
-					[88.89, 132.89],
-					[91.27, 134.94],
-					[93.15, 137.46],
-					[94.39, 140.35],
-					[95.11, 143.42],
-					[95.65, 146.52],
-					[96.2, 149.62],
-					[96.78, 152.72],
-					[97.39, 155.81],
-					[98.04, 158.89],
-					[98.72, 161.97],
-					[99.43, 165.04],
-					[100.18, 168.1],
-					[100.97, 171.15],
-					[101.81, 174.18],
-					[102.64, 177.22],
-					[103.01, 180.34],
-					[102.35, 183.4],
-					[100.66, 186.04],
-					[98.19, 187.98],
-					[95.28, 189.16],
-					[92.17, 189.6],
-					[89.03, 189.37],
-					[85.99, 188.56],
-					[83.16, 187.2],
-					[80.63, 185.33],
-					[78.55, 182.97],
-					[77.05, 180.21],
-					[76.1, 177.21],
-					[75.28, 174.17],
-					[74.5, 171.11],
-					[73.74, 168.06],
-					[73.02, 164.99],
-					[72.33, 161.92],
-					[71.68, 158.83],
-					[71.06, 155.75],
-					[70.47, 152.65],
-					[69.91, 149.55],
-					[69.37, 146.45],
-					[68.97, 143.32],
-					[69.12, 140.18],
-					[70.04, 137.18],
-					[71.7, 134.51],
-					[74.03, 132.41],
-					[76.86, 131.04]
-				], [
-					[168.95, 136.28],
-					[171.31, 136.97],
-					[172.99, 138.76],
-					[173.66, 141.13],
-					[173.36, 143.58],
-					[172.24, 145.79],
-					[170.45, 147.49],
-					[168.22, 148.58],
-					[165.89, 149.43],
-					[163.57, 150.31],
-					[161.24, 151.18],
-					[158.9, 152.02],
-					[156.56, 152.85],
-					[154.21, 153.65],
-					[151.85, 154.44],
-					[149.48, 155.2],
-					[147.11, 155.94],
-					[144.73, 156.65],
-					[142.34, 157.34],
-					[139.95, 158.01],
-					[137.55, 158.66],
-					[135.14, 159.27],
-					[132.73, 159.86],
-					[130.31, 160.43],
-					[127.84, 160.54],
-					[125.53, 159.69],
-					[123.77, 157.96],
-					[122.89, 155.66],
-					[123.09, 153.21],
-					[124.36, 151.09],
-					[126.34, 149.61],
-					[128.69, 148.83],
-					[131.1, 148.24],
-					[133.51, 147.62],
-					[135.91, 146.98],
-					[138.31, 146.32],
-					[140.7, 145.65],
-					[143.08, 144.95],
-					[145.46, 144.23],
-					[147.83, 143.49],
-					[150.2, 142.73],
-					[152.56, 141.95],
-					[154.91, 141.15],
-					[157.25, 140.32],
-					[159.59, 139.48],
-					[161.92, 138.61],
-					[164.24, 137.72],
-					[166.54, 136.78]
-				]],
-				[[
-					[119.79, 105.35],
-					[121.94, 105.42],
-					[124.03, 105.87],
-					[126, 106.72],
-					[127.77, 107.93],
-					[129.27, 109.47],
-					[130.45, 111.26],
-					[131.29, 113.23],
-					[131.73, 115.33],
-					[131.79, 117.47],
-					[131.53, 119.6],
-					[131.11, 121.71],
-					[130.66, 123.81],
-					[130.27, 125.92],
-					[129.88, 128.03],
-					[129.49, 130.14],
-					[129.07, 132.25],
-					[128.62, 134.35],
-					[127.96, 136.39],
-					[126.96, 138.29],
-					[125.62, 139.96],
-					[123.99, 141.36],
-					[122.13, 142.43],
-					[120.11, 143.15],
-					[118, 143.5],
-					[115.85, 143.45],
-					[113.75, 143],
-					[111.79, 142.15],
-					[110.03, 140.93],
-					[108.54, 139.38],
-					[107.36, 137.59],
-					[106.53, 135.61],
-					[106.1, 133.51],
-					[106.07, 131.37],
-					[106.35, 129.24],
-					[106.77, 127.14],
-					[107.22, 125.04],
-					[107.64, 122.93],
-					[108.05, 120.82],
-					[108.45, 118.71],
-					[108.84, 116.6],
-					[109.25, 114.49],
-					[109.86, 112.44],
-					[110.83, 110.52],
-					[112.16, 108.84],
-					[113.78, 107.44],
-					[115.65, 106.38],
-					[117.67, 105.68]
-				], [
-					[174.73, 114.1],
-					[176.71, 114.59],
-					[178.5, 115.55],
-					[180.04, 116.88],
-					[181.27, 118.5],
-					[182.17, 120.33],
-					[182.71, 122.29],
-					[182.9, 124.32],
-					[182.82, 126.36],
-					[182.56, 128.38],
-					[182.23, 130.39],
-					[181.89, 132.4],
-					[181.53, 134.41],
-					[181.16, 136.41],
-					[180.75, 138.41],
-					[180.3, 140.4],
-					[179.82, 142.38],
-					[179.18, 144.31],
-					[178.28, 146.15],
-					[177.14, 147.83],
-					[175.74, 149.31],
-					[174.11, 150.53],
-					[172.29, 151.44],
-					[170.32, 151.97],
-					[168.29, 152.07],
-					[166.29, 151.69],
-					[164.45, 150.83],
-					[162.87, 149.54],
-					[161.66, 147.91],
-					[160.83, 146.06],
-					[160.38, 144.07],
-					[160.29, 142.04],
-					[160.53, 140.01],
-					[160.98, 138.02],
-					[161.43, 136.03],
-					[161.84, 134.04],
-					[162.24, 132.04],
-					[162.62, 130.03],
-					[162.93, 128.02],
-					[163.24, 126],
-					[163.6, 124],
-					[164.11, 122.03],
-					[164.91, 120.15],
-					[165.99, 118.43],
-					[167.35, 116.91],
-					[168.94, 115.64],
-					[170.74, 114.69],
-					[172.7, 114.15]
-				]],
-				[[
-					[105.72, 72.58],
-					[108.82, 72.78],
-					[111.75, 73.82],
-					[114.27, 75.64],
-					[116.39, 77.92],
-					[118.42, 80.29],
-					[120.45, 82.66],
-					[122.47, 85.03],
-					[124.48, 87.41],
-					[126.49, 89.8],
-					[128.48, 92.2],
-					[130.47, 94.6],
-					[132.45, 97.01],
-					[134.43, 99.42],
-					[136.4, 101.83],
-					[138.37, 104.25],
-					[140.3, 106.7],
-					[141.85, 109.39],
-					[142.65, 112.4],
-					[142.63, 115.51],
-					[141.8, 118.5],
-					[140.21, 121.17],
-					[137.95, 123.31],
-					[135.17, 124.7],
-					[132.11, 125.26],
-					[129.02, 124.98],
-					[126.12, 123.86],
-					[123.67, 121.94],
-					[121.61, 119.6],
-					[119.66, 117.17],
-					[117.69, 114.75],
-					[115.73, 112.33],
-					[113.75, 109.92],
-					[111.77, 107.52],
-					[109.77, 105.12],
-					[107.77, 102.73],
-					[105.76, 100.34],
-					[103.75, 97.96],
-					[101.72, 95.59],
-					[99.68, 93.23],
-					[97.63, 90.89],
-					[95.91, 88.3],
-					[94.95, 85.34],
-					[94.92, 82.24],
-					[95.84, 79.27],
-					[97.56, 76.68],
-					[99.9, 74.63],
-					[102.67, 73.22]
-				], [
-					[176.73, 63.75],
-					[179.52, 64.43],
-					[182.02, 65.85],
-					[184.15, 67.78],
-					[185.85, 70.1],
-					[187.08, 72.7],
-					[187.76, 75.5],
-					[187.76, 78.37],
-					[187.23, 81.2],
-					[186.58, 84.01],
-					[185.89, 86.8],
-					[185.16, 89.59],
-					[184.39, 92.36],
-					[183.59, 95.13],
-					[182.76, 97.89],
-					[181.88, 100.64],
-					[180.98, 103.37],
-					[180.02, 106.09],
-					[179.03, 108.79],
-					[177.99, 111.48],
-					[176.9, 114.15],
-					[175.5, 116.66],
-					[173.51, 118.72],
-					[171, 120.11],
-					[168.18, 120.66],
-					[165.34, 120.29],
-					[162.75, 119.04],
-					[160.62, 117.12],
-					[159.02, 114.73],
-					[158, 112.04],
-					[157.63, 109.19],
-					[157.98, 106.34],
-					[158.83, 103.59],
-					[159.86, 100.9],
-					[160.87, 98.2],
-					[161.85, 95.49],
-					[162.79, 92.76],
-					[163.7, 90.03],
-					[164.57, 87.29],
-					[165.41, 84.53],
-					[166.21, 81.76],
-					[166.98, 78.99],
-					[167.7, 76.2],
-					[168.38, 73.4],
-					[169, 70.58],
-					[169.79, 67.82],
-					[171.41, 65.46],
-					[173.88, 64.03]
-				]],
-				[[
-					[64.12, 83.43],
-					[66.69, 84.08],
-					[68.9, 85.53],
-					[70.57, 87.6],
-					[71.56, 90.05],
-					[71.86, 92.69],
-					[71.53, 95.32],
-					[70.55, 97.78],
-					[69.06, 99.99],
-					[67.36, 102.03],
-					[65.64, 104.06],
-					[63.95, 106.11],
-					[62.28, 108.18],
-					[60.63, 110.27],
-					[59, 112.38],
-					[57.41, 114.5],
-					[55.84, 116.65],
-					[54.29, 118.82],
-					[52.78, 121],
-					[51.31, 123.22],
-					[49.86, 125.45],
-					[48.42, 127.69],
-					[46.67, 129.68],
-					[44.36, 130.96],
-					[41.73, 131.22],
-					[39.22, 130.38],
-					[37.16, 128.72],
-					[35.64, 126.55],
-					[34.65, 124.08],
-					[34.2, 121.46],
-					[34.29, 118.81],
-					[34.94, 116.24],
-					[36.12, 113.86],
-					[37.54, 111.61],
-					[39.04, 109.41],
-					[40.54, 107.21],
-					[42.06, 105.03],
-					[43.61, 102.87],
-					[45.18, 100.73],
-					[46.79, 98.6],
-					[48.41, 96.5],
-					[50.07, 94.42],
-					[51.74, 92.35],
-					[53.45, 90.31],
-					[55.17, 88.28],
-					[56.94, 86.3],
-					[59.04, 84.67],
-					[61.48, 83.65]
-				], [
-					[104.23, 93.09],
-					[106.97, 93.77],
-					[109.4, 95.24],
-					[111.32, 97.31],
-					[112.59, 99.85],
-					[113.4, 102.57],
-					[114.13, 105.32],
-					[114.87, 108.06],
-					[115.62, 110.8],
-					[116.37, 113.54],
-					[117.14, 116.28],
-					[117.9, 119.02],
-					[118.67, 121.75],
-					[119.45, 124.49],
-					[120.23, 127.22],
-					[121.03, 129.95],
-					[121.83, 132.68],
-					[122.6, 135.41],
-					[122.98, 138.22],
-					[122.57, 141.02],
-					[121.34, 143.57],
-					[119.44, 145.67],
-					[117.05, 147.19],
-					[114.34, 148.04],
-					[111.51, 148.14],
-					[108.77, 147.45],
-					[106.33, 146.01],
-					[104.38, 143.96],
-					[103.07, 141.44],
-					[102.21, 138.73],
-					[101.43, 136],
-					[100.65, 133.27],
-					[99.87, 130.53],
-					[99.09, 127.8],
-					[98.32, 125.06],
-					[97.55, 122.33],
-					[96.79, 119.59],
-					[96.04, 116.85],
-					[95.28, 114.11],
-					[94.53, 111.37],
-					[93.79, 108.62],
-					[93.05, 105.88],
-					[92.73, 103.07],
-					[93.18, 100.27],
-					[94.42, 97.72],
-					[96.32, 95.62],
-					[98.7, 94.08],
-					[101.4, 93.21]
-				]],
-				[[
-					[108.14, 135.9],
-					[111.13, 136.06],
-					[114.08, 136.56],
-					[116.95, 137.39],
-					[119.71, 138.55],
-					[122.31, 140.03],
-					[124.71, 141.81],
-					[126.86, 143.89],
-					[128.73, 146.23],
-					[130.27, 148.8],
-					[131.44, 151.55],
-					[132.22, 154.44],
-					[132.56, 157.41],
-					[132.47, 160.4],
-					[131.93, 163.34],
-					[130.96, 166.17],
-					[129.6, 168.83],
-					[127.87, 171.28],
-					[125.83, 173.46],
-					[123.51, 175.35],
-					[120.96, 176.91],
-					[118.23, 178.13],
-					[115.36, 179],
-					[112.42, 179.52],
-					[109.43, 179.7],
-					[106.44, 179.54],
-					[103.49, 179.04],
-					[100.62, 178.21],
-					[97.86, 177.06],
-					[95.26, 175.58],
-					[92.86, 173.79],
-					[90.71, 171.71],
-					[88.84, 169.37],
-					[87.3, 166.81],
-					[86.13, 164.06],
-					[85.35, 161.17],
-					[85.01, 158.2],
-					[85.11, 155.21],
-					[85.64, 152.26],
-					[86.61, 149.43],
-					[87.97, 146.77],
-					[89.7, 144.33],
-					[91.74, 142.14],
-					[94.06, 140.25],
-					[96.61, 138.69],
-					[99.34, 137.47],
-					[102.21, 136.6],
-					[105.15, 136.08]
-				], [
-					[175.67, 128.81],
-					[177.16, 128.85],
-					[178.62, 129.14],
-					[180.01, 129.67],
-					[181.28, 130.44],
-					[182.41, 131.42],
-					[183.36, 132.57],
-					[184.12, 133.85],
-					[184.68, 135.23],
-					[185.05, 136.68],
-					[185.24, 138.15],
-					[185.27, 139.64],
-					[185.13, 141.13],
-					[184.85, 142.59],
-					[184.42, 144.02],
-					[183.85, 145.4],
-					[183.15, 146.72],
-					[182.33, 147.96],
-					[181.38, 149.11],
-					[180.32, 150.16],
-					[179.15, 151.08],
-					[177.88, 151.87],
-					[176.53, 152.49],
-					[175.1, 152.91],
-					[173.62, 153.11],
-					[172.13, 153.07],
-					[170.67, 152.78],
-					[169.28, 152.24],
-					[168.01, 151.47],
-					[166.88, 150.49],
-					[165.93, 149.35],
-					[165.18, 148.06],
-					[164.61, 146.68],
-					[164.24, 145.24],
-					[164.05, 143.76],
-					[164.02, 142.27],
-					[164.16, 140.78],
-					[164.44, 139.32],
-					[164.87, 137.89],
-					[165.44, 136.51],
-					[166.14, 135.2],
-					[166.96, 133.95],
-					[167.91, 132.8],
-					[168.97, 131.75],
-					[170.14, 130.83],
-					[171.4, 130.04],
-					[172.76, 129.43],
-					[174.19, 129.01]
-				]],
-				[[
-					[103.39, 78.25],
-					[106.56, 78.38],
-					[109.59, 79.28],
-					[112.29, 80.94],
-					[114.43, 83.28],
-					[115.86, 86.1],
-					[116.52, 89.2],
-					[116.32, 92.37],
-					[115.62, 95.46],
-					[114.86, 98.55],
-					[114.1, 101.63],
-					[113.36, 104.72],
-					[112.63, 107.81],
-					[111.91, 110.91],
-					[111.2, 114.01],
-					[110.51, 117.1],
-					[109.82, 120.21],
-					[109.16, 123.31],
-					[108.52, 126.42],
-					[107.84, 129.53],
-					[106.8, 132.52],
-					[105.04, 135.16],
-					[102.66, 137.25],
-					[99.81, 138.63],
-					[96.7, 139.2],
-					[93.54, 138.96],
-					[90.53, 137.95],
-					[87.87, 136.24],
-					[85.71, 133.92],
-					[84.21, 131.13],
-					[83.48, 128.05],
-					[83.5, 124.88],
-					[84, 121.74],
-					[84.7, 118.64],
-					[85.4, 115.54],
-					[86.08, 112.44],
-					[86.77, 109.34],
-					[87.48, 106.24],
-					[88.19, 103.15],
-					[88.92, 100.05],
-					[89.66, 96.96],
-					[90.41, 93.88],
-					[91.18, 90.8],
-					[91.95, 87.71],
-					[93.1, 84.76],
-					[94.95, 82.19],
-					[97.4, 80.19],
-					[100.28, 78.86]
-				], [
-					[161.99, 91.57],
-					[165.07, 92],
-					[167.9, 93.28],
-					[170.32, 95.23],
-					[172.22, 97.69],
-					[173.49, 100.53],
-					[174.05, 103.59],
-					[173.93, 106.7],
-					[173.45, 109.78],
-					[172.9, 112.85],
-					[172.33, 115.91],
-					[171.71, 118.97],
-					[171.06, 122.02],
-					[170.38, 125.06],
-					[169.66, 128.09],
-					[168.91, 131.12],
-					[168.13, 134.14],
-					[167.33, 137.15],
-					[166.5, 140.16],
-					[165.58, 143.14],
-					[164.33, 145.98],
-					[162.5, 148.5],
-					[160.15, 150.53],
-					[157.38, 151.95],
-					[154.34, 152.61],
-					[151.24, 152.43],
-					[148.32, 151.38],
-					[145.83, 149.52],
-					[143.99, 147.01],
-					[142.95, 144.08],
-					[142.73, 140.98],
-					[143.25, 137.91],
-					[144.09, 134.91],
-					[144.94, 131.91],
-					[145.76, 128.9],
-					[146.54, 125.89],
-					[147.29, 122.86],
-					[148.01, 119.83],
-					[148.69, 116.79],
-					[149.34, 113.74],
-					[149.95, 110.68],
-					[150.54, 107.62],
-					[151.09, 104.55],
-					[151.6, 101.47],
-					[152.44, 98.48],
-					[154, 95.79],
-					[156.21, 93.6],
-					[158.94, 92.12]
-				]],
-				[[
-					[47.23, 91.05],
-					[51.61, 92.47],
-					[55.26, 95.29],
-					[57.96, 99.03],
-					[59.7, 103.31],
-					[60.56, 107.85],
-					[61.28, 112.42],
-					[62.11, 116.97],
-					[63.06, 121.51],
-					[64.11, 126.01],
-					[65.28, 130.49],
-					[66.56, 134.94],
-					[67.95, 139.35],
-					[69.44, 143.73],
-					[71.05, 148.07],
-					[72.77, 152.37],
-					[74.62, 156.61],
-					[76.52, 160.83],
-					[78.06, 165.19],
-					[78.52, 169.78],
-					[77.62, 174.3],
-					[75.2, 178.22],
-					[71.44, 180.86],
-					[66.96, 181.91],
-					[62.36, 181.55],
-					[57.99, 180.06],
-					[54.03, 177.68],
-					[50.59, 174.58],
-					[47.77, 170.92],
-					[45.62, 166.83],
-					[43.74, 162.6],
-					[41.96, 158.33],
-					[40.29, 154.01],
-					[38.72, 149.66],
-					[37.27, 145.26],
-					[35.93, 140.83],
-					[34.69, 136.37],
-					[33.56, 131.88],
-					[32.55, 127.37],
-					[31.65, 122.83],
-					[30.85, 118.27],
-					[30.2, 113.69],
-					[30.08, 109.07],
-					[30.85, 104.51],
-					[32.49, 100.19],
-					[35.01, 96.32],
-					[38.44, 93.24],
-					[42.64, 91.35]
-				], [
-					[108.93, 73.38],
-					[113.76, 73.6],
-					[118.38, 75.01],
-					[122.49, 77.56],
-					[125.82, 81.07],
-					[128.1, 85.34],
-					[129.65, 89.93],
-					[131.04, 94.58],
-					[132.43, 99.22],
-					[133.82, 103.87],
-					[135.22, 108.51],
-					[136.6, 113.16],
-					[137.99, 117.81],
-					[139.36, 122.46],
-					[140.73, 127.11],
-					[142.13, 131.76],
-					[143.51, 136.41],
-					[144.82, 141.08],
-					[145.51, 145.86],
-					[144.91, 150.66],
-					[143.09, 155.14],
-					[140.17, 158.99],
-					[136.38, 162.01],
-					[132, 164.05],
-					[127.26, 165.03],
-					[122.42, 164.86],
-					[117.79, 163.48],
-					[113.67, 160.95],
-					[110.36, 157.43],
-					[108.17, 153.11],
-					[106.72, 148.49],
-					[105.36, 143.83],
-					[103.99, 139.18],
-					[102.62, 134.53],
-					[101.24, 129.88],
-					[99.87, 125.23],
-					[98.48, 120.58],
-					[97.09, 115.93],
-					[95.7, 111.29],
-					[94.29, 106.64],
-					[92.89, 102],
-					[91.49, 97.36],
-					[90.81, 92.57],
-					[91.38, 87.77],
-					[93.14, 83.26],
-					[96.02, 79.37],
-					[99.79, 76.34],
-					[104.18, 74.32]
-				]],
-				[[
-					[102.86, 129.56],
-					[106.39, 129.96],
-					[109.85, 130.76],
-					[113.21, 131.94],
-					[116.4, 133.5],
-					[119.39, 135.42],
-					[122.13, 137.69],
-					[124.56, 140.28],
-					[126.64, 143.16],
-					[128.33, 146.29],
-					[129.59, 149.61],
-					[130.37, 153.08],
-					[130.66, 156.62],
-					[130.43, 160.16],
-					[129.68, 163.63],
-					[128.42, 166.96],
-					[126.7, 170.07],
-					[124.54, 172.89],
-					[122.02, 175.39],
-					[119.18, 177.52],
-					[116.07, 179.25],
-					[112.76, 180.54],
-					[109.31, 181.4],
-					[105.78, 181.82],
-					[102.23, 181.83],
-					[98.7, 181.42],
-					[95.24, 180.62],
-					[91.88, 179.44],
-					[88.69, 177.88],
-					[85.7, 175.96],
-					[82.96, 173.69],
-					[80.53, 171.1],
-					[78.45, 168.22],
-					[76.76, 165.1],
-					[75.5, 161.77],
-					[74.72, 158.31],
-					[74.44, 154.77],
-					[74.67, 151.22],
-					[75.41, 147.75],
-					[76.67, 144.42],
-					[78.39, 141.32],
-					[80.55, 138.49],
-					[83.07, 135.99],
-					[85.91, 133.86],
-					[89.02, 132.14],
-					[92.33, 130.84],
-					[95.78, 129.99],
-					[99.31, 129.56]
-				], [
-					[180.44, 141.06],
-					[183.61, 141.1],
-					[186.72, 141.68],
-					[189.66, 142.86],
-					[192.28, 144.63],
-					[194.43, 146.96],
-					[196, 149.71],
-					[197, 152.72],
-					[197.48, 155.86],
-					[197.51, 159.03],
-					[197.15, 162.18],
-					[196.43, 165.27],
-					[195.38, 168.26],
-					[194.07, 171.15],
-					[192.52, 173.92],
-					[190.74, 176.55],
-					[188.77, 179.03],
-					[186.6, 181.35],
-					[184.25, 183.48],
-					[181.74, 185.41],
-					[179.06, 187.12],
-					[176.23, 188.56],
-					[173.28, 189.71],
-					[170.21, 190.52],
-					[167.07, 190.95],
-					[163.9, 190.91],
-					[160.78, 190.33],
-					[157.84, 189.15],
-					[155.22, 187.37],
-					[153.08, 185.04],
-					[151.51, 182.29],
-					[150.51, 179.28],
-					[150.03, 176.15],
-					[150, 172.98],
-					[150.36, 169.83],
-					[151.07, 166.74],
-					[152.12, 163.74],
-					[153.43, 160.85],
-					[154.99, 158.09],
-					[156.76, 155.46],
-					[158.74, 152.98],
-					[160.91, 150.66],
-					[163.25, 148.53],
-					[165.77, 146.59],
-					[168.45, 144.89],
-					[171.27, 143.45],
-					[174.23, 142.3],
-					[177.29, 141.48]
-				]],
-				[[
-					[86.02, 131.33],
-					[88.42, 131.69],
-					[90.54, 132.87],
-					[92.12, 134.71],
-					[93.03, 136.97],
-					[93.17, 139.39],
-					[92.41, 141.69],
-					[90.78, 143.48],
-					[88.59, 144.52],
-					[86.19, 144.97],
-					[83.78, 145.34],
-					[81.37, 145.72],
-					[78.96, 146.09],
-					[76.54, 146.45],
-					[74.13, 146.81],
-					[71.72, 147.16],
-					[69.3, 147.5],
-					[66.88, 147.84],
-					[64.47, 148.16],
-					[62.05, 148.47],
-					[59.62, 148.76],
-					[57.2, 149.03],
-					[54.77, 149.27],
-					[52.34, 149.49],
-					[49.91, 149.68],
-					[47.53, 149.28],
-					[45.52, 147.92],
-					[44.04, 145.99],
-					[43.12, 143.74],
-					[42.85, 141.32],
-					[43.44, 138.97],
-					[45.04, 137.17],
-					[47.33, 136.4],
-					[49.76, 136.2],
-					[52.19, 135.96],
-					[54.62, 135.7],
-					[57.04, 135.43],
-					[59.46, 135.15],
-					[61.89, 134.85],
-					[64.31, 134.54],
-					[66.72, 134.22],
-					[69.14, 133.89],
-					[71.56, 133.54],
-					[73.97, 133.19],
-					[76.38, 132.83],
-					[78.79, 132.45],
-					[81.2, 132.06],
-					[83.61, 131.67]
-				], [
-					[153.42, 116.84],
-					[155.92, 117.69],
-					[157.78, 119.56],
-					[158.72, 122.03],
-					[158.73, 124.68],
-					[157.84, 127.18],
-					[156.08, 129.15],
-					[153.71, 130.33],
-					[151.13, 131],
-					[148.55, 131.65],
-					[145.98, 132.32],
-					[143.4, 132.98],
-					[140.82, 133.63],
-					[138.23, 134.27],
-					[135.65, 134.9],
-					[133.06, 135.53],
-					[130.47, 136.15],
-					[127.88, 136.76],
-					[125.29, 137.36],
-					[122.69, 137.94],
-					[120.09, 138.51],
-					[117.49, 139.06],
-					[114.88, 139.59],
-					[112.27, 140.1],
-					[109.62, 140.12],
-					[107.17, 139.14],
-					[105.28, 137.29],
-					[104.18, 134.88],
-					[104.06, 132.23],
-					[105.03, 129.78],
-					[106.92, 127.93],
-					[109.35, 126.87],
-					[111.96, 126.34],
-					[114.57, 125.8],
-					[117.17, 125.24],
-					[119.77, 124.67],
-					[122.37, 124.09],
-					[124.96, 123.5],
-					[127.56, 122.9],
-					[130.15, 122.29],
-					[132.74, 121.68],
-					[135.32, 121.05],
-					[137.91, 120.41],
-					[140.49, 119.76],
-					[143.07, 119.11],
-					[145.65, 118.44],
-					[148.22, 117.76],
-					[150.78, 117.03]
-				]],
-				[[
-					[83.36, 65.84],
-					[86.61, 66.42],
-					[89.57, 67.88],
-					[92, 70.12],
-					[93.67, 72.97],
-					[94.46, 76.17],
-					[94.31, 79.47],
-					[93.61, 82.71],
-					[92.8, 85.92],
-					[92.02, 89.14],
-					[91.27, 92.36],
-					[90.56, 95.6],
-					[89.88, 98.84],
-					[89.23, 102.09],
-					[88.62, 105.34],
-					[88.03, 108.61],
-					[87.51, 111.88],
-					[87.01, 115.15],
-					[86.5, 118.42],
-					[85.65, 121.62],
-					[84.11, 124.54],
-					[81.9, 126.99],
-					[79.13, 128.79],
-					[75.98, 129.8],
-					[72.68, 129.91],
-					[69.47, 129.13],
-					[66.6, 127.49],
-					[64.24, 125.18],
-					[62.49, 122.38],
-					[61.42, 119.25],
-					[61.08, 115.97],
-					[61.36, 112.67],
-					[61.87, 109.4],
-					[62.45, 106.13],
-					[63.01, 102.87],
-					[63.61, 99.61],
-					[64.24, 96.36],
-					[64.9, 93.11],
-					[65.6, 89.87],
-					[66.33, 86.64],
-					[67.09, 83.42],
-					[67.89, 80.2],
-					[68.73, 77],
-					[69.89, 73.9],
-					[71.7, 71.14],
-					[74.1, 68.86],
-					[76.93, 67.16],
-					[80.07, 66.12]
-				], [
-					[119.49, 99.16],
-					[121.99, 99.28],
-					[124.44, 99.82],
-					[126.9, 100.34],
-					[129.36, 100.86],
-					[131.81, 101.38],
-					[134.27, 101.91],
-					[136.72, 102.44],
-					[139.17, 102.98],
-					[141.62, 103.52],
-					[144.08, 104.07],
-					[146.52, 104.62],
-					[148.97, 105.18],
-					[151.42, 105.74],
-					[153.86, 106.31],
-					[156.31, 106.89],
-					[158.75, 107.47],
-					[161.2, 108.02],
-					[163.49, 109.03],
-					[165.16, 110.87],
-					[165.95, 113.24],
-					[165.87, 115.74],
-					[164.94, 118.05],
-					[163.17, 119.8],
-					[160.79, 120.55],
-					[158.31, 120.29],
-					[155.88, 119.65],
-					[153.44, 119.06],
-					[150.99, 118.49],
-					[148.55, 117.92],
-					[146.1, 117.36],
-					[143.65, 116.81],
-					[141.2, 116.26],
-					[138.75, 115.73],
-					[136.29, 115.2],
-					[133.84, 114.67],
-					[131.38, 114.15],
-					[128.93, 113.62],
-					[126.47, 113.1],
-					[124.02, 112.57],
-					[121.56, 112.04],
-					[119.11, 111.5],
-					[116.81, 110.53],
-					[115.08, 108.73],
-					[114.22, 106.39],
-					[114.29, 103.9],
-					[115.28, 101.61],
-					[117.12, 99.93]
-				]],
-				[[
-					[168.71, 85.67],
-					[170.73, 86],
-					[172.64, 86.75],
-					[174.37, 87.85],
-					[175.88, 89.24],
-					[177.11, 90.88],
-					[178.04, 92.71],
-					[178.71, 94.65],
-					[179.21, 96.64],
-					[179.64, 98.65],
-					[180.05, 100.66],
-					[180.45, 102.67],
-					[180.83, 104.69],
-					[181.18, 106.71],
-					[181.5, 108.74],
-					[181.77, 110.78],
-					[181.88, 112.82],
-					[181.71, 114.87],
-					[181.22, 116.86],
-					[180.41, 118.74],
-					[179.27, 120.45],
-					[177.83, 121.91],
-					[176.12, 123.03],
-					[174.2, 123.74],
-					[172.16, 123.99],
-					[170.13, 123.75],
-					[168.21, 123.04],
-					[166.49, 121.93],
-					[165.03, 120.48],
-					[163.88, 118.79],
-					[163.02, 116.93],
-					[162.49, 114.95],
-					[162.17, 112.92],
-					[161.85, 110.89],
-					[161.51, 108.87],
-					[161.14, 106.84],
-					[160.77, 104.83],
-					[160.37, 102.81],
-					[159.96, 100.8],
-					[159.52, 98.79],
-					[159.24, 96.76],
-					[159.3, 94.71],
-					[159.71, 92.7],
-					[160.48, 90.8],
-					[161.58, 89.08],
-					[163.01, 87.61],
-					[164.73, 86.49],
-					[166.67, 85.83]
-				], [
-					[206.57, 78.24],
-					[208.3, 78.8],
-					[209.77, 79.87],
-					[210.99, 81.22],
-					[212.01, 82.73],
-					[212.85, 84.34],
-					[213.53, 86.03],
-					[214.08, 87.77],
-					[214.54, 89.54],
-					[214.95, 91.31],
-					[215.34, 93.09],
-					[215.7, 94.88],
-					[216.04, 96.67],
-					[216.36, 98.46],
-					[216.64, 100.26],
-					[216.89, 102.07],
-					[217.11, 103.88],
-					[217.25, 105.7],
-					[217.26, 107.52],
-					[217.1, 109.33],
-					[216.75, 111.12],
-					[216.16, 112.84],
-					[215.3, 114.44],
-					[214.04, 115.75],
-					[212.34, 116.35],
-					[210.58, 115.96],
-					[209.11, 114.89],
-					[207.97, 113.48],
-					[207.1, 111.88],
-					[206.44, 110.18],
-					[205.97, 108.42],
-					[205.62, 106.63],
-					[205.35, 104.83],
-					[205.11, 103.02],
-					[204.85, 101.22],
-					[204.55, 99.42],
-					[204.22, 97.63],
-					[203.87, 95.84],
-					[203.49, 94.05],
-					[203.09, 92.28],
-					[202.67, 90.5],
-					[202.32, 88.71],
-					[202.1, 86.91],
-					[202.1, 85.08],
-					[202.32, 83.28],
-					[202.77, 81.51],
-					[203.54, 79.86],
-					[204.82, 78.59]
-				]],
-				[[
-					[39.78, 104.3],
-					[42.64, 105.01],
-					[45.03, 106.74],
-					[46.73, 109.15],
-					[47.75, 111.93],
-					[48.35, 114.83],
-					[48.81, 117.76],
-					[49.31, 120.68],
-					[49.87, 123.6],
-					[50.48, 126.5],
-					[51.15, 129.39],
-					[51.86, 132.27],
-					[52.63, 135.13],
-					[53.44, 137.98],
-					[54.3, 140.82],
-					[55.19, 143.65],
-					[56.13, 146.46],
-					[57.1, 149.26],
-					[58.1, 152.05],
-					[58.86, 154.92],
-					[58.96, 157.87],
-					[58.18, 160.72],
-					[56.43, 163.09],
-					[53.84, 164.48],
-					[50.9, 164.62],
-					[48.08, 163.75],
-					[45.58, 162.16],
-					[43.51, 160.05],
-					[41.89, 157.57],
-					[40.67, 154.87],
-					[39.67, 152.08],
-					[38.73, 149.26],
-					[37.81, 146.44],
-					[36.94, 143.61],
-					[36.11, 140.76],
-					[35.34, 137.9],
-					[34.61, 135.03],
-					[33.92, 132.14],
-					[33.28, 129.24],
-					[32.7, 126.34],
-					[32.16, 123.42],
-					[31.67, 120.5],
-					[31.23, 117.57],
-					[31.14, 114.61],
-					[31.65, 111.69],
-					[32.74, 108.94],
-					[34.47, 106.54],
-					[36.89, 104.86]
-				], [
-					[108.97, 125.73],
-					[111.9, 126.2],
-					[114.63, 127.37],
-					[117, 129.16],
-					[118.84, 131.49],
-					[119.99, 134.23],
-					[120.32, 137.18],
-					[119.85, 140.11],
-					[118.59, 142.8],
-					[116.78, 145.16],
-					[114.84, 147.42],
-					[112.89, 149.67],
-					[110.93, 151.92],
-					[108.97, 154.16],
-					[107.01, 156.39],
-					[105.03, 158.62],
-					[103.05, 160.85],
-					[101.07, 163.06],
-					[99.07, 165.28],
-					[97.09, 167.5],
-					[95.09, 169.71],
-					[93.05, 171.88],
-					[90.69, 173.67],
-					[87.89, 174.66],
-					[84.93, 174.81],
-					[82.02, 174.22],
-					[79.31, 173],
-					[76.92, 171.24],
-					[74.99, 168.98],
-					[73.7, 166.3],
-					[73.26, 163.37],
-					[73.74, 160.45],
-					[75.2, 157.86],
-					[77.17, 155.63],
-					[79.18, 153.43],
-					[81.18, 151.23],
-					[83.17, 149.02],
-					[85.16, 146.8],
-					[87.14, 144.58],
-					[89.11, 142.35],
-					[91.08, 140.11],
-					[93.04, 137.87],
-					[95, 135.63],
-					[96.95, 133.38],
-					[98.89, 131.12],
-					[100.87, 128.89],
-					[103.25, 127.12],
-					[106.02, 126.04]
-				]],
-				[[
-					[115.43, 87.59],
-					[118.19, 88.24],
-					[120.69, 89.59],
-					[122.69, 91.59],
-					[124.03, 94.09],
-					[124.63, 96.87],
-					[124.41, 99.7],
-					[123.7, 102.45],
-					[122.9, 105.18],
-					[122.12, 107.92],
-					[121.34, 110.65],
-					[120.57, 113.39],
-					[119.79, 116.13],
-					[119.02, 118.87],
-					[118.25, 121.61],
-					[117.48, 124.35],
-					[116.72, 127.09],
-					[115.97, 129.83],
-					[115.23, 132.58],
-					[114.45, 135.32],
-					[113.3, 137.91],
-					[111.49, 140.09],
-					[109.13, 141.65],
-					[106.41, 142.48],
-					[103.58, 142.56],
-					[100.82, 141.91],
-					[98.33, 140.54],
-					[96.33, 138.53],
-					[94.99, 136.03],
-					[94.38, 133.26],
-					[94.57, 130.43],
-					[95.25, 127.67],
-					[96.02, 124.93],
-					[96.79, 122.19],
-					[97.55, 119.45],
-					[98.31, 116.7],
-					[99.08, 113.96],
-					[99.85, 111.22],
-					[100.62, 108.49],
-					[101.4, 105.75],
-					[102.18, 103.01],
-					[102.95, 100.27],
-					[103.74, 97.54],
-					[104.51, 94.8],
-					[105.68, 92.21],
-					[107.5, 90.04],
-					[109.88, 88.5],
-					[112.59, 87.67]
-				], [
-					[155.37, 78.64],
-					[158.04, 79.15],
-					[160.48, 80.37],
-					[162.53, 82.16],
-					[164.33, 84.22],
-					[166.1, 86.3],
-					[167.85, 88.4],
-					[169.58, 90.51],
-					[171.29, 92.64],
-					[172.98, 94.78],
-					[174.65, 96.94],
-					[176.3, 99.12],
-					[177.92, 101.32],
-					[179.51, 103.54],
-					[181.06, 105.79],
-					[182.57, 108.07],
-					[184.03, 110.37],
-					[185.2, 112.83],
-					[185.77, 115.5],
-					[185.73, 118.23],
-					[185.07, 120.87],
-					[183.8, 123.28],
-					[181.94, 125.26],
-					[179.57, 126.6],
-					[176.89, 127.03],
-					[174.24, 126.43],
-					[171.99, 124.92],
-					[170.26, 122.8],
-					[168.75, 120.53],
-					[167.22, 118.27],
-					[165.66, 116.03],
-					[164.07, 113.81],
-					[162.45, 111.6],
-					[160.82, 109.41],
-					[159.16, 107.25],
-					[157.47, 105.1],
-					[155.76, 102.97],
-					[154.03, 100.85],
-					[152.28, 98.76],
-					[150.51, 96.68],
-					[148.74, 94.6],
-					[147.29, 92.29],
-					[146.49, 89.69],
-					[146.36, 86.97],
-					[146.94, 84.31],
-					[148.23, 81.91],
-					[150.19, 80.02],
-					[152.66, 78.89]
-				]],
-				[[
-					[92.71, 76.24],
-					[95.76, 76.59],
-					[98.73, 77.35],
-					[101.56, 78.53],
-					[104.21, 80.08],
-					[106.63, 81.96],
-					[108.78, 84.16],
-					[110.61, 86.62],
-					[112.09, 89.31],
-					[113.19, 92.17],
-					[113.91, 95.15],
-					[114.24, 98.2],
-					[114.18, 101.27],
-					[113.73, 104.31],
-					[112.9, 107.26],
-					[111.7, 110.09],
-					[110.15, 112.73],
-					[108.28, 115.17],
-					[106.12, 117.35],
-					[103.71, 119.24],
-					[101.08, 120.83],
-					[98.27, 122.07],
-					[95.33, 122.95],
-					[92.3, 123.44],
-					[89.23, 123.51],
-					[86.18, 123.17],
-					[83.21, 122.41],
-					[80.38, 121.23],
-					[77.73, 119.69],
-					[75.31, 117.8],
-					[73.16, 115.61],
-					[71.33, 113.14],
-					[69.86, 110.45],
-					[68.75, 107.59],
-					[68.02, 104.61],
-					[67.7, 101.56],
-					[67.76, 98.49],
-					[68.22, 95.46],
-					[69.05, 92.5],
-					[70.25, 89.68],
-					[71.8, 87.03],
-					[73.67, 84.59],
-					[75.83, 82.41],
-					[78.24, 80.52],
-					[80.87, 78.93],
-					[83.67, 77.69],
-					[86.61, 76.81],
-					[89.64, 76.32]
-				], [
-					[157.73, 102.08],
-					[159.31, 102.13],
-					[160.86, 102.42],
-					[162.35, 102.95],
-					[163.74, 103.69],
-					[165.01, 104.62],
-					[166.15, 105.72],
-					[167.13, 106.95],
-					[167.96, 108.29],
-					[168.63, 109.72],
-					[169.13, 111.22],
-					[169.45, 112.76],
-					[169.59, 114.34],
-					[169.55, 115.91],
-					[169.31, 117.47],
-					[168.88, 118.99],
-					[168.28, 120.45],
-					[167.52, 121.83],
-					[166.58, 123.1],
-					[165.48, 124.23],
-					[164.25, 125.22],
-					[162.89, 126.02],
-					[161.43, 126.63],
-					[159.91, 127.02],
-					[158.34, 127.2],
-					[156.76, 127.14],
-					[155.21, 126.85],
-					[153.73, 126.33],
-					[152.33, 125.59],
-					[151.06, 124.65],
-					[149.93, 123.56],
-					[148.94, 122.33],
-					[148.11, 120.99],
-					[147.44, 119.56],
-					[146.95, 118.06],
-					[146.62, 116.51],
-					[146.48, 114.94],
-					[146.52, 113.37],
-					[146.76, 111.8],
-					[147.18, 110.28],
-					[147.78, 108.83],
-					[148.56, 107.45],
-					[149.5, 106.18],
-					[150.59, 105.05],
-					[151.83, 104.07],
-					[153.18, 103.26],
-					[154.64, 102.65],
-					[156.17, 102.26]
-				]],
-				[[
-					[57.98, 112.03],
-					[61.01, 112.26],
-					[63.82, 113.41],
-					[66.22, 115.27],
-					[68.09, 117.67],
-					[69.36, 120.44],
-					[70.14, 123.39],
-					[70.64, 126.39],
-					[71.07, 129.41],
-					[71.58, 132.42],
-					[72.15, 135.41],
-					[72.76, 138.4],
-					[73.4, 141.38],
-					[74.09, 144.35],
-					[74.82, 147.31],
-					[75.59, 150.26],
-					[76.42, 153.2],
-					[77.3, 156.12],
-					[78.16, 159.04],
-					[78.68, 162.04],
-					[78.42, 165.07],
-					[77.28, 167.88],
-					[75.25, 170.13],
-					[72.54, 171.49],
-					[69.52, 171.87],
-					[66.51, 171.44],
-					[63.69, 170.32],
-					[61.16, 168.61],
-					[59.03, 166.44],
-					[57.38, 163.89],
-					[56.23, 161.06],
-					[55.34, 158.15],
-					[54.53, 155.21],
-					[53.73, 152.27],
-					[52.97, 149.31],
-					[52.25, 146.35],
-					[51.57, 143.38],
-					[50.93, 140.4],
-					[50.34, 137.41],
-					[49.78, 134.41],
-					[49.26, 131.4],
-					[48.78, 128.39],
-					[48.37, 125.37],
-					[48.37, 122.33],
-					[49.06, 119.36],
-					[50.44, 116.65],
-					[52.47, 114.39],
-					[55.04, 112.78]
-				], [
-					[117.45, 101.46],
-					[120.57, 101.84],
-					[123.48, 103.02],
-					[125.99, 104.91],
-					[127.97, 107.35],
-					[129.25, 110.23],
-					[130.05, 113.27],
-					[130.76, 116.34],
-					[131.46, 119.41],
-					[132.15, 122.49],
-					[132.85, 125.56],
-					[133.55, 128.63],
-					[134.24, 131.71],
-					[134.93, 134.78],
-					[135.61, 137.86],
-					[136.32, 140.93],
-					[137.01, 144],
-					[137.66, 147.09],
-					[137.87, 150.22],
-					[137.25, 153.3],
-					[135.83, 156.1],
-					[133.73, 158.45],
-					[131.15, 160.23],
-					[128.22, 161.38],
-					[125.11, 161.83],
-					[121.98, 161.5],
-					[119.05, 160.37],
-					[116.52, 158.51],
-					[114.57, 156.05],
-					[113.37, 153.14],
-					[112.64, 150.08],
-					[111.95, 147],
-					[111.27, 143.93],
-					[110.58, 140.85],
-					[109.89, 137.78],
-					[109.2, 134.7],
-					[108.51, 131.63],
-					[107.81, 128.56],
-					[107.12, 125.48],
-					[106.42, 122.41],
-					[105.71, 119.34],
-					[105.02, 116.27],
-					[104.83, 113.13],
-					[105.42, 110.04],
-					[106.79, 107.22],
-					[108.84, 104.83],
-					[111.41, 103.02],
-					[114.33, 101.87]
-				]],
-				[[
-					[113.75, 120.08],
-					[118.16, 120.78],
-					[122.31, 122.43],
-					[125.98, 124.96],
-					[128.94, 128.29],
-					[131.02, 132.23],
-					[132.12, 136.56],
-					[132.1, 141.02],
-					[131.16, 145.38],
-					[129.94, 149.68],
-					[128.69, 153.98],
-					[127.44, 158.27],
-					[126.19, 162.56],
-					[124.92, 166.85],
-					[123.64, 171.14],
-					[122.35, 175.42],
-					[121.05, 179.69],
-					[119.76, 183.97],
-					[118.46, 188.25],
-					[117.05, 192.49],
-					[114.84, 196.36],
-					[111.47, 199.27],
-					[107.42, 201.12],
-					[103.04, 201.99],
-					[98.58, 201.97],
-					[94.18, 201.19],
-					[89.97, 199.7],
-					[86.1, 197.48],
-					[82.8, 194.48],
-					[80.41, 190.72],
-					[79.31, 186.41],
-					[79.87, 182],
-					[81.24, 177.74],
-					[82.57, 173.47],
-					[83.88, 169.2],
-					[85.19, 164.92],
-					[86.48, 160.64],
-					[87.75, 156.36],
-					[89.02, 152.07],
-					[90.28, 147.78],
-					[91.53, 143.49],
-					[92.77, 139.19],
-					[93.97, 134.88],
-					[95.5, 130.69],
-					[97.93, 126.95],
-					[101.16, 123.87],
-					[105.02, 121.64],
-					[109.3, 120.36]
-				], [
-					[181.19, 127.71],
-					[185.4, 128.03],
-					[189.23, 129.79],
-					[192.19, 132.8],
-					[194.06, 136.59],
-					[194.87, 140.74],
-					[194.76, 144.98],
-					[194.21, 149.18],
-					[193.55, 153.37],
-					[192.79, 157.55],
-					[191.91, 161.69],
-					[190.91, 165.82],
-					[189.8, 169.91],
-					[188.57, 173.97],
-					[187.22, 177.99],
-					[185.72, 181.96],
-					[184.07, 185.87],
-					[182.26, 189.7],
-					[180.26, 193.44],
-					[177.85, 196.92],
-					[174.93, 199.99],
-					[171.62, 202.64],
-					[168, 204.85],
-					[164.13, 206.59],
-					[160.07, 207.78],
-					[155.86, 208.24],
-					[151.69, 207.6],
-					[148.31, 205.16],
-					[147.33, 201.11],
-					[148.48, 197.06],
-					[150.4, 193.28],
-					[152.24, 189.46],
-					[153.93, 185.56],
-					[155.48, 181.61],
-					[156.89, 177.62],
-					[158.17, 173.57],
-					[159.32, 169.49],
-					[160.35, 165.38],
-					[161.26, 161.23],
-					[162.06, 157.07],
-					[162.7, 152.87],
-					[163.29, 148.67],
-					[164.12, 144.52],
-					[165.46, 140.5],
-					[167.49, 136.78],
-					[170.16, 133.49],
-					[173.37, 130.73],
-					[177.08, 128.7]
-				]],
-				[[
-					[52.43, 111.88],
-					[55.76, 112.3],
-					[59, 113.21],
-					[62.08, 114.57],
-					[64.96, 116.3],
-					[67.61, 118.36],
-					[70.01, 120.71],
-					[72.16, 123.3],
-					[74.02, 126.1],
-					[75.61, 129.06],
-					[76.9, 132.17],
-					[77.89, 135.38],
-					[78.56, 138.68],
-					[78.89, 142.02],
-					[78.86, 145.39],
-					[78.45, 148.72],
-					[77.63, 151.98],
-					[76.39, 155.11],
-					[74.74, 158.03],
-					[72.67, 160.68],
-					[70.2, 162.96],
-					[67.38, 164.79],
-					[64.28, 166.08],
-					[61, 166.78],
-					[57.64, 166.91],
-					[54.3, 166.49],
-					[51.07, 165.57],
-					[47.99, 164.22],
-					[45.11, 162.49],
-					[42.46, 160.42],
-					[40.05, 158.07],
-					[37.91, 155.48],
-					[36.04, 152.68],
-					[34.46, 149.72],
-					[33.16, 146.62],
-					[32.17, 143.4],
-					[31.51, 140.11],
-					[31.18, 136.76],
-					[31.21, 133.4],
-					[31.62, 130.06],
-					[32.44, 126.8],
-					[33.67, 123.68],
-					[35.33, 120.75],
-					[37.4, 118.1],
-					[39.86, 115.82],
-					[42.68, 114],
-					[45.79, 112.71],
-					[49.07, 112.01]
-				], [
-					[126.89, 95.19],
-					[130.56, 95.44],
-					[134.16, 96.17],
-					[137.64, 97.36],
-					[140.94, 98.99],
-					[143.98, 101.06],
-					[146.73, 103.5],
-					[149.13, 106.29],
-					[151.14, 109.37],
-					[152.72, 112.69],
-					[153.86, 116.19],
-					[154.54, 119.8],
-					[154.74, 123.47],
-					[154.45, 127.14],
-					[153.67, 130.74],
-					[152.43, 134.2],
-					[150.76, 137.48],
-					[148.69, 140.51],
-					[146.25, 143.27],
-					[143.48, 145.69],
-					[140.43, 147.75],
-					[137.14, 149.39],
-					[133.66, 150.59],
-					[130.06, 151.32],
-					[126.39, 151.56],
-					[122.72, 151.31],
-					[119.11, 150.59],
-					[115.63, 149.4],
-					[112.34, 147.76],
-					[109.29, 145.7],
-					[106.54, 143.26],
-					[104.14, 140.47],
-					[102.13, 137.39],
-					[100.55, 134.07],
-					[99.41, 130.57],
-					[98.73, 126.96],
-					[98.53, 123.28],
-					[98.83, 119.62],
-					[99.6, 116.02],
-					[100.84, 112.56],
-					[102.51, 109.28],
-					[104.59, 106.25],
-					[107.03, 103.49],
-					[109.79, 101.07],
-					[112.84, 99.01],
-					[116.13, 97.36],
-					[119.61, 96.16],
-					[123.22, 95.43]
-				]],
-				[[
-					[72.34, 79.33],
-					[74.93, 79.64],
-					[77.52, 79.94],
-					[80.12, 80.25],
-					[82.71, 80.57],
-					[85.3, 80.91],
-					[87.88, 81.26],
-					[90.47, 81.63],
-					[93.05, 82],
-					[95.63, 82.39],
-					[98.21, 82.79],
-					[100.79, 83.21],
-					[103.37, 83.63],
-					[105.94, 84.07],
-					[108.51, 84.52],
-					[111.09, 84.92],
-					[113.65, 85.44],
-					[115.99, 86.56],
-					[117.75, 88.47],
-					[118.68, 90.89],
-					[118.57, 93.48],
-					[117.47, 95.83],
-					[115.57, 97.6],
-					[113.16, 98.56],
-					[110.56, 98.58],
-					[108, 98.1],
-					[105.43, 97.64],
-					[102.85, 97.19],
-					[100.28, 96.76],
-					[97.7, 96.33],
-					[95.12, 95.93],
-					[92.54, 95.53],
-					[89.96, 95.14],
-					[87.38, 94.77],
-					[84.79, 94.4],
-					[82.2, 94.06],
-					[79.62, 93.72],
-					[77.02, 93.41],
-					[74.43, 93.11],
-					[71.84, 92.81],
-					[69.24, 92.5],
-					[66.78, 91.69],
-					[64.99, 89.83],
-					[64.25, 87.35],
-					[64.5, 84.76],
-					[65.58, 82.39],
-					[67.38, 80.53],
-					[69.74, 79.45]
-				], [
-					[136.83, 90.25],
-					[139.33, 90.71],
-					[141.8, 91.34],
-					[144.28, 91.93],
-					[146.75, 92.53],
-					[149.22, 93.14],
-					[151.69, 93.77],
-					[154.15, 94.4],
-					[156.62, 95.05],
-					[159.08, 95.71],
-					[161.53, 96.38],
-					[163.98, 97.07],
-					[166.43, 97.76],
-					[168.88, 98.47],
-					[171.32, 99.2],
-					[173.75, 99.94],
-					[176.19, 100.67],
-					[178.49, 101.74],
-					[180.18, 103.62],
-					[181.12, 105.98],
-					[181.31, 108.51],
-					[180.69, 110.96],
-					[179.21, 113.01],
-					[176.98, 114.19],
-					[174.46, 114.13],
-					[172.02, 113.41],
-					[169.58, 112.66],
-					[167.14, 111.93],
-					[164.7, 111.22],
-					[162.25, 110.52],
-					[159.8, 109.84],
-					[157.34, 109.17],
-					[154.88, 108.52],
-					[152.42, 107.88],
-					[149.95, 107.26],
-					[147.48, 106.64],
-					[145.01, 106.03],
-					[142.54, 105.42],
-					[140.06, 104.81],
-					[137.59, 104.21],
-					[135.12, 103.61],
-					[132.78, 102.62],
-					[130.96, 100.86],
-					[129.93, 98.55],
-					[129.77, 96.02],
-					[130.49, 93.59],
-					[132.06, 91.61],
-					[134.31, 90.46]
-				]],
-				[[
-					[107.05, 116.19],
-					[110.26, 116.71],
-					[113.26, 118],
-					[115.85, 119.97],
-					[117.92, 122.49],
-					[119.29, 125.45],
-					[120.04, 128.63],
-					[120.54, 131.86],
-					[121.04, 135.09],
-					[121.54, 138.31],
-					[122.06, 141.54],
-					[122.59, 144.77],
-					[123.12, 147.99],
-					[123.67, 151.21],
-					[124.22, 154.43],
-					[124.8, 157.65],
-					[125.4, 160.86],
-					[125.95, 164.08],
-					[126.04, 167.34],
-					[125.2, 170.49],
-					[123.53, 173.28],
-					[121.14, 175.49],
-					[118.26, 177.02],
-					[115.11, 177.87],
-					[111.85, 178.04],
-					[108.63, 177.56],
-					[105.58, 176.41],
-					[102.87, 174.58],
-					[100.72, 172.14],
-					[99.35, 169.18],
-					[98.61, 166],
-					[98.04, 162.78],
-					[97.47, 159.57],
-					[96.91, 156.35],
-					[96.36, 153.13],
-					[95.83, 149.9],
-					[95.3, 146.68],
-					[94.78, 143.45],
-					[94.27, 140.22],
-					[93.76, 137],
-					[93.26, 133.77],
-					[92.82, 130.53],
-					[92.96, 127.27],
-					[93.87, 124.15],
-					[95.55, 121.35],
-					[97.88, 119.07],
-					[100.68, 117.41],
-					[103.79, 116.44]
-				], [
-					[189.21, 121.96],
-					[191.36, 122.71],
-					[192.8, 124.5],
-					[193.41, 126.73],
-					[193.32, 129.04],
-					[192.59, 131.23],
-					[191.22, 133.09],
-					[189.28, 134.34],
-					[187.12, 135.19],
-					[184.95, 136],
-					[182.78, 136.83],
-					[180.61, 137.63],
-					[178.43, 138.43],
-					[176.24, 139.2],
-					[174.05, 139.95],
-					[171.85, 140.69],
-					[169.64, 141.4],
-					[167.43, 142.09],
-					[165.21, 142.76],
-					[162.98, 143.42],
-					[160.75, 144.05],
-					[158.51, 144.66],
-					[156.27, 145.25],
-					[154.02, 145.81],
-					[151.72, 145.98],
-					[149.57, 145.18],
-					[148.01, 143.49],
-					[147.25, 141.31],
-					[147.31, 139],
-					[148.16, 136.86],
-					[149.7, 135.14],
-					[151.74, 134.05],
-					[153.97, 133.43],
-					[156.21, 132.84],
-					[158.45, 132.22],
-					[160.68, 131.59],
-					[162.91, 130.93],
-					[165.13, 130.26],
-					[167.34, 129.58],
-					[169.55, 128.87],
-					[171.76, 128.15],
-					[173.95, 127.41],
-					[176.15, 126.65],
-					[178.33, 125.87],
-					[180.51, 125.08],
-					[182.68, 124.26],
-					[184.84, 123.41],
-					[186.98, 122.53]
-				]],
-				[[
-					[98.62, 121.53],
-					[100.72, 121.6],
-					[102.78, 122.03],
-					[104.72, 122.83],
-					[106.49, 123.97],
-					[108.01, 125.42],
-					[109.24, 127.12],
-					[110.15, 129.02],
-					[110.66, 131.05],
-					[110.78, 133.15],
-					[110.62, 135.25],
-					[110.34, 137.33],
-					[110.04, 139.42],
-					[109.76, 141.5],
-					[109.49, 143.59],
-					[109.21, 145.68],
-					[108.92, 147.76],
-					[108.6, 149.84],
-					[108.08, 151.88],
-					[107.18, 153.78],
-					[105.92, 155.45],
-					[104.34, 156.83],
-					[102.51, 157.86],
-					[100.51, 158.52],
-					[98.43, 158.81],
-					[96.33, 158.72],
-					[94.28, 158.27],
-					[92.33, 157.47],
-					[90.57, 156.33],
-					[89.03, 154.89],
-					[87.78, 153.21],
-					[86.85, 151.32],
-					[86.29, 149.3],
-					[86.13, 147.2],
-					[86.28, 145.11],
-					[86.57, 143.02],
-					[86.9, 140.94],
-					[87.2, 138.86],
-					[87.49, 136.78],
-					[87.79, 134.69],
-					[88.08, 132.61],
-					[88.4, 130.53],
-					[88.96, 128.5],
-					[89.88, 126.61],
-					[91.15, 124.94],
-					[92.73, 123.56],
-					[94.56, 122.52],
-					[96.54, 121.84]
-				], [
-					[155.31, 127.29],
-					[157.36, 127.43],
-					[159.33, 127.99],
-					[161.14, 128.96],
-					[162.7, 130.29],
-					[163.95, 131.92],
-					[164.84, 133.77],
-					[165.35, 135.75],
-					[165.49, 137.8],
-					[165.35, 139.85],
-					[165.07, 141.89],
-					[164.79, 143.92],
-					[164.53, 145.96],
-					[164.26, 148],
-					[163.97, 150.04],
-					[163.65, 152.06],
-					[163.27, 154.09],
-					[162.7, 156.06],
-					[161.83, 157.92],
-					[160.68, 159.62],
-					[159.29, 161.13],
-					[157.69, 162.41],
-					[155.9, 163.42],
-					[153.97, 164.1],
-					[151.94, 164.41],
-					[149.89, 164.32],
-					[147.9, 163.82],
-					[146.06, 162.92],
-					[144.47, 161.62],
-					[143.24, 159.98],
-					[142.41, 158.1],
-					[142, 156.09],
-					[142.01, 154.04],
-					[142.32, 152.01],
-					[142.64, 149.98],
-					[142.96, 147.95],
-					[143.25, 145.92],
-					[143.51, 143.88],
-					[143.73, 141.83],
-					[143.97, 139.79],
-					[144.27, 137.76],
-					[144.74, 135.76],
-					[145.53, 133.87],
-					[146.62, 132.13],
-					[147.98, 130.59],
-					[149.57, 129.28],
-					[151.35, 128.27],
-					[153.28, 127.58]
-				]]
-			],
-			"shapes": {
-				"blob": {
-					"label": "Blob",
-					"path": "M228.541 114.228C228.541 130.133 225.184 145.994 218.738 160.534C212.674 174.217 203.904 186.669 193.065 196.988C155.933 232.34 99.497 238.596 55.5255 212.24C45.097 205.99 35.6851 198.072 27.7451 188.866C19.1926 178.953 12.3686 167.569 7.65781 155.351C2.60712 142.264 0 128.257 0 114.228C0 98.3219 3.35751 82.4611 9.80315 67.9215C15.8672 54.2382 24.6377 41.7862 35.4767 31.4668C72.6081 -3.88483 129.044 -10.1413 173.016 16.2153C183.444 22.4653 192.856 30.3829 200.796 39.5896C209.349 49.5018 216.173 60.8859 220.883 73.1037C225.934 86.1906 228.541 100.198 228.541 114.228Z",
-					"face": {
-						"x": 0,
-						"y": 0,
-						"sx": 1,
-						"sy": 1,
-						"eye": 1
-					},
-					"radius": 114.31,
-					"tiltScale": 1,
-					"top": .01,
-					"bottom": 228.44
-				},
-				"pebble": {
-					"label": "Pebble",
-					"path": "M228.11 115.24C228.26 117.02 228.36 118.81 228.42 120.6C228.49 122.4 228.51 124.19 228.48 126C228.46 127.8 228.39 129.6 228.27 131.41C228.16 133.22 228 135.02 227.78 136.83C227.58 138.64 227.32 140.45 227.01 142.24C226.71 144.04 226.34 145.84 225.93 147.62C225.53 149.41 225.07 151.19 224.56 152.95C224.05 154.72 223.49 156.47 222.87 158.21C222.26 159.95 221.59 161.67 220.87 163.38C220.15 165.08 219.38 166.77 218.56 168.43C217.72 170.09 216.85 171.73 215.92 173.34C214.99 174.95 214.01 176.53 212.98 178.08C211.95 179.63 210.87 181.15 209.73 182.63C208.61 184.12 207.43 185.57 206.2 186.98C204.98 188.38 203.71 189.75 202.39 191.08C201.08 192.41 199.72 193.69 198.33 194.93C196.93 196.17 195.49 197.36 194.02 198.51C192.55 199.65 191.04 200.75 189.5 201.8C187.96 202.84 186.38 203.84 184.78 204.78C183.18 205.73 181.54 206.62 179.9 207.46C178.24 208.31 176.56 209.1 174.86 209.84C173.17 210.57 171.45 211.25 169.73 211.89C167.99 212.52 166.25 213.1 164.5 213.63C162.74 214.15 160.98 214.63 159.2 215.06C157.43 215.48 155.65 215.86 153.87 216.18C152.08 216.52 150.3 216.79 148.52 217.03C146.74 217.26 144.95 217.45 143.17 217.59C141.4 217.75 139.62 217.85 137.85 217.91C136.09 217.97 134.32 217.99 132.56 217.98C130.81 217.96 129.06 217.91 127.33 217.82C125.58 217.74 123.85 217.61 122.14 217.46C120.42 217.31 118.71 217.12 117.01 216.91C115.32 216.7 113.63 216.46 111.96 216.18C110.27 215.92 108.61 215.63 106.95 215.31C105.3 215 103.65 214.65 102.02 214.29C100.38 213.92 98.76 213.53 97.15 213.13C95.52 212.72 93.92 212.3 92.32 211.85C90.72 211.4 89.13 210.94 87.54 210.45C85.96 209.96 84.38 209.45 82.8 208.93C81.24 208.4 79.67 207.85 78.11 207.29C76.55 206.72 75 206.13 73.44 205.52C71.89 204.92 70.35 204.29 68.8 203.63C67.26 202.98 65.73 202.3 64.2 201.6C62.66 200.9 61.14 200.16 59.63 199.41C58.11 198.66 56.59 197.88 55.09 197.07C53.58 196.26 52.09 195.42 50.59 194.55C49.1 193.69 47.62 192.78 46.16 191.85C44.7 190.92 43.23 189.95 41.79 188.96C40.35 187.95 38.92 186.92 37.52 185.85C36.11 184.78 34.72 183.67 33.35 182.53C31.99 181.39 30.64 180.2 29.32 178.98C28 177.76 26.7 176.5 25.44 175.2C24.17 173.91 22.93 172.57 21.73 171.2C20.54 169.83 19.37 168.42 18.25 166.97C17.12 165.53 16.04 164.05 14.99 162.52C13.96 161.01 12.95 159.45 12.01 157.86C11.05 156.28 10.15 154.66 9.3 153.01C8.46 151.36 7.65 149.68 6.91 147.97C6.17 146.26 5.48 144.53 4.85 142.77C4.22 141.01 3.64 139.24 3.14 137.44C2.63 135.64 2.18 133.82 1.8 131.99C1.41 130.16 1.09 128.3 0.83 126.46C0.57 124.6 0.38 122.73 0.24 120.86C0.12 119 0.05 117.12 0.05 115.24C0.05 113.36 0.12 111.48 0.24 109.62C0.38 107.75 0.57 105.88 0.82 104.02C1.08 102.18 1.39 100.32 1.78 98.49C2.15 96.65 2.59 94.84 3.09 93.03C3.58 91.23 4.14 89.45 4.75 87.68C5.36 85.92 6.02 84.18 6.74 82.46C7.45 80.74 8.22 79.04 9.03 77.38C9.86 75.71 10.72 74.08 11.63 72.46C12.54 70.85 13.49 69.27 14.49 67.72C15.48 66.17 16.52 64.65 17.58 63.15C18.66 61.67 19.76 60.21 20.91 58.79C22.05 57.37 23.23 55.98 24.43 54.62C25.63 53.26 26.87 51.94 28.13 50.64C29.39 49.35 30.68 48.09 31.99 46.86C33.31 45.63 34.64 44.44 36 43.28C37.35 42.11 38.73 40.98 40.12 39.89C41.52 38.79 42.93 37.72 44.36 36.68C45.79 35.64 47.24 34.64 48.71 33.66C50.17 32.69 51.64 31.75 53.13 30.83C54.62 29.92 56.14 29.03 57.65 28.17C59.17 27.32 60.7 26.49 62.25 25.7C63.79 24.89 65.34 24.12 66.92 23.38C68.48 22.64 70.06 21.93 71.66 21.25C73.24 20.57 74.84 19.92 76.46 19.29C78.07 18.67 79.7 18.08 81.33 17.51C82.97 16.96 84.62 16.43 86.27 15.93C87.93 15.42 89.59 14.96 91.27 14.52C92.94 14.09 94.63 13.69 96.32 13.32C98.02 12.96 99.73 12.62 101.43 12.32C103.15 12.02 104.86 11.76 106.59 11.54C108.31 11.31 110.05 11.12 111.78 10.98C113.52 10.82 115.27 10.71 117.01 10.64C118.76 10.58 120.51 10.55 122.26 10.56C124.01 10.57 125.76 10.63 127.52 10.72C129.27 10.82 131.02 10.97 132.77 11.15C134.51 11.33 136.26 11.57 138.01 11.83C139.74 12.1 141.48 12.43 143.2 12.78C144.93 13.15 146.64 13.56 148.35 14.01C150.05 14.46 151.75 14.96 153.42 15.49C155.11 16.04 156.77 16.63 158.43 17.26C160.07 17.89 161.71 18.56 163.32 19.28C164.94 19.99 166.54 20.75 168.11 21.55C169.68 22.36 171.24 23.21 172.76 24.09C174.29 24.98 175.8 25.9 177.27 26.85C178.75 27.82 180.2 28.82 181.62 29.86C183.06 30.89 184.46 31.97 185.82 33.08C187.19 34.18 188.53 35.33 189.84 36.5C191.15 37.67 192.43 38.88 193.67 40.11C194.92 41.35 196.14 42.62 197.32 43.91C198.51 45.21 199.65 46.53 200.78 47.87C201.9 49.22 202.98 50.59 204.04 51.99C205.09 53.38 206.12 54.8 207.1 56.24C208.1 57.68 209.05 59.15 209.98 60.64C210.9 62.12 211.79 63.62 212.65 65.14C213.51 66.67 214.33 68.21 215.12 69.76C215.92 71.33 216.68 72.9 217.4 74.49C218.13 76.08 218.82 77.69 219.48 79.31C220.14 80.93 220.76 82.57 221.35 84.22C221.95 85.87 222.49 87.54 223.02 89.22C223.54 90.9 224.03 92.59 224.48 94.29C224.93 95.99 225.35 97.71 225.72 99.43C226.11 101.16 226.45 102.91 226.76 104.65C227.06 106.4 227.33 108.15 227.55 109.92C227.77 111.69 227.97 113.46 228.11 115.24Z",
-					"face": {
-						"x": 2,
-						"y": 0,
-						"sx": .97,
-						"sy": .86,
-						"eye": 1
-					},
-					"radius": 117.57,
-					"tiltScale": 1,
-					"top": 10.56,
-					"bottom": 217.98
-				},
-				"bean": {
-					"label": "Bean",
-					"path": "M201.94 114.27C201.94 116.35 201.87 118.44 201.74 120.53C201.61 122.6 201.43 124.68 201.17 126.74C200.92 128.8 200.6 130.85 200.22 132.88C199.86 134.91 199.42 136.93 198.93 138.92C198.45 140.91 197.9 142.88 197.31 144.82C196.7 146.77 196.05 148.69 195.36 150.57C194.66 152.46 193.92 154.31 193.14 156.14C192.36 157.97 191.52 159.76 190.66 161.52C189.79 163.28 188.9 165.01 187.96 166.7C187.02 168.4 186.05 170.05 185.05 171.67C184.06 173.29 183.03 174.89 181.98 176.44C180.93 178 179.85 179.52 178.74 181C177.64 182.49 176.52 183.94 175.38 185.37C174.23 186.78 173.06 188.17 171.89 189.52C170.7 190.88 169.5 192.2 168.28 193.49C167.06 194.77 165.82 196.04 164.58 197.26C163.32 198.49 162.06 199.68 160.77 200.85C159.5 202.01 158.2 203.13 156.88 204.23C155.58 205.33 154.25 206.4 152.91 207.43C151.57 208.46 150.21 209.46 148.84 210.43C147.48 211.39 146.1 212.33 144.7 213.22C143.3 214.12 141.89 214.98 140.48 215.81C139.05 216.63 137.62 217.42 136.17 218.17C134.72 218.93 133.26 219.64 131.79 220.32C130.32 220.99 128.83 221.63 127.34 222.22C125.85 222.83 124.34 223.39 122.83 223.9C121.32 224.42 119.8 224.89 118.27 225.33C116.74 225.76 115.2 226.14 113.66 226.49C112.12 226.84 110.57 227.14 109 227.4C107.45 227.65 105.89 227.87 104.33 228.04C102.76 228.2 101.2 228.33 99.63 228.4C98.07 228.48 96.49 228.51 94.92 228.49C93.35 228.47 91.79 228.4 90.22 228.29C88.66 228.17 87.1 228.01 85.53 227.8C83.98 227.59 82.43 227.33 80.89 227.02C79.34 226.7 77.81 226.35 76.28 225.94C74.76 225.52 73.24 225.06 71.74 224.55C70.24 224.03 68.75 223.47 67.28 222.85C65.81 222.24 64.35 221.56 62.92 220.84C61.49 220.12 60.07 219.35 58.69 218.51C57.3 217.68 55.93 216.8 54.59 215.86C53.27 214.93 51.95 213.93 50.69 212.89C49.41 211.85 48.17 210.74 46.97 209.59C45.77 208.45 44.6 207.24 43.49 205.99C42.37 204.73 41.3 203.43 40.27 202.07C39.25 200.72 38.27 199.32 37.34 197.87C36.42 196.43 35.54 194.93 34.73 193.4C33.92 191.87 33.15 190.29 32.46 188.69C31.77 187.09 31.13 185.44 30.56 183.77C29.99 182.11 29.48 180.42 29.03 178.7C28.58 176.99 28.2 175.25 27.89 173.51C27.56 171.77 27.31 170.01 27.11 168.26C26.91 166.51 26.78 164.74 26.69 163C26.61 161.25 26.58 159.51 26.6 157.78C26.62 156.06 26.69 154.34 26.8 152.66C26.91 150.98 27.06 149.31 27.24 147.68C27.41 146.05 27.61 144.45 27.84 142.87C28.06 141.3 28.31 139.76 28.55 138.26C28.8 136.75 29.06 135.29 29.32 133.85C29.56 132.41 29.82 131.02 30.04 129.65C30.28 128.27 30.5 126.94 30.68 125.63C30.88 124.31 31.05 123.03 31.18 121.75C31.33 120.47 31.43 119.23 31.5 117.98C31.57 116.74 31.61 115.51 31.61 114.27C31.61 113.04 31.57 111.8 31.5 110.56C31.43 109.31 31.33 108.07 31.18 106.79C31.05 105.51 30.88 104.23 30.68 102.92C30.5 101.61 30.28 100.27 30.04 98.89C29.82 97.52 29.56 96.13 29.32 94.69C29.06 93.26 28.8 91.79 28.55 90.28C28.31 88.78 28.06 87.24 27.84 85.67C27.61 84.11 27.41 82.49 27.24 80.86C27.06 79.23 26.91 77.56 26.8 75.88C26.69 74.2 26.62 72.48 26.6 70.76C26.58 69.03 26.61 67.29 26.69 65.54C26.78 63.8 26.91 62.03 27.11 60.29C27.31 58.53 27.56 56.77 27.89 55.03C28.2 53.29 28.58 51.55 29.03 49.84C29.48 48.13 29.99 46.43 30.56 44.77C31.13 43.1 31.77 41.45 32.46 39.85C33.15 38.25 33.92 36.67 34.73 35.14C35.54 33.61 36.42 32.11 37.34 30.67C38.27 29.23 39.25 27.82 40.27 26.47C41.3 25.11 42.37 23.81 43.49 22.55C44.6 21.3 45.77 20.09 46.97 18.95C48.17 17.8 49.41 16.69 50.69 15.65C51.95 14.61 53.27 13.61 54.59 12.68C55.93 11.74 57.3 10.86 58.69 10.03C60.07 9.2 61.49 8.43 62.92 7.7C64.35 6.98 65.81 6.31 67.28 5.69C68.75 5.07 70.24 4.51 71.74 3.99C73.24 3.48 74.76 3.02 76.28 2.6C77.81 2.19 79.34 1.84 80.89 1.52C82.43 1.21 83.98 0.96 85.53 0.74C87.1 0.53 88.66 0.37 90.22 0.25C91.79 0.14 93.35 0.07 94.92 0.05C96.49 0.04 98.07 0.06 99.63 0.14C101.2 0.21 102.76 0.34 104.33 0.51C105.89 0.67 107.45 0.89 109 1.14C110.57 1.4 112.12 1.7 113.66 2.05C115.2 2.4 116.74 2.79 118.27 3.21C119.8 3.65 121.32 4.12 122.83 4.64C124.34 5.15 125.85 5.71 127.34 6.32C128.83 6.91 130.32 7.55 131.79 8.22C133.26 8.9 134.72 9.61 136.17 10.37C137.62 11.12 139.05 11.91 140.48 12.73C141.89 13.56 143.3 14.43 144.7 15.32C146.1 16.21 147.48 17.15 148.84 18.11C150.21 19.08 151.57 20.08 152.91 21.11C154.25 22.14 155.58 23.21 156.88 24.31C158.2 25.41 159.5 26.53 160.77 27.69C162.06 28.86 163.32 30.05 164.58 31.28C165.82 32.5 167.06 33.77 168.28 35.05C169.5 36.35 170.7 37.66 171.89 39.02C173.06 40.38 174.23 41.76 175.38 43.19C176.52 44.6 177.64 46.05 178.74 47.54C179.85 49.03 180.93 50.55 181.98 52.1C183.03 53.66 184.06 55.25 185.05 56.87C186.05 58.49 187.02 60.16 187.96 61.84C188.9 63.53 189.79 65.26 190.66 67.02C191.52 68.78 192.36 70.57 193.14 72.4C193.92 74.23 194.66 76.08 195.36 77.97C196.05 79.85 196.7 81.78 197.31 83.72C197.9 85.66 198.45 87.63 198.93 89.62C199.42 91.62 199.86 93.63 200.22 95.66C200.6 97.69 200.92 99.74 201.17 101.8C201.43 103.86 201.61 105.94 201.74 108.02C201.87 110.1 201.94 112.19 201.94 114.27Z",
-					"face": {
-						"x": 0,
-						"y": 0,
-						"sx": .72,
-						"sy": .9,
-						"eye": .87
-					},
-					"radius": 118.32,
-					"tiltScale": 1,
-					"top": .05,
-					"bottom": 228.49
-				},
-				"egg": {
-					"label": "Egg",
-					"path": "M207.88 114.27C208.06 116.14 208.19 118.01 208.28 119.88C208.39 121.74 208.44 123.61 208.44 125.47C208.45 127.33 208.42 129.18 208.34 131.03C208.25 132.88 208.13 134.72 207.96 136.56C207.8 138.39 207.59 140.21 207.33 142.03C207.08 143.84 206.78 145.64 206.43 147.42C206.09 149.21 205.71 150.99 205.28 152.75C204.86 154.51 204.38 156.26 203.87 157.98C203.36 159.71 202.81 161.41 202.2 163.1C201.6 164.79 200.97 166.47 200.29 168.12C199.61 169.76 198.89 171.39 198.14 172.99C197.38 174.59 196.58 176.17 195.74 177.73C194.9 179.28 194.03 180.81 193.12 182.31C192.21 183.81 191.26 185.29 190.28 186.73C189.3 188.18 188.28 189.6 187.23 190.98C186.18 192.36 185.1 193.72 183.99 195.03C182.87 196.36 181.72 197.65 180.55 198.9C179.38 200.16 178.16 201.38 176.93 202.56C175.71 203.75 174.44 204.9 173.15 206.01C171.87 207.12 170.55 208.2 169.22 209.24C167.88 210.28 166.52 211.28 165.14 212.24C163.76 213.2 162.35 214.13 160.93 215.01C159.5 215.89 158.06 216.72 156.6 217.52C155.14 218.32 153.66 219.08 152.17 219.8C150.67 220.52 149.16 221.18 147.64 221.81C146.11 222.45 144.57 223.03 143.03 223.57C141.47 224.11 139.91 224.61 138.34 225.06C136.77 225.52 135.18 225.93 133.6 226.3C132.01 226.66 130.41 226.98 128.81 227.26C127.2 227.53 125.59 227.76 123.98 227.94C122.37 228.13 120.75 228.26 119.13 228.35C117.52 228.45 115.89 228.49 114.27 228.49C112.65 228.49 111.03 228.45 109.41 228.35C107.79 228.26 106.17 228.13 104.56 227.94C102.95 227.76 101.34 227.53 99.74 227.26C98.14 226.98 96.53 226.66 94.94 226.3C93.36 225.93 91.77 225.52 90.2 225.06C88.64 224.61 87.07 224.11 85.52 223.57C83.97 223.03 82.43 222.45 80.9 221.81C79.38 221.18 77.87 220.52 76.38 219.8C74.88 219.08 73.4 218.32 71.94 217.52C70.48 216.72 69.04 215.89 67.61 215.01C66.19 214.13 64.78 213.2 63.4 212.24C62.02 211.28 60.66 210.28 59.32 209.24C57.99 208.2 56.68 207.12 55.39 206.01C54.1 204.9 52.84 203.75 51.61 202.56C50.38 201.38 49.17 200.16 47.99 198.9C46.82 197.65 45.67 196.36 44.56 195.03C43.44 193.72 42.36 192.36 41.31 190.98C40.26 189.6 39.24 188.18 38.26 186.73C37.28 185.29 36.33 183.81 35.42 182.31C34.51 180.81 33.64 179.28 32.8 177.73C31.97 176.17 31.16 174.59 30.4 172.99C29.65 171.39 28.93 169.76 28.25 168.12C27.57 166.47 26.94 164.79 26.34 163.1C25.74 161.41 25.19 159.71 24.67 157.98C24.16 156.26 23.68 154.51 23.26 152.75C22.83 150.99 22.45 149.21 22.11 147.42C21.76 145.64 21.47 143.84 21.21 142.03C20.95 140.21 20.74 138.39 20.58 136.56C20.41 134.72 20.29 132.88 20.21 131.03C20.12 129.18 20.09 127.33 20.1 125.47C20.1 123.61 20.16 121.74 20.26 119.88C20.35 118.01 20.48 116.14 20.66 114.27C20.84 112.4 21.06 110.53 21.32 108.67C21.58 106.8 21.88 104.93 22.23 103.07C22.57 101.22 22.96 99.36 23.37 97.51C23.79 95.66 24.25 93.82 24.74 91.99C25.24 90.15 25.78 88.33 26.35 86.51C26.92 84.7 27.52 82.91 28.16 81.12C28.8 79.33 29.46 77.55 30.17 75.79C30.87 74.03 31.61 72.28 32.38 70.56C33.14 68.84 33.94 67.13 34.76 65.44C35.58 63.75 36.44 62.07 37.31 60.43C38.19 58.78 39.1 57.15 40.02 55.55C40.95 53.95 41.9 52.37 42.87 50.81C43.84 49.26 44.84 47.73 45.85 46.23C46.86 44.73 47.9 43.25 48.95 41.81C49.99 40.37 51.07 38.95 52.16 37.56C53.24 36.18 54.34 34.82 55.45 33.51C56.56 32.18 57.7 30.89 58.84 29.64C59.98 28.38 61.13 27.16 62.3 25.98C63.46 24.79 64.63 23.64 65.81 22.53C67 21.42 68.19 20.34 69.39 19.3C70.59 18.27 71.8 17.26 73.01 16.3C74.22 15.34 75.45 14.41 76.67 13.53C77.89 12.66 79.13 11.82 80.36 11.02C81.6 10.22 82.83 9.46 84.08 8.74C85.32 8.03 86.56 7.36 87.82 6.73C89.07 6.1 90.31 5.51 91.57 4.97C92.82 4.43 94.08 3.93 95.34 3.48C96.6 3.02 97.86 2.61 99.12 2.24C100.37 1.88 101.64 1.56 102.9 1.28C104.16 1.01 105.43 0.79 106.69 0.6C107.95 0.41 109.22 0.28 110.48 0.19C111.74 0.1 113.01 0.05 114.27 0.05C115.53 0.05 116.8 0.1 118.06 0.19C119.32 0.28 120.59 0.41 121.85 0.6C123.11 0.79 124.38 1.01 125.64 1.28C126.91 1.56 128.17 1.88 129.42 2.24C130.69 2.61 131.95 3.02 133.2 3.48C134.46 3.93 135.72 4.43 136.97 4.97C138.23 5.51 139.48 6.1 140.72 6.73C141.98 7.36 143.22 8.03 144.46 8.74C145.71 9.46 146.94 10.22 148.18 11.02C149.42 11.82 150.65 12.66 151.87 13.53C153.1 14.41 154.32 15.34 155.53 16.3C156.74 17.26 157.96 18.27 159.15 19.3C160.35 20.34 161.55 21.42 162.73 22.53C163.91 23.64 165.08 24.79 166.25 25.98C167.41 27.16 168.56 28.38 169.7 29.64C170.84 30.89 171.98 32.18 173.09 33.51C174.2 34.82 175.3 36.18 176.38 37.56C177.48 38.95 178.55 40.37 179.6 41.81C180.65 43.25 181.68 44.73 182.69 46.23C183.7 47.73 184.7 49.26 185.67 50.81C186.64 52.37 187.59 53.95 188.52 55.55C189.45 57.15 190.35 58.78 191.23 60.43C192.1 62.07 192.96 63.75 193.78 65.44C194.61 67.13 195.4 68.84 196.17 70.56C196.93 72.28 197.67 74.03 198.37 75.79C199.08 77.55 199.74 79.33 200.38 81.12C201.02 82.91 201.62 84.7 202.2 86.51C202.77 88.33 203.3 90.15 203.8 91.99C204.29 93.82 204.75 95.66 205.17 97.51C205.59 99.36 205.97 101.22 206.31 103.07C206.66 104.93 206.96 106.8 207.22 108.67C207.49 110.53 207.7 112.4 207.88 114.27Z",
-					"face": {
-						"x": 0,
-						"y": 2,
-						"sx": .77,
-						"sy": .97,
-						"eye": .93
-					},
-					"radius": 114.22,
-					"tiltScale": 1,
-					"top": .05,
-					"bottom": 228.49
-				},
-				"squircle": {
-					"label": "Squircle",
-					"path": "M228.49 114.27C228.49 123.33 228.47 135.16 228.43 141.46C228.38 147.76 228.32 148.96 228.22 152.06C228.14 155.17 228.03 157.62 227.9 160.07C227.76 162.51 227.62 164.66 227.44 166.73C227.26 168.8 227.07 170.68 226.85 172.5C226.63 174.33 226.39 176.01 226.12 177.65C225.85 179.28 225.57 180.82 225.27 182.31C224.96 183.8 224.62 185.2 224.26 186.56C223.91 187.93 223.54 189.23 223.13 190.49C222.73 191.74 222.31 192.94 221.86 194.11C221.41 195.27 220.93 196.39 220.44 197.48C219.95 198.56 219.43 199.59 218.88 200.61C218.34 201.61 217.76 202.58 217.18 203.52C216.58 204.46 215.96 205.36 215.31 206.23C214.67 207.11 213.99 207.95 213.29 208.76C212.6 209.57 211.87 210.35 211.11 211.11C210.35 211.87 209.57 212.6 208.76 213.29C207.95 213.99 207.11 214.67 206.23 215.31C205.36 215.96 204.46 216.58 203.52 217.18C202.58 217.76 201.61 218.34 200.61 218.88C199.59 219.43 198.56 219.95 197.48 220.44C196.39 220.93 195.27 221.41 194.11 221.86C192.94 222.31 191.74 222.73 190.49 223.13C189.23 223.54 187.93 223.91 186.56 224.26C185.2 224.62 183.8 224.96 182.31 225.27C180.82 225.57 179.28 225.85 177.65 226.12C176.01 226.39 174.33 226.63 172.5 226.85C170.68 227.07 168.8 227.26 166.73 227.44C164.66 227.62 162.51 227.76 160.07 227.9C157.62 228.03 155.17 228.14 152.06 228.22C148.96 228.32 147.76 228.38 141.46 228.43C135.16 228.47 123.33 228.49 114.27 228.49C105.21 228.49 93.39 228.47 87.08 228.43C80.78 228.38 79.58 228.32 76.48 228.22C73.38 228.14 70.92 228.03 68.48 227.9C66.03 227.76 63.9 227.62 61.81 227.44C59.74 227.26 57.87 227.07 56.04 226.85C54.21 226.63 52.53 226.39 50.89 226.12C49.26 225.85 47.72 225.57 46.24 225.27C44.75 224.96 43.34 224.62 41.98 224.26C40.61 223.91 39.31 223.54 38.06 223.13C36.8 222.73 35.6 222.31 34.43 221.86C33.27 221.41 32.15 220.93 31.07 220.44C29.98 219.95 28.95 219.43 27.93 218.88C26.93 218.34 25.96 217.76 25.02 217.18C24.08 216.58 23.18 215.96 22.31 215.31C21.43 214.67 20.59 213.99 19.78 213.29C18.97 212.6 18.19 211.87 17.43 211.11C16.67 210.35 15.95 209.57 15.25 208.76C14.55 207.95 13.87 207.11 13.23 206.23C12.58 205.36 11.96 204.46 11.37 203.52C10.78 202.58 10.2 201.61 9.66 200.61C9.11 199.59 8.6 198.56 8.1 197.48C7.61 196.39 7.13 195.27 6.69 194.11C6.24 192.94 5.81 191.74 5.41 190.49C5.01 189.23 4.63 187.93 4.28 186.56C3.93 185.2 3.59 183.8 3.28 182.31C2.98 180.82 2.69 179.28 2.42 177.65C2.15 176.01 1.92 174.33 1.69 172.5C1.47 170.68 1.28 168.8 1.1 166.73C0.93 164.66 0.78 162.51 0.64 160.07C0.51 157.62 0.4 155.17 0.32 152.06C0.22 148.96 0.16 147.76 0.11 141.46C0.07 135.16 0.05 123.33 0.05 114.27C0.05 105.21 0.07 93.39 0.11 87.08C0.16 80.78 0.22 79.58 0.32 76.48C0.4 73.38 0.51 70.92 0.64 68.48C0.78 66.03 0.93 63.9 1.1 61.81C1.28 59.74 1.47 57.87 1.69 56.04C1.92 54.21 2.15 52.53 2.42 50.89C2.69 49.26 2.98 47.72 3.28 46.24C3.59 44.75 3.93 43.34 4.28 41.98C4.63 40.61 5.01 39.31 5.41 38.06C5.81 36.8 6.24 35.6 6.69 34.43C7.13 33.27 7.61 32.15 8.1 31.07C8.6 29.98 9.11 28.95 9.66 27.93C10.2 26.93 10.78 25.96 11.37 25.02C11.96 24.08 12.58 23.18 13.23 22.31C13.87 21.43 14.55 20.59 15.25 19.78C15.95 18.97 16.67 18.19 17.43 17.43C18.19 16.67 18.97 15.95 19.78 15.25C20.59 14.55 21.43 13.87 22.31 13.23C23.18 12.58 24.08 11.96 25.02 11.37C25.96 10.78 26.93 10.2 27.93 9.66C28.95 9.11 29.98 8.6 31.07 8.1C32.15 7.61 33.27 7.13 34.43 6.69C35.6 6.24 36.8 5.81 38.06 5.41C39.31 5.01 40.61 4.63 41.98 4.28C43.34 3.93 44.75 3.59 46.24 3.28C47.72 2.98 49.26 2.69 50.89 2.42C52.53 2.15 54.21 1.92 56.04 1.69C57.87 1.47 59.74 1.28 61.81 1.1C63.9 0.93 66.03 0.78 68.48 0.64C70.92 0.51 73.38 0.4 76.48 0.32C79.58 0.22 80.78 0.16 87.08 0.11C93.39 0.07 105.21 0.05 114.27 0.05C123.33 0.05 135.16 0.07 141.46 0.11C147.76 0.16 148.96 0.22 152.06 0.32C155.17 0.4 157.62 0.51 160.07 0.64C162.51 0.78 164.66 0.93 166.73 1.1C168.8 1.28 170.68 1.47 172.5 1.69C174.33 1.92 176.01 2.15 177.65 2.42C179.28 2.69 180.82 2.98 182.31 3.28C183.8 3.59 185.2 3.93 186.56 4.28C187.93 4.63 189.23 5.01 190.49 5.41C191.74 5.81 192.94 6.24 194.11 6.69C195.27 7.13 196.39 7.61 197.48 8.1C198.56 8.6 199.59 9.11 200.61 9.66C201.61 10.2 202.58 10.78 203.52 11.37C204.46 11.96 205.36 12.58 206.23 13.23C207.11 13.87 207.95 14.55 208.76 15.25C209.57 15.95 210.35 16.67 211.11 17.43C211.87 18.19 212.6 18.97 213.29 19.78C213.99 20.59 214.67 21.43 215.31 22.31C215.96 23.18 216.58 24.08 217.18 25.02C217.76 25.96 218.34 26.93 218.88 27.93C219.43 28.95 219.95 29.98 220.44 31.07C220.93 32.15 221.41 33.27 221.86 34.43C222.31 35.6 222.73 36.8 223.13 38.06C223.54 39.31 223.91 40.61 224.26 41.98C224.62 43.34 224.96 44.75 225.27 46.24C225.57 47.72 225.85 49.26 226.12 50.89C226.39 52.53 226.63 54.21 226.85 56.04C227.07 57.87 227.26 59.74 227.44 61.81C227.62 63.9 227.76 66.03 227.9 68.48C228.03 70.92 228.14 73.38 228.22 76.48C228.32 79.58 228.38 80.78 228.43 87.08C228.47 93.39 228.49 105.21 228.49 114.27Z",
-					"face": {
-						"x": 0,
-						"y": 0,
-						"sx": 1,
-						"sy": 1,
-						"eye": 1
-					},
-					"radius": 136.95,
-					"tiltScale": .55,
-					"top": .05,
-					"bottom": 228.49
-				},
-				"tablet": {
-					"label": "Tablet",
-					"path": "M74.27 40.27L154.27 40.27C195.14 40.27 228.27 73.4 228.27 114.27C228.27 155.14 195.14 188.27 154.27 188.27L74.27 188.27C33.4 188.27 0.27 155.14 0.27 114.27C0.27 73.4 33.4 40.27 74.27 40.27Z",
-					"face": {
-						"x": 0,
-						"y": 0,
-						"sx": .94,
-						"sy": .65,
-						"eye": .82
-					},
-					"radius": 114,
-					"tiltScale": .38,
-					"top": 40.27,
-					"bottom": 188.27
-				},
-				"capsule": {
-					"label": "Capsule",
-					"path": "M41.49 155.71L41.49 72.83C41.49 32.64 74.08 0.05 114.27 0.05C154.47 0.05 187.05 32.64 187.05 72.83L187.05 155.71C187.05 195.91 154.47 228.49 114.27 228.49C74.08 228.49 41.49 195.91 41.49 155.71Z",
-					"face": {
-						"x": 0,
-						"y": 0,
-						"sx": .64,
-						"sy": .92,
-						"eye": .81
-					},
-					"radius": 114.22,
-					"tiltScale": 1,
-					"top": .05,
-					"bottom": 228.49
-				},
-				"cylinder": {
-					"label": "Cylinder",
-					"path": "M16.66 35.35C16.66 15.85 60.37 0.05 114.27 0.05C168.18 0.05 211.88 15.85 211.88 35.35L211.88 193.19C211.88 212.69 168.18 228.49 114.27 228.49C60.37 228.49 16.66 212.69 16.66 193.19Z",
-					"face": {
-						"x": 0,
-						"y": 0,
-						"sx": .85,
-						"sy": .96,
-						"eye": .99
-					},
-					"radius": 129.21,
-					"tiltScale": .45,
-					"top": .05,
-					"bottom": 228.49
-				},
-				"hex": {
-					"label": "Hex",
-					"path": "M217.73 153.04Q217.73 174 199.58 184.48L132.42 223.25Q114.27 233.73 96.12 223.25L28.96 184.48Q10.81 174 10.81 153.04L10.81 75.5Q10.81 54.54 28.96 44.06L96.12 5.29Q114.27 -5.19 132.42 5.29L199.58 44.06Q217.73 54.54 217.73 75.5Z",
-					"face": {
-						"x": 0,
-						"y": 0,
-						"sx": .91,
-						"sy": .91,
-						"eye": 1
-					},
-					"radius": 114.19,
-					"tiltScale": 1,
-					"top": .09,
-					"bottom": 228.45
-				},
-				"gem": {
-					"label": "Gem",
-					"path": "M227.48 114.27C227.48 114.96 227.42 115.46 227.3 116.32C227.18 117.18 226.99 118.3 226.75 119.44C226.51 120.57 226.21 121.82 225.85 123.11C225.49 124.41 225.06 125.78 224.59 127.2C224.11 128.6 223.57 130.08 222.98 131.59C222.39 133.09 221.74 134.65 221.03 136.22C220.32 137.8 219.56 139.42 218.75 141.05C217.93 142.67 217.06 144.33 216.14 146.01C215.22 147.68 214.25 149.37 213.23 151.06C212.21 152.75 211.14 154.47 210.01 156.18C208.9 157.89 207.74 159.6 206.54 161.31C205.32 163.02 204.07 164.74 202.79 166.44C201.49 168.14 200.16 169.83 198.79 171.52C197.43 173.2 196.02 174.88 194.59 176.54C193.15 178.18 191.68 179.83 190.17 181.44C188.68 183.06 187.14 184.65 185.59 186.23C184.04 187.8 182.45 189.34 180.85 190.85C179.24 192.36 177.62 193.85 175.98 195.31C174.34 196.75 172.68 198.18 171.02 199.55C169.35 200.93 167.66 202.27 165.97 203.57C164.28 204.88 162.59 206.14 160.9 207.35C159.2 208.57 157.5 209.75 155.8 210.87C154.11 211.99 152.42 213.08 150.74 214.11C149.05 215.14 147.37 216.12 145.73 217.05C144.07 217.98 142.42 218.86 140.8 219.68C139.2 220.5 137.59 221.27 136.03 221.98C134.47 222.69 132.93 223.36 131.43 223.95C129.95 224.55 128.48 225.09 127.08 225.57C125.68 226.05 124.32 226.48 123.03 226.84C121.75 227.21 120.51 227.51 119.39 227.76C118.26 228.01 117.16 228.19 116.3 228.31C115.45 228.43 114.95 228.49 114.27 228.49C113.59 228.49 113.09 228.43 112.24 228.31C111.38 228.19 110.28 228.01 109.16 227.76C108.03 227.51 106.79 227.21 105.51 226.84C104.22 226.48 102.86 226.05 101.46 225.57C100.06 225.09 98.59 224.55 97.11 223.95C95.61 223.36 94.07 222.69 92.51 221.98C90.95 221.27 89.34 220.5 87.74 219.68C86.12 218.86 84.47 217.98 82.81 217.05C81.17 216.12 79.49 215.14 77.81 214.11C76.12 213.08 74.44 211.99 72.74 210.87C71.05 209.75 69.34 208.57 67.64 207.35C65.95 206.14 64.26 204.88 62.57 203.57C60.88 202.27 59.19 200.93 57.52 199.55C55.86 198.18 54.2 196.75 52.56 195.31C50.92 193.85 49.3 192.36 47.69 190.85C46.09 189.34 44.51 187.8 42.95 186.23C41.4 184.65 39.87 183.06 38.37 181.44C36.86 179.83 35.39 178.18 33.95 176.54C32.52 174.88 31.11 173.2 29.75 171.52C28.38 169.83 27.05 168.14 25.76 166.44C24.47 164.74 23.22 163.02 22.02 161.31C20.8 159.6 19.64 157.89 18.53 156.18C17.41 154.47 16.33 152.75 15.31 151.06C14.29 149.37 13.32 147.68 12.4 146.01C11.48 144.33 10.61 142.67 9.79 141.05C8.99 139.42 8.22 137.8 7.51 136.22C6.81 134.65 6.16 133.09 5.56 131.59C4.97 130.08 4.43 128.6 3.95 127.2C3.48 125.78 3.05 124.41 2.69 123.11C2.33 121.82 2.03 120.57 1.79 119.44C1.55 118.3 1.36 117.18 1.24 116.32C1.12 115.46 1.06 114.96 1.06 114.27C1.06 113.58 1.12 113.08 1.24 112.22C1.36 111.36 1.55 110.24 1.79 109.11C2.03 107.97 2.33 106.73 2.69 105.44C3.05 104.14 3.48 102.76 3.95 101.34C4.43 99.94 4.97 98.46 5.56 96.96C6.16 95.45 6.81 93.89 7.51 92.32C8.22 90.74 8.99 89.12 9.79 87.49C10.61 85.87 11.48 84.21 12.4 82.54C13.32 80.86 14.29 79.18 15.31 77.48C16.33 75.79 17.41 74.07 18.53 72.36C19.64 70.65 20.8 68.94 22.02 67.23C23.22 65.52 24.47 63.8 25.76 62.1C27.05 60.41 28.38 58.71 29.75 57.02C31.11 55.34 32.52 53.66 33.95 52.01C35.39 50.36 36.86 48.71 38.37 47.1C39.87 45.49 41.4 43.89 42.95 42.31C44.51 40.75 46.09 39.2 47.69 37.69C49.3 36.18 50.92 34.69 52.56 33.23C54.2 31.79 55.86 30.37 57.52 28.99C59.19 27.61 60.88 26.27 62.57 24.97C64.26 23.66 65.95 22.4 67.64 21.19C69.34 19.97 71.05 18.79 72.74 17.67C74.44 16.55 76.12 15.47 77.81 14.43C79.49 13.4 81.17 12.42 82.81 11.49C84.47 10.56 86.12 9.68 87.74 8.86C89.34 8.05 90.95 7.28 92.51 6.56C94.07 5.85 95.61 5.2 97.11 4.59C98.59 3.99 100.06 3.45 101.46 2.97C102.86 2.49 104.22 2.06 105.51 1.7C106.79 1.33 108.03 1.03 109.16 0.79C110.28 0.54 111.38 0.35 112.24 0.23C113.09 0.11 113.59 0.05 114.27 0.05C114.95 0.05 115.45 0.11 116.3 0.23C117.16 0.35 118.26 0.54 119.39 0.79C120.51 1.03 121.75 1.33 123.03 1.7C124.32 2.06 125.68 2.49 127.08 2.97C128.48 3.45 129.95 3.99 131.43 4.59C132.93 5.2 134.47 5.85 136.03 6.56C137.59 7.28 139.2 8.05 140.8 8.86C142.42 9.68 144.07 10.56 145.73 11.49C147.37 12.42 149.05 13.4 150.74 14.43C152.42 15.47 154.11 16.55 155.8 17.67C157.5 18.79 159.2 19.97 160.9 21.19C162.59 22.4 164.28 23.66 165.97 24.97C167.66 26.27 169.35 27.61 171.02 28.99C172.68 30.37 174.34 31.79 175.98 33.23C177.62 34.69 179.24 36.18 180.85 37.69C182.45 39.2 184.04 40.75 185.59 42.31C187.14 43.89 188.68 45.49 190.17 47.1C191.68 48.71 193.15 50.36 194.59 52.01C196.02 53.66 197.43 55.34 198.79 57.02C200.16 58.71 201.49 60.41 202.79 62.1C204.07 63.8 205.32 65.52 206.54 67.23C207.74 68.94 208.9 70.65 210.01 72.36C211.14 74.07 212.21 75.79 213.23 77.48C214.25 79.18 215.22 80.86 216.14 82.54C217.06 84.21 217.93 85.87 218.75 87.49C219.56 89.12 220.32 90.74 221.03 92.32C221.74 93.89 222.39 95.45 222.98 96.96C223.57 98.46 224.11 99.94 224.59 101.34C225.06 102.76 225.49 104.14 225.85 105.44C226.21 106.73 226.51 107.97 226.75 109.11C226.99 110.24 227.18 111.36 227.3 112.22C227.42 113.08 227.48 113.58 227.48 114.27Z",
-					"face": {
-						"x": 0,
-						"y": 0,
-						"sx": .89,
-						"sy": .89,
-						"eye": .99
-					},
-					"radius": 114.22,
-					"tiltScale": 1,
-					"top": .05,
-					"bottom": 228.49
-				},
-				"crystal": {
-					"label": "Crystal",
-					"path": "M97.42 6.76Q114.27 -6.77 131.12 6.76L174.45 41.54Q196.36 59.12 196.36 87.2L196.36 149.84Q196.36 171.44 179.51 184.97L136.17 219.76Q114.27 237.33 92.37 219.76L49.03 184.97Q32.19 171.44 32.19 149.84L32.19 87.2Q32.19 59.12 54.09 41.54Z",
-					"face": {
-						"x": 0,
-						"y": 0,
-						"sx": .71,
-						"sy": .89,
-						"eye": .86
-					},
-					"radius": 114.24,
-					"tiltScale": 1,
-					"top": .05,
-					"bottom": 228.51
-				},
-				"wedge": {
-					"label": "Wedge",
-					"path": "M77.26 42.06Q114.27 -22.05 151.28 42.06L216.15 154.43Q253.17 218.53 179.14 218.53L49.4 218.53Q-24.62 218.53 12.39 154.43Z",
-					"face": {
-						"x": 0,
-						"y": 24,
-						"sx": .7,
-						"sy": .7,
-						"eye": .79,
-						"leftDX": -6
-					},
-					"radius": 142.18,
-					"tiltScale": .22,
-					"top": 10.01,
-					"bottom": 218.53
-				},
-				"shield": {
-					"label": "Shield",
-					"path": "M15.21 40.48C15.21 8.14 64.74 0.05 114.27 0.05C163.8 0.05 213.33 8.14 213.33 40.48C213.33 165.17 175.69 228.49 114.27 228.49C52.85 228.49 15.21 165.17 15.21 40.48Z",
-					"face": {
-						"x": 0,
-						"y": 0,
-						"sx": .79,
-						"sy": .98,
-						"eye": .95
-					},
-					"radius": 130.33,
-					"tiltScale": 1,
-					"top": .05,
-					"bottom": 228.49
-				},
-				"dome": {
-					"label": "Dome",
-					"path": "M0.27 170.27C0.27 94.06 51.31 32.27 114.27 32.27C177.23 32.27 228.27 94.06 228.27 170.27L228.27 170.27C228.27 196.27 228.27 196.27 202.27 196.27L26.27 196.27C0.27 196.27 0.27 196.27 0.27 170.27Z",
-					"face": {
-						"x": 0,
-						"y": 4,
-						"sx": .85,
-						"sy": .68,
-						"eye": .82
-					},
-					"radius": 135.99,
-					"tiltScale": .15,
-					"top": 32.27,
-					"bottom": 196.27
-				},
-				"arch": {
-					"label": "Arch",
-					"path": "M37.45 76.87C37.45 34.45 71.85 0.05 114.27 0.05C156.69 0.05 191.09 34.45 191.09 76.87L191.09 208.27C191.09 228.49 191.09 228.49 170.88 228.49L57.67 228.49C37.45 228.49 37.45 228.49 37.45 208.27Z",
-					"face": {
-						"x": 0,
-						"y": 0,
-						"sx": .67,
-						"sy": .97,
-						"eye": .85
-					},
-					"radius": 134.25,
-					"tiltScale": .15,
-					"top": .05,
-					"bottom": 228.49
-				},
-				"cloud": {
-					"label": "Cloud",
-					"path": "M221.98 112.32C222.74 113.71 223.45 115.15 224.08 116.59C224.71 118.05 225.28 119.52 225.79 121.02C226.29 122.51 226.72 124.03 227.08 125.56C227.44 127.08 227.73 128.62 227.96 130.17C228.18 131.72 228.33 133.28 228.41 134.83C228.5 136.38 228.51 137.94 228.46 139.5C228.41 141.05 228.29 142.6 228.1 144.14C227.91 145.69 227.65 147.22 227.32 148.73C227 150.25 226.61 151.76 226.15 153.23C225.7 154.72 225.17 156.18 224.59 157.61C224 159.04 223.36 160.46 222.65 161.83C221.94 163.21 221.17 164.56 220.34 165.87C219.51 167.17 218.62 168.45 217.69 169.68C216.74 170.91 215.74 172.11 214.7 173.26C213.64 174.41 212.54 175.51 211.4 176.56C210.25 177.62 209.05 178.62 207.81 179.57C206.57 180.52 205.29 181.42 203.96 182.26C202.63 183.09 201.27 183.88 199.87 184.59C198.47 185.31 197.03 185.97 195.56 186.56C194.1 187.16 192.6 187.68 191.08 188.15C189.56 188.61 188.01 189 186.44 189.32C184.86 189.66 183.27 189.91 181.67 190.09C180.06 190.27 178.44 190.38 176.81 190.41C175.18 190.44 173.53 190.4 171.89 190.27C170.24 190.15 168.58 189.95 166.93 189.68C165.28 189.39 163.49 188.79 161.98 188.58C160.48 188.38 159 188.07 157.89 188.47C156.78 188.86 156.18 190.11 155.28 190.91C154.4 191.69 153.48 192.46 152.53 193.19C151.59 193.93 150.62 194.64 149.63 195.33C148.65 196.01 147.63 196.67 146.6 197.29C145.56 197.92 144.51 198.51 143.43 199.08C142.37 199.63 141.28 200.17 140.16 200.67C139.06 201.17 137.94 201.63 136.79 202.07C135.66 202.5 134.5 202.9 133.34 203.27C132.18 203.64 131 203.97 129.81 204.26C128.62 204.55 127.42 204.82 126.22 205.03C125.02 205.26 123.81 205.44 122.59 205.59C121.37 205.73 120.15 205.85 118.93 205.93C117.7 206 116.48 206.04 115.25 206.04C114.02 206.04 112.8 206 111.57 205.93C110.35 205.85 109.13 205.73 107.91 205.59C106.7 205.44 105.48 205.26 104.28 205.03C103.07 204.82 101.87 204.55 100.68 204.26C99.5 203.97 98.32 203.64 97.16 203.27C96 202.9 94.84 202.5 93.7 202.07C92.56 201.63 91.44 201.17 90.33 200.67C89.22 200.17 88.13 199.63 87.06 199.08C85.99 198.51 84.94 197.92 83.9 197.29C82.87 196.67 81.86 196.01 80.87 195.33C79.88 194.64 78.91 193.93 77.97 193.19C77.02 192.46 76.21 191.5 75.21 190.91C74.21 190.3 73.34 189.57 71.98 189.58C70.62 189.59 68.7 190.57 67.06 190.96C65.41 191.35 63.75 191.65 62.09 191.87C60.44 192.1 58.77 192.24 57.12 192.32C55.47 192.39 53.82 192.39 52.18 192.31C50.55 192.23 48.92 192.09 47.31 191.86C45.7 191.65 44.1 191.35 42.53 190.99C40.95 190.63 39.39 190.2 37.86 189.7C36.33 189.21 34.83 188.65 33.35 188.03C31.88 187.4 30.43 186.71 29.03 185.96C27.62 185.2 26.24 184.39 24.92 183.54C23.59 182.67 22.29 181.74 21.04 180.76C19.79 179.79 18.59 178.75 17.43 177.68C16.28 176.6 15.16 175.47 14.11 174.3C13.06 173.13 12.04 171.91 11.09 170.65C10.15 169.39 9.25 168.09 8.41 166.75C7.58 165.43 6.8 164.05 6.08 162.64C5.36 161.25 4.7 159.81 4.1 158.36C3.51 156.9 2.98 155.41 2.51 153.91C2.04 152.4 1.64 150.88 1.3 149.34C0.97 147.8 0.7 146.24 0.5 144.68C0.3 143.12 0.17 141.54 0.1 139.97C0.03 138.38 0.03 136.8 0.11 135.22C0.18 133.64 0.33 132.06 0.53 130.49C0.74 128.91 1.02 127.35 1.36 125.8C1.71 124.25 2.12 122.71 2.61 121.18C3.09 119.66 3.64 118.16 4.26 116.68C4.87 115.2 5.56 113.74 6.3 112.32C7.05 110.89 7.86 109.5 8.74 108.13C9.61 106.77 10.56 105.45 11.55 104.16C12.55 102.87 13.61 101.62 14.73 100.42C15.86 99.23 17.04 98.06 18.27 96.96C19.51 95.86 20.8 94.79 22.14 93.8C23.49 92.8 24.89 91.86 26.34 90.98C27.8 90.09 30.02 89.5 30.85 88.52C31.68 87.53 31.25 86.24 31.33 85.05C31.4 83.86 31.28 82.59 31.31 81.35C31.35 80.12 31.42 78.88 31.54 77.64C31.64 76.4 31.79 75.16 31.98 73.93C32.17 72.69 32.39 71.46 32.66 70.24C32.92 69.01 33.22 67.79 33.58 66.58C33.92 65.36 34.3 64.16 34.72 62.97C35.14 61.78 35.59 60.59 36.08 59.43C36.58 58.25 37.11 57.1 37.69 55.96C38.25 54.83 38.86 53.7 39.5 52.6C40.14 51.5 40.82 50.41 41.52 49.35C42.24 48.3 42.99 47.25 43.76 46.24C44.54 45.22 45.35 44.22 46.19 43.26C47.03 42.29 47.91 41.35 48.81 40.45C49.71 39.53 50.64 38.65 51.6 37.8C52.56 36.94 53.55 36.12 54.56 35.33C55.57 34.54 56.61 33.79 57.67 33.06C58.72 32.33 59.81 31.65 60.91 31C62.01 30.33 63.14 29.72 64.28 29.13C65.41 28.56 66.57 28.01 67.74 27.49C68.92 26.98 70.11 26.52 71.31 26.09C72.51 25.66 73.73 25.26 74.95 24.91C76.17 24.54 77.41 24.23 78.65 23.96C79.89 23.68 81.14 23.44 82.39 23.25C83.64 23.05 84.9 22.88 86.16 22.77C87.41 22.65 88.68 22.57 89.92 22.53C91.18 22.49 92.44 22.49 93.69 22.53C94.94 22.57 96.19 22.65 97.43 22.77C98.67 22.88 99.91 23.03 101.14 23.23C102.36 23.42 103.58 23.65 104.78 23.91C105.99 24.17 107.18 24.48 108.37 24.81C109.54 25.14 110.71 25.51 111.85 25.92C113 26.32 114.14 26.76 115.25 27.22C116.36 27.69 117.45 28.2 118.54 28.72C119.61 29.25 120.67 29.81 121.7 30.39C122.73 30.98 123.74 31.59 124.73 32.24C125.71 32.87 126.68 33.54 127.62 34.23C128.55 34.91 129.44 35.75 130.36 36.36C131.28 36.96 132.09 37.8 133.12 37.85C134.17 37.89 135.43 36.99 136.6 36.63C137.77 36.26 138.96 35.93 140.16 35.64C141.36 35.36 142.58 35.12 143.8 34.91C145.02 34.72 146.26 34.56 147.5 34.44C148.74 34.33 149.99 34.26 151.25 34.23C152.5 34.21 153.75 34.22 155.01 34.29C156.26 34.35 157.52 34.46 158.77 34.61C160.02 34.77 161.27 34.96 162.5 35.2C163.74 35.45 164.98 35.74 166.2 36.07C167.42 36.41 168.63 36.78 169.82 37.21C171.02 37.63 172.2 38.08 173.37 38.59C174.54 39.1 175.69 39.65 176.81 40.24C177.93 40.83 179.05 41.46 180.13 42.14C181.21 42.8 182.27 43.51 183.3 44.26C184.34 45.02 185.34 45.81 186.32 46.63C187.3 47.45 188.24 48.31 189.15 49.19C190.07 50.09 190.96 51.02 191.8 51.97C192.65 52.92 193.47 53.92 194.24 54.93C195.01 55.95 195.75 56.99 196.45 58.06C197.16 59.13 197.81 60.23 198.43 61.34C199.05 62.46 199.64 63.6 200.17 64.76C200.71 65.92 201.21 67.1 201.66 68.29C202.11 69.48 202.52 70.7 202.88 71.92C203.25 73.14 203.56 74.38 203.83 75.62C204.11 76.87 204.34 78.13 204.52 79.39C204.7 80.65 204.84 81.91 204.93 83.18C205.02 84.45 205.06 85.72 205.06 86.98C205.06 88.25 204.81 89.57 204.93 90.79C205.03 92.01 204.94 93.22 205.73 94.32C206.53 95.42 208.44 96.29 209.71 97.36C210.98 98.43 212.19 99.55 213.33 100.71C214.48 101.87 215.57 103.09 216.59 104.34C217.62 105.59 218.58 106.89 219.48 108.23C220.38 109.56 221.21 110.92 221.98 112.32Z",
-					"face": {
-						"x": 0,
-						"y": 4,
-						"sx": .79,
-						"sy": .7,
-						"eye": .81
-					},
-					"radius": 118.67,
-					"tiltScale": 1,
-					"top": 22.5,
-					"bottom": 206.04
-				},
-				"teardrop": {
-					"label": "Teardrop",
-					"path": "M125.97 7.2Q114.27 -7.28 102.57 7.2L43.49 80.31C13.46 117.46 17.28 171.51 52.23 204.08C87.17 236.65 141.37 236.65 176.32 204.08C211.26 171.51 215.08 117.46 185.05 80.31Z",
-					"face": {
-						"x": 0,
-						"y": 22,
-						"sx": .79,
-						"sy": .79,
-						"eye": .88
-					},
-					"radius": 114.31,
-					"tiltScale": 1,
-					"top": -.04,
-					"bottom": 228.51
-				},
-				"leaf": {
-					"label": "Leaf",
-					"path": "M203.22 114.27C203.22 116.14 203.17 118.01 203.06 119.88C202.96 121.74 202.8 123.61 202.58 125.47C202.36 127.33 202.1 129.18 201.79 131.03C201.46 132.88 201.09 134.72 200.67 136.56C200.25 138.39 199.77 140.21 199.25 142.03C198.73 143.84 198.16 145.64 197.54 147.42C196.92 149.21 196.25 150.99 195.54 152.75C194.82 154.51 194.06 156.26 193.26 157.98C192.46 159.71 191.61 161.41 190.73 163.1C189.84 164.79 188.91 166.47 187.94 168.12C186.98 169.76 185.97 171.39 184.94 172.99C183.89 174.59 182.81 176.17 181.71 177.73C180.61 179.28 179.47 180.81 178.3 182.31C177.14 183.81 175.94 185.29 174.73 186.73C173.51 188.18 172.26 189.6 171.01 190.98C169.74 192.36 168.46 193.72 167.17 195.03C165.86 196.36 164.55 197.65 163.22 198.9C161.9 200.16 160.55 201.38 159.22 202.56C157.88 203.75 156.52 204.9 155.17 206.01C153.81 207.12 152.46 208.2 151.1 209.24C149.75 210.28 148.41 211.28 147.06 212.24C145.72 213.2 144.38 214.13 143.06 215.01C141.74 215.89 140.43 216.72 139.14 217.52C137.85 218.32 136.58 219.08 135.33 219.8C134.08 220.52 132.86 221.18 131.67 221.81C130.47 222.45 129.3 223.03 128.18 223.57C127.06 224.11 125.97 224.61 124.92 225.06C123.88 225.52 122.88 225.93 121.93 226.3C120.99 226.66 120.09 226.98 119.27 227.26C118.45 227.53 117.68 227.76 117 227.94C116.33 228.13 115.7 228.26 115.24 228.35C114.79 228.45 114.59 228.49 114.27 228.49C113.95 228.49 113.75 228.45 113.3 228.35C112.85 228.26 112.21 228.13 111.54 227.94C110.87 227.76 110.1 227.53 109.27 227.26C108.45 226.98 107.55 226.66 106.61 226.3C105.67 225.93 104.66 225.52 103.62 225.06C102.58 224.61 101.48 224.11 100.36 223.57C99.24 223.03 98.07 222.45 96.87 221.81C95.68 221.18 94.46 220.52 93.22 219.8C91.97 219.08 90.69 218.32 89.4 217.52C88.11 216.72 86.81 215.89 85.48 215.01C84.16 214.13 82.82 213.2 81.48 212.24C80.15 211.28 78.79 210.28 77.44 209.24C76.08 208.2 74.73 207.12 73.37 206.01C72.02 204.9 70.66 203.75 69.33 202.56C67.99 201.38 66.64 200.16 65.32 198.9C63.99 197.65 62.68 196.36 61.39 195.03C60.08 193.72 58.8 192.36 57.53 190.98C56.28 189.6 55.04 188.18 53.81 186.73C52.6 185.29 51.41 183.81 50.24 182.31C49.07 180.81 47.93 179.28 46.83 177.73C45.73 176.17 44.65 174.59 43.62 172.99C42.57 171.39 41.56 169.76 40.6 168.12C39.63 166.47 38.7 164.79 37.81 163.1C36.93 161.41 36.09 159.71 35.28 157.98C34.48 156.26 33.72 154.51 33 152.75C32.29 150.99 31.63 149.21 31 147.42C30.38 145.64 29.81 143.84 29.29 142.03C28.77 140.21 28.29 138.39 27.87 136.56C27.45 134.72 27.08 132.88 26.77 131.03C26.44 129.18 26.18 127.33 25.97 125.47C25.74 123.61 25.59 121.74 25.48 119.88C25.37 118.01 25.32 116.14 25.32 114.27C25.32 112.4 25.37 110.53 25.48 108.67C25.59 106.8 25.74 104.93 25.97 103.07C26.18 101.22 26.44 99.36 26.77 97.51C27.08 95.66 27.45 93.82 27.87 91.99C28.29 90.15 28.77 88.33 29.29 86.51C29.81 84.7 30.38 82.91 31 81.12C31.63 79.33 32.29 77.55 33 75.79C33.72 74.03 34.48 72.28 35.28 70.56C36.09 68.84 36.93 67.13 37.81 65.44C38.7 63.75 39.63 62.07 40.6 60.43C41.56 58.78 42.57 57.15 43.62 55.55C44.65 53.95 45.73 52.37 46.83 50.81C47.93 49.26 49.07 47.73 50.24 46.23C51.41 44.73 52.6 43.25 53.81 41.81C55.04 40.37 56.28 38.95 57.53 37.56C58.8 36.18 60.08 34.82 61.39 33.51C62.68 32.18 63.99 30.89 65.32 29.64C66.64 28.38 67.99 27.16 69.33 25.98C70.66 24.79 72.02 23.64 73.37 22.53C74.73 21.42 76.08 20.34 77.44 19.3C78.79 18.27 80.15 17.26 81.48 16.3C82.82 15.34 84.16 14.41 85.48 13.53C86.81 12.66 88.11 11.82 89.4 11.02C90.69 10.22 91.97 9.46 93.22 8.74C94.46 8.03 95.68 7.36 96.87 6.73C98.07 6.1 99.24 5.51 100.36 4.97C101.48 4.43 102.58 3.93 103.62 3.48C104.66 3.02 105.67 2.61 106.61 2.24C107.55 1.88 108.45 1.56 109.27 1.28C110.1 1.01 110.87 0.79 111.54 0.6C112.21 0.41 112.85 0.28 113.3 0.19C113.75 0.1 113.95 0.05 114.27 0.05C114.59 0.05 114.79 0.1 115.24 0.19C115.7 0.28 116.33 0.41 117 0.6C117.68 0.79 118.45 1.01 119.27 1.28C120.09 1.56 120.99 1.88 121.93 2.24C122.88 2.61 123.88 3.02 124.92 3.48C125.97 3.93 127.06 4.43 128.18 4.97C129.3 5.51 130.47 6.1 131.67 6.73C132.86 7.36 134.08 8.03 135.33 8.74C136.58 9.46 137.85 10.22 139.14 11.02C140.43 11.82 141.74 12.66 143.06 13.53C144.38 14.41 145.72 15.34 147.06 16.3C148.41 17.26 149.75 18.27 151.1 19.3C152.46 20.34 153.81 21.42 155.17 22.53C156.52 23.64 157.88 24.79 159.22 25.98C160.55 27.16 161.9 28.38 163.22 29.64C164.55 30.89 165.86 32.18 167.17 33.51C168.46 34.82 169.74 36.18 171.01 37.56C172.26 38.95 173.51 40.37 174.73 41.81C175.94 43.25 177.14 44.73 178.3 46.23C179.47 47.73 180.61 49.26 181.71 50.81C182.81 52.37 183.89 53.95 184.94 55.55C185.97 57.15 186.98 58.78 187.94 60.43C188.91 62.07 189.84 63.75 190.73 65.44C191.61 67.13 192.46 68.84 193.26 70.56C194.06 72.28 194.82 74.03 195.54 75.79C196.25 77.55 196.92 79.33 197.54 81.12C198.16 82.91 198.73 84.7 199.25 86.51C199.77 88.33 200.25 90.15 200.67 91.99C201.09 93.82 201.46 95.66 201.79 97.51C202.1 99.36 202.36 101.22 202.58 103.07C202.8 104.93 202.96 106.8 203.06 108.67C203.17 110.53 203.22 112.4 203.22 114.27Z",
-					"face": {
-						"x": 0,
-						"y": 0,
-						"sx": .73,
-						"sy": .91,
-						"eye": .88
-					},
-					"radius": 114.22,
-					"tiltScale": 1,
-					"top": .05,
-					"bottom": 228.49
-				}
-			}
-		};
-		globalThis.GROK_GEO.solids = {
-			bean: [
-				[
-					-16.8,
-					-102,
-					0,
-					42
-				],
-				[
-					-13.5,
-					-84,
-					0,
-					62
-				],
-				[
-					-8.5,
-					-60,
-					0,
-					78
-				],
-				[
-					-3,
-					-36,
-					0,
-					84
-				],
-				[
-					1.5,
-					-12,
-					0,
-					85
-				],
-				[
-					1.5,
-					12,
-					0,
-					85
-				],
-				[
-					-3,
-					36,
-					0,
-					84
-				],
-				[
-					-8.5,
-					60,
-					0,
-					78
-				],
-				[
-					-13.5,
-					84,
-					0,
-					62
-				],
-				[
-					-16.8,
-					102,
-					0,
-					42
-				]
-			],
-			tablet: [
-				[
-					-40,
-					0,
-					0,
-					74
-				],
-				[
-					-26.7,
-					0,
-					0,
-					74
-				],
-				[
-					-13.3,
-					0,
-					0,
-					74
-				],
-				[
-					0,
-					0,
-					0,
-					74
-				],
-				[
-					13.3,
-					0,
-					0,
-					74
-				],
-				[
-					26.7,
-					0,
-					0,
-					74
-				],
-				[
-					40,
-					0,
-					0,
-					74
-				]
-			],
-			cloud: [
-				[
-					-62,
-					26,
-					10,
-					58
-				],
-				[
-					62,
-					26,
-					-14,
-					56
-				],
-				[
-					0,
-					34,
-					24,
-					64
-				],
-				[
-					-24,
-					-30,
-					-22,
-					64
-				],
-				[
-					38,
-					-26,
-					16,
-					56
-				]
-			]
-		};
-	}));
-	//#endregion
-	//#region src/grok-bot/math.js
-	var init_math = __esmMin((() => {
-		(function(g) {
-			const spring = (x) => ({
-				x,
-				v: 0,
-				t: x
-			});
-			const stepSpring = (s, freq, damp, dt) => {
-				s.v += (-2 * damp * freq * s.v - freq * freq * (s.x - s.t)) * dt;
-				s.x += s.v * dt;
-				if (!Number.isFinite(s.x) || !Number.isFinite(s.v)) {
-					s.x = s.t;
-					s.v = 0;
-				}
-			};
-			const DT = 1 / 120;
-			const springSteps = (dt) => Math.max(1, Math.ceil(dt / DT));
-			const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
-			const lerp = (a, b, t) => a + (b - a) * t;
-			const rand = (a, b) => a + Math.random() * (b - a);
-			const sign = () => Math.random() < .5 ? -1 : 1;
-			const K2 = (n) => n < .5 ? 4 * n * n * n : 1 - Math.pow(-2 * n + 2, 3) / 2;
-			const Rc = (n) => 1 - Math.pow(1 - n, 3);
-			const y1e = (n) => 1 + 2.70158 * Math.pow(n - 1, 3) + 1.70158 * Math.pow(n - 1, 2);
-			const Dke = (n) => n * n * (3 - 2 * n);
-			const x_t = (n, e) => 1 - Math.exp(Math.log(1 - n) * 60 * e);
-			const Rn = (n, bs = 1 / 60) => x_t(n, bs);
-			const polyPath = (pts) => "M" + pts.map((p) => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join("L") + "Z";
-			const centroid = (pts) => {
-				let x = 0, y = 0;
-				for (const p of pts) {
-					x += p[0];
-					y += p[1];
-				}
-				return [x / pts.length, y / pts.length];
-			};
-			const lerpPoly = (a, b, t) => a.map((p, i) => [p[0] + (b[i][0] - p[0]) * t, p[1] + (b[i][1] - p[1]) * t]);
-			const lerpFace = (n, e, t) => ({
-				x: n.x + (e.x - n.x) * t,
-				y: n.y + (e.y - n.y) * t,
-				sx: n.sx + (e.sx - n.sx) * t,
-				sy: n.sy + (e.sy - n.sy) * t,
-				eye: n.eye + (e.eye - n.eye) * t,
-				leftDX: (n.leftDX ?? 0) + ((e.leftDX ?? 0) - (n.leftDX ?? 0)) * t
-			});
-			function flattenPath(d, e = 4) {
-				const t = d.match(/[MLCQZmlcqz]|-?\d*\.?\d+(?:e[-+]?\d+)?/g) ?? [];
-				const s = [];
-				let r = 0, i = "", o = 0, l = 0, c = 0, u = 0;
-				const rd = () => parseFloat(t[r++]);
-				const m = (f, h) => {
-					const y = Math.max(2, Math.ceil(h / e));
-					for (let k = 1; k <= y; k++) s.push(f(k / y));
-				};
-				while (r < t.length) {
-					if (/[a-z]/i.test(t[r])) i = t[r++].toUpperCase();
-					if (i === "Z") {
-						if (Math.hypot(c - o, u - l) > .01) m((f) => [o + (c - o) * f, l + (u - l) * f], Math.hypot(c - o, u - l));
-						o = c;
-						l = u;
-						continue;
-					}
-					if (r >= t.length) break;
-					if (i === "M") {
-						o = rd();
-						l = rd();
-						c = o;
-						u = l;
-						s.push([o, l]);
-						i = "L";
-					} else if (i === "L") {
-						const f = rd(), h = rd();
-						m((y) => [o + (f - o) * y, l + (h - l) * y], Math.hypot(f - o, h - l));
-						o = f;
-						l = h;
-					} else if (i === "Q") {
-						const f = rd(), h = rd(), y = rd(), k = rd(), v = o, b = l;
-						m((x) => {
-							const N = 1 - x;
-							return [N * N * v + 2 * N * x * f + x * x * y, N * N * b + 2 * N * x * h + x * x * k];
-						}, Math.hypot(f - o, h - l) + Math.hypot(y - f, k - h));
-						o = y;
-						l = k;
-					} else if (i === "C") {
-						const f = rd(), h = rd(), y = rd(), k = rd(), v = rd(), b = rd(), x = o, N = l;
-						m((E) => {
-							const A = 1 - E;
-							return [A * A * A * x + 3 * A * A * E * f + 3 * A * E * E * y + E * E * E * v, A * A * A * N + 3 * A * A * E * h + 3 * A * E * E * k + E * E * E * b];
-						}, Math.hypot(f - o, h - l) + Math.hypot(y - f, k - h) + Math.hypot(v - y, b - k));
-						o = v;
-						l = b;
-					} else r++;
-				}
-				return s;
-			}
-			function buildSpan(pts, Re, e = 160) {
-				let t = Infinity, s = -Infinity;
-				for (const m of pts) {
-					if (m[1] < t) t = m[1];
-					if (m[1] > s) s = m[1];
-				}
-				const r = s - t;
-				const i = (m) => t + r * (m + .5) / e;
-				const o = new Float64Array(e);
-				const l = new Float64Array(e);
-				for (let m = 0; m < e; m++) {
-					const f = i(m);
-					let h = -Infinity, y = Infinity;
-					for (let b = 0; b < pts.length; b++) {
-						const x = pts[b], N = pts[(b + 1) % pts.length];
-						if (x[1] <= f === N[1] <= f) continue;
-						const E = x[0] + (N[0] - x[0]) * (f - x[1]) / (N[1] - x[1]);
-						if (E <= Re) {
-							if (E > h) h = E;
-						} else if (E < y) y = E;
-					}
-					o[m] = Number.isFinite(h) ? h : Re;
-					l[m] = Number.isFinite(y) ? y : Re;
-				}
-				return (h) => {
-					const y = clamp((h - t) / r * e - .5, 0, e - 1);
-					const k = Math.floor(y);
-					const v = y - k;
-					const b = Math.min(k + 1, e - 1);
-					return [o[k] + (o[b] - o[k]) * v, l[k] + (l[b] - l[k]) * v];
-				};
-			}
-			const spanCache = /* @__PURE__ */ new Map();
-			function spanAt(path, Re) {
-				const key = path;
-				let fn = spanCache.get(key);
-				if (!fn) {
-					fn = buildSpan(flattenPath(path), Re);
-					spanCache.set(key, fn);
-				}
-				return fn;
-			}
-			function spanPoly(n, e, Re) {
-				let t = -Infinity, s = Infinity;
-				for (let r = 0; r < n.length; r++) {
-					const i = n[r], o = n[(r + 1) % n.length];
-					if (i[1] <= e === o[1] <= e) continue;
-					const l = i[0] + (o[0] - i[0]) * (e - i[1]) / (o[1] - i[1]);
-					if (l <= Re) {
-						if (l > t) t = l;
-					} else if (l < s) s = l;
-				}
-				return [Number.isFinite(t) ? t : Re, Number.isFinite(s) ? s : Re];
-			}
-			function rot3(turn, tilt, roll) {
-				const d = Math.PI / 180;
-				const Ui = Math.cos(turn * d), Si = Math.sin(turn * d);
-				const Ea = Math.cos(tilt * d), Ca = Math.sin(tilt * d);
-				const Wo = Math.cos(roll * d), _c = Math.sin(roll * d);
-				return [
-					Wo * Ui - _c * Ca * Si,
-					-_c * Ea,
-					Wo * Si + _c * Ca * Ui,
-					_c * Ui + Wo * Ca * Si,
-					Wo * Ea,
-					_c * Si - Wo * Ca * Ui,
-					-Ea * Si,
-					Ca,
-					Ea * Ui
-				];
-			}
-			function relRot(pose, home) {
-				const gn = rot3(pose.turn, pose.tilt, pose.roll);
-				const Gn = rot3(home.turn, home.tilt, home.roll);
-				return [
-					gn[0] * Gn[0] + gn[1] * Gn[1] + gn[2] * Gn[2],
-					gn[0] * Gn[3] + gn[1] * Gn[4] + gn[2] * Gn[5],
-					gn[0] * Gn[6] + gn[1] * Gn[7] + gn[2] * Gn[8],
-					gn[3] * Gn[0] + gn[4] * Gn[1] + gn[5] * Gn[2],
-					gn[3] * Gn[3] + gn[4] * Gn[4] + gn[5] * Gn[5],
-					gn[3] * Gn[6] + gn[4] * Gn[7] + gn[5] * Gn[8],
-					gn[6] * Gn[0] + gn[7] * Gn[1] + gn[8] * Gn[2],
-					gn[6] * Gn[3] + gn[7] * Gn[4] + gn[8] * Gn[5],
-					gn[6] * Gn[6] + gn[7] * Gn[7] + gn[8] * Gn[8]
-				];
-			}
-			function solidRadii(solid, angle, n = 96) {
-				const c = Math.cos(angle), s = Math.sin(angle);
-				const r = solid.map(([x, y, z, rad]) => [
-					x * c + z * s,
-					y,
-					rad
-				]);
-				const raw = Array.from({ length: n }, (_, idx) => {
-					const u = idx / n * Math.PI * 2;
-					const d = Math.cos(u), m = Math.sin(u);
-					let f = 0;
-					for (const [h, y, k] of r) {
-						const v = d * h + m * y;
-						const b = v * v - (h * h + y * y) + k * k;
-						if (b <= 0) continue;
-						const x = v + Math.sqrt(b);
-						if (x > f) f = x;
-					}
-					return f;
-				});
-				const o = raw.length;
-				return raw.map((l, i) => (raw[(i - 2 + o) % o] + 4 * raw[(i - 1 + o) % o] + 6 * raw[i] + 4 * raw[(i + 1) % o] + raw[(i + 2) % o]) / 16);
-			}
-			function makeTurnAt(solid, ring, Re) {
-				const rest = solidRadii(solid, 0);
-				return (yaw) => {
-					let v = solidRadii(solid, yaw).map((x, i) => clamp((x + 12) / (rest[i] + 12), .32, 1.5));
-					const n = v.length;
-					for (let p = 0; p < 3; p++) {
-						const prev = v;
-						v = prev.map((E, A) => (prev[(A - 2 + n) % n] + 4 * prev[(A - 1 + n) % n] + 6 * prev[A] + 4 * prev[(A + 1) % n] + prev[(A + 2) % n]) / 16);
-					}
-					return ring.map(([x, y], i) => [Re + (x - Re) * v[i], Re + (y - Re) * v[i]]);
-				};
-			}
-			function mapPointer(rect, pt, JFe = .6, iin = 22, ain = 14, oin = 2) {
-				const t = rect.left + rect.width / 2;
-				const s = rect.top + rect.height / 2;
-				const r = pt.x - t, i = pt.y - s;
-				const o = Math.min(1, Math.sqrt(Math.hypot(r, i) / (rect.width * oin)));
-				const l = Math.atan2(i, r);
-				return {
-					x: t + JFe * (ain / iin) * o * Math.cos(l) * rect.width,
-					y: s + JFe * o * Math.sin(l) * rect.height
-				};
-			}
-			g.GROK_MATH = {
-				spring,
-				stepSpring,
-				DT,
-				springSteps,
-				clamp,
-				lerp,
-				rand,
-				sign,
-				K2,
-				Rc,
-				y1e,
-				Dke,
-				x_t,
-				Rn,
-				polyPath,
-				centroid,
-				lerpPoly,
-				lerpFace,
-				flattenPath,
-				buildSpan,
-				spanAt,
-				spanPoly,
-				rot3,
-				relRot,
-				mapPointer,
-				solidRadii,
-				makeTurnAt
-			};
-		})(globalThis);
-	}));
-	//#endregion
-	//#region src/grok-bot/tables.js
-	var init_tables = __esmMin((() => {
-		(function(g) {
-			const GROUPS = [
-				{
-					label: "Lifecycle",
-					states: [
-						"sleeping",
-						"waking",
-						"idle",
-						"listening",
-						"thinking",
-						"searching",
-						"working"
-					]
-				},
-				{
-					label: "Reactions",
-					states: [
-						"excited",
-						"surprised",
-						"suspicious",
-						"angry",
-						"drowsy",
-						"happy",
-						"curious",
-						"confused",
-						"bored",
-						"proud",
-						"shy",
-						"sad",
-						"laughing",
-						"scared",
-						"playful",
-						"celebrate"
-					]
-				},
-				{
-					label: "Agent morphs",
-					states: [
-						"orbit",
-						"radar",
-						"progress"
-					]
-				},
-				{
-					label: "Product lifecycle",
-					states: [
-						"spawning",
-						"humming",
-						"loading",
-						"dictating",
-						"writing",
-						"sending",
-						"receiving",
-						"uploading",
-						"notifying",
-						"alerting",
-						"dragging",
-						"bouncing",
-						"powering-down"
-					]
-				}
-			];
-			const EYE_PLAYLIST = {
-				sleeping: [
-					13,
-					22,
-					4
-				],
-				waking: [13],
-				idle: [0, 8],
-				listening: [
-					10,
-					1,
-					19
-				],
-				thinking: [
-					8,
-					16,
-					14,
-					17,
-					5
-				],
-				searching: [
-					15,
-					9,
-					3,
-					20,
-					12,
-					18
-				],
-				working: [
-					7,
-					16,
-					11,
-					10
-				],
-				excited: [
-					2,
-					17,
-					21,
-					3,
-					11
-				],
-				surprised: [3, 21],
-				suspicious: [
-					14,
-					5,
-					23
-				],
-				angry: [7, 16],
-				drowsy: [
-					4,
-					22,
-					13
-				],
-				happy: [
-					2,
-					11,
-					17,
-					19
-				],
-				curious: [
-					3,
-					21,
-					0,
-					15
-				],
-				confused: [
-					14,
-					5,
-					8
-				],
-				bored: [
-					4,
-					22,
-					0
-				],
-				proud: [
-					15,
-					8,
-					2
-				],
-				shy: [
-					0,
-					24,
-					13
-				],
-				sad: [
-					4,
-					13,
-					22
-				],
-				laughing: [
-					2,
-					11,
-					17
-				],
-				scared: [3, 21],
-				playful: [
-					2,
-					17,
-					11,
-					8
-				],
-				celebrate: [
-					2,
-					8,
-					17
-				],
-				orbit: [0, 8],
-				radar: [0, 8],
-				progress: [0, 8],
-				spawning: [3, 0],
-				humming: [0, 8],
-				loading: [0, 8],
-				dictating: [
-					10,
-					1,
-					19
-				],
-				sending: [0, 8],
-				receiving: [
-					19,
-					0,
-					8
-				],
-				uploading: [
-					15,
-					9,
-					8
-				],
-				writing: [15, 9],
-				notifying: [
-					3,
-					21,
-					0
-				],
-				alerting: [3, 21],
-				bouncing: [2, 17],
-				dragging: [
-					3,
-					15,
-					0
-				],
-				"powering-down": [13, 22]
-			};
-			const EYE_HOLD_MS = {
-				sleeping: [6e3, 1e4],
-				waking: [800, 800],
-				idle: [9e3, 16e3],
-				listening: [2800, 5e3],
-				thinking: [2e3, 3600],
-				searching: [1e3, 1800],
-				working: [1800, 3200],
-				excited: [1100, 2e3],
-				surprised: [2500, 4e3],
-				suspicious: [2600, 4500],
-				angry: [2200, 3800],
-				drowsy: [4e3, 8e3],
-				happy: [2500, 4500],
-				curious: [1800, 3200],
-				confused: [2200, 3800],
-				bored: [3500, 6e3],
-				proud: [3500, 6e3],
-				shy: [3e3, 5500],
-				sad: [4e3, 7e3],
-				laughing: [1200, 2400],
-				scared: [900, 1800],
-				playful: [1500, 3e3],
-				celebrate: [1400, 2600],
-				orbit: [4e3, 8e3],
-				radar: [4e3, 8e3],
-				progress: [4e3, 8e3],
-				spawning: [1200, 1200],
-				humming: [5e3, 9e3],
-				loading: [6e3, 1e4],
-				dictating: [4e3, 8e3],
-				sending: [4e3, 8e3],
-				receiving: [4e3, 8e3],
-				uploading: [4e3, 8e3],
-				writing: [4e3, 8e3],
-				notifying: [1500, 2600],
-				alerting: [2e3, 3600],
-				bouncing: [3e3, 6e3],
-				dragging: [1600, 3e3],
-				"powering-down": [6e3, 9e3]
-			};
-			const BLINK_MS = {
-				sleeping: null,
-				waking: null,
-				idle: [6e3, 14e3],
-				listening: [3e3, 7e3],
-				thinking: [3500, 7e3],
-				searching: [1600, 4e3],
-				working: [2800, 5500],
-				excited: [2e3, 4e3],
-				surprised: [1800, 3500],
-				suspicious: [4500, 8e3],
-				angry: [3500, 7e3],
-				drowsy: null,
-				happy: [2500, 5e3],
-				curious: [2500, 5500],
-				confused: [2800, 5500],
-				bored: [4e3, 8e3],
-				proud: [3500, 7e3],
-				shy: [3e3, 6e3],
-				sad: [4e3, 8e3],
-				laughing: [2500, 5e3],
-				scared: [1200, 3e3],
-				playful: [2e3, 4500],
-				celebrate: [2200, 4500],
-				orbit: null,
-				radar: null,
-				progress: null,
-				spawning: null,
-				humming: [4e3, 8e3],
-				loading: null,
-				dictating: null,
-				sending: null,
-				receiving: null,
-				uploading: null,
-				writing: null,
-				notifying: [2e3, 4e3],
-				alerting: null,
-				bouncing: null,
-				dragging: [2200, 4500],
-				"powering-down": null
-			};
-			const ONBOARDING = [
-				"curious",
-				"happy",
-				"playful",
-				"excited",
-				"listening",
-				"proud",
-				"laughing",
-				"shy"
-			];
-			const ONBOARDING_MS = 1200;
-			const onboardMood = (n) => n % 2 === 0 ? "idle" : ONBOARDING[(n - 1) / 2 % ONBOARDING.length] ?? "idle";
-			const SPRINGS = {
-				spin: [5, .9],
-				x: [3.5, 1],
-				y: [4, 1],
-				squash: [10, .8],
-				blink: [26, 1],
-				eyeScale: [9, .85],
-				gazeX: [13, 1],
-				gazeY: [13, 1],
-				notify: [9, .55],
-				humDots: [6, 1],
-				overlay: [14, 1],
-				overlayMix: [11, 1],
-				shape: [10, 1],
-				overlayTurn: [14, 1],
-				spinTurn: [6.2, 1]
-			};
-			const FACE_TUNE = {
-				size: .86,
-				gap: 1.18,
-				height: 1,
-				eyeWidth: .96,
-				eyeHeight: .92
-			};
-			const POSE = {
-				turn: 17,
-				tilt: -14,
-				roll: 29,
-				scale: 1
-			};
-			const POSE_HOME = {
-				turn: 33,
-				tilt: -19,
-				roll: 38
-			};
-			const UNIFORM_EYES = true;
-			const V_T = new Set([
-				"happy",
-				"excited",
-				"proud"
-			]);
-			const B_T = new Set(["playful"]);
-			const WINK_STATES = new Set([
-				"idle",
-				"happy",
-				"excited",
-				"curious",
-				"playful"
-			]);
-			const SHAPE_ZOOM = {
-				blob: .92,
-				pebble: .96,
-				squircle: .84,
-				tablet: 1,
-				wedge: .94,
-				hex: .94,
-				cloud: 1,
-				teardrop: 1
-			};
-			const VIEW_SCALE = 259 / 229;
-			const shapeZoom = (name) => SHAPE_ZOOM[name] ?? 1;
-			const poseScale = (name) => shapeZoom(name) * VIEW_SCALE;
-			const shapeEyeScale = (name) => SHAPE_ZOOM.blob / shapeZoom(name);
-			const VIEW = {
-				minX: -15,
-				minY: -15,
-				width: 259,
-				height: 259
-			};
-			const VIEW_HALF = VIEW.width / 2;
-			const VIEW_MID = VIEW.minX + VIEW_HALF;
-			const OVERLAY_ZOOM = {
-				dots: 1.5,
-				orbit: 1.14,
-				radar: 1.14,
-				progress: 1.32,
-				gather: 1.15,
-				wave: 1.42,
-				send: 1.12,
-				receive: 1.12,
-				dock: 1.3,
-				ball: 1.22,
-				whirl: 1.45,
-				pencil: 1.18,
-				bang: 1.28,
-				standby: 1.75
-			};
-			const overlayViewZoom = (kind, scale) => kind == null ? 1 : Math.max(OVERLAY_ZOOM[kind] / Math.max(scale, 1), 1);
-			const INK = {
-				black: {
-					lightFrom: "#585858",
-					lightTo: "#000000",
-					darkFrom: "#FFFFFF",
-					darkTo: "#C2C2C2"
-				},
-				brown: {
-					lightFrom: "#AE8968",
-					lightTo: "#855C36",
-					darkFrom: "#A27952",
-					darkTo: "#604227"
-				},
-				red: {
-					lightFrom: "#FF5667",
-					lightTo: "#E02135",
-					darkFrom: "#FF3E51",
-					darkTo: "#A21826"
-				},
-				orange: {
-					lightFrom: "#FF8838",
-					lightTo: "#E05B00",
-					darkFrom: "#FF781C",
-					darkTo: "#C24E00"
-				},
-				yellow: {
-					lightFrom: "#FFAF38",
-					lightTo: "#E08600",
-					darkFrom: "#FFA31C",
-					darkTo: "#C27400"
-				},
-				green: {
-					lightFrom: "#1CCF82",
-					lightTo: "#009957",
-					darkFrom: "#00C972",
-					darkTo: "#008048"
-				},
-				cyan: {
-					lightFrom: "#58D3C5",
-					lightTo: "#00A592",
-					darkFrom: "#1CC3B0",
-					darkTo: "#007769"
-				},
-				blue: {
-					lightFrom: "#459FFE",
-					lightTo: "#0E74E0",
-					darkFrom: "#2A92FE",
-					darkTo: "#0C64C1"
-				},
-				violet: {
-					lightFrom: "#B792FE",
-					lightTo: "#804EE0",
-					darkFrom: "#9159FE",
-					darkTo: "#5C39A1"
-				},
-				magenta: {
-					lightFrom: "#FF77BE",
-					lightTo: "#E02A88",
-					darkFrom: "#FF47A6",
-					darkTo: "#A21E62"
-				},
-				gray: {
-					lightFrom: "#A6A6A6",
-					lightTo: "#696969",
-					darkFrom: "#B7B7B7",
-					darkTo: "#777777"
-				}
-			};
-			const INK_ANGLE = 135;
-			const inkFg = (id) => {
-				const pal = g.GROK_GEO.palette[id] || g.GROK_GEO.palette.black;
-				return `light-dark(${pal.light}, ${pal.dark})`;
-			};
-			const inkCss = (id) => {
-				const e = INK[id] || INK.black;
-				return `linear-gradient(225deg, light-dark(${e.lightFrom}, ${e.darkFrom}), light-dark(${e.lightTo}, ${e.darkTo}))`;
-			};
-			g.GROK_TABLES = {
-				GROUPS,
-				EYE_PLAYLIST,
-				EYE_HOLD_MS,
-				BLINK_MS,
-				ONBOARDING,
-				ONBOARDING_MS,
-				onboardMood,
-				SPRINGS,
-				FACE_TUNE,
-				POSE,
-				POSE_HOME,
-				UNIFORM_EYES,
-				V_T,
-				B_T,
-				WINK_STATES,
-				SHAPE_ZOOM,
-				VIEW_SCALE,
-				shapeZoom,
-				poseScale,
-				shapeEyeScale,
-				VIEW,
-				VIEW_HALF,
-				VIEW_MID,
-				OVERLAY_ZOOM,
-				overlayViewZoom,
-				INK,
-				INK_ANGLE,
-				inkFg,
-				inkCss,
-				EYE_BG: "var(--sand-bg-base, var(--disk, #f3efe6))"
-			};
-		})(globalThis);
-	}));
-	//#endregion
-	//#region src/grok-bot/pose.js
-	var init_pose = __esmMin((() => {
-		(function(g) {
-			const { clamp, rand, sign, K2 } = g.GROK_MATH;
-			const { EYE_PLAYLIST } = g.GROK_TABLES;
-			function applyPose(state, mt, dtState, now, ctx, extra = {}) {
-				const pt = 0;
-				let lid = 1;
-				let eyeBoost = 1;
-				let spin = pt, tx = 0, ty = 0, squash = 1;
-				switch (state) {
-					case "sleeping": {
-						const En = Math.min(dtState / 2, 1);
-						const Zt = Math.sin(clamp(dtState / .5, 0, 1) * Math.PI);
-						spin = pt + 4 * En + Math.sin(mt * .25) * 2;
-						tx = -2 * En;
-						ty = 8 * En + Math.sin(mt * .55) * 3 - Zt * 5;
-						squash = 1 + Math.sin(mt * .55) * .016 + Zt * .05;
-						if (EYE_PLAYLIST.sleeping.includes(extra.eyeTo)) lid = extra.eyeMorphX > .85 ? 1 : .08;
-						else if (dtState < 1.2) {
-							const dn = Math.min(1, dtState / 1);
-							lid = Math.max(.08, 1 - dn * (1 + .15 * Math.sin(dtState * 6.5)));
-						} else {
-							lid = .08;
-							if (extra.blinkX < .18) ctx.forceSleepEye = true;
-						}
-						break;
-					}
-					case "waking":
-						if (dtState < .5) {
-							lid = .07;
-							ty = 6;
-							ctx.wakeEye = [3, 12];
-						} else if (dtState < 1.2) {
-							lid = 1;
-							eyeBoost = 1.12;
-							ty = -5;
-							tx = 0;
-							spin = pt;
-							squash = 1.04;
-							if (!ctx.wakingBurst) ctx.wantBurst = [rand(9, 13), .8];
-						} else if (dtState < 2.2) {
-							ty = 0;
-							squash = 1;
-							ctx.wakeEye = [0, 7];
-							if (dtState < 1.4) ctx.wakeBlink = true;
-						} else {
-							const Et = Math.min((dtState - 2.2) / .8, 1);
-							ctx.wakeEye = [0, 7];
-							spin = pt + Math.sin(Et * Math.PI * 3) * 6 * (1 - Et);
-							ty = Math.sin(mt * .9) * 2;
-						}
-						break;
-					case "idle":
-						spin = pt + Math.sin(mt * .5) * 1.5 + Math.sin(mt * .17) * .6;
-						tx = Math.sin(mt * .27) * 1;
-						ty = Math.sin(mt * .85) * 1.2;
-						squash = 1 + Math.sin(mt * .85) * .007;
-						break;
-					case "listening":
-						spin = 8 + Math.sin(mt * .5) * 1.5;
-						tx = 2;
-						ty = -2 + Math.sin(mt * .8) * .8;
-						squash = 1.015;
-						if (now >= ctx.nodUntil) {
-							ctx.nodUntil = now + rand(1800, 3200);
-							ctx.nodEnd = now + 380;
-						}
-						if (now < ctx.nodEnd) {
-							const Et = 1 - (ctx.nodEnd - now) / 380;
-							ty += Math.sin(Et * Math.PI) * 4.5;
-							spin += Math.sin(Et * Math.PI) * 2;
-						}
-						break;
-					case "thinking":
-						spin = pt - 9 + Math.sin(mt * .35) * 5;
-						tx = Math.sin(mt * .3) * 5;
-						ty = Math.sin(mt * .6) * 2.5;
-						squash = 1;
-						break;
-					case "searching": {
-						const Et = Math.sin(mt * 1.3);
-						spin = pt + Et * 13;
-						tx = Et * 7;
-						ty = Math.sin(mt * 1.7) * 3;
-						squash = 1;
-						if (now >= ctx.stAt) {
-							ctx.wantPn = [1, sign()];
-							ctx.stAt = now + rand(4e3, 7e3);
-						}
-						break;
-					}
-					case "working": {
-						const Et = Math.sin(mt * Math.PI * 2 * 1.6);
-						spin = 4 + Et * 2.5;
-						tx = 3;
-						ty = 1.5 + Math.max(0, Et) * 3;
-						squash = 1 - Math.max(0, Et) * .02;
-						if (now >= ctx.stAt) {
-							ctx.wantPn = [1, 1];
-							ctx.stAt = now + rand(6e3, 9e3);
-						}
-						break;
-					}
-					case "excited": {
-						const Et = mt * 2.2 % 1;
-						ty = -Math.sin(Et * Math.PI) * 10 + 2;
-						squash = Et < .1 ? .92 : Et < .3 ? 1.05 : 1;
-						tx = Math.sin(mt * 1.1) * 4;
-						eyeBoost = 1.06;
-						spin = pt + Math.sin(mt * Math.PI * 2 * 1.1) * 7;
-						if (now >= ctx.stAt) {
-							ctx.wantPn = [1, sign()];
-							ctx.stAt = now + rand(2800, 5e3);
-						}
-						break;
-					}
-					case "surprised": {
-						const Et = Math.min(dtState / 1.2, 1);
-						tx = -4 * (1 - Et);
-						ty = -8 * (1 - Et);
-						squash = dtState < .2 ? 1.08 : 1;
-						eyeBoost = 1.15 - Et * .08;
-						spin = pt + Math.sin(mt * 11) * 1.5 * (1 - Et);
-						break;
-					}
-					case "suspicious":
-						spin = pt - 6 + Math.sin(mt * .3) * 3;
-						tx = Math.sin(mt * .25) * -4;
-						ty = 1 + Math.sin(mt * .45) * 1.2;
-						squash = 1;
-						lid = .85;
-						if (now >= ctx.impulseAt) {
-							ctx.spinKick = 30;
-							ctx.impulseAt = now + rand(4e3, 7e3);
-						}
-						break;
-					case "angry":
-						if (now >= ctx.impulseAt) {
-							ctx.angryShakeUntil = now + 420;
-							ctx.tyKick = 70;
-							ctx.impulseAt = now + rand(1800, 3200);
-						}
-						spin = pt + (now < ctx.angryShakeUntil ? Math.sin(now * .05) * 4.5 : 0);
-						tx = 0;
-						ty = 3.5;
-						squash = .975;
-						break;
-					case "drowsy":
-						spin = pt + Math.sin(mt * .32) * 2.5;
-						tx = Math.sin(mt * .2) * 1.5;
-						ty = 6 + Math.sin(mt * .36) * 2.2;
-						squash = 1 + Math.sin(mt * .36) * .022;
-						lid = .34 + Math.sin(mt * .8) * .07;
-						if (now >= ctx.nodUntil && !ctx.slumpAt) ctx.slumpAt = now;
-						if (ctx.slumpAt) {
-							const En = (now - ctx.slumpAt) / 1e3;
-							const Zt = 1.7, dn = .3, on = 1.5;
-							if (En < Zt) {
-								const bn = En / Zt, Cn = bn * bn;
-								const bi = Math.sin(bn * Math.PI * 2.5) * 2.2 * (1 - bn);
-								ty = 6 + Cn * 19 + bi;
-								spin = pt + Cn * 10;
-								lid = .34 - Cn * .30000000000000004;
-								squash = 1 - Cn * .045;
-							} else if (En < 2) {
-								const bn = (En - Zt) / dn, Cn = Math.sin(bn * Math.PI);
-								ty = 25 - Cn * 7;
-								spin = 10 - Cn * 4;
-								lid = .04 + Cn * .42;
-							} else if (En < 3.5) {
-								const bn = (En - Zt - dn) / on;
-								const Cn = 1 - Math.pow(1 - bn, 2.2);
-								ty = 25 - 19 * Cn;
-								spin = pt + 10 * (1 - Cn);
-								lid = .46 + -.12 * Cn;
-								if (bn > .32 && bn < .46) lid = .05;
-							} else {
-								ctx.slumpAt = 0;
-								ctx.nodUntil = now + rand(1500, 3500);
-							}
-						}
-						break;
-					case "happy": {
-						const Et = Math.sin(mt * 2.4);
-						spin = pt + Math.sin(mt * 1.2) * 3;
-						tx = Math.sin(mt * 1.1) * 2.5;
-						ty = -Math.abs(Et) * 3;
-						squash = 1 + Et * .02;
-						eyeBoost = 1.05;
-						break;
-					}
-					case "curious":
-						spin = 10 + Math.sin(mt * .7) * 6;
-						tx = Math.sin(mt * .6) * 5;
-						ty = -2 + Math.sin(mt * .9) * 1.5;
-						squash = 1.01;
-						eyeBoost = 1.08;
-						if (now >= ctx.nodUntil) {
-							ctx.nodUntil = now + rand(1600, 2800);
-							ctx.nodEnd = now + 440;
-						}
-						if (now < ctx.nodEnd) {
-							const Et = 1 - (ctx.nodEnd - now) / 440;
-							tx += Math.sin(Et * Math.PI) * 8;
-							spin += Math.sin(Et * Math.PI) * 5;
-						}
-						break;
-					case "confused": {
-						const Et = Math.sin(mt * .8);
-						spin = pt + Et * 12;
-						tx = Et * 3;
-						ty = Math.sin(mt * .5) * 2;
-						squash = 1;
-						lid = .9;
-						if (now >= ctx.impulseAt) {
-							ctx.spinKick = 22;
-							ctx.impulseAt = now + rand(2600, 4200);
-						}
-						break;
-					}
-					case "bored":
-						spin = pt - 3 + Math.sin(mt * .25) * 4;
-						tx = Math.sin(mt * .2) * 4;
-						ty = 5 + Math.sin(mt * .35) * 1.5;
-						squash = .99;
-						lid = .6;
-						eyeBoost = .98;
-						if (now >= ctx.impulseAt) {
-							ctx.nodEnd = now + 600;
-							ctx.impulseAt = now + rand(4e3, 7e3);
-						}
-						if (now < ctx.nodEnd) {
-							const Et = 1 - (ctx.nodEnd - now) / 600;
-							squash = 1 + Math.sin(Et * Math.PI) * .05;
-							ty += Math.sin(Et * Math.PI) * 3;
-						}
-						break;
-					case "proud":
-						spin = pt + Math.sin(mt * .4) * 2.5;
-						tx = Math.sin(mt * .35) * 2;
-						ty = -4 + Math.sin(mt * .6);
-						squash = 1.03;
-						eyeBoost = 1.02;
-						lid = .9;
-						break;
-					case "shy":
-						spin = pt - 8 + Math.sin(mt * .5) * 3;
-						tx = -3 + Math.sin(mt * .4) * 2;
-						ty = 3;
-						squash = .98;
-						eyeBoost = .95;
-						lid = .85;
-						break;
-					case "sad":
-						spin = 3 + Math.sin(mt * .3) * 2;
-						tx = Math.sin(mt * .25) * 1.5;
-						ty = 7 + Math.sin(mt * .4);
-						squash = .97;
-						lid = .7;
-						eyeBoost = .97;
-						break;
-					case "laughing": {
-						const Et = Math.sin(mt * Math.PI * 2 * 3.2);
-						spin = pt + Et * 4;
-						tx = Math.sin(mt * 2) * 2;
-						ty = -Math.abs(Et) * 5;
-						squash = 1 + Et * .03;
-						lid = .7;
-						break;
-					}
-					case "scared":
-						spin = pt + Math.sin(now * .04) * 2;
-						tx = -2 + Math.sin(now * .05) * 1.5;
-						ty = 2 + Math.sin(mt * 1.5);
-						squash = .97;
-						eyeBoost = 1.12;
-						lid = 1.05;
-						break;
-					case "playful":
-						spin = pt + Math.sin(mt * 1.4) * 8;
-						tx = Math.sin(mt * 1.1) * 4;
-						ty = -Math.abs(Math.sin(mt * 2.2)) * 3;
-						squash = 1 + Math.sin(mt * 2.2) * .015;
-						eyeBoost = 1.06;
-						if (now >= ctx.stAt) {
-							ctx.wantPn = [1, sign()];
-							ctx.stAt = now + rand(3500, 6e3);
-						}
-						break;
-					case "celebrate":
-						spin = pt;
-						tx = 0;
-						ty = -Math.abs(Math.sin(mt * 1.6)) * 2.5;
-						squash = 1;
-						eyeBoost = 1.1;
-						lid = 1.1;
-						break;
-					case "dragging": {
-						const En = dtState % 3.4 / 3.4;
-						if (En < .12) {
-							tx = -16;
-							ty = -22;
-							spin = pt - 5;
-						} else if (En < .62) {
-							tx = -16 + 32 * K2((En - .12) / .5);
-							ty = -22 + Math.sin(mt * 1.4) * 2;
-							spin = pt + Math.sin(mt * 2.6) * 6;
-							eyeBoost = 1.06;
-						} else {
-							const cycle = Math.floor(dtState / 3.4);
-							if (cycle !== ctx.dragCycle) {
-								ctx.dragCycle = cycle;
-								ctx.tyKick = 90;
-							}
-							tx = 16;
-							ty = 0;
-							spin = pt;
-						}
-						squash = 1;
-						break;
-					}
-					case "humming":
-						spin = pt + Math.sin(mt * .4) * 2;
-						tx = Math.sin(mt * .3) * 1.5;
-						ty = Math.sin(mt * .7) * 1.5;
-						squash = 1;
-						break;
-					case "notifying":
-						if (!ctx.notifyPop && dtState > .12) {
-							ctx.notifyPop = true;
-							ctx.tyKick = -26;
-							ctx.wantBlink = true;
-						}
-						eyeBoost = 1 + .05 * Math.exp(-dtState * 3);
-						spin = 3;
-						tx = 2;
-						ty = -1;
-						squash = 1;
-						break;
-					default:
-						spin = pt;
-						tx = 0;
-						ty = 0;
-						squash = 1;
-						break;
-				}
-				return {
-					spin,
-					tx,
-					ty,
-					squash,
-					lid,
-					eyeBoost
-				};
-			}
-			function nextGaze(state) {
-				switch (state) {
-					case "idle": return {
-						x: 0,
-						y: 0,
-						hold: [2500, 5500]
-					};
-					case "listening": return {
-						x: rand(-.3, .3) * 15,
-						y: rand(-.25, .25) * 9,
-						hold: [2200, 4200]
-					};
-					case "thinking": return {
-						x: sign() * rand(.5, 1) * 15,
-						y: -rand(.4, 1) * 9,
-						hold: [1500, 2800]
-					};
-					case "searching": return {
-						x: sign() * rand(.7, 1) * 15,
-						y: rand(-1, 1) * 9,
-						hold: [550, 1150]
-					};
-					case "working": return {
-						x: rand(-.4, .4) * 15,
-						y: rand(.4, 1) * 9,
-						hold: [1200, 2400]
-					};
-					case "excited": return {
-						x: rand(-1, 1) * 15,
-						y: rand(-1, .3) * 9,
-						hold: [700, 1400]
-					};
-					case "surprised": return {
-						x: 0,
-						y: 0,
-						hold: [1600, 2600]
-					};
-					case "suspicious": return {
-						x: sign() * 15,
-						y: .3 * 9,
-						hold: [2200, 4200]
-					};
-					case "angry": return {
-						x: rand(-.2, .2) * 15,
-						y: .2 * 9,
-						hold: [1800, 3200]
-					};
-					case "drowsy": return {
-						x: rand(-.4, .4) * 15,
-						y: rand(.4, 1) * 9,
-						hold: [2500, 4500]
-					};
-					case "happy": return {
-						x: rand(-.7, .7) * 15,
-						y: -rand(0, .6) * 9,
-						hold: [1800, 3400]
-					};
-					case "curious": return {
-						x: sign() * rand(.6, 1) * 15,
-						y: rand(-1, 1) * 9,
-						hold: [950, 1900]
-					};
-					case "confused": return {
-						x: sign() * rand(.5, 1) * 15,
-						y: rand(-.6, 1) * 9,
-						hold: [1100, 2300]
-					};
-					case "bored": return {
-						x: sign() * rand(.7, 1) * 15,
-						y: rand(.4, .9) * 9,
-						hold: [3e3, 6e3]
-					};
-					case "proud": return {
-						x: rand(-.3, .3) * 15,
-						y: -rand(.3, .7) * 9,
-						hold: [2600, 4600]
-					};
-					case "shy": return {
-						x: sign() * rand(.6, 1) * 15,
-						y: rand(.5, 1) * 9,
-						hold: [2e3, 4e3]
-					};
-					case "sad": return {
-						x: rand(-.3, .3) * 15,
-						y: rand(.6, 1) * 9,
-						hold: [2800, 5e3]
-					};
-					case "laughing": return {
-						x: rand(-.5, .5) * 15,
-						y: -rand(.2, .6) * 9,
-						hold: [800, 1700]
-					};
-					case "scared": return {
-						x: sign() * rand(.7, 1) * 15,
-						y: rand(-.6, .6) * 9,
-						hold: [450, 1050]
-					};
-					case "playful": return {
-						x: sign() * rand(.5, 1) * 15,
-						y: -rand(0, .6) * 9,
-						hold: [900, 1800]
-					};
-					case "notifying": {
-						const look = Math.random() < .72;
-						return {
-							x: (look ? .45 : .1) * 15,
-							y: -(look ? .3 : .05) * 9,
-							hold: [1200, 2400]
-						};
-					}
-					default: return {
-						x: rand(-.4, .4) * 15,
-						y: rand(-.3, .3) * 9,
-						hold: [2500, 5e3]
-					};
-				}
-			}
-			g.GROK_POSE = {
-				applyPose,
-				nextGaze
-			};
-		})(globalThis);
-	}));
-	//#endregion
-	//#region src/grok-bot/tricks.js
-	var init_tricks = __esmMin((() => {
-		(function(g) {
-			const { spring, K2, rand, sign } = g.GROK_MATH;
-			const HOP_SEGS = [
-				{
-					h: 48,
-					d: .5
-				},
-				{
-					h: 28,
-					d: .382
-				},
-				{
-					h: 14,
-					d: .27
-				},
-				{
-					h: 6,
-					d: .177
-				}
-			];
-			const HOP_DUR = HOP_SEGS.reduce((s, x) => s + x.d, 0);
-			function hopY(hopAt, now) {
-				if (hopAt < 0) return 0;
-				const Et = (now - hopAt) / 1e3;
-				if (Et >= HOP_DUR) return null;
-				let En = 0;
-				for (const seg of HOP_SEGS) {
-					if (Et < En + seg.d) {
-						const bn = (Et - En) / seg.d;
-						return -4 * seg.h * bn * (1 - bn);
-					}
-					En += seg.d;
-				}
-				return 0;
-			}
-			function startTrick(kind, reduce) {
-				if (reduce) return null;
-				const dir = sign();
-				const turns = kind === "spinDizzy" ? Math.round(rand(3, 4)) : kind === "spinWild" ? 9 : 1;
-				return {
-					kind,
-					t0: performance.now(),
-					dir,
-					turns
-				};
-			}
-			function evalTrick(trick, now) {
-				const empty = {
-					turn: null,
-					Kr: 0,
-					yi: 0,
-					ki: 0,
-					Yr: 0,
-					Zr: 0,
-					wi: 0,
-					lidMul: null,
-					eyeBoost: null,
-					hop: 0,
-					done: !trick,
-					wantHop: false
-				};
-				if (!trick) return empty;
-				const Et = (now - trick.t0) / 1e3;
-				const { kind, dir, turns } = trick;
-				let turn = null, Kr = 0, yi = 0, ki = 0, Yr = 0, Zr = 0, wi = 0, lidMul = null, eyeBoost = null;
-				let done = false, wantHop = false;
-				if (kind === "spinDizzy") {
-					const on = .55 + turns * .16, bn = 1.5;
-					if (Et < on) {
-						const Cn = Et / on;
-						turn = turns * Math.PI * 2 * dir * (Cn * Cn);
-					} else if (Et < on + bn) {
-						const Cn = Et - on;
-						const bi = Math.pow(1 - Cn / bn, 1.3);
-						Kr = Math.sin(Cn * 10) * 17 * dir * bi;
-						yi = Math.cos(Cn * 10) * 10 * dir * bi;
-						ki = Math.sin(Cn * 20) * 3 * bi;
-						lidMul = .46 + .14 * Math.sin(Cn * 21);
-						eyeBoost = 1.03;
-					} else done = true;
-				} else if (kind === "spinWild") {
-					const Pc = .5;
-					const Go = Math.PI * 2;
-					const $i = 3.79;
-					const gm = (turns * Go + Pc) / 2.4625;
-					if (Et < 5.49) {
-						let cr;
-						if (Et < .24) cr = -.5 * (1 - Math.cos(Et / .24 * Math.PI)) / 2;
-						else if (Et < .54) {
-							const Ua = Et - .24;
-							cr = -.5 + gm * Ua * Ua / (2 * .3);
-						} else if (Et < 2.54) cr = -.5 + gm * (.3 / 2 + (Et - .24 - .3));
-						else if (Et < $i) {
-							const Ua = (Et - .24 - 2.3) / 1.25;
-							cr = -.5 + gm * 2.15 + gm * 1.25 * (1 - Math.pow(1 - Ua, 4)) / 4;
-						} else cr = turns * Go;
-						turn = cr * dir;
-						let pl = 0;
-						if (Et > 2.54) {
-							const Ua = Math.min((Et - .24 - 2.3) / 1.25, 1);
-							pl = Ua < .4 ? 0 : Math.pow((Ua - .4) / .6, 2);
-							if (Et >= $i) pl = Math.pow(1 - (Et - $i) / 1.7, 1.6);
-						}
-						const Yl = Math.max(Et - .24 - 2.3, 0);
-						Yr = cr / (turns * Go) * 3 * 360 * dir;
-						Kr = Math.sin(Yl * 9.2) * 11 * dir * pl;
-						yi = (Math.cos(Yl * 9.2) - 1) * 6 * dir * pl;
-						ki = Math.sin(Yl * 18.4) * 2.6 * pl;
-						Zr = Math.sin(Yl * 11.5) * 13 * dir * pl;
-						wi = (Math.cos(Yl * 9) - 1) * 3.5 * pl;
-						lidMul = 1.14 - .44 * pl + .1 * Math.sin(Yl * 16) * pl;
-						eyeBoost = 1.12 - .09 * pl;
-					} else done = true;
-				} else if (kind === "spinBounce") if (Et < .7) turn = turns * Math.PI * 2 * dir * K2(Et / .7);
-				else {
-					wantHop = true;
-					done = true;
-				}
-				return {
-					turn,
-					Kr,
-					yi,
-					ki,
-					Yr,
-					Zr,
-					wi,
-					lidMul,
-					eyeBoost,
-					hop: 0,
-					done,
-					wantHop
-				};
-			}
-			function makeSpinTurn(turns = 1, dir = sign()) {
-				const s = spring(0);
-				s.t = turns * Math.PI * 2 * dir;
-				return s;
-			}
-			function spinTurnSettled(s) {
-				return Math.abs(s.t - s.x) < .004 && Math.abs(s.v) < .015;
-			}
-			g.GROK_TRICKS = {
-				HOP_SEGS,
-				HOP_DUR,
-				hopY,
-				startTrick,
-				evalTrick,
-				makeSpinTurn,
-				spinTurnSettled
-			};
-		})(globalThis);
-	}));
-	//#endregion
-	//#region src/grok-bot/fx.js
-	var init_fx = __esmMin((() => {
-		(function(global) {
-			const NS = "http://www.w3.org/2000/svg";
-			const Re0 = 114.2705;
-			const STAR_COLOR = "#f4c34e";
-			const PALETTE = [
-				"#f9705c",
-				"#5b95f0",
-				"#3fbe86",
-				"#f5b13f",
-				"#9a72ee",
-				"#35c3bd"
-			];
-			const STAR = (() => {
-				const n = [];
-				for (let e = 0; e < 10; e++) {
-					const t = -Math.PI / 2 + e * Math.PI / 5;
-					const s = e % 2 === 0 ? 1 : .42;
-					n.push(`${(Math.cos(t) * s).toFixed(3)} ${(Math.sin(t) * s).toFixed(3)}`);
-				}
-				return "M" + n.join("L") + "Z";
-			})();
-			const MAP = {
-				thinking: "dots",
-				orbit: "orbit",
-				radar: "radar",
-				progress: "progress",
-				spawning: "gather",
-				dictating: "wave",
-				sending: "send",
-				receiving: "receive",
-				uploading: "dock",
-				bouncing: "ball",
-				loading: "whirl",
-				"powering-down": "standby",
-				writing: "pencil",
-				alerting: "bang"
-			};
-			const CYCLE = new Set(["progress", "spawning"]);
-			const CYCLE_ON = {
-				progress: 2500,
-				spawning: 2e3
-			};
-			const CYCLE_OFF = 1500;
-			const SCALE = {
-				dots: 1.5,
-				orbit: 1.14,
-				radar: 1.14,
-				progress: 1.32,
-				gather: 1.15,
-				wave: 1.42,
-				send: 1.12,
-				receive: 1.12,
-				dock: 1.3,
-				ball: 1.22,
-				whirl: 1.45,
-				pencil: 1.18,
-				bang: 1.28,
-				standby: 1.75
-			};
-			const RADIUS = {
-				dots: 22,
-				orbit: 19,
-				radar: 19,
-				progress: 19,
-				gather: 19,
-				wave: 16,
-				send: 20,
-				receive: 20,
-				dock: 20,
-				ball: 18,
-				whirl: 15,
-				pencil: 17,
-				bang: 13,
-				standby: 13
-			};
-			const P_BLEND = .62;
-			const DOT_R = 22;
-			const DOT_GAP = 62;
-			const POP0 = .84;
-			const POP1 = .22;
-			const SEND_MS = 1500;
-			const RECV_MS = 1700;
-			const PENCIL_MS = 2500;
-			const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
-			const rand = (a, b) => a + Math.random() * (b - a);
-			const Rc = (n) => 1 - Math.pow(1 - n, 3);
-			const y1e = (n) => 1 + 2.70158 * Math.pow(n - 1, 3) + 1.70158 * Math.pow(n - 1, 2);
-			const K2 = (n) => n < .5 ? 4 * n * n * n : 1 - Math.pow(-2 * n + 2, 3) / 2;
-			function el(tag, attrs) {
-				const n = document.createElementNS(NS, tag);
-				if (attrs) for (const k in attrs) n.setAttribute(k, attrs[k]);
-				return n;
-			}
-			function closedSpline(pts) {
-				const e = pts.length;
-				let t = `M${pts[0][0].toFixed(2)} ${pts[0][1].toFixed(2)}`;
-				for (let s = 0; s < e; s++) {
-					const r = pts[(s - 1 + e) % e], i = pts[s], o = pts[(s + 1) % e], l = pts[(s + 2) % e];
-					t += `C${(i[0] + (o[0] - r[0]) / 6).toFixed(2)} ${(i[1] + (o[1] - r[1]) / 6).toFixed(2)} ${(o[0] - (l[0] - i[0]) / 6).toFixed(2)} ${(o[1] - (l[1] - i[1]) / 6).toFixed(2)} ${o[0].toFixed(2)} ${o[1].toFixed(2)}`;
-				}
-				return t + "Z";
-			}
-			function circleRing(R, n = 96) {
-				return Array.from({ length: n }, (_, e) => {
-					const t = e / n * Math.PI * 2;
-					return [R + Math.cos(t) * R, R + Math.sin(t) * R];
-				});
-			}
-			function flattenPath(d, step = 4) {
-				const t = d.match(/[MLCQZmlcqz]|-?\d*\.?\d+(?:e[-+]?\d+)?/g) ?? [];
-				const s = [];
-				let r = 0, i = "", o = 0, l = 0, c = 0, u = 0;
-				const rd = () => parseFloat(t[r++]);
-				const m = (f, h) => {
-					const y = Math.max(2, Math.ceil(h / step));
-					for (let k = 1; k <= y; k++) s.push(f(k / y));
-				};
-				while (r < t.length) {
-					if (/[a-z]/i.test(t[r])) i = t[r++].toUpperCase();
-					if (i === "Z") {
-						if (Math.hypot(c - o, u - l) > .01) m((f) => [o + (c - o) * f, l + (u - l) * f], Math.hypot(c - o, u - l));
-						o = c;
-						l = u;
-						continue;
-					}
-					if (r >= t.length) break;
-					if (i === "M") {
-						o = rd();
-						l = rd();
-						c = o;
-						u = l;
-						s.push([o, l]);
-						i = "L";
-					} else if (i === "L") {
-						const f = rd(), h = rd();
-						m((y) => [o + (f - o) * y, l + (h - l) * y], Math.hypot(f - o, h - l));
-						o = f;
-						l = h;
-					} else if (i === "C") {
-						const f = rd(), h = rd(), y = rd(), k = rd(), v = rd(), b = rd(), x = o, N = l;
-						m((E) => {
-							const A = 1 - E;
-							return [A * A * A * x + 3 * A * A * E * f + 3 * A * E * E * y + E * E * E * v, A * A * A * N + 3 * A * A * E * h + 3 * A * E * E * k + E * E * E * b];
-						}, Math.hypot(f - o, h - l) + Math.hypot(y - f, k - h) + Math.hypot(v - y, b - k));
-						o = v;
-						l = b;
-					} else r++;
-				}
-				return s;
-			}
-			function polarRing(pts, R, n = 96) {
-				return Array.from({ length: n }, (_, t) => {
-					const s = t / n * Math.PI * 2, r = Math.cos(s), i = Math.sin(s);
-					let o = 0;
-					for (let l = 0; l < pts.length; l++) {
-						const c = pts[l], u = pts[(l + 1) % pts.length];
-						const d = c[0] - R, m = c[1] - R, f = u[0] - R, h = u[1] - R;
-						const y = (f - d) * i - (h - m) * r;
-						if (Math.abs(y) < 1e-9) continue;
-						const k = (d * i - m * r) / -y;
-						if (k < 0 || k > 1) continue;
-						const v = (d + (f - d) * k) * r + (m + (h - m) * k) * i;
-						if (v > o) o = v;
-					}
-					return [R + r * o, R + i * o];
-				});
-			}
-			function rotateRing(n, e, R) {
-				const t = n.length, s = e / t * Math.PI * 2, r = Math.cos(s), i = Math.sin(s);
-				return Array.from({ length: t }, (_, l) => {
-					const [c, u] = n[((l - e) % t + t) % t];
-					const d = c - R, m = u - R;
-					return [R + d * r - m * i, R + d * i + m * r];
-				});
-			}
-			function lerpRing(a, b, t) {
-				return a.map((p, i) => [p[0] + (b[i][0] - p[0]) * t, p[1] + (b[i][1] - p[1]) * t]);
-			}
-			function spanHalf(ring, y, R) {
-				let left = -Infinity, right = Infinity;
-				for (let i = 0; i < ring.length; i++) {
-					const a = ring[i], b = ring[(i + 1) % ring.length];
-					if (a[1] <= y === b[1] <= y) continue;
-					const x = a[0] + (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]);
-					if (x <= R) {
-						if (x > left) left = x;
-					} else if (x < right) right = x;
-				}
-				return [Number.isFinite(left) ? left : R, Number.isFinite(right) ? right : R];
-			}
-			function capsule(n, e, R) {
-				const t = n / 2, s = R - e / 2 + t, r = R + e / 2 - t;
-				return `M${R - t} ${s}A${t} ${t} 0 0 1 ${R + t} ${s}L${R + t} ${r}A${t} ${t} 0 0 1 ${R - t} ${r}Z`;
-			}
-			function taper(n, e, t, R) {
-				const s = n / 2, r = e / 2, i = R - t / 2, o = R + t / 2;
-				return `M${R - s} ${i + s}A${s} ${s} 0 0 1 ${R + s} ${i + s}L${R + r} ${o - r}A${r} ${r} 0 0 1 ${R - r} ${o - r}Z`;
-			}
-			const ringCache = /* @__PURE__ */ new Map();
-			function shapeRing(path, R) {
-				let r = ringCache.get(path);
-				if (!r) {
-					r = polarRing(flattenPath(path), R);
-					ringCache.set(path, r);
-				}
-				return r;
-			}
-			function pencilPose(now, stateAt) {
-				const Pt = now - stateAt;
-				const mt = (Pt / PENCIL_MS % 1 + 1) % 1;
-				if (mt < .68) {
-					const Mt = mt / .68;
-					const Lt = Mt * Mt * (3 - 2 * Mt);
-					const yn = clamp(Mt / .08, 0, 1) * clamp((1 - Mt) / .08, 0, 1);
-					return {
-						x: -54 + 118 * Lt,
-						y: 26,
-						wig: Math.sin(Mt * 24) * 3.2 * yn,
-						rot: 17 + Math.sin(Pt * 6e-4) * 1,
-						lift: false
-					};
-				}
-				const Dt = K2((mt - .68) / .32);
-				return {
-					x: 64 - 118 * Dt,
-					y: 26 - 20 * Math.sin(Dt * Math.PI),
-					wig: 0,
-					rot: 17 - 2 * Math.sin(Dt * Math.PI) + Math.sin(Pt * 6e-4) * 1,
-					lift: true
-				};
-			}
-			function smoothLine(pts) {
-				const Pt = pts.length;
-				let mt = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
-				if (Pt === 2) return mt + `L${pts[1][0].toFixed(1)} ${pts[1][1].toFixed(1)}`;
-				for (let Dt = 0; Dt < Pt - 1; Dt++) {
-					const Mt = pts[Math.max(Dt - 1, 0)], Lt = pts[Dt], yn = pts[Dt + 1], an = pts[Math.min(Dt + 2, Pt - 1)];
-					mt += `C${(Lt[0] + (yn[0] - Mt[0]) / 6).toFixed(1)} ${(Lt[1] + (yn[1] - Mt[1]) / 6).toFixed(1)} ${(yn[0] - (an[0] - Lt[0]) / 6).toFixed(1)} ${(yn[1] - (an[1] - Lt[1]) / 6).toFixed(1)} ${yn[0].toFixed(1)} ${yn[1].toFixed(1)}`;
-				}
-				return mt;
-			}
-			function wave(ze) {
-				return .42 + .29 * Math.sin(ze * .0021) * Math.sin(ze * .0034) + .29 * Math.sin(ze * .0013 + 1.7);
-			}
-			function createParticles({ back, front, idPrefix, getRadius }) {
-				const reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-				const scale = () => getRadius() / Re0;
-				let spin = 0, sizeScale = 1, wide = false, sustain = false, last = -1;
-				let parts = [];
-				const burst = (W = 20, H = 1, G = 0) => {
-					if (reduce || !back || parts.length > 120) return;
-					const R = global.GROK_GEO.Re;
-					for (let Y = 0; Y < W; Y++) {
-						const U = Y / W * Math.PI * 2 + rand(-.35, .35);
-						const ee = rand(96, 116) * scale();
-						const te = rand(170, 360) * H;
-						const ne = -Math.sin(U), j = Math.cos(U), Z = G * te * .2;
-						const X = Math.random() < .18;
-						parts.push({
-							x: R + Math.cos(U) * ee,
-							y: R + Math.sin(U) * ee,
-							vx: Math.cos(U) * te + ne * Z,
-							vy: Math.sin(U) * te + j * Z - rand(20, 75),
-							life: 0,
-							max: rand(.45, .85),
-							r: X ? rand(4, 7) : rand(3.5, 8),
-							rot: rand(0, 360),
-							vr: rand(-260, 260),
-							color: X ? STAR_COLOR : PALETTE[Math.random() * PALETTE.length | 0],
-							round: !X && Math.random() < .3,
-							star: X,
-							orbit: null,
-							el: null
-						});
-					}
-				};
-				let planes = [], hue0 = 0, beltN = 4, spawnQ = [];
-				let prevSpin = 0, spinVel = 0, seeding = false, cooling = false, trailId = 0;
-				const THRESH = .9, HARD = 5;
-				const makePlanes = (W = 1) => {
-					const H = rand(-.85, .85);
-					planes = [];
-					for (let G = 0; G < W; G++) planes.push({
-						tilt: rand(.16, .5),
-						roll: H + G * Math.PI / W + rand(-.12, .12)
-					});
-					beltN = W > 1 ? W * 3 : Math.round(rand(3, 5));
-					hue0 = rand(0, 360);
-				};
-				const spawnBelt = (lam, dir, i) => {
-					if (parts.length > 110) return;
-					if (!planes.length) makePlanes();
-					const Y = planes[i % planes.length];
-					const R = global.GROK_GEO.Re;
-					parts.push({
-						x: R,
-						y: R,
-						vx: 0,
-						vy: 0,
-						ret: 0,
-						life: 0,
-						max: 9,
-						r: beltN <= 3 ? rand(8, 10.5) : beltN === 4 ? rand(6.6, 8.6) : rand(5.6, 7.4),
-						rot: rand(0, 360),
-						vr: rand(-240, 240),
-						color: PALETTE[Math.random() * PALETTE.length | 0],
-						hue: hue0 + i * 360 / Math.max(beltN, 1) + rand(-14, 14),
-						hueSpan: rand(45, 95) * (Math.random() < .5 ? 1 : -1),
-						hueVel: rand(18, 42) * (Math.random() < .5 ? 1 : -1),
-						orbit: {
-							lam,
-							lamVel: dir * rand(.5, 1.1),
-							tilt: Y.tilt + rand(-.04, .04),
-							roll: Y.roll + rand(-.05, .05),
-							rad: scale() * 116 + (i / planes.length | 0) * (38 / Math.max(Math.ceil(beltN / planes.length) - 1, 1)) + rand(-1.5, 1.5),
-							radVel: rand(0, 2.5),
-							follow: rand(.74, .94),
-							carry: 0,
-							arc: rand(2.2, 3.4)
-						},
-						hist: [],
-						el: null,
-						trailEl: null,
-						trailFrontEl: null,
-						gradEl: null,
-						stops: null
-					});
-				};
-				const project = (W, H) => {
-					const G = W.rad * Math.sin(H), Y = -W.rad * Math.cos(H) * Math.sin(W.tilt);
-					const U = Math.cos(W.roll), ee = Math.sin(W.roll);
-					const R = global.GROK_GEO.Re;
-					return {
-						x: R + G * U - Y * ee,
-						y: R + G * ee + Y * U
-					};
-				};
-				const depth = (W, H) => Math.cos(H) * Math.cos(W.tilt);
-				const q = (W) => Math.round(W * 10) / 10;
-				const ribbon = (W, H) => {
-					const G = W.length;
-					let Y = 0;
-					for (let le = 1; le < G; le++) Y += Math.hypot(W[le].x - W[le - 1].x, W[le].y - W[le - 1].y);
-					const U = Math.min(H, Y * .34), ee = [], te = [];
-					for (let le = 0; le < G; le++) {
-						const Q = W[le > 0 ? le - 1 : 0], ae = W[le < G - 1 ? le + 1 : G - 1];
-						let ce = ae.x - Q.x, xe = ae.y - Q.y;
-						const Se = Math.hypot(ce, xe) || 1;
-						ce /= Se;
-						xe /= Se;
-						const fe = U * (.5 + .5 * (le / (G - 1))) / 2;
-						ee.push(-xe * fe);
-						te.push(ce * fe);
-					}
-					const arc = (le) => `A${q(Math.max(Math.hypot(ee[le], te[le]), .2))} ${q(Math.max(Math.hypot(ee[le], te[le]), .2))} 0 0 0 `;
-					const band = (le, Q) => {
-						let ae = "";
-						for (let ce = le; ce <= Q; ce++) ae += `${ce === le ? "M" : "L"}${q(W[ce].x + ee[ce])} ${q(W[ce].y + te[ce])}`;
-						ae += Q === G - 1 ? arc(Q) : "L";
-						for (let ce = Q; ce >= le; ce--) ae += `${ce === Q ? "" : "L"}${q(W[ce].x - ee[ce])} ${q(W[ce].y - te[ce])}`;
-						if (le === 0) ae += `${arc(0)}${q(W[0].x + ee[0])} ${q(W[0].y + te[0])}`;
-						return ae + "Z";
-					};
-					if (Y < 2) return {
-						front: "",
-						back: ""
-					};
-					let Z = "", X = "", se = 0;
-					while (se < G) {
-						const le = W[se].z >= 0;
-						let Q = se;
-						while (Q + 1 < G && W[Q + 1].z >= 0 === le) Q++;
-						const ae = Math.max(se - 1, 0), ce = Math.min(Q + 1, G - 1);
-						if (ce > ae) {
-							const xe = band(ae, ce);
-							le ? Z += xe : X += xe;
-						}
-						se = Q + 1;
-					}
-					return {
-						front: Z,
-						back: X
-					};
-				};
-				const tickVel = (dt) => {
-					let H = spin - prevSpin;
-					if (!isFinite(H) || Math.abs(H) > 1.2) H = 0;
-					prevSpin = spin;
-					const was = Math.abs(spinVel) >= THRESH;
-					spinVel = dt > 0 ? H / dt : 0;
-					const nowFast = Math.abs(spinVel) >= THRESH;
-					if (!was && nowFast) {
-						makePlanes(wide ? 3 : 1);
-						seeding = false;
-						cooling = false;
-					}
-					if (was && !nowFast) {
-						spawnQ.length = 0;
-						cooling = false;
-					}
-				};
-				const seedBelts = (now) => {
-					if (reduce || !back) return;
-					const H = Math.abs(spinVel);
-					const live = parts.some((U) => U.orbit != null && U.ret < 1);
-					if (sustain && seeding && spawnQ.length === 0 && H >= THRESH && !live) {
-						seeding = false;
-						cooling = true;
-					}
-					if (!seeding && (H >= HARD || sustain && cooling && H >= THRESH)) {
-						seeding = true;
-						cooling = false;
-						spawnQ = [];
-						for (let U = 0; U < beltN; U++) spawnQ.push({
-							at: now + U * rand(55, 105),
-							i: U
-						});
-					}
-					while (spawnQ.length && now >= spawnQ[0].at) {
-						const U = spawnQ.shift();
-						spawnBelt(spin - rand(0, .18), Math.sign(spinVel) || 1, U.i);
-					}
-				};
-				const step = (dt, realDt) => {
-					if (!back || !parts.length) return;
-					const spinning = Math.abs(spinVel) >= THRESH;
-					const keep = [];
-					global.GROK_GEO.Re;
-					for (const j of parts) {
-						j.life += j.life > 0 ? realDt : dt;
-						const Z = clamp(j.life / j.max, 0, 1);
-						if (j.orbit) {
-							const ce = !spinning || Z > .55;
-							j.ret = clamp(j.ret + (ce ? realDt / .5 : -realDt / .35), 0, 1);
-							if (j.ret >= 1) {
-								j.trailEl?.remove();
-								j.trailFrontEl?.remove();
-								j.gradEl?.remove();
-								continue;
-							}
-						} else if (j.life >= j.max) {
-							j.el?.remove();
-							continue;
-						}
-						const X = j.orbit ? Math.min(1, j.life / .26) : Z < .1 ? Z / .1 : Math.pow(1 - (Z - .1) / .9, 1.7);
-						if (j.orbit) {
-							const ce = j.orbit;
-							if (spinning) {
-								ce.carry = spinVel * ce.follow;
-								ce.lam += spinVel * dt * ce.follow + ce.lamVel * dt;
-								ce.rad += ce.radVel * dt;
-							} else {
-								ce.lam += (ce.carry + ce.lamVel) * dt;
-								ce.carry *= Math.exp(-2.6 * dt);
-								ce.lamVel *= Math.exp(-2.6 * dt);
-								ce.rad += ce.radVel * dt;
-							}
-							const xe = project(ce, ce.lam);
-							j.x = xe.x;
-							j.y = xe.y;
-							const Se = depth(ce, ce.lam);
-							const fe = .72 + .28 * clamp(Se, 0, 1);
-							const ke = Math.min(j.life / .34, 1);
-							const be = ke * ke * (3 - 2 * ke);
-							const Ne = Math.max(j.r * fe * 1.7 * sizeScale * be * (1 - .72 * j.ret * j.ret), .5);
-							if (!j.trailEl) {
-								const de = el("path", {
-									"data-trail": "",
-									stroke: "none"
-								});
-								const Te = el("linearGradient", {
-									id: `${idPrefix}t${trailId++}`,
-									gradientUnits: "userSpaceOnUse"
-								});
-								j.stops = [];
-								for (let Ie = 0; Ie < 5; Ie++) {
-									const qe = el("stop", { offset: (Ie / 4).toFixed(3) });
-									Te.appendChild(qe);
-									j.stops.push(qe);
-								}
-								back.appendChild(Te);
-								j.gradEl = Te;
-								de.setAttribute("fill", `url(#${Te.id})`);
-								back.appendChild(de);
-								j.trailEl = de;
-								const Ce = el("path", {
-									"data-trail": "",
-									stroke: "none",
-									fill: de.getAttribute("fill")
-								});
-								front?.appendChild(Ce);
-								j.trailFrontEl = Ce;
-							}
-							const Ae = j.hist;
-							const oe = Ae.length ? Ae[Ae.length - 1].l : ce.lam;
-							const ve = ce.lam - oe;
-							const ge = Math.min(Math.ceil(Math.abs(ve) / .09), 24);
-							for (let de = 1; de <= ge; de++) {
-								const Te = oe + ve * de / ge, Je = project(ce, Te);
-								Ae.push({
-									x: Je.x,
-									y: Je.y,
-									l: Te,
-									z: depth(ce, Te)
-								});
-							}
-							if (!Ae.length) Ae.push({
-								x: j.x,
-								y: j.y,
-								l: ce.lam,
-								z: Se
-							});
-							const ye = ce.arc * (1 - j.ret * j.ret * (3 - 2 * j.ret));
-							while (Ae.length > 2 && Math.abs(ce.lam - Ae[0].l) > ye) Ae.shift();
-							const ue = Math.abs(ce.lam - Ae[0].l) - ye;
-							if (Ae.length >= 2 && ue > 0) {
-								const de = Ae[0].l + Math.sign(ce.lam - Ae[0].l) * ue, Te = project(ce, de);
-								Ae[0] = {
-									x: Te.x,
-									y: Te.y,
-									l: de,
-									z: depth(ce, de)
-								};
-							}
-							if (Ae.length > 48) Ae.splice(0, Ae.length - 48);
-							if (Ae.length >= 2) {
-								const { front: de, back: Te } = ribbon(Ae, Ne);
-								const Je = X.toFixed(3);
-								j.trailEl.setAttribute("d", Te);
-								j.trailEl.setAttribute("opacity", Je);
-								j.trailFrontEl?.setAttribute("d", de);
-								j.trailFrontEl?.setAttribute("opacity", Je);
-								if (j.stops) {
-									const qe = (j.hue ?? 0) + (j.hueVel ?? 0) * j.life;
-									for (let we = 0; we < j.stops.length; we++) {
-										const Pe = we / (j.stops.length - 1), je = qe + Pe * (j.hueSpan ?? 120);
-										j.stops[we].setAttribute("stop-color", `hsl(${((je % 360 + 360) % 360).toFixed(0)} 56% ${(56 + 11 * Pe).toFixed(0)}%)`);
-									}
-								}
-								const Ce = Ae[0], Ie = Ae[Ae.length - 1];
-								j.gradEl?.setAttribute("x1", Ce.x.toFixed(1));
-								j.gradEl?.setAttribute("y1", Ce.y.toFixed(1));
-								j.gradEl?.setAttribute("x2", Ie.x.toFixed(1));
-								j.gradEl?.setAttribute("y2", Ie.y.toFixed(1));
-							} else {
-								j.trailEl.setAttribute("opacity", "0");
-								j.trailFrontEl?.setAttribute("opacity", "0");
-							}
-							keep.push(j);
-							continue;
-						}
-						j.x += j.vx * dt;
-						j.y += j.vy * dt;
-						const se = Math.pow(.94, dt * 60);
-						j.vx *= se;
-						j.vy = j.vy * se + 40 * dt;
-						const le = j.life / j.max;
-						const Q = le < .1 ? le / .1 : Math.pow(1 - (le - .1) / .9, 1.7);
-						const ae = Math.max(j.r * (1 - le * .4), .5);
-						if (!j.el) {
-							const ce = el(j.star ? "path" : j.round ? "circle" : "rect");
-							if (j.star) ce.setAttribute("d", STAR);
-							ce.setAttribute("fill", j.color);
-							back.appendChild(ce);
-							j.el = ce;
-						}
-						j.el.setAttribute("opacity", Q.toFixed(3));
-						if (j.star) {
-							j.rot += j.vr * dt;
-							j.el.setAttribute("transform", `translate(${j.x.toFixed(1)} ${j.y.toFixed(1)}) rotate(${j.rot.toFixed(1)}) scale(${ae.toFixed(2)})`);
-						} else if (j.round) {
-							j.el.setAttribute("cx", j.x.toFixed(1));
-							j.el.setAttribute("cy", j.y.toFixed(1));
-							j.el.setAttribute("r", ae.toFixed(2));
-						} else {
-							const ce = Math.hypot(j.vx, j.vy);
-							const xe = Math.max(ae * 2, Math.min(ce * .05, 30)), Se = ae * 1.5;
-							const fe = Math.atan2(j.vy, j.vx) * 180 / Math.PI;
-							j.el.setAttribute("width", xe.toFixed(1));
-							j.el.setAttribute("height", Se.toFixed(1));
-							j.el.setAttribute("rx", (Se / 2).toFixed(2));
-							j.el.setAttribute("x", (j.x - xe / 2).toFixed(1));
-							j.el.setAttribute("y", (j.y - Se / 2).toFixed(1));
-							j.el.setAttribute("transform", `rotate(${fe.toFixed(1)} ${j.x.toFixed(1)} ${j.y.toFixed(1)})`);
-						}
-						keep.push(j);
-					}
-					parts = keep;
-				};
-				return {
-					burst,
-					clear() {
-						for (const W of parts) {
-							W.el?.remove();
-							W.trailEl?.remove();
-							W.trailFrontEl?.remove();
-							W.gradEl?.remove();
-						}
-						parts = [];
-						spawnQ = [];
-						seeding = false;
-						cooling = false;
-					},
-					update(now, dt, G) {
-						const Y = last < 0 ? dt : Math.max((now - last) / 1e3, 0);
-						last = now;
-						sizeScale = G.sizeScale;
-						spin = G.spinAngle;
-						wide = G.wideStyle;
-						sustain = G.sustainBelts === true;
-						tickVel(dt);
-						seedBelts(now);
-						step(dt, Y);
-					},
-					hasLife: () => parts.length > 0 || spawnQ.length > 0
-				};
-			}
-			class OverlayLayer {
-				constructor() {
-					this.uid = `fx-${Math.random().toString(36).slice(2, 8)}`;
-					this.back = el("g", { "aria-hidden": "true" });
-					this.front = el("g", { "aria-hidden": "true" });
-					this.dots = [0, 1].map(() => el("path", { style: "fill:var(--fg);display:none" }));
-					this.rings = [
-						0,
-						1,
-						2,
-						3,
-						4,
-						5,
-						6
-					].map(() => el("circle", {
-						cx: "0",
-						cy: "0",
-						r: "0",
-						fill: "none",
-						style: "display:none;stroke:var(--fg)"
-					}));
-					this.parts = [
-						0,
-						1,
-						2,
-						3,
-						4,
-						5,
-						6
-					].map(() => el("circle", {
-						cx: "0",
-						cy: "0",
-						r: "0",
-						style: "fill:var(--fg);display:none"
-					}));
-					this.glyphs = [
-						0,
-						1,
-						2
-					].map(() => el("path", { style: "display:none" }));
-					this.ink = [];
-					this.recvDir = -.7;
-					this.recvTick = -1;
-					this.overlayAt = 0;
-					this.circlePath = "";
-					this.pencilPath = "";
-					this.bangPath = "";
-					this.progressCycleMs = null;
-				}
-				attach(svg, bodyGroup) {
-					svg.appendChild(this.back);
-					this.dots.forEach((n) => svg.appendChild(n));
-					this.rings.forEach((n) => svg.appendChild(n));
-					this.parts.forEach((n) => svg.appendChild(n));
-					this.glyphs.forEach((n) => svg.appendChild(n));
-					svg.appendChild(bodyGroup);
-					svg.appendChild(this.front);
-				}
-				hideAll() {
-					for (const n of this.dots) n.style.display = "none";
-					for (const n of this.rings) n.style.display = "none";
-					for (const n of this.parts) n.style.display = "none";
-					for (const n of this.glyphs) n.style.display = "none";
-				}
-				amount(name, cur, prev, yl, mix) {
-					if (name === cur) return yl * mix;
-					if (name === prev) return yl * (1 - mix);
-					return 0;
-				}
-				dotsPulse(now, slot, yl, reduce = false) {
-					const Dt = (((now - this.overlayAt) / 1400 + .119) % 1 + 1) % 1;
-					let Mt = Math.abs(Dt - slot / 3);
-					Mt = Math.min(Mt, 1 - Mt);
-					const Lt = reduce ? 1 : Math.exp(-(Mt * Mt) / (2 * .15 * .15));
-					const yn = reduce ? 0 : 1;
-					return {
-						lift: Lt * 9 * yl * yn,
-						pop: 1 + yn * (POP0 + POP1 * Lt - 1),
-						tone: 1 - yn * .5 * (1 - Lt)
-					};
-				}
-				paint(now, stateAt, cur, prev, yl, mix, R, reduce = false) {
-					this.hideAll();
-					this._reduce = reduce;
-					const extra = this.extras(now, stateAt, cur, prev, yl, mix);
-					const kl = (name) => this.amount(name, cur, prev, yl, mix);
-					const run = (name, fn) => {
-						const a = kl(name);
-						if (a > .004) fn(a);
-					};
-					run("dots", (a) => this.paintDots(a, now, R));
-					run("orbit", (a) => this.paintOrbit(a, now, R));
-					run("radar", (a) => this.paintRadar(a, now, R, extra.A2));
-					run("progress", (a) => this.paintProgress(a, now, R));
-					run("gather", (a) => this.paintGather(a, now, R));
-					run("wave", (a) => this.paintWave(a, now, R));
-					run("send", (a) => this.paintSend(a, now, stateAt, R));
-					run("receive", (a) => this.paintRecv(a, now, stateAt, R));
-					run("dock", (a) => this.paintDock(a, now, stateAt, R));
-					run("pencil", (a) => this.paintPencil(a, now, stateAt, R));
-					run("bang", (a) => this.paintBang(a, now, stateAt, R));
-					run("standby", (a) => this.paintStandby(a, now, R));
-				}
-				paintDots(ze, now, R) {
-					const mt = [R - DOT_GAP, R + DOT_GAP];
-					for (let Dt = 0; Dt < 2; Dt++) {
-						const Mt = this.dots[Dt];
-						const Lt = clamp((ze - Dt * .12) / (1 - Dt * .12), 0, 1);
-						if (Lt <= .004) {
-							Mt.style.display = "none";
-							continue;
-						}
-						const yn = Rc(Lt), an = y1e(Lt), Et = this.dotsPulse(now, Dt === 0 ? 0 : 2, ze, this._reduce);
-						const En = DOT_R * yn * Et.pop / R * 1.02;
-						Mt.style.display = "";
-						Mt.setAttribute("d", this.circlePath);
-						Mt.setAttribute("transform", `translate(${(R + (mt[Dt] - R) * an).toFixed(1)} ${(R - Et.lift).toFixed(1)}) scale(${En.toFixed(4)}) translate(${-R} ${-R})`);
-						Mt.setAttribute("opacity", (yn * Et.tone).toFixed(3));
-					}
-				}
-				paintOrbit(ze, now, R) {
-					const mt = Rc(ze), Mt = 52 * y1e(ze), Lt = 12, yn = now * .0017;
-					for (let an = 0; an < 5; an++) {
-						const Et = this.parts[an];
-						const En = yn + an * Math.PI * 2 / 5, Zt = Math.cos(En), dn = .5 + .5 * clamp(Zt, 0, 1);
-						Et.style.display = "";
-						Et.setAttribute("cx", (R + Mt * Math.sin(En)).toFixed(1));
-						Et.setAttribute("cy", (R - Mt * .42 * Math.cos(En)).toFixed(1));
-						Et.setAttribute("r", Math.max(Lt * dn * mt, .3).toFixed(2));
-						Et.setAttribute("opacity", (clamp((Zt + .4) / .6, .18, 1) * mt).toFixed(3));
-					}
-				}
-				paintRadar(ze, now, R, bodyR) {
-					const Dt = Rc(ze);
-					for (let yn = 0; yn < 3; yn++) {
-						const an = this.rings[yn];
-						const Et = (now / 1300 + yn / 3) % 1;
-						an.style.display = "";
-						an.removeAttribute("stroke-dasharray");
-						an.removeAttribute("transform");
-						an.setAttribute("cx", `${R}`);
-						an.setAttribute("cy", `${R}`);
-						an.setAttribute("r", (bodyR + (104 - bodyR) * Et).toFixed(1));
-						an.setAttribute("stroke-width", (3.4 * (1 - Et * .55)).toFixed(2));
-						an.setAttribute("opacity", (Dt * (1 - Et) * .9).toFixed(3));
-					}
-				}
-				paintProgress(ze, now, R) {
-					const mt = Rc(ze), Dt = y1e(ze), Mt = 62;
-					const span = this.progressCycleMs;
-					const Lt = clamp((now - this.overlayAt) / (span || CYCLE_ON.progress), 0, 1);
-					const yn = span ? Lt : clamp(Lt / .85, 0, 1);
-					const an = this.rings[3];
-					an.style.display = "";
-					an.setAttribute("cx", `${R}`);
-					an.setAttribute("cy", `${R}`);
-					an.setAttribute("r", (Mt * Dt).toFixed(1));
-					an.setAttribute("stroke-width", "5");
-					an.removeAttribute("stroke-dasharray");
-					an.removeAttribute("transform");
-					an.setAttribute("opacity", (mt * .16).toFixed(3));
-					const Et = this.rings[4];
-					const En = Mt * Dt, Zt = 2 * Math.PI * En;
-					Et.style.display = "";
-					Et.setAttribute("cx", `${R}`);
-					Et.setAttribute("cy", `${R}`);
-					Et.setAttribute("r", En.toFixed(1));
-					Et.setAttribute("stroke-width", "5");
-					Et.setAttribute("stroke-dasharray", `${Zt.toFixed(1)}`);
-					Et.setAttribute("stroke-dashoffset", (Zt * (1 - yn)).toFixed(1));
-					Et.setAttribute("transform", `rotate(-90 ${R} ${R})`);
-					Et.setAttribute("opacity", mt.toFixed(3));
-				}
-				paintGather(ze, now, R) {
-					const mt = Rc(ze), Dt = CYCLE_ON.spawning;
-					for (let Mt = 0; Mt < 5; Mt++) {
-						const Lt = this.parts[Mt];
-						const yn = clamp(((now - this.overlayAt) / Dt - Mt * .09) / .62, 0, 1);
-						if (yn >= 1) {
-							Lt.style.display = "none";
-							continue;
-						}
-						const an = 1 - Math.pow(1 - yn, 3), Et = Mt * 2.4 + yn * 2.2, En = 96 * (1 - an);
-						Lt.style.display = "";
-						Lt.setAttribute("cx", (R + En * Math.cos(Et)).toFixed(1));
-						Lt.setAttribute("cy", (R + En * Math.sin(Et) * .8).toFixed(1));
-						Lt.setAttribute("r", (9 * (.5 + .5 * an) * mt).toFixed(2));
-						Lt.setAttribute("opacity", (mt * clamp(yn * 5, 0, 1) * (1 - an * .25)).toFixed(3));
-					}
-				}
-				paintWave(ze, now, R) {
-					const mt = [
-						-2,
-						-1,
-						1,
-						2
-					], Dt = 44;
-					for (let Mt = 0; Mt < 4; Mt++) {
-						const Lt = Mt < 2 ? this.dots[Mt] : this.parts[3 + Mt];
-						const yn = mt[Mt];
-						const an = clamp((ze - Math.abs(yn) * .1) / (1 - Math.abs(yn) * .1), 0, 1);
-						if (an <= .004) {
-							Lt.style.display = "none";
-							continue;
-						}
-						const Et = y1e(an), En = wave(now) * (.55 + .45 * Math.sin(now * .012 - Math.abs(yn) * 1.05));
-						const Zt = (7 + 9 * clamp(En, .08, 1)) * Rc(an), dn = 6 * clamp(En, 0, 1) * an;
-						Lt.style.display = "";
-						if (Mt < 2) {
-							const on = Zt / R * 1.02;
-							Lt.setAttribute("d", this.circlePath);
-							Lt.setAttribute("transform", `translate(${(R + yn * Dt * Et).toFixed(1)} ${(R - dn).toFixed(1)}) scale(${on.toFixed(4)}) translate(${-R} ${-R})`);
-							Lt.setAttribute("opacity", an.toFixed(3));
-						} else {
-							Lt.setAttribute("cx", (R + yn * Dt * Et).toFixed(1));
-							Lt.setAttribute("cy", (R - dn).toFixed(1));
-							Lt.setAttribute("r", Zt.toFixed(2));
-							Lt.setAttribute("opacity", an.toFixed(3));
-						}
-					}
-				}
-				paintSend(ze, now, stateAt, R) {
-					const mt = Rc(ze), Dt = ((now - stateAt) / SEND_MS % 1 + 1) % 1;
-					const Mt = clamp((Dt - .18) / .55, 0, 1), Lt = Mt * Mt * (.4 + .6 * Mt);
-					const yn = .74, an = -.62, Et = 108 * Lt, En = this.parts[5];
-					const on = Mt > 0 && Mt < 1;
-					En.style.display = on ? "" : "none";
-					if (on) {
-						En.setAttribute("cx", (R + yn * Et).toFixed(1));
-						En.setAttribute("cy", (R + an * Et).toFixed(1));
-						En.setAttribute("r", (10 * (1 - Lt * .55) * mt).toFixed(2));
-						En.setAttribute("opacity", (mt * (1 - Lt * Lt)).toFixed(3));
-					}
-					const Zt = this.parts[6];
-					const on2 = clamp((Dt - .26) / .55, 0, 1), bn = on2 * on2 * (.4 + .6 * on2);
-					const Cn = Mt > 0 && on2 > 0 && on2 < 1;
-					Zt.style.display = Cn ? "" : "none";
-					if (Cn) {
-						const bi = 108 * bn;
-						Zt.setAttribute("cx", (R + yn * bi).toFixed(1));
-						Zt.setAttribute("cy", (R + an * bi).toFixed(1));
-						Zt.setAttribute("r", (5 * (1 - bn * .6) * mt).toFixed(2));
-						Zt.setAttribute("opacity", (mt * .3 * (1 - bn)).toFixed(3));
-					}
-					const dn = this.rings[5];
-					const on3 = clamp((Dt - .18) / .3, 0, 1), bn3 = on3 > 0 && on3 < 1;
-					dn.style.display = bn3 ? "" : "none";
-					if (bn3) {
-						dn.removeAttribute("stroke-dasharray");
-						dn.removeAttribute("transform");
-						dn.setAttribute("cx", `${R}`);
-						dn.setAttribute("cy", `${R}`);
-						dn.setAttribute("r", (20 + 34 * Rc(on3)).toFixed(1));
-						dn.setAttribute("stroke-width", (2.8 * (1 - on3)).toFixed(2));
-						dn.setAttribute("opacity", (mt * (1 - on3) * .8).toFixed(3));
-					}
-				}
-				paintRecv(ze, now, stateAt, R) {
-					const mt = Rc(ze), Dt = now - stateAt, Mt = Math.floor(Dt / RECV_MS);
-					if (Mt !== this.recvTick) {
-						this.recvTick = Mt;
-						this.recvDir = rand(-Math.PI * 1.25, Math.PI * .25);
-					}
-					const Lt = (Dt / RECV_MS % 1 + 1) % 1, yn = clamp(Lt / .6, 0, 1), an = 1 - Math.pow(1 - yn, 3);
-					const Et = Math.cos(this.recvDir), En = Math.sin(this.recvDir), Zt = 108 * (1 - an), dn = this.parts[5];
-					const bn = yn < 1;
-					dn.style.display = bn ? "" : "none";
-					if (bn) {
-						const Cn = 18 * Math.sin(yn * Math.PI) * (1 - an * .7);
-						dn.setAttribute("cx", (R + Et * Zt + -En * Cn).toFixed(1));
-						dn.setAttribute("cy", (R + En * Zt + Et * Cn).toFixed(1));
-						dn.setAttribute("r", (3.5 + 6.5 * an).toFixed(2));
-						dn.setAttribute("opacity", (mt * clamp(yn * 3.5, 0, 1) * (.3 + .7 * an)).toFixed(3));
-					}
-					const on = this.rings[6];
-					const bn2 = clamp((Lt - .58) / .32, 0, 1), Cn = bn2 > 0 && bn2 < 1;
-					on.style.display = Cn ? "" : "none";
-					if (Cn) {
-						on.removeAttribute("stroke-dasharray");
-						on.removeAttribute("transform");
-						on.setAttribute("cx", `${R}`);
-						on.setAttribute("cy", `${R}`);
-						on.setAttribute("r", (20 + 26 * Rc(bn2)).toFixed(1));
-						on.setAttribute("stroke-width", (2.8 * (1 - bn2)).toFixed(2));
-						on.setAttribute("opacity", (mt * (1 - bn2) * .8).toFixed(3));
-					}
-				}
-				paintDock(ze, now, stateAt, R) {
-					const mt = Rc(ze), Dt = (now - stateAt) / 1e3, Mt = 42, Lt = 1.1;
-					for (let yn = 0; yn < 2; yn++) {
-						const an = this.parts[5 + yn];
-						const Et = clamp((Dt - (.2 + yn * 1.3)) / .9, 0, 1);
-						if (Et <= 0) {
-							an.style.display = "none";
-							continue;
-						}
-						const En = 1 - Math.pow(1 - Et, 3);
-						const Zt = now * .001 * Lt + yn * Math.PI;
-						const dn = R + Mt * Math.sin(Zt), on = R + Mt * .5 * Math.cos(Zt) + Math.sin(now * .003 + yn) * 2;
-						const bn = R - 120 + yn * 30, Cn = R + 95;
-						an.style.display = "";
-						an.setAttribute("cx", (bn + (dn - bn) * En).toFixed(1));
-						an.setAttribute("cy", (Cn + (on - Cn) * En).toFixed(1));
-						an.setAttribute("r", ((7 + 3 * En) * mt).toFixed(2));
-						an.setAttribute("opacity", (mt * clamp(Et * 4, 0, 1)).toFixed(3));
-					}
-				}
-				paintPencil(ze, now, stateAt, R) {
-					const mt = pencilPose(now, stateAt), Dt = this.glyphs[0];
-					const Lt = (mt.rot - 90) * Math.PI / 180, yn = 68, an = Math.cos(Lt) * yn, Et = Math.sin(Lt) * yn;
-					Dt.style.display = "";
-					Dt.setAttribute("d", this.pencilPath);
-					Dt.style.fill = "var(--fg)";
-					Dt.setAttribute("transform", `translate(${(R + (mt.x + an) * ze).toFixed(1)} ${(R + (mt.y + mt.wig * .15 + Et) * ze).toFixed(1)}) rotate(${(mt.rot * ze).toFixed(1)}) scale(${Rc(ze).toFixed(3)}) translate(${-R} ${-R})`);
-					Dt.setAttribute("opacity", clamp(ze * 1.6 - .3, 0, 1).toFixed(3));
-					if (ze > .6 && !mt.lift) {
-						const x = R + mt.x, y = R + mt.y + mt.wig + 19, last = this.ink[this.ink.length - 1];
-						if (!last || Math.hypot(x - last[0], y - last[1]) > 2.4) {
-							this.ink.push([x, y]);
-							if (this.ink.length > 64) this.ink.shift();
-						} else {
-							last[0] = x;
-							last[1] = y;
-						}
-					} else if (this.ink.length) this.ink.splice(0, 2);
-					const line = this.glyphs[1];
-					if (this.ink.length < 2) line.style.display = "none";
-					else {
-						line.style.display = "";
-						line.style.fill = "none";
-						line.style.stroke = "var(--fg)";
-						line.setAttribute("stroke-width", "6");
-						line.setAttribute("stroke-linecap", "round");
-						line.setAttribute("stroke-linejoin", "round");
-						line.setAttribute("d", smoothLine(this.ink));
-						line.setAttribute("opacity", clamp(ze * 1.2, 0, 1).toFixed(3));
-					}
-				}
-				paintBang(ze, now, stateAt, R) {
-					const mt = this.glyphs[2];
-					const Dt = (now - stateAt) / 1e3, Mt = Rc(clamp(ze * 1.1, 0, 1));
-					const Lt = Math.exp(-(Dt % 2.2 * 5.5)), yn = Math.sin(Dt * 42) * 2.2 * Lt;
-					mt.style.display = "";
-					mt.setAttribute("d", this.bangPath);
-					mt.style.fill = "var(--fg)";
-					mt.setAttribute("transform", `translate(0 ${(-26 - (1 - Mt) * 70).toFixed(1)}) rotate(${yn.toFixed(2)} ${R} ${(R - 74).toFixed(1)}) translate(${R} ${R}) scale(${clamp(ze * 1.2, 0, 1).toFixed(3)}) translate(${-R} ${-R})`);
-					mt.setAttribute("opacity", clamp(ze * 1.5 - .2, 0, 1).toFixed(3));
-				}
-				paintStandby(ze, now, R) {
-					const mt = Rc(ze), Dt = this.parts[4];
-					const Lt = .5 + .5 * Math.sin(now * .0016);
-					Dt.style.display = "";
-					Dt.setAttribute("cx", `${R}`);
-					Dt.setAttribute("cy", `${R}`);
-					Dt.setAttribute("r", (26 + 7 * Lt).toFixed(1));
-					Dt.setAttribute("opacity", (mt * (.06 + .1 * Lt)).toFixed(3));
-					const Mt = this.rings[2];
-					const show = ze < .995;
-					Mt.style.display = show ? "" : "none";
-					if (show) {
-						Mt.removeAttribute("stroke-dasharray");
-						Mt.removeAttribute("transform");
-						Mt.setAttribute("cx", `${R}`);
-						Mt.setAttribute("cy", `${R}`);
-						Mt.setAttribute("r", (104 - 88 * mt).toFixed(1));
-						Mt.setAttribute("stroke-width", "2.4");
-						Mt.setAttribute("opacity", ((1 - mt) * .5).toFixed(3));
-					}
-				}
-				extras(now, stateAt, cur, prev, yl, mix) {
-					const kl = (name) => this.amount(name, cur, prev, yl, mix);
-					const Lee = kl("dots");
-					const rX = this.dotsPulse(now, 1, yl, this._reduce);
-					let iX = 1;
-					if (cur === "dots" || prev === "dots") iX = 1 + (rX.pop - 1) * (Lee / Math.max(yl, .001));
-					const Fme = kl("receive");
-					if (Fme > .004) {
-						const gn = clamp((((now - stateAt) / RECV_MS % 1 + 1) % 1 - .58) / .34, 0, 1);
-						iX *= 1 + .11 * Math.sin(gn * Math.PI) * Fme;
-					}
-					const zme = kl("send");
-					if (zme > .004) {
-						const _t = ((now - stateAt) / SEND_MS % 1 + 1) % 1;
-						const gn = _t < .18 ? -.06 * Math.sin(_t / .18 * Math.PI) : 0;
-						const Gn = _t >= .18 && _t < .42 ? .05 * Math.sin((_t - .18) / .24 * Math.PI) : 0;
-						iX *= 1 + (gn + Gn) * zme;
-					}
-					const qee = kl("bang");
-					if (qee > .004) iX *= 1 + .04 * Math.exp(-((now - stateAt) / 1e3 % 2.2) * 5.5) * qee;
-					let yre = 0, aX = 0, wl = 0;
-					const c1 = kl("pencil");
-					if (c1 > .004) {
-						const _t = pencilPose(now, stateAt);
-						yre += _t.x * c1;
-						aX += (_t.y + _t.wig * .5) * c1;
-						wl += _t.rot * c1;
-					}
-					if (qee > .004) aX += 58 * qee;
-					const jee = kl("whirl");
-					if (jee > .004) {
-						const _t = now / 1e3;
-						yre += (Math.sin(_t * .9) * 2 + Math.sin(_t * 1.7) * .8) * jee;
-						aX += (Math.sin(_t * 1.3) * 2.4 + Math.sin(_t * .6) * 1.2) * jee;
-					}
-					const kre = kl("ball");
-					if (kre > .004) {
-						const _t = (now - stateAt) / 1e3, gn = .62, Gn = 52, Ti = 8 * Gn / (gn * gn), Ui = 40;
-						const Si = Math.sqrt(2 * Ui / Ti);
-						let Ea;
-						if (_t < Si) Ea = Ui - .5 * Ti * _t * _t;
-						else {
-							const Ca = ((_t - Si) / gn % 1 + 1) % 1;
-							Ea = 4 * Gn * Ca * (1 - Ca);
-						}
-						aX += (40 - Ea) * kre;
-					}
-					const mixR = (tbl) => {
-						if (!cur) return 19;
-						return (tbl[cur] || 19) * mix + (prev ? tbl[prev] || tbl[cur] : tbl[cur] || 19) * (1 - mix);
-					};
-					const A2 = mixR(RADIUS);
-					const wre = A2 / (global.GROK_GEO?.Re || Re0) * iX;
-					const standby = kl("standby");
-					const fade = standby > 0 ? (.28 + .2 * Math.sin(now * .0016)) * standby : 0;
-					const zoomCur = cur ? Math.max(SCALE[cur], 1) : 1;
-					const zoomPrev = prev ? Math.max(SCALE[prev], 1) : zoomCur;
-					const zoom = 1 + (zoomCur * mix + zoomPrev * (1 - mix) - 1) * yl;
-					return {
-						Lee,
-						rX,
-						yre,
-						aX,
-						wl,
-						wre,
-						fade,
-						zoom,
-						A2
-					};
-				}
-				resetInk() {
-					this.ink = [];
-				}
-			}
-			const turnAtCache = /* @__PURE__ */ new Map();
-			function turnAtOf(name, path, R) {
-				if (turnAtCache.has(name)) return turnAtCache.get(name);
-				const solid = global.GROK_GEO.solids?.[name];
-				if (!solid || !global.GROK_MATH?.makeTurnAt) {
-					turnAtCache.set(name, null);
-					return null;
-				}
-				const fn = global.GROK_MATH.makeTurnAt(solid, shapeRing(path, R), R);
-				turnAtCache.set(name, fn);
-				return fn;
-			}
-			const beltCache = /* @__PURE__ */ new Map();
-			function beltRadius(path, R) {
-				let m = beltCache.get(path);
-				if (m != null) return m;
-				const ring = shapeRing(path, R);
-				let top = Infinity, bot = -Infinity;
-				for (const p of ring) {
-					if (p[1] < top) top = p[1];
-					if (p[1] > bot) bot = p[1];
-				}
-				m = 0;
-				for (let y = top; y <= bot; y += 2) {
-					const [L, Right] = spanHalf(ring, y, R);
-					const half = (Right - L) / 2;
-					if (half > m) m = half;
-				}
-				beltCache.set(path, m);
-				return m;
-			}
-			function shapeMetrics(shape, R) {
-				return {
-					face: shape.face,
-					ring: shapeRing(shape.path, R),
-					tilt: shape.tiltScale || 1,
-					belt: shape.beltRadius || beltRadius(shape.path, R)
-				};
-			}
-			global.GROK_FX = {
-				MAP,
-				CYCLE,
-				CYCLE_ON,
-				CYCLE_OFF,
-				SCALE,
-				P_BLEND,
-				createParticles,
-				OverlayLayer,
-				closedSpline,
-				circleRing,
-				shapeRing,
-				lerpRing,
-				rotateRing,
-				capsule,
-				taper,
-				turnAtOf,
-				beltRadius,
-				shapeMetrics,
-				circlePathOf(R) {
-					return closedSpline(circleRing(R));
-				},
-				overlayRing(kind, R, teardropPath) {
-					if (kind === "pencil" && teardropPath) {
-						const ring = polarRing(flattenPath(teardropPath), R);
-						return rotateRing(ring, ring.length / 2, R);
-					}
-					return circleRing(R);
-				}
-			};
-		})(globalThis);
-	}));
-	//#endregion
-	//#region src/grok-bot/eyes.js
-	var init_eyes = __esmMin((() => {
-		(function(g) {
-			const { clamp, lerpPoly, centroid, polyPath, Dke, spanAt, spanPoly, Rn } = g.GROK_MATH;
-			function queueBlink(q, now) {
-				q.push({
-					at: now,
-					v: .05
-				}, {
-					at: now + 70,
-					v: .05
-				}, {
-					at: now + 150,
-					v: 1.08
-				}, {
-					at: now + 300,
-					v: 1
-				});
-				if (Math.random() < .14) q.push({
-					at: now + 370,
-					v: .05
-				}, {
-					at: now + 480,
-					v: 1
-				});
-			}
-			function consumeBlink(q, now) {
-				let key = null;
-				while (q.length && now >= q[0].at) key = q.shift().v;
-				return key;
-			}
-			function winkLid(base, now, winkAt, winkEye, i) {
-				let lid = Math.max(base, .04);
-				if (i === winkEye && now < winkAt + 320) {
-					const xr = (now - winkAt) / 320;
-					const Fr = xr < .42 ? 1 - xr / .42 : (xr - .42) / .58;
-					lid = Math.max(lid * clamp(Fr, 0, 1), .04);
-				}
-				return lid;
-			}
-			function paintEyes(opt) {
-				const { now, polys, morphT, shape, face, faceTune, uniformEyes, eyeScaleProp, blinkX, gazeX, gazeY, winkAt, winkEye, turn, cr, pointer, notifyX, overlayX, eyeEls, badgeEl, badgeColor, Re, G9e, VJt, extras, ringHint } = opt;
-				const pulse = 1 + .07 * Math.sin(morphT * Math.PI);
-				const $i = {
-					x: face.x,
-					y: face.y,
-					sx: face.sx * (faceTune?.gap ?? 1),
-					sy: face.sy * (faceTune?.height ?? 1),
-					eye: face.eye * (faceTune?.size ?? 1),
-					leftDX: face.leftDX ?? 0
-				};
-				const sX = uniformEyes ? $i.leftDX : 0;
-				const cents = [centroid(polys[0]), centroid(polys[1])];
-				let a1 = 0, o1 = 0;
-				for (const p of polys[0]) a1 = Math.max(a1, Math.abs(p[0] - cents[0][0]));
-				for (const p of polys[1]) o1 = Math.max(o1, Math.abs(p[0] - cents[1][0]));
-				const l1 = Math.abs(cents[1][0] - (cents[0][0] + sX)) * $i.sx;
-				const pre = uniformEyes ? 0 : VJt;
-				const _ee = a1 + o1 > .5 ? clamp((l1 - pre) / (a1 + o1), .35, 4) : 4;
-				const Uee = (uniformEyes ? 1 : $i.eye) * clamp(eyeScaleProp, .25, 4);
-				const oX = Math.min(clamp(opt.eyeBoostX, .2, 2) * Uee, _ee / pulse);
-				const Hee = Math.min(oX * clamp(faceTune?.eyeWidth ?? 1, .2, 3), _ee / pulse);
-				const u1 = oX * clamp(faceTune?.eyeHeight ?? 1, .2, 3);
-				const liveSpan = ringHint ? (y) => spanPoly(ringHint, y, Re) : spanAt(shape.path, Re);
-				const top = opt.top ?? shape.top;
-				const bottom = opt.bottom ?? shape.bottom;
-				const Vn = opt.emphasisBlend || 0;
-				const midX = (cents[0][0] + cents[1][0]) / 2;
-				const midY = (cents[0][1] + cents[1][1]) / 2;
-				const pullX = (Re - midX) * .42 * Vn;
-				const pullY = (Re - midY) * .42 * Vn;
-				const gazeW = pointer ? .2 : 1;
-				const badgeRing = opt.badgeRing || ringHint;
-				const Yl = badgeRing ? badgeRing[Math.round(badgeRing.length * 7 / 8) % badgeRing.length] : [Re, shape.top];
-				for (let i = 0; i < 2; i++) {
-					const poly = polys[i];
-					const [Gn, Ti] = cents[i];
-					eyeEls[i].setAttribute("d", polyPath(poly));
-					const lid = winkLid(blinkX, now, winkAt, winkEye, i);
-					const Ea = Gn + (i === 0 ? sX : 0);
-					let Ca = Re + $i.x;
-					let Wo = (Ea - Re) * $i.sx;
-					let _c = 1, vre = 1, km = 1, Ree = 0, Fee = 0, zee = 1, bre = true, Tre = 1;
-					let Sre = clamp(Re + $i.y + (Ti - Re) * $i.sy, top + 2, bottom - 2);
-					const use3d = !!cr;
-					if (use3d) {
-						const xr = (Ea - Re) / Re;
-						const Fr = (Re - Ti) / Re;
-						const Ia = Math.sqrt(Math.max(0, 1 - xr * xr - Fr * Fr)) || .02;
-						const li = cr[0] * xr + cr[1] * Fr + cr[2] * Ia;
-						const bl = cr[3] * xr + cr[4] * Fr + cr[5] * Ia;
-						const Io = cr[6] * xr + cr[7] * Fr + cr[8] * Ia;
-						Wo = li * Re * $i.sx;
-						Sre = clamp(Re + $i.y - bl * Re * $i.sy, top + 2, bottom - 2);
-						let uo = -Fr * xr, Tl = 1 - Fr * Fr, Zi = -Fr * Ia;
-						const Yo = Math.hypot(uo, Tl, Zi);
-						if (Yo < 1e-6) {
-							uo = 0;
-							Tl = 0;
-							Zi = 1;
-						} else {
-							uo /= Yo;
-							Tl /= Yo;
-							Zi /= Yo;
-						}
-						const md = Fr * Zi - Ia * Tl, Oc = Ia * uo - xr * Zi, yu = xr * Tl - Fr * uo;
-						const vm = cr[0] * uo + cr[1] * Tl + cr[2] * Zi;
-						const Hme = cr[3] * uo + cr[4] * Tl + cr[5] * Zi;
-						const Nre = cr[0] * md + cr[1] * Oc + cr[2] * yu;
-						const Ere = cr[3] * md + cr[4] * Oc + cr[5] * yu;
-						const Cre = md, Ha = -Oc, ci = uo, Ys = -Tl;
-						const ku = Cre * Ys - ci * Ha || 1e-6;
-						const Ql = Ys / ku, Gee = -ci / ku, bm = -Ha / ku, Ire = Cre / ku;
-						km = Nre * Ql + vm * bm;
-						Fee = Nre * Gee + vm * Ire;
-						Ree = -Ere * Ql + -Hme * bm;
-						zee = -Ere * Gee + -Hme * Ire;
-						_c = Math.max(Math.hypot(km, Ree), .02);
-						vre = Math.max(Math.hypot(Fee, zee), .02);
-						bre = Io > .02;
-						Tre = Dke(clamp(Io / .5, 0, 1));
-					}
-					if (turn != null) {
-						const [spL, spR] = liveSpan(Sre);
-						const rad = Math.max((spR - spL) / 2, 12);
-						Ca = (spL + spR) / 2;
-						const li0 = Math.asin(clamp(Wo / rad, -1, 1));
-						const bl0 = li0 + turn;
-						const Io0 = Math.cos(bl0);
-						const uo0 = Math.max(Math.cos(li0), .02);
-						bre = Io0 > .02;
-						_c = Math.max(Io0, .02) / uo0;
-						Wo = rad * Math.sin(bl0);
-						Tre = Dke(clamp(Io0 / .5, 0, 1));
-					}
-					let Kj = Math.sin(now * 42e-5 + i) * 1.4 + Math.sin(now * .001 + i * 2) * .5;
-					let Ko = Math.sin(now * 58e-5 + i) * .9;
-					if (pointer) {
-						Kj += pointer.x * (1 - .6 * Vn) + pullX;
-						Ko += pointer.y * (1 - .6 * Vn) + pullY;
-					} else {
-						Kj += pullX;
-						Ko += pullY;
-					}
-					Kj += gazeX * gazeW + (extras.Zr || 0);
-					Ko += gazeY * gazeW + (extras.wi || 0);
-					const $ee = clamp(notifyX, 0, 1);
-					Kj -= 10 * $ee;
-					Ko += 7 * $ee;
-					const Vee = clamp(_c * Hee * pulse, .02, 2.4);
-					const _2 = clamp(vre * lid * u1 * pulse, .02, 2.4);
-					eyeEls[i].style.display = bre && overlayX < .5 ? "" : "none";
-					const useTurnOr3d = turn != null || use3d;
-					const Ume = G9e * _2 + 2;
-					const vl = clamp(useTurnOr3d ? Sre + Ko * $i.sy : Re + $i.y + (Ti + Ko - Re) * $i.sy, top + Ume, bottom - Ume);
-					let O2 = -Infinity, Xl = Infinity;
-					for (let p = 0; p < poly.length; p += 2) {
-						const Frp = (poly[p][0] - Gn) * Vee;
-						const [Ia2, li2] = liveSpan(vl + (poly[p][1] - Ti) * _2);
-						if (Ia2 - Frp > O2) O2 = Ia2 - Frp;
-						if (li2 - Frp < Xl) Xl = li2 - Frp;
-					}
-					const xre = Ca + Wo + Kj * $i.sx;
-					const lX = O2 <= Xl ? clamp(xre, O2, Xl) : (O2 + Xl) / 2;
-					let dd = lX + (xre - lX) * (1 - Tre);
-					let Yj = vl;
-					if (notifyX > .01) {
-						const xr = 20 * clamp(notifyX, 0, 1.4);
-						const Fr = dd - Yl[0], Ia = Yj - Yl[1];
-						const li = Math.hypot(Fr, Ia) || 1;
-						const bl = Fr / li, Io = Ia / li;
-						const uo = (i === 0 ? a1 : o1) * Vee;
-						const Zi = xr + Math.hypot(uo * bl, G9e * _2 * Io) + 5;
-						if (li < Zi) {
-							dd += bl * (Zi - li);
-							Yj += Io * (Zi - li);
-						}
-					}
-					if (use3d) {
-						const FrM = clamp((turn != null ? _c : 1) * Hee * pulse, .02, 2.4);
-						const IaM = clamp(lid * u1 * pulse, .02, 2.4);
-						const liM = km * FrM, blM = Ree * FrM, IoM = Fee * IaM, uoM = zee * IaM;
-						eyeEls[i].setAttribute("transform", `translate(${dd.toFixed(2)} ${Yj.toFixed(2)}) matrix(${liM.toFixed(4)} ${blM.toFixed(4)} ${IoM.toFixed(4)} ${uoM.toFixed(4)} 0 0) translate(${(-Gn).toFixed(2)} ${(-Ti).toFixed(2)})`);
-					} else eyeEls[i].setAttribute("transform", `translate(${dd.toFixed(2)} ${Yj.toFixed(2)}) scale(${Vee.toFixed(4)} ${_2.toFixed(4)}) translate(${(-Gn).toFixed(2)} ${(-Ti).toFixed(2)})`);
-				}
-				if (badgeEl) {
-					const amt = clamp(notifyX, 0, 1.4);
-					if (amt <= .01) badgeEl.style.display = "none";
-					else {
-						badgeEl.style.display = "";
-						badgeEl.style.fill = badgeColor || "var(--gb-badge, #1d9bf0)";
-						badgeEl.setAttribute("cx", Yl[0].toFixed(1));
-						badgeEl.setAttribute("cy", Yl[1].toFixed(1));
-						badgeEl.setAttribute("r", (20 * amt).toFixed(2));
-					}
-				}
-			}
-			g.GROK_EYES = {
-				queueBlink,
-				consumeBlink,
-				paintEyes,
-				lerpPoly
-			};
-		})(globalThis);
-	}));
-	//#endregion
-	//#region src/grok-bot/character.js
-	var init_character = __esmMin((() => {
-		(function(g) {
-			const M = g.GROK_MATH;
-			const T = g.GROK_TABLES;
-			const { applyPose, nextGaze } = g.GROK_POSE;
-			const TR = g.GROK_TRICKS;
-			const EY = g.GROK_EYES;
-			const FX = g.GROK_FX;
-			const { spring, stepSpring, springSteps, clamp, rand, sign, K2, Dke, lerpPoly, lerpFace, relRot, mapPointer, Rn } = M;
-			const { GROUPS, EYE_PLAYLIST, EYE_HOLD_MS, BLINK_MS, ONBOARDING, ONBOARDING_MS, onboardMood, SPRINGS, FACE_TUNE, POSE, POSE_HOME, UNIFORM_EYES, V_T, B_T, WINK_STATES, poseScale, shapeEyeScale, overlayViewZoom, VIEW, VIEW_HALF, VIEW_MID, inkFg, inkCss, EYE_BG } = T;
-			class GrokCharacter {
-				constructor(svg, opts = {}) {
-					this.svg = svg;
-					this.shapeName = opts.shape || "blob";
-					this.colorId = opts.color || "black";
-					this.scheme = opts.scheme || "light";
-					this.mode = opts.mode || "onboarding";
-					this.state = opts.state || "idle";
-					this.onChange = opts.onChange || (() => {});
-					this.loginWrap = opts.loginWrap !== false;
-					this.eyeTopology = opts.eyeTopology ?? this.loginWrap;
-					this.faceTune = opts.faceTune ?? (this.loginWrap ? FACE_TUNE : null);
-					this.pose = {
-						...this.loginWrap ? POSE : {
-							turn: 0,
-							tilt: 0,
-							roll: 0,
-							scale: 1
-						},
-						...opts.pose
-					};
-					this.poseHome = opts.poseHome || (this.loginWrap ? POSE_HOME : {
-						turn: 0,
-						tilt: 0,
-						roll: 0
-					});
-					this.uniformEyes = opts.uniformEyes ?? (this.loginWrap ? UNIFORM_EYES : false);
-					this.eyeScaleProp = opts.eyeScale ?? (this.loginWrap ? shapeEyeScale(this.shapeName) : 1);
-					this.emphasis = !!opts.emphasis;
-					this.followPointer = !!opts.followPointer;
-					this.gazeTarget = opts.gazeTarget || null;
-					this.paused = !!opts.paused;
-					this.reduceMotion = opts.reduceMotion ?? (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches);
-					this.badgeColor = opts.badgeColor || "var(--gb-badge, #1d9bf0)";
-					this.sizePx = opts.sizePx || null;
-					this.eyeColor = opts.eyeColor || null;
-					this.inkFlat = opts.inkFlat || null;
-					this.spin = spring(0);
-					this.tx = spring(0);
-					this.ty = spring(0);
-					this.squash = spring(1);
-					this.blink = spring(1);
-					this.eyeScale = spring(1);
-					this.gazeX = spring(0);
-					this.gazeY = spring(0);
-					this.eyeMorph = spring(1);
-					this.overlay = spring(0);
-					this.overlayMix = spring(1);
-					this.notify = spring(0);
-					this.humDots = spring(0);
-					this.shapeSpring = spring(1);
-					this.overlayTurn = spring(0);
-					this.emphasisBlend = 0;
-					this.eyeFrom = 0;
-					this.eyeTo = 0;
-					this.eyeStiffness = 7;
-					this.eyeIdx = 0;
-					this._fromPolys = null;
-					this.t0 = performance.now();
-					this.stateAt = this.t0;
-					this.last = this.t0;
-					this.moodN = 0;
-					this.eyeUntil = this.t0 + rand(...EYE_HOLD_MS.idle);
-					this.blinkUntil = this.t0 + rand(1500, 7e3);
-					this.gazeUntil = this.t0 + 800;
-					this.blinkQueue = [];
-					this.winkAt = -1e9;
-					this.winkEye = 0;
-					this.winkUntil = this.t0 + rand(3e3, 8e3);
-					this.spinTurn = null;
-					this.trick = null;
-					this.hopAt = -1;
-					this.trickAt = this.t0 + rand(2500, 5e3);
-					this.trickCycle = Math.floor(rand(0, 5));
-					this.wildWide = false;
-					this.ovSpin = 0;
-					this.ovTurnAcc = 0;
-					this.ovOn = false;
-					this.ovTurnDir = 1;
-					this.pointer = {
-						x: 0,
-						y: 0,
-						tx: 0,
-						ty: 0
-					};
-					this.pointerRaw = null;
-					this.rectCache = null;
-					this.rectAt = -1e9;
-					this.prevShape = this.shapeName;
-					this.prevFace = null;
-					this.prevRing = null;
-					this.prevTilt = null;
-					this.prevBelt = null;
-					this.ctx = this._freshCtx(this.t0);
-					this.ovKind = null;
-					this.ovPrev = null;
-					this.ovTarget = null;
-					this.ovRest = false;
-					this.ovRestAt = 0;
-					this.pxW = 190;
-					this.pxAt = 0;
-					this.partScale = 1;
-					this.celebrateAt = -1;
-					this.progressWindow = null;
-					this.extras = {
-						turn: null,
-						Kr: 0,
-						yi: 0,
-						ki: 0,
-						Yr: 0,
-						Zr: 0,
-						wi: 0,
-						hop: 0
-					};
-					this._build();
-					this.setColor(this.colorId, this.scheme);
-					this._applyPoseScale();
-					this.setState(this.state, { resetEyes: true });
-					this._bindPointer();
-					this._paint(this.t0);
-					this._raf = requestAnimationFrame((t) => this._tick(t));
-				}
-				destroy() {
-					cancelAnimationFrame(this._raf);
-					this._unbindPointer();
-					this.particles?.clear();
-				}
-				_freshCtx(now) {
-					return {
-						nodUntil: now + 1800,
-						nodEnd: 0,
-						angryShakeUntil: 0,
-						impulseAt: now + rand(500, 1200),
-						tyKick: 0,
-						spinKick: 0,
-						forceSleepEye: false,
-						wakeEye: null,
-						wakeBlink: false,
-						wakingBlinked: false,
-						slumpAt: 0,
-						stAt: now + rand(6e3, 1e4),
-						wantPn: null,
-						wantBlink: false,
-						dragCycle: -1,
-						notifyPop: false,
-						wantBurst: null,
-						wakingBurst: false
-					};
-				}
-				setMode(mode) {
-					this.mode = mode;
-					if (mode === "onboarding") {
-						this.moodN = 0;
-						this.stateAt = performance.now();
-						this.setState("idle", { resetEyes: true });
-					}
-				}
-				setPaused(v) {
-					this.paused = !!v;
-				}
-				setEmphasis(v) {
-					this.emphasis = !!v;
-				}
-				setFollowPointer(v) {
-					this.followPointer = !!v;
-					if (!v) {
-						this.pointerRaw = null;
-						this.gazeTarget = null;
-					}
-				}
-				setGazeTarget(pt) {
-					this.gazeTarget = pt;
-				}
-				setShape(name) {
-					if (!g.GROK_GEO.shapes[name] || name === this.shapeName) return;
-					const R = g.GROK_GEO.Re;
-					const k = K2(clamp(this.shapeSpring.x, 0, 1));
-					const rest = FX.shapeMetrics(g.GROK_GEO.shapes[this.shapeName], R);
-					if (k >= 1 || !this.prevFace || !this.prevRing) {
-						this.prevFace = rest.face;
-						this.prevRing = rest.ring;
-						this.prevTilt = rest.tilt;
-						this.prevBelt = rest.belt;
-					} else {
-						this.prevFace = lerpFace(this.prevFace, rest.face, k);
-						this.prevRing = FX.lerpRing(this.prevRing, rest.ring, k);
-						this.prevTilt += (rest.tilt - this.prevTilt) * k;
-						this.prevBelt += (rest.belt - this.prevBelt) * k;
-					}
-					this.prevShape = this.shapeName;
-					this.shapeName = name;
-					this.shapeSpring.x = 0;
-					this.shapeSpring.v = 0;
-					this.shapeSpring.t = 1;
-					if (this.loginWrap) this.eyeScaleProp = shapeEyeScale(name);
-					this._applyPoseScale();
-					this._cycleShapeTrick();
-				}
-				setColor(id, scheme) {
-					this.colorId = id;
-					if (scheme) this.scheme = scheme;
-					if (this.inkFlat) this.svg.style.setProperty("--fg", this.inkFlat);
-					else if (this.loginWrap) this.svg.style.setProperty("--fg", inkFg(id));
-					else {
-						const pal = g.GROK_GEO.palette[id] || g.GROK_GEO.palette.black;
-						this.svg.style.setProperty("--fg", this.scheme === "dark" ? pal.dark : pal.light);
-					}
-					this.svg.style.setProperty("--ink", inkCss(id));
-					this.svg.style.setProperty("--bg", this.eyeColor || EYE_BG);
-				}
-				setInk(flat) {
-					this.inkFlat = flat || null;
-					this.setColor(this.colorId);
-				}
-				setEyeColor(color) {
-					this.eyeColor = color || null;
-					this.svg.style.setProperty("--bg", this.eyeColor || EYE_BG);
-				}
-				/**
-				* ▼ CANCRI PATCH
-				* 把 progress 环绑到一次真实等待上：一圈 = durationMs，且已经等过 elapsedMs。
-				* 传 null 恢复上游行为（2500ms 循环演示 + 每 1500ms 熄一次）。
-				* 上游那套是给静态展示用的，对齐真实时长时必须同时关掉熄灭循环，
-				* 否则环会在倒计时中途整个消失再重来。
-				*/
-				setProgressWindow(durationMs, elapsedMs = 0) {
-					const ok = typeof durationMs === "number" && durationMs > 0;
-					this.progressWindow = ok ? {
-						durationMs,
-						elapsedMs: Math.max(0, elapsedMs)
-					} : null;
-					this.fx.progressCycleMs = ok ? durationMs : null;
-					if (ok && this.ovKind === "progress") this.fx.overlayAt = performance.now() - this.progressWindow.elapsedMs;
-				}
-				/** ▼ CANCRI PATCH：叠加层起点。对齐真实等待时要把已等过的时间倒扣回去。 */
-				_overlayT0(now, kind) {
-					if (kind === "progress" && this.progressWindow) return now - this.progressWindow.elapsedMs;
-					return now;
-				}
-				setState(name, { resetEyes = false } = {}) {
-					if (!EYE_PLAYLIST[name]) return;
-					this.state = name;
-					this.stateAt = performance.now();
-					const list = EYE_PLAYLIST[name];
-					this.eyeIdx = 0;
-					if (resetEyes) {
-						this.eyeFrom = list[0];
-						this.eyeTo = list[0];
-						this._fromPolys = null;
-						this.eyeMorph.x = 1;
-						this.eyeMorph.t = 1;
-						this.eyeMorph.v = 0;
-					} else if (name !== "sleeping" && name !== "waking") this._morphEyes(list[0], name === "excited" ? 10 : 8);
-					this.eyeUntil = this.stateAt + rand(...EYE_HOLD_MS[name]);
-					const blink = BLINK_MS[name];
-					this.blinkUntil = blink ? this.stateAt + rand(1500, 7e3) : Infinity;
-					this.gazeUntil = this.stateAt + rand(500, 1400);
-					this.winkUntil = this.stateAt + rand(3e3, 8e3);
-					this.ctx = this._freshCtx(this.stateAt);
-					this.ctx.stAt = this.stateAt + (name === "excited" ? rand(400, 1100) : name === "searching" ? rand(800, 1600) : name === "working" ? rand(1200, 2400) : rand(6e3, 1e4));
-					this.celebrateAt = name === "celebrate" ? this.stateAt + 140 : -1;
-					this.trick = null;
-					this.spinTurn = null;
-					this.hopAt = -1;
-					this.wildWide = false;
-					if (name !== "writing") this.fx?.resetInk();
-					if (name !== "waking" && name !== "sleeping" && name !== "drowsy") EY.queueBlink(this.blinkQueue, this.stateAt);
-					try {
-						this.onChange(this.snapshot());
-					} catch (_) {}
-				}
-				snapshot() {
-					return {
-						state: this.state,
-						mode: this.mode,
-						shape: this.shapeName,
-						color: this.colorId,
-						scheme: this.scheme,
-						eyeFrom: this.eyeFrom,
-						eyeTo: this.eyeTo,
-						spin: this.spin.x,
-						tx: this.tx.x,
-						ty: this.ty.x,
-						squash: this.squash.x,
-						blink: this.blink.x,
-						overlay: this.ovKind
-					};
-				}
-				spinOnce(turns = 1) {
-					this._pn(turns);
-				}
-				bounceOnce() {
-					this._hop(performance.now());
-				}
-				burstOnce() {
-					if (!this.reduceMotion) this.particles.burst(22, 1.1, .3);
-				}
-				_applyPoseScale() {
-					const sc = this.loginWrap ? poseScale(this.shapeName) : this.pose.scale || 1;
-					this.pose.scale = sc;
-					if (this.sizePx) {
-						this.svg.style.width = `${this.sizePx}px`;
-						this.svg.style.height = `${this.sizePx}px`;
-					}
-					if (Math.abs(sc - 1) > .001) {
-						this.svg.style.transform = `scale(${sc})`;
-						this.svg.style.transformOrigin = "50% 50%";
-					} else this.svg.style.transform = "";
-				}
-				_bindPointer() {
-					this._onMove = (e) => {
-						if (!this.followPointer) return;
-						this.pointerRaw = {
-							x: e.clientX,
-							y: e.clientY
-						};
-					};
-					this._onLeave = () => {
-						if (this.followPointer) this.pointerRaw = null;
-					};
-					window.addEventListener("pointermove", this._onMove, { passive: true });
-					document.documentElement.addEventListener("pointerleave", this._onLeave);
-				}
-				_unbindPointer() {
-					window.removeEventListener("pointermove", this._onMove);
-					document.documentElement.removeEventListener("pointerleave", this._onLeave);
-				}
-				_build() {
-					const geo = g.GROK_GEO;
-					const vb = geo.viewBox;
-					this.svg.setAttribute("viewBox", `${vb.minX} ${vb.minY} ${vb.width} ${vb.height}`);
-					this.svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-					this.svg.style.overflow = "visible";
-					this.svg.innerHTML = "";
-					const ns = "http://www.w3.org/2000/svg";
-					const defs = document.createElementNS(ns, "defs");
-					const clip = document.createElementNS(ns, "clipPath");
-					const clipId = `grok-clip-${Math.random().toString(36).slice(2, 8)}`;
-					clip.setAttribute("id", clipId);
-					this.clipPath = document.createElementNS(ns, "path");
-					clip.appendChild(this.clipPath);
-					defs.appendChild(clip);
-					this.svg.appendChild(defs);
-					this.group = document.createElementNS(ns, "g");
-					this.body = document.createElementNS(ns, "path");
-					this.body.setAttribute("fill", "var(--fg, #000)");
-					const eyesG = document.createElementNS(ns, "g");
-					eyesG.setAttribute("clip-path", `url(#${clipId})`);
-					this.eyeEls = [0, 1].map(() => {
-						const p = document.createElementNS(ns, "path");
-						p.setAttribute("fill", "var(--bg, #f3efe6)");
-						eyesG.appendChild(p);
-						return p;
-					});
-					this.badge = document.createElementNS(ns, "circle");
-					this.badge.setAttribute("style", "display:none");
-					this.group.appendChild(this.body);
-					this.group.appendChild(eyesG);
-					this.group.appendChild(this.badge);
-					this.fx = new FX.OverlayLayer();
-					const R = geo.Re;
-					this.fx.circlePath = FX.circlePathOf(R);
-					this.fx.pencilPath = FX.capsule(30, 88, R);
-					this.fx.bangPath = FX.taper(30, 17, 96, R);
-					this.fx.attach(this.svg, this.group);
-					this.particles = FX.createParticles({
-						back: this.fx.back,
-						front: this.fx.front,
-						idPrefix: this.fx.uid,
-						getRadius: () => {
-							const sh = geo.shapes[this.shapeName];
-							const k = K2(clamp(this.shapeSpring.x, 0, 1));
-							const to = sh?.beltRadius || FX.beltRadius(sh.path, R);
-							let je = k < .999 && this.prevBelt != null ? this.prevBelt + (to - this.prevBelt) * k : to;
-							if (this.state === "loading") je += (52 - je) * clamp(this.overlay.x, 0, 1);
-							return je;
-						}
-					});
-					this.body.setAttribute("d", geo.shapes[this.shapeName].path);
-					this.clipPath.setAttribute("d", geo.shapes[this.shapeName].path);
-				}
-				_morphEyes(index, stiffness = 7) {
-					if (index === this.eyeTo && this.eyeMorph.t === 1) return;
-					const t = clamp(this.eyeMorph.x, 0, 1);
-					this.eyeFrom = this.eyeTo;
-					this._fromPolys = this._currentPolys(t);
-					this.eyeTo = index;
-					this.eyeMorph.x = 0;
-					this.eyeMorph.v = 0;
-					this.eyeMorph.t = 1;
-					this.eyeStiffness = stiffness;
-				}
-				_currentPolys(t) {
-					const eyes = g.GROK_GEO.eyes;
-					const from = this._fromPolys || eyes[this.eyeFrom];
-					const to = eyes[this.eyeTo];
-					return [lerpPoly(from[0], to[0], t), lerpPoly(from[1], to[1], t)];
-				}
-				_pn(turns = 1, dir = sign()) {
-					if (this.reduceMotion || this.paused || this.spinTurn) return;
-					this.spinTurn = TR.makeSpinTurn(turns, dir);
-				}
-				_hop(now) {
-					if (this.hopAt < 0) this.hopAt = now;
-				}
-				_cycleShapeTrick() {
-					if (this.reduceMotion || this.paused) return;
-					this.trickCycle = (this.trickCycle + 1) % 5;
-					this.wildWide = false;
-					if (this.trickCycle === 0) this._pn(1);
-					else if (this.trickCycle === 1) {
-						this.wildWide = true;
-						this._pn(2);
-					} else if (this.trickCycle === 2) this.trick = TR.startTrick("spinBounce", this.reduceMotion);
-					else if (this.trickCycle === 3) this.trick = TR.startTrick("spinDizzy", this.reduceMotion);
-					else {
-						this._pn(1);
-						this.particles.burst(16, .95, .3);
-					}
-				}
-				_stepOverlay(now) {
-					const want = FX.MAP[this.state] || null;
-					if (want !== this.ovTarget) {
-						this.ovTarget = want;
-						this.fx.overlayAt = this._overlayT0(now, want);
-						this.ovRest = false;
-						this.ovRestAt = 0;
-					}
-					let on = want != null;
-					const cycles = FX.CYCLE.has(this.state) && !(this.state === "progress" && this.progressWindow);
-					if (want && cycles) {
-						if (!this.ovRest && now - this.fx.overlayAt > (FX.CYCLE_ON[this.state] || 2500)) {
-							this.ovRest = true;
-							this.ovRestAt = now;
-						} else if (this.ovRest && now - this.ovRestAt > FX.CYCLE_OFF) {
-							this.ovRest = false;
-							this.fx.overlayAt = now;
-						}
-						on = !this.ovRest;
-					}
-					this.overlay.t = on ? 1 : 0;
-					if (on !== this.ovOn) {
-						if (!this.reduceMotion) {
-							if (on) this.ovTurnDir = sign();
-							this.ovTurnAcc += Math.PI * this.ovTurnDir;
-							this.overlayTurn.t = this.ovTurnAcc;
-						}
-						this.ovOn = on;
-					}
-					if (want && want !== this.ovKind) {
-						if (this.ovKind && this.overlay.x > .02) {
-							this.ovPrev = this.ovKind;
-							this.overlayMix.x = 0;
-							this.overlayMix.v = 0;
-							this.overlayMix.t = 1;
-						} else {
-							this.ovPrev = null;
-							this.overlayMix.x = 1;
-							this.overlayMix.v = 0;
-							this.overlayMix.t = 1;
-						}
-						this.ovKind = want;
-						this.fx.overlayAt = this._overlayT0(now, want);
-						if (want !== "pencil") this.fx.resetInk();
-					}
-					if (!want && this.overlay.x < .004) {
-						this.ovKind = null;
-						this.ovPrev = null;
-					}
-					if (this.overlayMix.x > .996) this.ovPrev = null;
-				}
-				_updatePointer(now) {
-					const src = this.gazeTarget || (this.followPointer ? this.pointerRaw : null);
-					if (src && this.svg.getBoundingClientRect) {
-						if (now - this.rectAt > 200) {
-							this.rectCache = this.svg.getBoundingClientRect();
-							this.rectAt = now;
-						}
-						const rect = this.rectCache;
-						if (rect && rect.width > 0) {
-							const mapped = this.gazeTarget ? src : mapPointer(rect, src);
-							this.pointer.tx = clamp((mapped.x - (rect.left + rect.width / 2)) / rect.width, -.6, .6) * 22;
-							this.pointer.ty = clamp((mapped.y - (rect.top + rect.height / 2)) / rect.height, -.6, .6) * 14;
-						}
-					} else {
-						this.pointer.tx = 0;
-						this.pointer.ty = 0;
-					}
-					const z = Rn(.16);
-					this.pointer.x += (this.pointer.tx - this.pointer.x) * z;
-					this.pointer.y += (this.pointer.ty - this.pointer.y) * z;
-				}
-				_tick(now) {
-					const dt = Math.min((now - this.last) / 1e3, .1);
-					this.last = now;
-					if (this.paused) {
-						this._raf = requestAnimationFrame((t) => this._tick(t));
-						return;
-					}
-					if (this.mode === "onboarding" && now - this.stateAt >= ONBOARDING_MS) {
-						this.moodN += 1;
-						this.setState(onboardMood(this.moodN));
-					}
-					const mt = (now - this.t0) / 1e3;
-					const dtState = (now - this.stateAt) / 1e3;
-					const pose = applyPose(this.state, mt, dtState, now, this.ctx, {
-						eyeTo: this.eyeTo,
-						eyeMorphX: this.eyeMorph.x,
-						blinkX: this.blink.x
-					});
-					this.spin.t = pose.spin;
-					this.tx.t = pose.tx;
-					this.ty.t = pose.ty;
-					this.squash.t = pose.squash;
-					this.eyeScale.t = pose.eyeBoost;
-					if (this.ctx.tyKick) {
-						this.ty.v += this.ctx.tyKick;
-						this.ctx.tyKick = 0;
-					}
-					if (this.ctx.spinKick) {
-						this.spin.v += this.ctx.spinKick;
-						this.ctx.spinKick = 0;
-					}
-					if (this.ctx.forceSleepEye) {
-						this.ctx.forceSleepEye = false;
-						this._morphEyes(13, 11);
-					}
-					if (this.ctx.wakeEye) {
-						this._morphEyes(this.ctx.wakeEye[0], this.ctx.wakeEye[1]);
-						this.ctx.wakeEye = null;
-					}
-					if (this.ctx.wakeBlink && !this.ctx.wakingBlinked && this.blinkQueue.length === 0) {
-						EY.queueBlink(this.blinkQueue, now);
-						this.ctx.wakingBlinked = true;
-					}
-					this.ctx.wakeBlink = false;
-					if (this.ctx.wantBlink) {
-						EY.queueBlink(this.blinkQueue, now);
-						this.ctx.wantBlink = false;
-					}
-					if (this.ctx.wantPn) {
-						this._pn(...this.ctx.wantPn);
-						this.ctx.wantPn = null;
-					}
-					if (this.ctx.wantBurst) {
-						this.particles.burst(this.ctx.wantBurst[0], this.ctx.wantBurst[1]);
-						this.ctx.wakingBurst = true;
-						this.ctx.wantBurst = null;
-					}
-					this._stepOverlay(now);
-					if (this.celebrateAt > 0 && now >= this.celebrateAt && !this.trick && !this.spinTurn) {
-						this.trick = TR.startTrick("spinWild", this.reduceMotion);
-						this.celebrateAt = now + 6200;
-					}
-					if (now >= this.trickAt) {
-						if ((V_T.has(this.state) || B_T.has(this.state)) && !this.spinTurn && this.hopAt < 0 && !this.trick) {
-							const z = Math.random();
-							if (V_T.has(this.state)) if (z < .55) this._pn(1);
-							else this.trick = TR.startTrick("spinBounce", this.reduceMotion);
-							else if (z < .34) this.trick = TR.startTrick("spinBounce", this.reduceMotion);
-							else if (z < .62) this._hop(now);
-							else if (z < .86) this.trick = TR.startTrick("spinDizzy", this.reduceMotion);
-							else this._pn(1);
-						}
-						this.trickAt = now + rand(9e3, 18e3);
-					}
-					const tf = TR.evalTrick(this.trick, now);
-					if (tf.wantHop) this._hop(now);
-					if (tf.done) this.trick = null;
-					let hop = TR.hopY(this.hopAt, now);
-					if (hop == null) {
-						this.hopAt = -1;
-						hop = 0;
-					}
-					let turn = tf.turn;
-					if (this.spinTurn) {
-						turn = (turn ?? 0) + this.spinTurn.x;
-						if (TR.spinTurnSettled(this.spinTurn)) this.spinTurn = null;
-					}
-					this.extras = {
-						...tf,
-						turn,
-						hop
-					};
-					if (this.extras.eyeBoost != null) this.eyeScale.t = this.extras.eyeBoost;
-					if (this.state !== "waking" && this.state !== "sleeping" && now >= this.eyeUntil) {
-						const list = EYE_PLAYLIST[this.state];
-						this.eyeIdx = (this.eyeIdx + 1 + Math.floor(rand(0, list.length - 1))) % list.length;
-						const stiff = this.state === "searching" || this.state === "excited" ? 10 : 6;
-						this._morphEyes(list[this.eyeIdx], stiff);
-						this.eyeUntil = now + rand(...EYE_HOLD_MS[this.state]);
-					}
-					const blinkCadence = BLINK_MS[this.state];
-					if (blinkCadence && now >= this.blinkUntil) {
-						EY.queueBlink(this.blinkQueue, now);
-						this.blinkUntil = now + rand(...blinkCadence);
-					}
-					const blinkKey = EY.consumeBlink(this.blinkQueue, now);
-					this.blink.t = blinkKey ?? (this.blinkQueue.length ? this.blink.t : this.extras.lidMul ?? pose.lid);
-					if (now >= this.gazeUntil) {
-						const gz = nextGaze(this.state);
-						this.gazeX.t = gz.x;
-						this.gazeY.t = gz.y;
-						this.gazeUntil = now + rand(...gz.hold);
-					}
-					if (WINK_STATES.has(this.state) && now >= this.winkUntil) {
-						this.winkAt = now;
-						this.winkEye = Math.random() < .5 ? 0 : 1;
-						this.winkUntil = now + rand(4500, 1e4);
-					}
-					this.emphasisBlend += ((this.emphasis ? 1 : 0) - this.emphasisBlend) * Rn(.12);
-					if (this.emphasis) {
-						this.eyeScale.t = Math.max(this.eyeScale.t, 1.32);
-						this.blink.t = Math.max(this.blink.t, 1.18);
-					}
-					const humming = this.state === "humming";
-					const loading = this.state === "loading";
-					if ((humming || loading) && !this.reduceMotion) {
-						const Zt = dtState;
-						const dn = loading ? 3 : 1.6;
-						const on = Zt < .5 ? 7 * K2(Zt / .5) : Zt < 1.3 ? 7 + (dn - 7) * K2((Zt - .5) / .8) : dn + .3 * Math.sin(Zt * .5);
-						this.ovSpin += on * dt;
-					}
-					if (this.reduceMotion) {
-						this._morphEyes(EYE_PLAYLIST[this.state][0]);
-						this.spin.t = 0;
-						this.tx.t = 0;
-						this.ty.t = 0;
-						this.squash.t = 1;
-						this.blink.t = 1;
-						this.eyeScale.t = 1;
-					}
-					const nSteps = springSteps(dt);
-					const step = dt / nSteps;
-					for (let i = 0; i < nSteps; i++) {
-						stepSpring(this.eyeMorph, this.eyeStiffness, 1, step);
-						if (this.spinTurn) stepSpring(this.spinTurn, ...SPRINGS.spinTurn, step);
-						stepSpring(this.spin, ...SPRINGS.spin, step);
-						stepSpring(this.tx, ...SPRINGS.x, step);
-						stepSpring(this.ty, ...SPRINGS.y, step);
-						stepSpring(this.squash, ...SPRINGS.squash, step);
-						stepSpring(this.blink, ...SPRINGS.blink, step);
-						stepSpring(this.eyeScale, ...SPRINGS.eyeScale, step);
-						stepSpring(this.notify, ...SPRINGS.notify, step);
-						stepSpring(this.humDots, ...SPRINGS.humDots, step);
-						stepSpring(this.gazeX, ...SPRINGS.gazeX, step);
-						stepSpring(this.gazeY, ...SPRINGS.gazeY, step);
-						stepSpring(this.overlay, ...SPRINGS.overlay, step);
-						stepSpring(this.overlayMix, ...SPRINGS.overlayMix, step);
-						stepSpring(this.shapeSpring, ...SPRINGS.shape, step);
-						stepSpring(this.overlayTurn, ...SPRINGS.overlayTurn, step);
-					}
-					if (this.reduceMotion) {
-						this.overlayMix.x = 1;
-						this.overlayTurn.x = this.overlayTurn.t;
-						this.overlay.x = this.overlay.t;
-					}
-					this.notify.t = this.state === "notifying" ? 1 : 0;
-					this.humDots.t = this.state === "humming" ? 1 : 0;
-					let spinAngle = 0;
-					if (this.spinTurn) spinAngle = this.spinTurn.x;
-					else if (this.extras.turn != null) spinAngle = this.extras.turn;
-					else if (humming || loading) spinAngle = this.ovSpin;
-					if (now - this.pxAt > 500 && this.svg.getBoundingClientRect) {
-						const w = this.svg.getBoundingClientRect().width;
-						if (w > 0) {
-							this.pxW = w;
-							this.partScale = clamp(Math.pow(340 / w, .7), 1, 2.6);
-						}
-						this.pxAt = now;
-					}
-					this.particles.update(now, dt, {
-						spinAngle,
-						sizeScale: this.partScale,
-						wideStyle: this.trick?.kind === "spinWild" || this.wildWide || humming,
-						sustainBelts: humming || loading
-					});
-					this._updatePointer(now);
-					this._paint(now);
-					this._raf = requestAnimationFrame((t) => this._tick(t));
-				}
-				_paint(now) {
-					const geo = g.GROK_GEO;
-					const R = geo.Re;
-					const shape = geo.shapes[this.shapeName];
-					const morphK = K2(clamp(this.shapeSpring.x, 0, 1));
-					const morphing = morphK < .999 && this.prevFace;
-					const face = morphing ? lerpFace(this.prevFace, shape.face, morphK) : shape.face;
-					const fromTilt = this.prevTilt ?? (geo.shapes[this.prevShape]?.tiltScale || 1);
-					const tilt = morphing ? fromTilt + ((shape.tiltScale || 1) - fromTilt) * morphK : shape.tiltScale || 1;
-					const yl = clamp(this.overlay.x, 0, 1);
-					const mix = clamp(this.overlayMix.x, 0, 1);
-					this.fx._reduce = this.reduceMotion;
-					const ov = this.fx.extras(now, this.stateAt, this.ovKind, this.ovPrev, yl, mix);
-					const bodyW = 1 - yl;
-					const ex = this.extras;
-					const tx = this.tx.x * bodyW + ex.yi * bodyW + ov.yre * yl;
-					const ty = (this.ty.x + ex.hop) * bodyW + ex.ki * bodyW - ov.rX.lift * ov.Lee + ov.aX * yl;
-					const rot = (this.spin.x * bodyW + ex.Kr * bodyW) * tilt + (ex.Yr || 0) * bodyW + ov.wl * yl;
-					const sx = bodyW + ov.wre * yl;
-					const sy = this.squash.x * bodyW + ov.wre * yl;
-					this.group.setAttribute("transform", `translate(${(R + tx).toFixed(2)} ${(R + ty).toFixed(2)}) rotate(${rot.toFixed(2)}) scale(${sx.toFixed(4)} ${sy.toFixed(4)}) translate(${-R} ${-R})`);
-					this.group.style.opacity = ((1 - (1 - ov.rX.tone) * ov.Lee) * (1 - ov.fade)).toFixed(3);
-					const Jc = clamp(yl / FX.P_BLEND, 0, 1);
-					const pencil = this.ovKind === "pencil" || this.ovPrev === "pencil";
-					const tear = geo.shapes.teardrop?.path;
-					const spinAmt = ex.turn;
-					const spinning = spinAmt != null;
-					const restRing = morphing ? FX.lerpRing(this.prevRing, FX.shapeRing(shape.path, R), morphK) : FX.shapeRing(shape.path, R);
-					let liveRing = restRing;
-					let turned = false;
-					const turnAt = !morphing && spinning ? FX.turnAtOf(this.shapeName, shape.path, R) : null;
-					if (turnAt) {
-						liveRing = turnAt(spinAmt);
-						turned = true;
-					}
-					let faceTop = shape.top;
-					let faceBottom = shape.bottom;
-					if (morphing || turned) {
-						faceTop = Infinity;
-						faceBottom = -Infinity;
-						for (const p of liveRing) {
-							if (p[1] < faceTop) faceTop = p[1];
-							if (p[1] > faceBottom) faceBottom = p[1];
-						}
-					}
-					let bodyD;
-					if (Jc >= 1) bodyD = pencil ? FX.closedSpline(FX.overlayRing(this.ovKind, R, tear)) : this.fx.circlePath;
-					else if (Jc <= 0 && !morphing && !turned) bodyD = shape.path;
-					else {
-						const to = FX.overlayRing(this.ovKind || this.ovPrev, R, tear);
-						bodyD = FX.closedSpline(Jc <= 0 ? liveRing : FX.lerpRing(liveRing, to, K2(Jc)));
-					}
-					this.body.setAttribute("d", bodyD);
-					this.clipPath.setAttribute("d", bodyD);
-					this.fx.paint(now, this.stateAt, this.ovKind, this.ovPrev, yl, mix, R, this.reduceMotion);
-					const shrink = 1 - Dke(clamp((this.pxW - 44) / 90, 0, 1));
-					const pScale = this.pose.scale || 1;
-					const zCur = overlayViewZoom(this.ovKind, pScale);
-					const zPrev = overlayViewZoom(this.ovPrev, pScale);
-					const half = VIEW_HALF / (1 + (zCur * mix + zPrev * (1 - mix) - 1) * yl * shrink);
-					this.svg.setAttribute("viewBox", `${(VIEW_MID - half).toFixed(2)} ${(VIEW_MID - half).toFixed(2)} ${(half * 2).toFixed(2)} ${(half * 2).toFixed(2)}`);
-					const morphT = clamp(this.eyeMorph.x, 0, 1);
-					const polys = this._currentPolys(morphT);
-					const cr = this.eyeTopology ? relRot(this.pose, this.poseHome) : null;
-					let cyl = yl > .001 || Math.abs(this.overlayTurn.t - this.overlayTurn.x) > .01 ? this.overlayTurn.x : null;
-					if (ex.turn != null) cyl = (cyl ?? 0) + ex.turn;
-					const ringHint = morphing || turned ? liveRing : null;
-					const hasPtr = !!(this.gazeTarget || this.followPointer && this.pointerRaw);
-					EY.paintEyes({
-						now,
-						polys,
-						morphT,
-						shape,
-						face,
-						faceTune: this.faceTune,
-						uniformEyes: this.uniformEyes,
-						eyeScaleProp: this.eyeScaleProp,
-						blinkX: this.blink.x,
-						eyeBoostX: this.eyeScale.x,
-						gazeX: this.gazeX.x,
-						gazeY: this.gazeY.x,
-						winkAt: this.winkAt,
-						winkEye: this.winkEye,
-						turn: cyl,
-						cr,
-						pointer: hasPtr ? this.pointer : null,
-						notifyX: this.notify.x,
-						overlayX: this.overlay.x,
-						eyeEls: this.eyeEls,
-						badgeEl: this.badge,
-						badgeColor: this.badgeColor,
-						Re: R,
-						G9e: geo.G9e,
-						VJt: geo.VJt,
-						extras: ex,
-						ringHint,
-						badgeRing: restRing,
-						top: faceTop,
-						bottom: faceBottom,
-						emphasisBlend: this.emphasisBlend
-					});
-					const hum = clamp(this.humDots.x, 0, 1);
-					if (hum > .01) for (let i = 0; i < 2; i++) {
-						const el = this.fx.parts[3 + i];
-						if (!el) continue;
-						const Gn = this.ovSpin * .85 + i * Math.PI;
-						const Ti = shape.radius * 1.3;
-						const Si = .55 + .45 * clamp((Math.cos(Gn) + 1) / 2, 0, 1);
-						el.style.display = "";
-						el.setAttribute("cx", (R + Ti * Math.sin(Gn)).toFixed(1));
-						el.setAttribute("cy", (R - Ti * .38 * Math.cos(Gn) - 8).toFixed(1));
-						el.setAttribute("r", (7.5 * Si * hum).toFixed(2));
-						el.setAttribute("opacity", ((.3 + .7 * Si) * hum).toFixed(3));
-					}
-				}
-			}
-			g.GrokCharacter = GrokCharacter;
-			g.GROK_META = {
-				groups: GROUPS,
-				onboarding: ONBOARDING,
-				onboardingMs: ONBOARDING_MS,
-				eyePlaylist: EYE_PLAYLIST,
-				springs: SPRINGS,
-				faceTune: FACE_TUNE,
-				pose: POSE,
-				poseHome: POSE_HOME,
-				overlays: FX.MAP
-			};
-		})(globalThis);
-	}));
-	//#endregion
-	//#region src/grok-bot/engine.js
-	var engine_exports = /* @__PURE__ */ __exportAll({
-		GROK_GEO: () => GROK_GEO,
-		GROK_META: () => GROK_META,
-		GrokCharacter: () => GrokCharacter
-	});
-	var GrokCharacter, GROK_GEO, GROK_META;
-	var init_engine = __esmMin((() => {
-		init_geometry_data();
-		init_math();
-		init_tables();
-		init_pose();
-		init_tricks();
-		init_fx();
-		init_eyes();
-		init_character();
-		GrokCharacter = globalThis.GrokCharacter;
-		GROK_GEO = globalThis.GROK_GEO;
-		GROK_META = globalThis.GROK_META;
-	}));
-	//#endregion
 	//#region src/grok-bot/hero-mascot.js
 	/**
-	* 首页 hero 吉祥物：蓝色云朵（替换原 .hero-icon-img 静态 logo）。
+	* 首页 hero 吉祥物：小螃蟹 <cancri-crab>（替换原 .hero-icon-img 静态 logo）。
 	*
-	* 引擎与大脑移植自 cancri-code src/ui/grok-bot/{engine,mascot,mood-director}：
-	* 引擎只负责「画成什么样」，这里负责「什么时候换表情」：
-	*   发出首条消息 → orbit ／ 长时间没动静 → sad ／ 人回来了 → happy ／
-	*   连点它 → celebrate ／ 平时 idle 偶尔转圈。
+	* 身体与大脑移植自 cancri-code src/ui/grok-bot/{cancri-crab,crab-body,mascot,home-mascot,mood-director}：
+	* 组件只负责「画成什么样」，这里负责「什么时候换表情」：
+	*   发出首条消息 → 干活 ／ 长时间没动静 → 睡着 ／ 人回来了 → 冒爱心 ／
+	*   连点它 → 发癫 ／ 平时 idle 隔一阵自己耍个宝。
 	*   （原版的「点登录 → orbit」在这里对应「首页 composer 提交」。）
+	* 装饰（帽子 / 眼镜…）由用户在悬停出现的「个性化」胶囊里挑，存 localStorage，
+	* 与 Bot 页、桌面端同一个键（crab-outfit.js）。
 	*
 	* 判定逻辑全在 decideMood 这个纯函数里，DOM 与计时器只做输入采集和输出应用。
 	*
 	* 与 hero_easter_egg.js 的关系：彩蛋脚本在 .hero-icon 上用 click 委托冒气泡，
-	* 这里的戳击反馈走 svg 的 pointerdown（先于 click 触发），两者叠加互不冲突。
+	* 这里的戳击反馈走小蟹的 pointerdown（先于 click 触发），两者叠加互不冲突。
 	*
-	* 兜底：引擎是动态 import 的；加载失败时保留原有 <img> logo，不留下空位。
-	* mountHeroMascot 同步返回 handle——引擎就位前调的 setBusy 会记在 brain 里，
-	* 等引擎起来后由 tick 补应用。
+	* 兜底：组件是动态 import 的；加载失败时保留原有 <img> logo，不留下空位。
+	* mountHeroMascot 同步返回 handle——组件就位前调的 setBusy 会记在 brain 里，
+	* 等组件起来后由 tick 补应用。
 	*/
 	var TUNING = {
-		/** 无任何输入多久算「没动静」 */
-		idleToSadMs: 11e3,
+		/** 无任何输入多久算「没动静」（与 cancri-code home-mascot 一致） */
+		idleToSadMs: 9e4,
 		/** 人回来后开心多久 */
 		greetMs: 3600,
 		/** 连点计数窗口 */
@@ -7579,17 +1759,17 @@
 		if (isStale(brain, now)) return "sad";
 		return "idle";
 	}
+	/** 发送中在干活 / 连点发癫 / 人回来冒爱心 / 没动静睡着（与 cancri-code mascot.ts 一致） */
 	var MOOD_STATE = {
-		orbit: "orbit",
-		celebrate: "celebrate",
-		happy: "happy",
-		sad: "sad",
+		orbit: "work",
+		celebrate: "crazy",
+		happy: "hearts",
+		sad: "sleep",
 		idle: "idle"
 	};
 	/**
-	* 切换节流（与 cancri-code ONBOARDING_MOOD_CONFIG 一致）。直接 setState 会把
-	* 正在飞的转圈/弹跳和眼睛插值直接归零；celebrate 给到 2600ms 是因为它要走完
-	* spinWild 那一整套甩圈。
+	* 切换节流（与 cancri-code ONBOARDING_MOOD_CONFIG 一致）。直接 setState 会让
+	* 连点几下就看到动作播一半被砍；celebrate 给到 2600ms，够发癫动作播几个来回。
 	*/
 	var HERO_MOOD_CONFIG = {
 		floorMs: 420,
@@ -7620,41 +1800,34 @@
 			}
 		}
 	};
+	/** 戳一下的即时反馈时长 */
+	var POKE_PULSE_MS = 600;
+	/** idle 太安静时随机耍的宝：[动作, 播多久]，时长按各动作一个完整循环取 */
+	var IDLE_TRICKS = [
+		["bubble", 3e3],
+		["hearts", 2e3],
+		["happy", 1e3]
+	];
 	var TICK_MS = 250;
-	var IDLE_SPIN_MIN_MS = 7e3;
-	var IDLE_SPIN_MAX_MS = 14e3;
+	var IDLE_TRICK_MIN_MS = 7e3;
+	var IDLE_TRICK_MAX_MS = 14e3;
 	/**
-	* 站点明暗 → 云朵墨色。chat 主题写在 <html data-theme>（light/dark/black），
-	* PORT_SKIN 搬运页则是 data-theme="claude" + data-mode="light|dark"。
-	* 深色底下用亮一档的蓝，不然糊在背景里。
-	*/
-	function currentScheme() {
-		const el = document.documentElement;
-		const theme = el.getAttribute("data-theme");
-		if (theme === "light") return "light";
-		if (theme === "claude") return el.getAttribute("data-mode") === "light" ? "light" : "dark";
-		return "dark";
-	}
-	function inkForScheme(scheme) {
-		return scheme === "light" ? "#2A92FE" : "#4AA6FF";
-	}
-	/**
-	* 把云朵挂进 .hero-icon 占位 span。
+	* 把小蟹挂进 .hero-icon 占位 span。
 	* @param {HTMLElement} heroIcon  .hero-icon 容器（里面那枚 <img> 是静态兜底）
 	* @param {object} [opts]
-	* @param {HTMLElement|null} [opts.homeView]  #homeView；.chatting 时 hero 隐藏，引擎暂停
+	* @param {HTMLElement|null} [opts.homeView]  #homeView；.chatting 时 hero 隐藏，调度暂停
 	*/
 	function mountHeroMascot(heroIcon, opts = {}) {
 		if (!heroIcon || heroIcon.__heroMascotMounted) return null;
 		heroIcon.__heroMascotMounted = true;
-		let engine = null;
+		let body = null;
 		let brain = createBrain(performance.now());
 		let director = createDirector("idle", performance.now());
-		let nextIdleSpinAt = performance.now() + IDLE_SPIN_MIN_MS;
+		let nextIdleTrickAt = performance.now() + IDLE_TRICK_MIN_MS;
 		let destroyed = false;
-		let svg = null;
+		let crab = null;
+		let pill = null;
 		let timer = null;
-		let schemeObserver = null;
 		let chatObserver = null;
 		let onActivity = null;
 		let onPoke = null;
@@ -7669,11 +1842,11 @@
 				window.removeEventListener("keydown", onActivity);
 				window.removeEventListener("wheel", onActivity);
 			}
-			if (svg && onPoke) svg.removeEventListener("pointerdown", onPoke);
-			schemeObserver?.disconnect();
+			if (crab && onPoke) crab.removeEventListener("pointerdown", onPoke);
 			chatObserver?.disconnect();
-			engine?.destroy();
-			svg?.remove();
+			body?.destroy();
+			pill?.remove();
+			heroIcon.classList.remove("crab-personalize-host");
 		}
 		const handle = {
 			/** 首页 composer 提交（原版的「登录中」）：切 orbit，直到回到首页或调用方复位 */
@@ -7691,90 +1864,60 @@
 			}
 		};
 		(async () => {
-			let mod;
 			try {
-				mod = await Promise.resolve().then(() => (init_engine(), engine_exports));
+				await loadCrab();
 			} catch (err) {
-				console.warn("[hero-mascot] 云朵引擎加载失败，保留静态 logo：", err);
+				console.warn("[hero-mascot] 小蟹组件加载失败，保留静态 logo：", err);
 				heroIcon.__heroMascotMounted = false;
 				return;
 			}
 			if (destroyed) return;
-			svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-			svg.setAttribute("class", "hero-mascot");
-			svg.setAttribute("aria-hidden", "true");
-			try {
-				engine = new mod.GrokCharacter(svg, {
-					shape: "cloud",
-					color: "blue",
-					mode: "hold",
-					state: "idle",
-					followPointer: true,
-					inkFlat: inkForScheme(currentScheme()),
-					eyeColor: "var(--c-bg, #FCFCFB)"
-				});
-			} catch (err) {
-				console.warn("[hero-mascot] 云朵引擎初始化失败，保留静态 logo：", err);
-				svg = null;
-				heroIcon.__heroMascotMounted = false;
-				return;
-			}
-			heroIcon.appendChild(svg);
+			crab = createCrabElement("hero-mascot");
+			crab.setAttribute("aria-hidden", "true");
+			body = new CrabDriver(crab, MOOD_STATE.idle);
 			heroIcon.querySelector("img")?.remove();
+			heroIcon.appendChild(crab);
+			pill = attachPersonalizePill(heroIcon);
 			onActivity = () => {
 				brain = noteActivity(brain, performance.now());
 			};
 			onPoke = () => {
-				const now = performance.now();
-				brain = notePoke(brain, now);
-				engine.bounceOnce();
-				engine.spinOnce(1);
+				brain = notePoke(brain, performance.now());
+				body.pulse("happy", POKE_PULSE_MS);
 			};
 			window.addEventListener("pointermove", onActivity, { passive: true });
 			window.addEventListener("pointerdown", onActivity, { passive: true });
 			window.addEventListener("keydown", onActivity, { passive: true });
 			window.addEventListener("wheel", onActivity, { passive: true });
-			svg.addEventListener("pointerdown", onPoke);
-			schemeObserver = new MutationObserver(() => {
-				engine.setInk(inkForScheme(currentScheme()));
-			});
-			schemeObserver.observe(document.documentElement, {
-				attributes: true,
-				attributeFilter: [
-					"data-theme",
-					"data-mode",
-					"data-scheme"
-				]
-			});
+			crab.addEventListener("pointerdown", onPoke);
 			const homeView = opts.homeView || document.getElementById("homeView");
-			let wasHidden = Boolean(homeView?.classList.contains("chatting"));
-			const syncPause = () => {
-				const hidden = Boolean(homeView?.classList.contains("chatting"));
-				engine.setPaused(hidden);
-				if (wasHidden && !hidden && brain.busy) brain = noteBusy(brain, false);
-				wasHidden = hidden;
+			let hidden = Boolean(homeView?.classList.contains("chatting"));
+			const syncHidden = () => {
+				const next = Boolean(homeView?.classList.contains("chatting"));
+				if (hidden && !next && brain.busy) brain = noteBusy(brain, false);
+				hidden = next;
 			};
 			if (homeView) {
-				chatObserver = new MutationObserver(syncPause);
+				chatObserver = new MutationObserver(syncHidden);
 				chatObserver.observe(homeView, {
 					attributes: true,
 					attributeFilter: ["class"]
 				});
 			}
-			syncPause();
 			timer = window.setInterval(() => {
 				const now = performance.now();
 				director = requestMood(director, decideMood(brain, now));
 				const res = tickDirector(director, HERO_MOOD_CONFIG, now);
 				director = res.state;
 				if (res.emit) {
-					engine.setState(MOOD_STATE[res.emit]);
-					nextIdleSpinAt = now + IDLE_SPIN_MIN_MS;
+					body.setState(MOOD_STATE[res.emit]);
+					nextIdleTrickAt = now + IDLE_TRICK_MIN_MS;
 					return;
 				}
-				if (director.applied === "idle" && now >= nextIdleSpinAt) {
-					engine.spinOnce(1);
-					nextIdleSpinAt = now + IDLE_SPIN_MIN_MS + Math.random() * (IDLE_SPIN_MAX_MS - IDLE_SPIN_MIN_MS);
+				if (!hidden && director.applied === "idle" && now >= nextIdleTrickAt) {
+					const [trick, ms] = IDLE_TRICKS[Math.floor(Math.random() * IDLE_TRICKS.length)];
+					body.pulse(trick, ms);
+					nextIdleTrickAt = now + ms + IDLE_TRICK_MIN_MS + Math.random() * (IDLE_TRICK_MAX_MS - IDLE_TRICK_MIN_MS);
 				}
 			}, TICK_MS);
 		})();
@@ -11967,6 +6110,7 @@
 			overlay.setAttribute("data-mode", "dark");
 		}
 		const doc = authDoc();
+		if (doc === document) return;
 		if (doc && doc.documentElement) {
 			doc.documentElement.setAttribute("data-theme", "claude");
 			doc.documentElement.setAttribute("data-mode", "dark");

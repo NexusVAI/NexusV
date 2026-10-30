@@ -8142,8 +8142,8 @@ html:not([data-theme="light"]) #claudeSettingsView.active .claude-settings-page 
        这里只在 light 主题下淡淡上一点 accent 色调，不破坏 logo 本色。 */
     filter: none;
 }
-/* 蓝色云朵吉祥物（src/grok-bot/hero-mascot.js 挂载，替换上方静态 img）。
-   引擎自带 transform 缩放与内部动画；转圈/celebrate 粒子会画出 box 外，
+/* 小螃蟹吉祥物 <cancri-crab>（src/grok-bot/hero-mascot.js 挂载，替换上方静态 img）。
+   帽子、思考点、星星和悬停的「个性化」胶囊都画在 box 外，
    必须 overflow:visible。尺寸跟随 .hero-icon（含 mobile 26px 媒体查询）。 */
 .hero .hero-mascot {
     width: 100%;

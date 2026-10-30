@@ -1,21 +1,25 @@
 /**
- * 首页 hero 吉祥物：蓝色云朵（替换原 .hero-icon-img 静态 logo）。
+ * 首页 hero 吉祥物：小螃蟹 <cancri-crab>（替换原 .hero-icon-img 静态 logo）。
  *
- * 引擎与大脑移植自 cancri-code src/ui/grok-bot/{engine,mascot,mood-director}：
- * 引擎只负责「画成什么样」，这里负责「什么时候换表情」：
- *   发出首条消息 → orbit ／ 长时间没动静 → sad ／ 人回来了 → happy ／
- *   连点它 → celebrate ／ 平时 idle 偶尔转圈。
+ * 身体与大脑移植自 cancri-code src/ui/grok-bot/{cancri-crab,crab-body,mascot,home-mascot,mood-director}：
+ * 组件只负责「画成什么样」，这里负责「什么时候换表情」：
+ *   发出首条消息 → 干活 ／ 长时间没动静 → 睡着 ／ 人回来了 → 冒爱心 ／
+ *   连点它 → 发癫 ／ 平时 idle 隔一阵自己耍个宝。
  *   （原版的「点登录 → orbit」在这里对应「首页 composer 提交」。）
+ * 装饰（帽子 / 眼镜…）由用户在悬停出现的「个性化」胶囊里挑，存 localStorage，
+ * 与 Bot 页、桌面端同一个键（crab-outfit.js）。
  *
  * 判定逻辑全在 decideMood 这个纯函数里，DOM 与计时器只做输入采集和输出应用。
  *
  * 与 hero_easter_egg.js 的关系：彩蛋脚本在 .hero-icon 上用 click 委托冒气泡，
- * 这里的戳击反馈走 svg 的 pointerdown（先于 click 触发），两者叠加互不冲突。
+ * 这里的戳击反馈走小蟹的 pointerdown（先于 click 触发），两者叠加互不冲突。
  *
- * 兜底：引擎是动态 import 的；加载失败时保留原有 <img> logo，不留下空位。
- * mountHeroMascot 同步返回 handle——引擎就位前调的 setBusy 会记在 brain 里，
- * 等引擎起来后由 tick 补应用。
+ * 兜底：组件是动态 import 的；加载失败时保留原有 <img> logo，不留下空位。
+ * mountHeroMascot 同步返回 handle——组件就位前调的 setBusy 会记在 brain 里，
+ * 等组件起来后由 tick 补应用。
  */
+import { CrabDriver, createCrabElement, loadCrab } from "./crab-body.js";
+import { attachPersonalizePill } from "./crab-personalize.js";
 import {
   DEFAULT_FLOOR_MS,
   createDirector,
@@ -24,8 +28,8 @@ import {
 } from "./mood-director.js";
 
 const TUNING = {
-  /** 无任何输入多久算「没动静」 */
-  idleToSadMs: 11000,
+  /** 无任何输入多久算「没动静」（与 cancri-code home-mascot 一致） */
+  idleToSadMs: 90000,
   /** 人回来后开心多久 */
   greetMs: 3600,
   /** 连点计数窗口 */
@@ -88,18 +92,18 @@ function decideMood(brain, now) {
   return "idle";
 }
 
+/** 发送中在干活 / 连点发癫 / 人回来冒爱心 / 没动静睡着（与 cancri-code mascot.ts 一致） */
 const MOOD_STATE = {
-  orbit: "orbit",
-  celebrate: "celebrate",
-  happy: "happy",
-  sad: "sad",
+  orbit: "work",
+  celebrate: "crazy",
+  happy: "hearts",
+  sad: "sleep",
   idle: "idle",
 };
 
 /**
- * 切换节流（与 cancri-code ONBOARDING_MOOD_CONFIG 一致）。直接 setState 会把
- * 正在飞的转圈/弹跳和眼睛插值直接归零；celebrate 给到 2600ms 是因为它要走完
- * spinWild 那一整套甩圈。
+ * 切换节流（与 cancri-code ONBOARDING_MOOD_CONFIG 一致）。直接 setState 会让
+ * 连点几下就看到动作播一半被砍；celebrate 给到 2600ms，够发癫动作播几个来回。
  */
 const HERO_MOOD_CONFIG = {
   floorMs: DEFAULT_FLOOR_MS,
@@ -113,49 +117,38 @@ const HERO_MOOD_CONFIG = {
   },
 };
 
+/** 戳一下的即时反馈时长 */
+const POKE_PULSE_MS = 600;
+/** idle 太安静时随机耍的宝：[动作, 播多久]，时长按各动作一个完整循环取 */
+const IDLE_TRICKS = [
+  ["bubble", 3000],
+  ["hearts", 2000],
+  ["happy", 1000],
+];
 const TICK_MS = 250;
-const IDLE_SPIN_MIN_MS = 7000;
-const IDLE_SPIN_MAX_MS = 14000;
+const IDLE_TRICK_MIN_MS = 7000;
+const IDLE_TRICK_MAX_MS = 14000;
 
 /**
- * 站点明暗 → 云朵墨色。chat 主题写在 <html data-theme>（light/dark/black），
- * PORT_SKIN 搬运页则是 data-theme="claude" + data-mode="light|dark"。
- * 深色底下用亮一档的蓝，不然糊在背景里。
- */
-function currentScheme() {
-  const el = document.documentElement;
-  const theme = el.getAttribute("data-theme");
-  if (theme === "light") return "light";
-  if (theme === "claude") {
-    return el.getAttribute("data-mode") === "light" ? "light" : "dark";
-  }
-  return "dark";
-}
-
-function inkForScheme(scheme) {
-  return scheme === "light" ? "#2A92FE" : "#4AA6FF";
-}
-
-/**
- * 把云朵挂进 .hero-icon 占位 span。
+ * 把小蟹挂进 .hero-icon 占位 span。
  * @param {HTMLElement} heroIcon  .hero-icon 容器（里面那枚 <img> 是静态兜底）
  * @param {object} [opts]
- * @param {HTMLElement|null} [opts.homeView]  #homeView；.chatting 时 hero 隐藏，引擎暂停
+ * @param {HTMLElement|null} [opts.homeView]  #homeView；.chatting 时 hero 隐藏，调度暂停
  */
 export function mountHeroMascot(heroIcon, opts = {}) {
   if (!heroIcon || heroIcon.__heroMascotMounted) return null;
   heroIcon.__heroMascotMounted = true;
 
-  let engine = null;
+  let body = null;
   let brain = createBrain(performance.now());
   let director = createDirector("idle", performance.now());
-  let nextIdleSpinAt = performance.now() + IDLE_SPIN_MIN_MS;
+  let nextIdleTrickAt = performance.now() + IDLE_TRICK_MIN_MS;
   let destroyed = false;
 
-  // 以下都由引擎就位后填充；destroy 在引擎加载完成前调用也能干净收尾。
-  let svg = null;
+  // 以下都由组件就位后填充；destroy 在组件加载完成前调用也能干净收尾。
+  let crab = null;
+  let pill = null;
   let timer = null;
-  let schemeObserver = null;
   let chatObserver = null;
   let onActivity = null;
   let onPoke = null;
@@ -171,11 +164,11 @@ export function mountHeroMascot(heroIcon, opts = {}) {
       window.removeEventListener("keydown", onActivity);
       window.removeEventListener("wheel", onActivity);
     }
-    if (svg && onPoke) svg.removeEventListener("pointerdown", onPoke);
-    schemeObserver?.disconnect();
+    if (crab && onPoke) crab.removeEventListener("pointerdown", onPoke);
     chatObserver?.disconnect();
-    engine?.destroy();
-    svg?.remove();
+    body?.destroy();
+    pill?.remove();
+    heroIcon.classList.remove("crab-personalize-host");
   }
 
   const handle = {
@@ -195,85 +188,56 @@ export function mountHeroMascot(heroIcon, opts = {}) {
   };
 
   (async () => {
-    let mod;
     try {
-      mod = await import("./engine.js");
+      await loadCrab();
     } catch (err) {
-      console.warn("[hero-mascot] 云朵引擎加载失败，保留静态 logo：", err);
+      console.warn("[hero-mascot] 小蟹组件加载失败，保留静态 logo：", err);
       heroIcon.__heroMascotMounted = false;
       return;
     }
     if (destroyed) return;
 
-    svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("class", "hero-mascot");
-    svg.setAttribute("aria-hidden", "true");
-    try {
-      engine = new mod.GrokCharacter(svg, {
-        shape: "cloud",
-        color: "blue",
-        mode: "hold",
-        state: "idle",
-        followPointer: true,
-        inkFlat: inkForScheme(currentScheme()),
-        // 眼睛底色 = 页面底色，读起来像镂空
-        eyeColor: "var(--c-bg, #FCFCFB)",
-      });
-    } catch (err) {
-      console.warn("[hero-mascot] 云朵引擎初始化失败，保留静态 logo：", err);
-      svg = null;
-      heroIcon.__heroMascotMounted = false;
-      return;
-    }
+    crab = createCrabElement("hero-mascot");
+    crab.setAttribute("aria-hidden", "true");
+    body = new CrabDriver(crab, MOOD_STATE.idle);
 
-    // 引擎构造时已画出第一帧，这时才把静态 logo 撤下来——加载期间它一直是兜底。
-    heroIcon.appendChild(svg);
+    // 组件就位才把静态 logo 撤下来——加载期间它一直是兜底。
     heroIcon.querySelector("img")?.remove();
+    heroIcon.appendChild(crab);
+    pill = attachPersonalizePill(heroIcon);
 
     onActivity = () => {
       brain = noteActivity(brain, performance.now());
     };
     onPoke = () => {
-      const now = performance.now();
-      brain = notePoke(brain, now);
+      brain = notePoke(brain, performance.now());
       // 每一下都给点反馈，不然攒 celebrate 的过程里它像死的
-      engine.bounceOnce();
-      engine.spinOnce(1);
+      body.pulse("happy", POKE_PULSE_MS);
     };
 
     window.addEventListener("pointermove", onActivity, { passive: true });
     window.addEventListener("pointerdown", onActivity, { passive: true });
     window.addEventListener("keydown", onActivity, { passive: true });
     window.addEventListener("wheel", onActivity, { passive: true });
-    svg.addEventListener("pointerdown", onPoke);
+    crab.addEventListener("pointerdown", onPoke);
 
-    schemeObserver = new MutationObserver(() => {
-      engine.setInk(inkForScheme(currentScheme()));
-    });
-    schemeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme", "data-mode", "data-scheme"],
-    });
-
-    // hero 只在首页可见；#homeView.chatting 时 display:none，引擎直接暂停省 rAF。
+    // hero 只在首页可见；#homeView.chatting 时 display:none，调度不再推进。
     // busy 只在「隐藏 → 重新可见」的边沿清掉——否则发送失败后 orbit 会卡住不回
     // idle；但首次挂载时若 homeView 本就没在 chatting，不能把挂载前记的 busy 误清。
     const homeView = opts.homeView || document.getElementById("homeView");
-    let wasHidden = Boolean(homeView?.classList.contains("chatting"));
-    const syncPause = () => {
-      const hidden = Boolean(homeView?.classList.contains("chatting"));
-      engine.setPaused(hidden);
-      if (wasHidden && !hidden && brain.busy) brain = noteBusy(brain, false);
-      wasHidden = hidden;
+    let hidden = Boolean(homeView?.classList.contains("chatting"));
+    const syncHidden = () => {
+      const next = Boolean(homeView?.classList.contains("chatting"));
+      if (hidden && !next && brain.busy) brain = noteBusy(brain, false);
+      hidden = next;
     };
     if (homeView) {
-      chatObserver = new MutationObserver(syncPause);
+      chatObserver = new MutationObserver(syncHidden);
       chatObserver.observe(homeView, {
         attributes: true,
         attributeFilter: ["class"],
       });
     }
-    syncPause();
 
     timer = window.setInterval(() => {
       const now = performance.now();
@@ -281,15 +245,16 @@ export function mountHeroMascot(heroIcon, opts = {}) {
       const res = tickDirector(director, HERO_MOOD_CONFIG, now);
       director = res.state;
       if (res.emit) {
-        engine.setState(MOOD_STATE[res.emit]);
-        nextIdleSpinAt = now + IDLE_SPIN_MIN_MS;
+        body.setState(MOOD_STATE[res.emit]);
+        nextIdleTrickAt = now + IDLE_TRICK_MIN_MS;
         return;
       }
-      // idle 太安静了，隔一阵自己转一圈
-      if (director.applied === "idle" && now >= nextIdleSpinAt) {
-        engine.spinOnce(1);
-        nextIdleSpinAt =
-          now + IDLE_SPIN_MIN_MS + Math.random() * (IDLE_SPIN_MAX_MS - IDLE_SPIN_MIN_MS);
+      // idle 太安静了，隔一阵自己耍个宝（看不见时不耍）
+      if (!hidden && director.applied === "idle" && now >= nextIdleTrickAt) {
+        const [trick, ms] = IDLE_TRICKS[Math.floor(Math.random() * IDLE_TRICKS.length)];
+        body.pulse(trick, ms);
+        nextIdleTrickAt =
+          now + ms + IDLE_TRICK_MIN_MS + Math.random() * (IDLE_TRICK_MAX_MS - IDLE_TRICK_MIN_MS);
       }
     }, TICK_MS);
   })();
