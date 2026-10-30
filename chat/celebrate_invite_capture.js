@@ -116,16 +116,30 @@
     }
 
     function getFingerprintHash() {
-        // 复用主站 fingerprint.js 已采集的指纹（如果有）
+        // 复用主站 js/fingerprint.js 已采集的 visitor_id（它存在 localStorage「cancri_visitor_id」）。
+        // 2026-10-30：这里原来读的是不存在的「cancri_fp_visitor_id」，邀请行的
+        // fingerprint_hash 因此全部为空（近 60 天 182 条，0 条有值）。
         try {
             return (
                 window.__CANCRI_FINGERPRINT__ ||
-                (window.localStorage && localStorage.getItem("cancri_fp_visitor_id")) ||
+                (window.localStorage && localStorage.getItem("cancri_visitor_id")) ||
                 null
             );
         } catch (_) {
             return null;
         }
+    }
+
+    // 新号第一次登录时 fingerprint.js 往往还没算过 visitor_id（它只在已登录的页面加载后
+    // 采一次），这里补一次强制采集，顺带把被邀请人的设备指纹落进 user_device_fingerprints，
+    // 供人工发奖前事后核查。最多等 6 秒，失败照常绑定。
+    function ensureFingerprint() {
+        var fp = window.CancriFingerprint;
+        if (getFingerprintHash() || !fp || typeof fp.submitNow !== "function") return Promise.resolve();
+        return Promise.race([
+            Promise.resolve().then(function () { return fp.submitNow(); }).catch(function () {}),
+            new Promise(function (done) { setTimeout(done, 6000); })
+        ]);
     }
 
     var _supabase = null;
@@ -164,19 +178,21 @@
                 return;
             }
 
-            fetch(SIGNIN_URL, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: "Bearer " + token,
-                    apikey: window.__SUPABASE_ANON_KEY__
-                },
-                body: JSON.stringify({
-                    action: "invite_register",
-                    inviter_id: stored.inviter_id,
-                    fingerprint_hash: getFingerprintHash(),
-                    captured_at: new Date(stored.captured_at).toISOString()
-                })
+            ensureFingerprint().then(function () {
+                return fetch(SIGNIN_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: "Bearer " + token,
+                        apikey: window.__SUPABASE_ANON_KEY__
+                    },
+                    body: JSON.stringify({
+                        action: "invite_register",
+                        inviter_id: stored.inviter_id,
+                        fingerprint_hash: getFingerprintHash(),
+                        captured_at: new Date(stored.captured_at).toISOString()
+                    })
+                });
             })
                 .then(function (r) {
                     return r.json().catch(function () { return {}; });
@@ -208,7 +224,7 @@
         if (box) {
             // 仅显示前 8 位避免冗长
             var masked = String(inviterId || "").slice(0, 8) + "···";
-            box.textContent = "✓ 已捕获邀请关系（" + masked + "），注册新账号并登录后自动计入邀请人数；点开链接前已注册的账号不计入。";
+            box.textContent = "✓ 已捕获邀请关系（" + masked + "），登录后自动计入邀请人数。";
             box.hidden = false;
         }
         if (details && !details.open) details.open = true;
