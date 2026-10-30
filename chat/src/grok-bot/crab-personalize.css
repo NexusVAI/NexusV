@@ -1,0 +1,343 @@
+/* ============================================================================
+   小蟹「个性化」胶囊 + 弹窗（crab-personalize.js 以 ?raw 注入）
+   移植自 cancri-code/src/ui/grok-bot/crab-personalize.css，数值一致；改动只有三处：
+   1. 深色判定：桌面端看 :root[data-scheme]，网页看 html[data-theme="dark|black"]
+      （搬运皮肤是 data-theme="claude" + data-mode="dark"）。
+   2. 遮罩：桌面端复用全局 .modal-backdrop，网页没有那套，这里自带定位与底色。
+   3. 字体走网页的 --c-font。
+   ============================================================================ */
+
+/* 小蟹的思考点 / zzz 画在身体外、落在页面底色上：深色底改浅色，不然看不见 */
+html[data-theme="dark"] cancri-crab,
+html[data-theme="black"] cancri-crab,
+html[data-theme="claude"][data-mode="dark"] cancri-crab { --crab-fx: #c9cad1; }
+
+/* ---------- 悬停渐显的胶囊 ---------- */
+.crab-personalize-host {
+  position: relative;
+}
+.crab-personalize-pill {
+  position: absolute;
+  left: calc(100% - 6px);
+  bottom: -6px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px 0 7px;
+  border: 1px solid rgba(17, 17, 19, 0.1);
+  border-radius: 11px;
+  background: #ffffff;
+  color: #4b4d55;
+  font: 500 11.5px/1 var(--c-font, system-ui, sans-serif);
+  letter-spacing: 0;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(15, 18, 30, 0.1);
+  opacity: 0;
+  transform: translateY(2px);
+  pointer-events: none;
+  cursor: pointer;
+  transition: opacity 0.18s ease, transform 0.18s ease, color 0.14s ease;
+}
+.crab-personalize-pill svg { flex: 0 0 auto; }
+.crab-personalize-host:hover .crab-personalize-pill,
+.crab-personalize-pill:focus-visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.crab-personalize-pill:hover { color: #111113; }
+.crab-personalize-pill:focus-visible { outline: 2px solid #2f80ed; outline-offset: 1px; }
+html[data-theme="dark"] .crab-personalize-pill,
+html[data-theme="black"] .crab-personalize-pill,
+html[data-theme="claude"][data-mode="dark"] .crab-personalize-pill {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: #2a2a2d;
+  color: #c9cad1;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+html[data-theme="dark"] .crab-personalize-pill:hover,
+html[data-theme="black"] .crab-personalize-pill:hover,
+html[data-theme="claude"][data-mode="dark"] .crab-personalize-pill:hover { color: #ffffff; }
+
+/* ---------- 弹窗 ---------- */
+.cc-crab-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.32);
+  animation: cc-crab-fade 0.2s ease-out;
+}
+.cc-crab-backdrop.is-leaving {
+  opacity: 0;
+  transition: opacity 0.16s ease-in;
+}
+.cc-crab-shell {
+  filter: drop-shadow(0 24px 48px rgb(15 18 30 / 0.22)) drop-shadow(0 4px 12px rgb(15 18 30 / 0.12));
+  animation: cc-crab-pop 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.cc-crab-card {
+  --cc-crab-bg: #ffffff;
+  --cc-crab-ink: #111113;
+  --cc-crab-ink-2: #6b6d75;
+  --cc-crab-rule: rgba(17, 17, 19, 0.08);
+  --cc-crab-tint: rgba(17, 17, 19, 0.045);
+  --cc-crab-tile: rgba(17, 17, 19, 0.05);
+  --cc-crab-tile-hover: rgba(17, 17, 19, 0.09);
+  --cc-crab-accent: #2f80ed;
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 560px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 28px 28px 22px;
+  border: 1px solid var(--cc-crab-rule);
+  border-radius: 24px;
+  background: var(--cc-crab-bg);
+  color: var(--cc-crab-ink);
+  font-family: var(--c-font, system-ui, sans-serif);
+}
+.cc-crab-card:focus { outline: none; }
+html[data-theme="dark"] .cc-crab-card,
+html[data-theme="black"] .cc-crab-card,
+html[data-theme="claude"][data-mode="dark"] .cc-crab-card {
+  --cc-crab-bg: #1f1f22;
+  --cc-crab-ink: #f4f4f6;
+  --cc-crab-ink-2: #a8aab3;
+  --cc-crab-rule: rgba(255, 255, 255, 0.09);
+  --cc-crab-tint: rgba(255, 255, 255, 0.05);
+  --cc-crab-tile: rgba(255, 255, 255, 0.05);
+  --cc-crab-tile-hover: rgba(255, 255, 255, 0.1);
+  --cc-crab-accent: #4a95ff;
+}
+html[data-theme="black"] .cc-crab-card { --cc-crab-bg: #141416; }
+
+.cc-crab-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cc-crab-tint);
+  color: var(--cc-crab-ink-2);
+  cursor: pointer;
+  transition: background-color 0.14s ease, color 0.14s ease;
+}
+.cc-crab-close:hover,
+.cc-crab-close:focus-visible {
+  outline: none;
+  background: var(--cc-crab-tile-hover);
+  color: var(--cc-crab-ink);
+}
+
+.cc-crab-title {
+  margin: 0 0 14px;
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 28px;
+  letter-spacing: -0.01em;
+  text-align: center;
+  color: inherit;
+}
+
+/* 舞台：左右箭头 + 视口。视口两侧渐隐，滑走的那只淡出边缘而不是被一刀切掉 */
+.cc-crab-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+.cc-crab-nav {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cc-crab-tint);
+  color: var(--cc-crab-ink-2);
+  cursor: pointer;
+  transition: background-color 0.14s ease, color 0.14s ease;
+}
+.cc-crab-nav:hover,
+.cc-crab-nav:focus-visible {
+  outline: none;
+  background: var(--cc-crab-tile-hover);
+  color: var(--cc-crab-ink);
+}
+.cc-crab-viewport {
+  position: relative;
+  width: 240px;
+  height: 168px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+}
+.cc-crab-viewport::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 132px;
+  height: 132px;
+  margin: -58px 0 0 -66px;
+  border-radius: 50%;
+  background: var(--cc-crab-tint);
+}
+.cc-crab-frame {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.cc-crab-preview {
+  width: 168px;
+  height: 150px;
+}
+.cc-crab-frame.is-enter-right { animation: cc-crab-slide-in-right 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.cc-crab-frame.is-enter-left { animation: cc-crab-slide-in-left 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.cc-crab-frame.is-leave-left { animation: cc-crab-slide-out-left 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.cc-crab-frame.is-leave-right { animation: cc-crab-slide-out-right 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+.cc-crab-name {
+  box-sizing: border-box;
+  width: 200px;
+  height: 36px;
+  margin: 6px 0 20px;
+  border: 1px solid var(--cc-crab-rule);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cc-crab-tint);
+  font-size: 13.5px;
+  font-weight: 550;
+}
+
+.cc-crab-grid {
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--cc-crab-tint);
+}
+.cc-crab-tile {
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--cc-crab-tile);
+  cursor: pointer;
+  transition: background-color 0.14s ease, box-shadow 0.14s ease;
+}
+.cc-crab-tile svg {
+  width: 36px;
+  height: 36px;
+  overflow: visible;
+}
+/* 眼镜、胡子是近黑色，深色格子上会消失：给图标描一圈贴纸白边 */
+html[data-theme="dark"] .cc-crab-tile svg,
+html[data-theme="black"] .cc-crab-tile svg,
+html[data-theme="claude"][data-mode="dark"] .cc-crab-tile svg {
+  filter: drop-shadow(0 0 0.7px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 0.7px rgba(255, 255, 255, 0.9));
+}
+.cc-crab-tile:hover { background: var(--cc-crab-tile-hover); }
+.cc-crab-tile:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--cc-crab-ink-2); }
+.cc-crab-tile[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--cc-crab-accent); }
+
+.cc-crab-actions {
+  align-self: stretch;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+.cc-crab-reset,
+.cc-crab-done {
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  font: 600 13px/1 var(--c-font, system-ui, sans-serif);
+  cursor: pointer;
+  transition: background-color 0.14s ease, filter 0.14s ease;
+}
+.cc-crab-reset {
+  background: transparent;
+  color: var(--cc-crab-ink);
+}
+.cc-crab-reset:hover,
+.cc-crab-reset:focus-visible { outline: none; background: var(--cc-crab-tint); }
+.cc-crab-done {
+  background: var(--cc-crab-accent);
+  color: #ffffff;
+}
+.cc-crab-done:hover { filter: brightness(1.08); }
+.cc-crab-done:focus-visible { outline: 2px solid var(--cc-crab-accent); outline-offset: 2px; }
+
+/* 窄屏：7 列网格挤不下，改 5 列 */
+@media (max-width: 520px) {
+  .cc-crab-card { padding: 24px 16px 18px; }
+  .cc-crab-stage { gap: 8px; }
+  .cc-crab-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+@keyframes cc-crab-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes cc-crab-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.975); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cc-crab-slide-in-right {
+  from { opacity: 0; transform: translateX(70%); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cc-crab-slide-in-left {
+  from { opacity: 0; transform: translateX(-70%); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cc-crab-slide-out-left {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateX(-70%); }
+}
+@keyframes cc-crab-slide-out-right {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateX(70%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cc-crab-backdrop,
+  .cc-crab-shell,
+  .cc-crab-frame { animation: none !important; }
+  .cc-crab-frame.is-leave-left,
+  .cc-crab-frame.is-leave-right { visibility: hidden; }
+  .crab-personalize-pill { transition: none; }
+}
