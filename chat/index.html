@@ -615,7 +615,7 @@
                         <!-- 2026-05-22 真 Claude 对齐：账户按钮右侧 "获取应用和扩展" 入口。
                              指向 ./code/ 桌面客户端，配 animate-ping 红点提示新功能。 -->
                         <a class="account-download-btn" id="accountDownloadBtn"
-                           href="https://dl.nexusvai.xyz/cancri-code/3.4.0-rc.1/Cancri-Code_3.4.0-rc.1_x64-setup.exe" target="_blank" rel="noopener noreferrer"
+                           href="https://dl.nexusvai.xyz/cancri-code/3.4.0/Cancri-Code_3.4.0_x64-setup.exe" target="_blank" rel="noopener noreferrer"
                            aria-label="下载 CancriCode 桌面端" title="下载 CancriCode 桌面端">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -1856,13 +1856,17 @@
                                         <p class="claude-billing-empty">点击左侧「用量」加载明细。</p>
                                     </div>
                                 </div>
-                                <!-- 邀请 section：链接 / 人数 / 记录（2026-10-30 起只记录人数，奖励人工发放） -->
+                                <!-- 邀请 section：链接 / 人数 / 奖励任务（2026-10-31 邀请计划，任务与文案由后端下发） / 记录 -->
                                 <div class="claude-settings-section claude-snav-target" data-snav-target="invite">
                                     <h2 class="claude-settings-h2">邀请好友</h2>
                                     <p class="claude-form-help" id="claudeInviteRules" style="margin:0 0 16px;line-height:1.55">
-                                        把专属链接发给朋友，对方通过链接注册新账号并登录后，会计入你的邀请人数；已有账号不计入。
-                                        邀请奖励由官方根据邀请人数人工核定发放，不再自动入账；多账号自邀、刷量等在核定时不计入，具体以公告为准。
+                                        把专属链接发给朋友，对方通过链接注册新账号并正常使用后，计入你的有效邀请人数；已有账号不计入。
+                                        多账号自邀、批量注册等不计入，详见<a href="../invite-rules.html" target="_blank" rel="noopener">《邀请计划活动规则》</a>。
                                     </p>
+                                    <div class="claude-form-row claude-form-row-stack">
+                                        <span class="claude-form-label">奖励任务</span>
+                                        <div id="claudeInviteCampaign" class="claude-invite-campaign" style="width:100%"><p class="claude-billing-empty">加载中…</p></div>
+                                    </div>
                                     <div class="claude-form-row">
                                         <span class="claude-form-label">我的邀请链接</span>
                                         <div class="claude-form-control" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%">
@@ -2806,15 +2810,15 @@
         <script defer src="./model_launch_modal.js?v=20260809-f5lm2"></script>
         <script defer src="./glm52_fp8_launch_modal.js?v=20260814-ext0820"></script>
         <script defer src="./cancricode_launch_modal.js?v=20260927-cc3"></script>
-        <script defer src="./cancri_chat.js?v=20261030-crab"></script>
+        <script defer src="./cancri_chat.js?v=20261031-invite"></script>
         <script type="module" src="./js/main.js?v=20260917-sb-blur"></script>
         <script defer src="./cancri_announcement.js?v=20260811-ann-expand"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
         <script defer src="./celebrate_invite_capture.js?v=20261030-invite3"></script>
-        <script defer src="./claude_ui.js?v=20261030-invite"></script>
+        <script defer src="./claude_ui.js?v=20261031-invite"></script>
         <!-- 2026-06-25：钱包余额预警 ribbon + 升级弹窗。此前漏挂载+部署白名单文件名写错，
              导致 window.CancriUpgradeQuotaUI 永远 undefined、聊天页低余额警报从不显示。 -->
-        <script defer src="./claude_upgrade_quota_ui.js?v=20261014-dl320"></script>
+        <script defer src="./claude_upgrade_quota_ui.js?v=20261031-dl340"></script>
     </body>
 </html>

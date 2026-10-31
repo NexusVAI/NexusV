@@ -2859,6 +2859,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 	}
 	var KNOWN_ERROR_CODE_MESSAGES = {
 		model_unavailable: "该模型当前无法使用，请尝试其他模型。",
+		trial_model_restricted: "Go 体验版不含该模型（Claude 系列付费线与 GPT Astra），订阅正式套餐后可用。",
 		model_quota_exceeded: "该模型当前请求较多，请切换模型或稍后重试。",
 		model_request_invalid: "请求未被模型接受，请调整内容后重试。",
 		model_temporary_failure: "当前模型服务暂时不可用，请稍后重试。",
@@ -2922,7 +2923,8 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		"model_pro_required",
 		"allowance_exhausted",
 		"plan_required",
-		"free_plan_exhausted"
+		"free_plan_exhausted",
+		"trial_model_restricted"
 	]);
 	var UPGRADE_MODAL_TRIGGER_CODES = new Set([
 		"free_pool_exhausted",
@@ -3963,6 +3965,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		billingMode: null,
 		planV4Active: null,
 		planV4Code: null,
+		planV4TrialRestricted: null,
 		walletBalance: null,
 		walletDebt: null,
 		walletCumulativeRecharge: null,
@@ -4072,6 +4075,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 				return null;
 			}
 			if (quotaState.planV4Active === false) return "plan_required";
+			if (quotaState.planV4TrialRestricted && quotaState.planV4TrialRestricted.has(modelId)) return "trial_restricted";
 			return null;
 		}
 		if (isAnyPaidPlanCode(quotaState.planCode)) return null;
@@ -4097,6 +4101,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 	function getQuotaBlockMessage(modelId) {
 		switch (getQuotaBlockReason(modelId)) {
 			case "plan_required": return "需要Go以上订阅。前往定价页订阅套餐（免费模型不受限）。";
+			case "trial_restricted": return "Go 体验版不含该模型，订阅正式套餐后可用。";
 			case "pro_only": return "需要Go以上订阅，请升级或选择其他模型。";
 			case "pro_plus_only": return "需要Go以上订阅，请升级或选择其他模型。";
 			case "pro_max_only": return "需要Go以上订阅，请升级或选择其他模型。";
@@ -4161,6 +4166,8 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 				quotaState.expiresAt = typeof data.expires_at === "string" ? data.expires_at : null;
 				quotaState.daysRemaining = typeof data.days_remaining === "number" || typeof data.days_remaining === "string" ? Number(data.days_remaining) || 0 : null;
 				quotaState.billingMode = data.billing_mode === "plan_v4" || data.billing_mode === "wallet_v3" ? data.billing_mode : "quota_v2";
+				const trial = data.plan_v4 && data.plan_v4.active === true ? data.plan_v4.trial : null;
+				quotaState.planV4TrialRestricted = trial && Array.isArray(trial.restricted_model_ids) ? new Set(trial.restricted_model_ids.map(String)) : null;
 				if (data.plan_v4 && typeof data.plan_v4 === "object") {
 					quotaState.planV4Active = data.plan_v4.active === true;
 					quotaState.planV4Code = normalizePlanCode(data.plan_v4.plan_code);

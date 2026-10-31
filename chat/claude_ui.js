@@ -20,7 +20,7 @@
     // runOnboardingAction 的 'open-cancri-code' 分支与 openCancriCodeDownload() 都保留着没删。
     var ONBOARDING_TASK_IDS = ['importMemory', 'community'];
     var COMMUNITY_URL = 'https://qm.qq.com/q/RNgltzNsSQ';
-    var CANCRI_CODE_URL = 'https://dl.nexusvai.xyz/cancri-code/3.4.0-rc.1/Cancri-Code_3.4.0-rc.1_x64-setup.exe';
+    var CANCRI_CODE_URL = 'https://dl.nexusvai.xyz/cancri-code/3.4.0/Cancri-Code_3.4.0_x64-setup.exe';
     var SERVICE_STATUS_URL = 'https://nexusvai.github.io/ChatAI-status/status.html';
     var MEMORY_IMPORT_TEXT_LIMIT = 12000;
     var memoryImportCandidates = [];
@@ -4089,6 +4089,8 @@
             console.error('get_invite:', err);
             sumEl.textContent = '加载失败，请稍后重试';
         });
+        // 2026-10-31 邀请计划：奖励任务表（见文件末尾 CancriInviteCampaignUI）。
+        if (window.CancriInviteCampaignUI) window.CancriInviteCampaignUI.refresh();
     }
 
     function loadClaudeAccount() {
@@ -5162,6 +5164,262 @@
         },
         getSnapshot: function () { return last; },
         rerender: function () { render(); },
+    };
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+})();
+
+// ── 2026-10-31 邀请计划 · 奖励任务（设置 →「邀请」页）────────────────────────────
+// 数据：chat-gateway `invite_campaign_status` / `invite_campaign_claim`。任务标题、奖励文案、门槛、
+// 规则链接全部由后端 celebrate_config 下发，这里只渲染，不写死任何档位。
+// 同步：服务端是唯一真相、领取幂等；本 IIFE 负责跨标签广播（BroadcastChannel）、回前台 / 获焦刷新、
+// 邀请页可见时 15s 轮询；领取 Go 体验版后立刻强刷配额状态，让模型菜单即时置灰。
+(function () {
+    'use strict';
+    var CHANNEL = 'cancri-invite-sync';
+    var POLL_MS = 15000;
+    var last = null;
+    var lastAt = 0;
+    var inflight = null;
+    var busyKind = '';
+    var channel = null;
+
+    function $(id) { return document.getElementById(id); }
+    function esc(s) {
+        var d = document.createElement('div');
+        d.textContent = String(s == null ? '' : s);
+        return d.innerHTML;
+    }
+    function token() {
+        try {
+            var raw = localStorage.getItem('cancri_supabase_auth');
+            var p = raw ? JSON.parse(raw) : null;
+            return p && p.access_token ? String(p.access_token) : '';
+        } catch (e) { return ''; }
+    }
+    function fmtTime(iso) {
+        var t = Date.parse(iso || '');
+        if (!Number.isFinite(t)) return '';
+        var d = new Date(t);
+        var p = function (n) { return String(n).padStart(2, '0'); };
+        return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + p(d.getHours()) + ':' + p(d.getMinutes());
+    }
+    function safeUrl(u) {
+        try {
+            var x = new URL(String(u || ''), location.href);
+            return x.protocol === 'https:' || x.protocol === 'http:' ? x.href : '';
+        } catch (e) { return ''; }
+    }
+    function injectStyle() {
+        if ($('claudeInviteCampaignStyle')) return;
+        var st = document.createElement('style');
+        st.id = 'claudeInviteCampaignStyle';
+        st.textContent = [
+            '.claude-invite-campaign .cic-table{width:100%;border-collapse:collapse;font-size:13px}',
+            '.claude-invite-campaign .cic-table th{font-weight:500;text-align:left;opacity:.65;padding:6px 8px;border-bottom:1px solid var(--border-default,rgba(128,128,128,.2))}',
+            '.claude-invite-campaign .cic-table td{padding:10px 8px;border-bottom:1px solid var(--border-default,rgba(128,128,128,.14));vertical-align:top}',
+            '.claude-invite-campaign .cic-reward strong{display:block;font-weight:600}',
+            '.claude-invite-campaign .cic-reward span{display:block;opacity:.7;font-size:12px;margin-top:2px;line-height:1.5}',
+            '.claude-invite-campaign .cic-prog{white-space:nowrap}',
+            '.claude-invite-campaign .cic-bar{height:4px;border-radius:999px;background:var(--border-default,rgba(128,128,128,.2));margin-top:6px;overflow:hidden;min-width:56px}',
+            '.claude-invite-campaign .cic-bar>i{display:block;height:100%;background:var(--accent,#c96442)}',
+            '.claude-invite-campaign .cic-state{font-size:12px;opacity:.75;white-space:nowrap}',
+            '.claude-invite-campaign .cic-notice{font-size:12px;opacity:.75;margin:8px 0 0;line-height:1.6}',
+            '.claude-invite-campaign .cic-head{font-size:13px;margin:0 0 6px}',
+            '.claude-invite-campaign button[disabled]{opacity:.5;cursor:not-allowed}'
+        ].join('\n');
+        document.head.appendChild(st);
+    }
+
+    function stateCell(t, open) {
+        var now = Date.now();
+        var until = Date.parse(t.active_until || '');
+        if (t.state === 'claimable' && open) {
+            var label = esc(t.action_label || '领取');
+            return '<button type="button" class="claude-secondary-btn" data-invite-claim="' + esc(t.kind) + '"' +
+                (busyKind ? ' disabled' : '') + '>' + (busyKind === t.kind ? '处理中…' : label) + '</button>';
+        }
+        if (t.state === 'used' && t.kind === 'go_trial' && until > now) {
+            return '<span class="cic-state">体验中 · 至 ' + esc(fmtTime(t.active_until)) + '</span>';
+        }
+        if (t.state === 'active' && until > now) {
+            return '<span class="cic-state">已启用 · 至 ' + esc(fmtTime(t.active_until)) + '</span>';
+        }
+        if (t.state === 'used') return '<span class="cic-state">已使用</span>';
+        if (t.state === 'expired' || t.state === 'active') return '<span class="cic-state">已过期</span>';
+        if (t.state === 'revoked') return '<span class="cic-state">已收回</span>';
+        return '<span class="cic-state">' + (open ? '未达成' : '未开放') + '</span>';
+    }
+
+    function render() {
+        var box = $('claudeInviteCampaign');
+        if (!box) return;
+        var c = last;
+        if (!c) return;
+        if (c.enabled === false || !Array.isArray(c.tasks) || !c.tasks.length) {
+            box.innerHTML = '<p class="claude-billing-empty">当前没有进行中的邀请活动</p>';
+            return;
+        }
+        var count = Math.max(0, Number(c.valid_invites) || 0);
+        var html = '<p class="cic-head">' + esc(c.name || '邀请计划') + ' · 有效邀请 <strong>' + count + '</strong> 人</p>';
+        html += '<table class="cic-table"><thead><tr><th>任务</th><th>进度</th><th>奖励</th><th></th></tr></thead><tbody>';
+        c.tasks.forEach(function (t) {
+            var thr = Math.max(1, Number(t.threshold) || 1);
+            var pct = Math.min(100, Math.round((Math.min(count, thr) / thr) * 100));
+            html += '<tr><td>' + esc(t.title || '') + '</td>' +
+                '<td class="cic-prog">' + Math.min(count, thr) + ' / ' + thr + '<div class="cic-bar"><i style="width:' + pct + '%"></i></div></td>' +
+                '<td class="cic-reward"><strong>' + esc(t.reward_title || '') + '</strong><span>' + esc(t.reward_desc || '') + '</span></td>' +
+                '<td>' + stateCell(t, c.open === true && c.banned !== true) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        var terms = safeUrl(c.terms_url);
+        var notice = esc(c.notice || '');
+        if (terms) {
+            var label = esc(c.terms_label || '《邀请计划活动规则》');
+            notice = notice.indexOf(label) >= 0
+                ? notice.replace(label, '<a href="' + esc(terms) + '" target="_blank" rel="noopener">' + label + '</a>')
+                : notice + ' <a href="' + esc(terms) + '" target="_blank" rel="noopener">' + label + '</a>';
+        }
+        if (c.banned === true) notice = '账号状态异常，暂不能领取奖励。 ' + notice;
+        else if (c.open !== true) notice = '活动未开始或已结束。 ' + notice;
+        html += '<p class="cic-notice">' + notice + '</p>';
+        box.innerHTML = html;
+    }
+
+    function call(endpoint, extra) {
+        var t = token();
+        if (!t) return Promise.resolve({ status: 401, data: null });
+        var body = Object.assign({ endpoint: endpoint, __auth_token: t }, extra || {});
+        return fetch(window.__SUPABASE_URL__ + '/functions/v1/chat-gateway', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: window.__SUPABASE_ANON_KEY__ || '', Authorization: 'Bearer ' + t },
+            body: JSON.stringify(body)
+        }).then(function (r) {
+            return r.json().catch(function () { return null; }).then(function (d) { return { status: r.status, data: d }; });
+        });
+    }
+
+    function apply(campaign, at, fromPeer) {
+        if (!campaign) return;
+        last = campaign;
+        lastAt = at || Date.now();
+        render();
+        if (!fromPeer && channel) {
+            try { channel.postMessage({ type: 'campaign', data: campaign, at: lastAt }); } catch (e) { /* ignore */ }
+        }
+    }
+
+    function fetchStatus() {
+        if (inflight) return inflight;
+        var box = $('claudeInviteCampaign');
+        if (!token()) {
+            if (box) box.innerHTML = '<p class="claude-billing-empty">登录后可查看邀请任务</p>';
+            return Promise.resolve(null);
+        }
+        inflight = call('invite_campaign_status').then(function (res) {
+            inflight = null;
+            if (res.data && res.data.ok && res.data.campaign) {
+                apply(res.data.campaign, Date.now(), false);
+            } else if (!last && box) {
+                box.innerHTML = '<p class="claude-billing-empty">加载失败，请稍后重试</p>';
+            }
+            return last;
+        }).catch(function () {
+            inflight = null;
+            if (!last && box) box.innerHTML = '<p class="claude-billing-empty">加载失败，请稍后重试</p>';
+            return null;
+        });
+        return inflight;
+    }
+
+    function toast(msg) {
+        var app = window.CancriApp;
+        if (app && typeof app.showToast === 'function') app.showToast(msg);
+        else window.alert(msg);
+    }
+
+    function claim(kind) {
+        if (busyKind) return;
+        busyKind = kind;
+        render();
+        call('invite_campaign_claim', { kind: kind }).then(function (res) {
+            busyKind = '';
+            var d = res.data || {};
+            if (d.ok && d.campaign) {
+                apply(d.campaign, Date.now(), false);
+                toast(kind === 'free_reset' ? '免费计划积分已恢复满额' : kind === 'go_trial' ? 'Go 体验版已生效' : '夜间免扣卡已启用');
+            } else {
+                toast(d.message || '领取失败，请稍后重试');
+                fetchStatus();
+            }
+            afterChange(kind);
+        }).catch(function () {
+            busyKind = '';
+            toast('网络异常，请稍后重试');
+            fetchStatus();
+        });
+    }
+
+    // 领取后：模型置灰 / 免费积分条立即刷新，并通知其它标签。
+    function afterChange(kind) {
+        try {
+            if (window.CancriQuotaRuntime) window.CancriQuotaRuntime.refresh(true);
+        } catch (e) { /* ignore */ }
+        try {
+            if (window.CancriFreePlanUI) window.CancriFreePlanUI.notifyUsageChanged();
+        } catch (e) { /* ignore */ }
+        if (channel) {
+            try { channel.postMessage({ type: 'claimed', kind: kind, at: Date.now() }); } catch (e) { /* ignore */ }
+        }
+    }
+
+    function inviteVisible() {
+        var box = $('claudeInviteCampaign');
+        return !!(box && box.offsetParent !== null);
+    }
+
+    function init() {
+        if (!$('claudeInviteCampaign')) return;
+        injectStyle();
+        if (typeof BroadcastChannel !== 'undefined') {
+            try {
+                channel = new BroadcastChannel(CHANNEL);
+                channel.onmessage = function (ev) {
+                    var m = ev && ev.data;
+                    if (!m) return;
+                    if (m.type === 'campaign' && m.data && Number(m.at) > lastAt) apply(m.data, Number(m.at), true);
+                    else if (m.type === 'claimed') {
+                        try { if (window.CancriQuotaRuntime) window.CancriQuotaRuntime.refresh(true); } catch (e) { /* ignore */ }
+                        fetchStatus();
+                    }
+                };
+            } catch (e) { channel = null; }
+        }
+        document.addEventListener('click', function (ev) {
+            var btn = ev.target && ev.target.closest && ev.target.closest('[data-invite-claim]');
+            if (!btn || btn.disabled) return;
+            ev.preventDefault();
+            claim(btn.getAttribute('data-invite-claim'));
+        });
+        // 另一端（桌面端 / 其它设备）用掉奖励后：回到本页时刷新任务表与模型置灰。
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState !== 'visible') return;
+            if (inviteVisible()) fetchStatus();
+            try { if (window.CancriQuotaRuntime) window.CancriQuotaRuntime.refresh(false); } catch (e) { /* ignore */ }
+        });
+        window.addEventListener('focus', function () {
+            if (inviteVisible() && Date.now() - lastAt > 5000) fetchStatus();
+        });
+        window.addEventListener('cancri:auth-changed', function () { last = null; lastAt = 0; if (inviteVisible()) fetchStatus(); });
+        setInterval(function () {
+            if (document.visibilityState === 'visible' && inviteVisible() && Date.now() - lastAt >= POLL_MS) fetchStatus();
+        }, 5000);
+    }
+
+    window.CancriInviteCampaignUI = {
+        refresh: function () { return fetchStatus(); },
+        getSnapshot: function () { return last; },
     };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

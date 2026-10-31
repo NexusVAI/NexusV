@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-28 — 工作流卡片背景底板
+
+* 前三张横向滚动卡片依次使用本地 `images/New/new1.webp`、`new2.webp`、`new3.webp` 作背景底板；保留原截图和视频，以居中留白、圆角和阴影呈现悬浮窗口，完整显示媒体内容。
+* 删除末尾第四张占位卡片，保留原有桌面吸顶横移与移动端横向滑动交互。
+
+## 2026-08-17 — 移除组件滚动显现
+
+* 移除 Codex 工作流文字/图片、下载区标题/卡片、FAQ 标题/条目的滚动入场逻辑及配套隐藏样式，内容直接显示，不再上浮、淡入或由模糊变清晰。
+* 保留 Hero 退场视差、导航滚动状态、集成卡墙及按钮/卡片悬停、按压、FAQ 展开与锚点缓动。
+
 ## 2026-08-09 — Apple 风格动效层（cancri-motion）
 
 * 新增 `css/cancri-motion.css` + `js/cancri-motion.js`：零依赖动效层，所有状态挂在 `html.cancri-motion` 之下——无 JS 或 prefers-reduced-motion 时页面完整可见，不会藏内容。
@@ -184,4 +194,7 @@
 - 2026-10-09：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.1.0/Cancri-Code_3.1.0_x64-setup.exe`（3 处；客户端 `cancri-code` tauri 版本 3.1.0，CDN 实测 200）。
 - 2026-10-14：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.2.0/Cancri-Code_3.2.0_x64-setup.exe`（3 处；客户端 `cancri-code` tauri 版本 3.2.0，CDN 实测 200，sha256 与本地构建一致）。
 - 2026-10-25：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.3.0/Cancri-Code_3.3.0_x64-setup.exe`（3 处；客户端 `cancri-code` tauri 版本 3.3.0，CDN 实测 200，MD5 与 R2 ETag 一致）。
+- 2026-10-29：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.4.0-rc.1/Cancri-Code_3.4.0-rc.1_x64-setup.exe`（3 处；客户端 `cancri-code` tauri 版本 3.4.0-rc.1）。
+- 2026-10-31：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.4.0/Cancri-Code_3.4.0_x64-setup.exe`（3 处；客户端 `cancri-code` tauri 版本 3.4.0 正式版）。
 - 2026-10-26：顶部公告横幅由模板橄榄绿改为主题蓝 `--cancri-brand` + 白字（`css/cancri-social.css`），文案 GPT-6-Luna → HaiKu 5.5。移除顶栏 QQ 图标悬浮卡（桌面 + 移动各一份，及其 CSS 与 `initQqNav`），改为右下角社区入口 `[data-cancri-section="community"]`（`css/cancri-community.css` + `js/cancri-community.js`，含 Apple 贝塞尔 squircle 裁切）。来源：`A.CancriCode/GitHub/chat/api_models.html` + `chat/api/oai-community.{css,js}`（去掉欢迎引导；配色改用 `--cancri-pill-*`）；二维码与图标复制自 `chat/assets/community/` 到 `images/community/`。
+- 2026-10-26：Codex 工作流区三行交错图文改为粘性横向滚动卡片带占位（`[data-cancri-role="hscroll"]`，`css/cancri-hscroll.css` + `js/cancri-hscroll.js`）。交互参考 trae.cn 首页「为你解锁全新可能」：桌面 ≥768px 吸顶、纵向滚动驱动横移，走完解除吸顶；移动端 / reduced-motion 退化为原生横滑 + scroll-snap。自写 sticky + transform，未复制 trae 源码与素材；第 4 张卡复用 `images/code1.png` 作占位。原 `.codex-row` 结构已移除，`cancri-rimlight.js` / `cancri-cornerkit.js` 里针对 `.codex-col-img` 的逻辑因此不再命中（未删，保留待后续决定）。

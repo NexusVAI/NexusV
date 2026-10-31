@@ -661,6 +661,8 @@ function lastUserMessageText(messages) {
   const KNOWN_ERROR_CODE_MESSAGES = {
     // From modelscope-proxy / chat-gateway / api-gateway sanitized errors
     model_unavailable: "该模型当前无法使用，请尝试其他模型。",
+    // 2026-10-31 邀请计划 Go 体验版（403）
+    trial_model_restricted: "Go 体验版不含该模型（Claude 系列付费线与 GPT Astra），订阅正式套餐后可用。",
     model_quota_exceeded: "该模型当前请求较多，请切换模型或稍后重试。",
     model_request_invalid: "请求未被模型接受，请调整内容后重试。",
     model_temporary_failure: "当前模型服务暂时不可用，请稍后重试。",
@@ -769,6 +771,8 @@ function lastUserMessageText(messages) {
     "allowance_exhausted",
     "plan_required",
     "free_plan_exhausted",
+    // 2026-10-31 邀请计划：Go 体验版调到受限模型 → 刷新配额，菜单立刻置灰。
+    "trial_model_restricted",
   ]);
   const UPGRADE_MODAL_TRIGGER_CODES = new Set([
     "free_pool_exhausted",
@@ -2347,6 +2351,8 @@ function lastUserMessageText(messages) {
     // 2026-07-04 套餐制 plan_v4：null=未知（不阻挡）；true/false=已知是否有生效套餐。
     planV4Active: null,
     planV4Code: null,
+    // 2026-10-31 邀请计划 Go 体验版：后端下发的不可用模型名单（Set）；null = 不在体验期。
+    planV4TrialRestricted: null,
     walletBalance: null,
     walletDebt: null,
     walletCumulativeRecharge: null,
@@ -2543,6 +2549,10 @@ function lastUserMessageText(messages) {
         return null;
       }
       if (quotaState.planV4Active === false) return "plan_required";
+      // 邀请计划 Go 体验版：名单由后端按同一判据算好（Claude 付费线 / GPT Astra）。
+      if (quotaState.planV4TrialRestricted && quotaState.planV4TrialRestricted.has(modelId)) {
+        return "trial_restricted";
+      }
       return null;
     }
     // Go/Plus/Pro（或 legacy 付费码）→ 全部模型解锁（无 vip 档位差）
@@ -2618,6 +2628,8 @@ function lastUserMessageText(messages) {
     switch (getQuotaBlockReason(modelId)) {
       case "plan_required":
         return "需要Go以上订阅。前往定价页订阅套餐（免费模型不受限）。";
+      case "trial_restricted":
+        return "Go 体验版不含该模型，订阅正式套餐后可用。";
       case "pro_only":
         return "需要Go以上订阅，请升级或选择其他模型。";
       case "pro_plus_only":
@@ -2745,6 +2757,11 @@ function lastUserMessageText(messages) {
               ? data.billing_mode
               : "quota_v2";
           // 2026-07-04 套餐制 plan_v4：get_quota_status 附加 plan_v4 字段
+          const trial = data.plan_v4 && data.plan_v4.active === true ? data.plan_v4.trial : null;
+          quotaState.planV4TrialRestricted =
+            trial && Array.isArray(trial.restricted_model_ids)
+              ? new Set(trial.restricted_model_ids.map(String))
+              : null;
           if (data.plan_v4 && typeof data.plan_v4 === "object") {
             quotaState.planV4Active = data.plan_v4.active === true;
             quotaState.planV4Code = normalizePlanCode(data.plan_v4.plan_code);
