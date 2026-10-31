@@ -5186,10 +5186,11 @@
     var channel = null;
 
     function $(id) { return document.getElementById(id); }
+    // 会进属性值（data-invite-claim="…" / href="…"），所以引号也要转义；textContent→innerHTML 不转引号。
     function esc(s) {
-        var d = document.createElement('div');
-        d.textContent = String(s == null ? '' : s);
-        return d.innerHTML;
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
     }
     function token() {
         try {
