@@ -5267,9 +5267,12 @@
         html += '<table class="cic-table"><thead><tr><th>任务</th><th>进度</th><th>奖励</th><th></th></tr></thead><tbody>';
         c.tasks.forEach(function (t) {
             var thr = Math.max(1, Number(t.threshold) || 1);
-            var pct = Math.min(100, Math.round((Math.min(count, thr) / thr) * 100));
+            // progress_text：后端直接给进度文案（被邀请人新人卡 =「已完成」），不按自己的邀请数算。
+            var hasText = typeof t.progress_text === 'string' && t.progress_text;
+            var pct = hasText ? 100 : Math.min(100, Math.round((Math.min(count, thr) / thr) * 100));
+            var prog = hasText ? esc(t.progress_text) : (Math.min(count, thr) + ' / ' + thr);
             html += '<tr><td>' + esc(t.title || '') + '</td>' +
-                '<td class="cic-prog">' + Math.min(count, thr) + ' / ' + thr + '<div class="cic-bar"><i style="width:' + pct + '%"></i></div></td>' +
+                '<td class="cic-prog">' + prog + '<div class="cic-bar"><i style="width:' + pct + '%"></i></div></td>' +
                 '<td class="cic-reward"><strong>' + esc(t.reward_title || '') + '</strong><span>' + esc(t.reward_desc || '') + '</span></td>' +
                 '<td>' + stateCell(t, c.open === true && c.banned !== true) + '</td></tr>';
         });
@@ -5347,9 +5350,12 @@
         call('invite_campaign_claim', { kind: kind }).then(function (res) {
             busyKind = '';
             var d = res.data || {};
-            if (d.ok && d.campaign) {
+            // applied:true = 已生效（新人卡为兼容桌面 3.4.0 用 ok:false 返回，见网关 invite-campaign.ts）
+            if ((d.ok || d.applied === true) && d.campaign) {
                 apply(d.campaign, Date.now(), false);
-                toast(kind === 'free_reset' ? '免费计划积分已恢复满额' : kind === 'go_trial' ? 'Go 体验版已生效' : '夜间免扣卡已启用');
+                toast(d.applied === true && d.message ? d.message
+                    : kind === 'free_reset' ? '免费计划积分已恢复满额'
+                    : kind === 'go_trial' ? 'Go 体验版已生效' : '夜间免扣卡已启用');
             } else {
                 toast(d.message || '领取失败，请稍后重试');
                 fetchStatus();

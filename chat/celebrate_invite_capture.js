@@ -201,6 +201,7 @@
                     if (data && data.ok) {
                         // 注册成功（含 already=true 幂等情况）→ 清缓存
                         clearStored();
+                        if (!data.already) notifyInviteeReward(token);
                         return;
                     }
                     if (data && (data.reason === "existing_user" || data.reason === "self_invite_not_allowed" || data.reason === "inviter_not_found" || data.reason === "invalid_capture_time")) {
@@ -212,6 +213,25 @@
                 .catch(function () {
                     // 网络错误，下次再试
                 });
+        }).catch(function () {});
+    }
+
+    // 2026-10-31 邀请计划：刚绑定成功的新人，若后端给了新人积分重置卡（tasks[] 里 kind=invitee_reset 且可领），
+    // 提示一次去哪里用。资格全由后端判定（活动期 / 封禁 / 与邀请人共网段），这里只看结果。
+    function notifyInviteeReward(token) {
+        if (!token) return;
+        fetch(SUPABASE_FUNCTIONS_BASE + "/chat-gateway", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: window.__SUPABASE_ANON_KEY__ || "" },
+            body: JSON.stringify({ endpoint: "invite_campaign_status", __auth_token: token })
+        }).then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (d) {
+            var tasks = d && d.ok && d.campaign && Array.isArray(d.campaign.tasks) ? d.campaign.tasks : [];
+            var card = tasks.filter(function (t) { return t && t.kind === "invitee_reset" && t.state === "claimable"; })[0];
+            if (!card) return;
+            var msg = "你通过好友邀请加入，获得一张「" + String(card.reward_title || "新人积分重置卡") + "」，可在 设置 → 邀请 中使用。";
+            var app = window.CancriApp;
+            if (app && typeof app.showToast === "function") app.showToast(msg);
         }).catch(function () {});
     }
 
