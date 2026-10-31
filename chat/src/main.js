@@ -20114,7 +20114,8 @@ function lastUserMessageText(messages) {
   const dismissNoticeCheckbox = document.getElementById("dismissNoticeCheckbox");
   const openAnnouncementBtn = document.getElementById("openAnnouncementBtn");
   // 2026-06-21：删除 618 公告并新增 0620 迁移公告，升一版 key，所有用户重新看到红点。
-  const NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0620_migration_v1";
+  // 2026-10-31：新增「套餐 8.8 折」公告，再升一版。
+  const NOTICE_DISMISS_KEY = "cancri_notice_dismiss_1031_plan_discount_v1";
   
   function openAnnouncementModal() {
     if (!announcementModal) return;

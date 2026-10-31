@@ -415,6 +415,27 @@ html[data-theme="dark"],
   flex-shrink: 0;
 }
 
+/* 一条公告带两颗按钮：次要按钮描边，主按钮实心在右 */
+.zm-ann-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.zm-ann-ctas .zm-ann-cta {
+  margin-top: 0;
+}
+.zm-ann-cta--ghost {
+  background: transparent;
+  color: var(--zm-ann-text);
+  box-shadow: inset 0 0 0 1px var(--zm-ann-divider);
+}
+.zm-ann-cta--ghost:hover {
+  opacity: 1;
+  color: var(--zm-ann-text);
+  background: var(--zm-ann-stripe);
+}
+
 /* 页脚 */
 .zm-ann-footer {
   flex-shrink: 0;

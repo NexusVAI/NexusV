@@ -7,8 +7,9 @@
  * 源文件在 src/bot-web/bot-sw.js，`npm run build:bot` 原样拷到根目录。
  */
 // Service Worker 全局（self / clients）在 eslint.config.js 里按 globals.serviceworker 声明
-const ICON = "./assets/bot-icon-192.png";
-const BADGE = "./assets/bot-badge-96.png";
+// ?v= 跟着图标换（2026-10-31 云朵 → Cancri Code 新应用图标小蟹）
+const ICON = "./assets/bot-icon-192.png?v=20261031-crab";
+const BADGE = "./assets/bot-badge-96.png?v=20261031-crab";
 
 /** 各个页面（clientId）报上来的：正在看哪个会话、是否在前台 */
 const views = new Map();

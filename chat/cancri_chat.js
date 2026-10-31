@@ -16211,7 +16211,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 	var closeAnnouncementBtn = document.getElementById("closeAnnouncementBtn");
 	var dismissNoticeCheckbox = document.getElementById("dismissNoticeCheckbox");
 	var openAnnouncementBtn = document.getElementById("openAnnouncementBtn");
-	var NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0620_migration_v1";
+	var NOTICE_DISMISS_KEY = "cancri_notice_dismiss_1031_plan_discount_v1";
 	function openAnnouncementModal() {
 		if (!announcementModal) return;
 		announcementModal.setAttribute("aria-hidden", "false");
