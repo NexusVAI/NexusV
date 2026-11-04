@@ -81,6 +81,32 @@ body,
   font-family: var(--_typography---font--display-serif-family, "Anthropic Serif", Georgia, serif);
 }
 
+/* FAQ icon geometry stays centered independently of font metrics. */
+[data-cancri-section="faq"] .faq-icon {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  font-size: 0;
+}
+
+[data-cancri-section="faq"] .faq-icon::before,
+[data-cancri-section="faq"] .faq-icon::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
+[data-cancri-section="faq"] .faq-icon::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
 /* Navigation -------------------------------------------------------------- */
 /*
  * Vendor sticky is broken by .page_wrap { overflow:clip } and was also
@@ -135,11 +161,37 @@ main.page_wrap.u-bg-ivory-medium {
   background-color: transparent !important;
 }
 
-/* Logo SVGs use currentColor — keep ink tokenized for dark mode. */
-.nav_logo_wrap .nexus-icon-svg,
-.nav_logo_wrap .nexus-logo-svg {
-  color: var(--cancri-ink);
-  fill: currentColor;
+/* Render the wordmark as an image so file:// previews work too. */
+.nav_logo_wrap {
+  width: auto;
+  min-width: 196px;
+  overflow: visible;
+}
+.nav_logo_wrap .nexus-logo-svg,
+.nav_logo_wrap .nexus-icon-svg {
+  display: none !important;
+}
+
+.nav_logo_wrap::after {
+  content: "";
+  display: block;
+  width: 152px;
+  height: 20px;
+  flex-shrink: 0;
+  background: url("../images/Cancri_Code_3.svg") center / contain no-repeat;
+}
+
+html[data-cancri-theme="dark"] .nav_logo_wrap::after {
+  filter: invert(1);
+}
+
+.nav_logo_wrap::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  background: url("../images/Cancri-icon-512.png") center / contain no-repeat;
 }
 
 /* Mobile drawer: kill ivory-light / ivory-medium leftovers from vendor theme. */
