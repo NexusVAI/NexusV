@@ -274,13 +274,17 @@
       decline: isEn ? 'Decline All' : '全部拒绝',
       manage: isEn ? 'Manage preferences' : '管理偏好',
       prefsTitle: isEn ? 'Cookie preferences' : 'Cookie 偏好设置',
-      prefsEssential: isEn
-        ? '<strong>Essential</strong> — always on: login session, theme and language preferences (localStorage).'
-        : '<strong>必要</strong> — 始终启用：登录态、主题与语言偏好（localStorage）。',
-      prefsDiag: isEn
-        ? '<strong>Diagnostics</strong> — optional: uncaught JS errors only when you choose Accept All. No chat content, forms, or ad tracking.'
-        : '<strong>错误诊断</strong> — 可选：仅在你选择「全部接受」后，于未捕获异常时上报；不含聊天内容、表单输入或广告追踪。',
+      catEssentialTitle: isEn ? 'Strictly necessary' : '必要 Cookie',
+      catEssentialDesc: isEn
+        ? 'Keeps your login session, theme and language preferences (localStorage).'
+        : '用于保存登录态、主题与语言偏好（localStorage）。',
+      catAlwaysOn: isEn ? 'Always on' : '始终启用',
+      catDiagTitle: isEn ? 'Error diagnostics' : '错误诊断',
+      catDiagDesc: isEn
+        ? 'Reports uncaught page errors only, so we can fix bugs. No chat content, form input or ad tracking.'
+        : '仅在发生未捕获的页面异常时上报，用于修复 bug；不含聊天内容、表单输入或广告追踪。',
       prefsLink: isEn ? 'Read full Privacy Policy' : '阅读完整隐私协议',
+      save: isEn ? 'Save preferences' : '保存偏好',
       back: isEn ? 'Back' : '返回',
     };
   }
@@ -325,10 +329,20 @@
       '#cc-main .cm__btn:hover{background:var(--cc-btn-primary-hover-bg);color:var(--cc-btn-primary-hover-color);}' +
       '#cc-main .cm__btn--secondary{background:var(--cc-btn-secondary-bg);border-color:var(--cc-btn-secondary-border-color);color:var(--cc-btn-secondary-color);}' +
       '#cc-main .cm__btn--secondary:hover{background:var(--cc-btn-secondary-hover-bg);border-color:var(--cc-btn-secondary-hover-border-color);color:var(--cc-btn-secondary-hover-color);}' +
-      '#cc-main .cm__prefs{padding:1rem 1.3rem 1.2rem;display:none;}' +
+      '#cc-main .cm__prefs{padding:1rem 0 0;display:none;}' +
       '#cc-main .cm__prefs.is-open{display:block;}' +
-      '#cc-main .cm__prefs h3{margin:0 0 .9em;font-size:1.05em;font-weight:600;color:var(--cc-primary-color);}' +
-      '#cc-main .cm__prefs p{margin:0 0 .75em;font-size:.88em;line-height:1.55;color:var(--cc-secondary-color);}' +
+      '#cc-main .cm__prefs h3{margin:0 0 .6em;padding:0 1.3rem;font-size:1.05em;font-weight:600;color:var(--cc-primary-color);}' +
+      '#cc-main .cm__cat{padding:.85rem 1.3rem;border-top:1px solid var(--cc-separator-border-color);}' +
+      '#cc-main .cm__cat-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:0;font-size:.92em;font-weight:600;color:var(--cc-primary-color);}' +
+      '#cc-main label.cm__cat-head{cursor:pointer;}' +
+      '#cc-main .cm__cat-state{font-size:.8em;font-weight:500;color:var(--cc-secondary-color);}' +
+      '#cc-main .cm__cat-desc{margin:.45em 0 0;font-size:.84em;line-height:1.55;color:var(--cc-secondary-color);}' +
+      '#cc-main .cm__switch{-webkit-appearance:none;appearance:none;flex:none;position:relative;width:38px;height:22px;margin:0;border:0;border-radius:11px;background:#3a3d40;cursor:pointer;transition:background-color .15s ease;}' +
+      '#cc-main .cm__switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s ease,background-color .15s ease;}' +
+      '#cc-main .cm__switch:checked{background:#fff;}' +
+      '#cc-main .cm__switch:checked::after{transform:translateX(16px);background:#000;}' +
+      '#cc-main .cm__switch:focus-visible{outline:2px solid #fff;outline-offset:2px;}' +
+      '#cc-main .cm__prefs-link{margin:0;padding:.85rem 1.3rem;border-top:1px solid var(--cc-separator-border-color);font-size:.84em;}' +
       '#cc-main .cm__prefs a{color:var(--cc-link-color);font-weight:600;text-decoration:underline;}' +
       '#cc-main .cm__panel-main.is-hidden{display:none;}' +
       '@media screen and (max-width:640px){#cc-main{--cc-modal-margin:.5em;}' +
@@ -370,10 +384,24 @@
             '</div>' +
             '<div class="cm__prefs" id="cancri-cm-prefs" hidden>' +
               '<h3>' + copy.prefsTitle + '</h3>' +
-              '<p>' + copy.prefsEssential + '</p>' +
-              '<p>' + copy.prefsDiag + '</p>' +
-              '<p><a href="' + privacyHref() + '" target="_blank" rel="noopener">' + copy.prefsLink + '</a></p>' +
-              '<button type="button" class="cm__btn cm__btn--secondary" data-act="back" style="margin-top:.5rem;min-width:7rem;"><span>' + copy.back + '</span></button>' +
+              '<div class="cm__cat">' +
+                '<div class="cm__cat-head"><span>' + copy.catEssentialTitle + '</span><span class="cm__cat-state">' + copy.catAlwaysOn + '</span></div>' +
+                '<p class="cm__cat-desc">' + copy.catEssentialDesc + '</p>' +
+              '</div>' +
+              '<div class="cm__cat">' +
+                '<label class="cm__cat-head" for="cancri-cm-diag"><span>' + copy.catDiagTitle + '</span>' +
+                  '<input type="checkbox" role="switch" class="cm__switch" id="cancri-cm-diag"></label>' +
+                '<p class="cm__cat-desc">' + copy.catDiagDesc + '</p>' +
+              '</div>' +
+              '<p class="cm__prefs-link"><a href="' + privacyHref() + '" target="_blank" rel="noopener">' + copy.prefsLink + '</a></p>' +
+              '<div class="cm__btns">' +
+                '<div class="cm__btn-group">' +
+                  '<button type="button" class="cm__btn" data-act="save"><span>' + copy.save + '</span></button>' +
+                '</div>' +
+                '<div class="cm__btn-group">' +
+                  '<button type="button" class="cm__btn cm__btn--secondary" data-act="back"><span>' + copy.back + '</span></button>' +
+                '</div>' +
+              '</div>' +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -391,7 +419,10 @@
       if (level === 'accept') registerErrorHandlers();
     }
 
+    var diagToggle = root.querySelector('#cancri-cm-diag');
+
     function showPrefs() {
+      diagToggle.checked = getEffectiveConsent() === 'accept';
       mainPanel.classList.add('is-hidden');
       prefsPanel.hidden = false;
       prefsPanel.classList.add('is-open');
@@ -407,6 +438,9 @@
     root.querySelector('[data-act="decline"]').addEventListener('click', function () { close('decline'); });
     root.querySelector('[data-act="manage"]').addEventListener('click', showPrefs);
     root.querySelector('[data-act="back"]').addEventListener('click', hidePrefs);
+    root.querySelector('[data-act="save"]').addEventListener('click', function () {
+      close(diagToggle.checked ? 'accept' : 'decline');
+    });
   }
 
   // ── 启动逻辑 ──────────────────────────────────────────────────────

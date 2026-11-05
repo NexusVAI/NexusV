@@ -2111,6 +2111,195 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		"较高",
 		"很高"
 	];
+	var HEALTH_BACKOFF_BASE_MS = 60 * 1e3;
+	var HEALTH_BACKOFF_MAX_MS = 600 * 1e3;
+	var HEALTH_STORAGE_KEY = "cancri_model_health_hourly";
+	var HEALTH_STORAGE_VERSION = 1;
+	var HOUR_MS = 36e5;
+	var OK_RATE = 90;
+	function pad2(n) {
+		return n < 10 ? "0" + n : String(n);
+	}
+	/** 以 nowMs 所在小时为终点、往前共 24 个整点桶的 key，最旧在前。格式与网关一致：2026-11-04T09:00:00Z。 */
+	function hourKeysEndingAt(nowMs) {
+		const end = Math.floor(nowMs / HOUR_MS) * HOUR_MS;
+		const keys = [];
+		for (let i = 23; i >= 0; i--) keys.push((/* @__PURE__ */ new Date(end - i * HOUR_MS)).toISOString().slice(0, 13) + ":00:00Z");
+		return keys;
+	}
+	/**
+	* model_health 响应 → { 小写模型id: { 小时key: [total, successRate|null] } }。
+	* 只保留有样本的小时：绝大多数模型大多数小时是空的，这样落 localStorage 很小。
+	* 响应不合法返回 null。
+	*/
+	function compactHealthPayload(data) {
+		if (!data || !Array.isArray(data.models)) return null;
+		const rows = {};
+		for (const m of data.models) {
+			const id = String(m && m.model_id || "").trim().toLowerCase();
+			if (!id) continue;
+			const buckets = {};
+			if (Array.isArray(m.hourly)) for (const h of m.hourly) {
+				const total = Number(h && h.total) || 0;
+				if (total <= 0 || typeof h.hour !== "string") continue;
+				buckets[h.hour] = [total, typeof h.success_rate === "number" ? h.success_rate : null];
+			}
+			rows[id] = buckets;
+		}
+		return rows;
+	}
+	/** 按「现在」重新对齐 24 个小时桶。缓存放久了、跨了整点也不会错位，只会在最新那格显示为空。 */
+	function buildSegments(buckets, nowMs) {
+		const keys = hourKeysEndingAt(nowMs);
+		let maxTotal = 1;
+		return keys.map((hour) => {
+			const b = buckets ? buckets[hour] : null;
+			const total = b ? Number(b[0]) || 0 : 0;
+			const rate = b && typeof b[1] === "number" ? b[1] : null;
+			if (total > maxTotal) maxTotal = total;
+			return {
+				hour,
+				total,
+				rate
+			};
+		}).map((c) => ({
+			hour: c.hour,
+			total: c.total,
+			rate: c.rate,
+			level: c.total > 0 ? c.rate != null && c.rate >= OK_RATE ? "ok" : "bad" : "empty",
+			ratio: c.total > 0 ? Math.max(.42, c.total / maxTotal) : .34
+		}));
+	}
+	function segmentTooltip(seg) {
+		const d = new Date(seg.hour);
+		if (!seg.total) {
+			if (isNaN(d.getTime())) return "无调用样本";
+		}
+		const end = new Date(d.getTime() + HOUR_MS);
+		const span = `${pad2(d.getHours())}:${pad2(d.getMinutes())}–${pad2(end.getHours())}:${pad2(end.getMinutes())}`;
+		if (!seg.total) return span + " 无调用样本";
+		return `${span} 成功率 ${seg.rate == null ? "—" : seg.rate + "%"} · ${seg.total} 次`;
+	}
+	function summaryLabel(segs) {
+		let total = 0;
+		let okWeighted = 0;
+		for (const s of segs) {
+			total += s.total;
+			okWeighted += (s.rate || 0) * s.total;
+		}
+		if (!total) return "近24小时无调用样本";
+		return `近24小时用户请求成功率 ${Math.round(okWeighted / total)}%，共 ${total} 次`;
+	}
+	/** 空白状态条（24 根灰柱）。画在每一行的行尾，数据到了再由 paintUptimeBar 填。 */
+	function createUptimeBar() {
+		const bar = document.createElement("div");
+		bar.className = "nmm-uptime";
+		bar.setAttribute("role", "img");
+		bar.setAttribute("aria-label", "近24小时无调用样本");
+		for (let i = 0; i < 24; i++) {
+			const seg = document.createElement("span");
+			seg.className = "nmm-uptime__seg nmm-uptime__seg--empty";
+			seg.style.height = "34%";
+			bar.appendChild(seg);
+		}
+		return bar;
+	}
+	function paintUptimeBar(bar, buckets, nowMs) {
+		const segs = buildSegments(buckets, nowMs);
+		const nodes = bar.children;
+		for (let i = 0; i < 24 && i < nodes.length; i++) {
+			const s = segs[i];
+			const node = nodes[i];
+			node.className = "nmm-uptime__seg nmm-uptime__seg--" + s.level;
+			node.style.height = Math.round(s.ratio * 100) + "%";
+			node.title = segmentTooltip(s);
+		}
+		bar.setAttribute("aria-label", summaryLabel(segs));
+	}
+	/**
+	* 健康数据仓库：内存 + localStorage，并负责「该不该发请求」的判断。
+	* storage / now 可注入，方便测试。
+	*/
+	function createHealthStore({ storage = null, now = Date.now } = {}) {
+		let rows = {};
+		let fetchedAt = 0;
+		let version = 0;
+		let failures = 0;
+		let retryAt = 0;
+		if (storage) try {
+			const raw = storage.getItem(HEALTH_STORAGE_KEY);
+			if (raw) {
+				const parsed = JSON.parse(raw);
+				if (parsed && parsed.v === HEALTH_STORAGE_VERSION && parsed.rows && typeof parsed.rows === "object" && Number.isFinite(parsed.at)) {
+					rows = parsed.rows;
+					fetchedAt = parsed.at;
+					version = 1;
+				}
+			}
+		} catch {}
+		function persist() {
+			if (!storage) return;
+			try {
+				storage.setItem(HEALTH_STORAGE_KEY, JSON.stringify({
+					v: HEALTH_STORAGE_VERSION,
+					at: fetchedAt,
+					rows
+				}));
+			} catch {}
+		}
+		return {
+			get version() {
+				return version;
+			},
+			get fetchedAt() {
+				return fetchedAt;
+			},
+			get failures() {
+				return failures;
+			},
+			/** 退避期内、或数据还新鲜都不该请求。本机时钟被拨回（age < 0）按过期处理。 */
+			shouldFetch() {
+				const t = now();
+				if (t < retryAt) return false;
+				const age = t - fetchedAt;
+				return age < 0 || age >= 3e5;
+			},
+			apply(data) {
+				const next = compactHealthPayload(data);
+				if (!next) return false;
+				rows = next;
+				fetchedAt = now();
+				failures = 0;
+				retryAt = 0;
+				version += 1;
+				persist();
+				return true;
+			},
+			fail() {
+				failures += 1;
+				retryAt = now() + Math.min(HEALTH_BACKOFF_MAX_MS, HEALTH_BACKOFF_BASE_MS * 2 ** (failures - 1));
+			},
+			bucketsFor(modelId) {
+				const key = String(modelId || "").trim().toLowerCase();
+				return key && Object.prototype.hasOwnProperty.call(rows, key) ? rows[key] : null;
+			}
+		};
+	}
+	/**
+	* 给 root 下所有 .nmm-uptime 上色。(数据版本, 当前整点) 没变的条直接跳过，
+	* 所以菜单每次打开、每次 updateModelDropdownIndicators 都可以放心调。
+	*/
+	function paintHealthBars(root, store, nowMs = Date.now()) {
+		if (!root) return;
+		const keys = hourKeysEndingAt(nowMs);
+		const stamp = store.version + ":" + keys[keys.length - 1];
+		root.querySelectorAll(".nmm-uptime").forEach((bar) => {
+			if (bar.dataset.hv === stamp) return;
+			const row = bar.closest(".model-option");
+			paintUptimeBar(bar, store.bucketsFor(row && row.dataset.model), nowMs);
+			bar.dataset.hv = stamp;
+		});
+	}
 	//#endregion
 	//#region src/model-menu-notion.js
 	var MENUITEM_STYLE = "--x-umghl:rgb(from var(--ca-bacIntTra) r g b/calc(alpha*(1 + 0.5*var(--btn-adj-mult,0)*1)));--x-ph3bdx:rgb(from var(--ca-bacIntTra) r g b/calc(alpha*(1 + 0.5*var(--btn-adj-mult,1)*2)))";
@@ -2215,15 +2404,16 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 			soft.textContent = secondary;
 			nameRow.appendChild(soft);
 		}
+		if (free) {
+			const badge = el("div", "xamitd3 x1nn3v0j x11lfxj5 x1120s5i x135b78x xjwep3j x1t39747 x1wcsgtt x1pczhz8 x1j6dyjg xk50ysn xwn7fz2 xuxw1ft xt2wqj3 x14rh7hd x2lah0s nmm-free-badge", BADGE_STYLE);
+			badge.textContent = "FREE";
+			nameRow.appendChild(badge);
+		}
 		labelText.appendChild(nameRow);
 		labelSlot.appendChild(labelText);
 		inner.appendChild(labelSlot);
+		inner.appendChild(createUptimeBar());
 		const trailing = el("div", "xvc5jky xeuugli x2lah0s x78zum5 x6s0dn4 nmm-trailing", "gap:6px");
-		if (free) {
-			const badge = el("div", "xamitd3 x1nn3v0j x11lfxj5 x1120s5i x135b78x xjwep3j x1t39747 x1wcsgtt x1pczhz8 x1j6dyjg xk50ysn xwn7fz2 xuxw1ft xt2wqj3 x14rh7hd nmm-free-badge", BADGE_STYLE);
-			badge.textContent = "FREE";
-			trailing.appendChild(badge);
-		}
 		const check = svgIcon("checkmarkSmall x1lliihq x2lah0s x1kky2od xlup9mm x1kihv7h x1heor9g x1hc1fzr nmm-check", CHECKMARK_PATH);
 		trailing.appendChild(check);
 		inner.appendChild(trailing);
@@ -3747,7 +3937,23 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 	}
 	async function refreshIndependentModelPing() {}
 	var HEALTH_STATUS_REFRESH_MS = 1800 * 1e3;
-	async function fetchModelHealthStatus() {
+	var modelHealthStore = createHealthStore({ storage: (() => {
+		try {
+			return window.localStorage;
+		} catch (_e) {
+			return null;
+		}
+	})() });
+	var modelHealthInflight = null;
+	function fetchModelHealthStatus() {
+		if (modelHealthInflight) return modelHealthInflight;
+		if (!modelHealthStore.shouldFetch()) return Promise.resolve();
+		modelHealthInflight = fetchModelHealthStatusOnce().finally(() => {
+			modelHealthInflight = null;
+		});
+		return modelHealthInflight;
+	}
+	async function fetchModelHealthStatusOnce() {
 		try {
 			const resp = await gatewayFetch(EDGE_FUNCTION_URL, {
 				method: "POST",
@@ -3760,9 +3966,17 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 					window_days: 1
 				})
 			});
-			if (!resp.ok) return;
+			if (!resp.ok) {
+				modelHealthStore.fail();
+				return;
+			}
 			const data = await resp.json().catch(() => null);
-			if (!data || !Array.isArray(data.models)) return;
+			if (!data || !Array.isArray(data.models)) {
+				modelHealthStore.fail();
+				return;
+			}
+			modelHealthStore.apply(data);
+			paintHealthBars(modelDropdown, modelHealthStore);
 			const now = Date.now();
 			let changed = false;
 			for (const m of data.models) {
@@ -3801,7 +4015,9 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 				updateModelDropdownIndicators();
 				persistModelTelemetryCache();
 			}
-		} catch (_e) {}
+		} catch (_e) {
+			modelHealthStore.fail();
+		}
 	}
 	var lastDisabledLineFingerprint = "";
 	async function refreshDisabledModelLines() {
@@ -4336,6 +4552,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 	function updateModelDropdownIndicators() {
 		if (!modelDropdown) return;
 		clearExpiredQuotaLocks();
+		paintHealthBars(modelDropdown, modelHealthStore);
 		modelDropdown.querySelectorAll(".model-option").forEach((opt) => {
 			const modelId = opt.dataset.model;
 			const status = getModelStatus(modelId);
@@ -15747,7 +15964,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		const vw = window.innerWidth;
 		const vh = window.innerHeight;
 		const isCompact = window.matchMedia("(max-width: 768px)").matches;
-		const menuWidth = USE_LAYERED_MODEL_MENU ? 300 : 320;
+		const menuWidth = USE_LAYERED_MODEL_MENU ? 340 : 320;
 		const width = Math.round(isCompact ? Math.min(menuWidth, vw - 24) : Math.min(menuWidth, Math.max(280, Math.min(420, vw - 24))));
 		const spaceAbove = Math.round(rect.top - 24);
 		const spaceBelow = Math.round(vh - rect.bottom - 16);
@@ -15811,6 +16028,9 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		} catch (e) {}
 		try {
 			refreshQuotaState(false);
+		} catch (e) {}
+		try {
+			fetchModelHealthStatus().catch(() => {});
 		} catch (e) {}
 		const modelOptions = Array.from(modelDropdown?.querySelectorAll(".model-option") || []);
 		const activeModelForTarget = modelSelectTarget === "compare" ? compareModel : currentModel;

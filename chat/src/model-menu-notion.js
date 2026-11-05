@@ -7,6 +7,8 @@
 // 原有链路 —— 所以每一行都必须保留 .model-option、data-model 和一个
 // .model-speed-dot（updateModelDropdownIndicators 找不到它会直接跳过该行）。
 
+import { createUptimeBar } from "./model-menu-health.js";
+
 const MENUITEM_CLASS =
   "x87ps6o x1b7c0jy x1ypdohk xh8yej3 x78zum5 x1i5p2am x1whfx0g xr2y4jy x1ihp6rs xdxgbl4 xayv9eh";
 const MENUITEM_STYLE =
@@ -137,17 +139,22 @@ export function buildModelRow(row, { active, free }) {
     soft.textContent = secondary;
     nameRow.appendChild(soft);
   }
+  // FREE 胶囊（复用参考页「测试版」徽章的同一组原子类）紧跟模型名右侧；
+  // x2lah0s = flex-shrink:0，名字被截断时徽章不被挤掉。
+  if (free) {
+    const badge = el("div", BADGE_CLASS + " x2lah0s nmm-free-badge", BADGE_STYLE);
+    badge.textContent = "FREE";
+    nameRow.appendChild(badge);
+  }
   labelText.appendChild(nameRow);
   labelSlot.appendChild(labelText);
   inner.appendChild(labelSlot);
 
-  // 行右侧：FREE 胶囊（复用参考页「测试版」徽章的同一组原子类）+ 选中勾。
+  // 名字右侧的空位：近 24h 状态条（与模型广场同口径），数据由 main.js 经 paintHealthBars 填入。
+  inner.appendChild(createUptimeBar());
+
+  // 行右侧：PAID + Upgrade（订阅闸门时由 main.js 插入）+ 选中勾。
   const trailing = el("div", "xvc5jky xeuugli x2lah0s x78zum5 x6s0dn4 nmm-trailing", "gap:6px");
-  if (free) {
-    const badge = el("div", BADGE_CLASS + " nmm-free-badge", BADGE_STYLE);
-    badge.textContent = "FREE";
-    trailing.appendChild(badge);
-  }
   const check = svgIcon(
     "checkmarkSmall x1lliihq x2lah0s x1kky2od xlup9mm x1kihv7h x1heor9g x1hc1fzr nmm-check",
     CHECKMARK_PATH,

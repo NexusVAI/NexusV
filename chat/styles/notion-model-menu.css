@@ -311,6 +311,36 @@ html:not([data-theme="light"]):not([data-mode="light"]) .nmm {
 #modelDropdown.nmm .model-speed-dot {
     display: none !important;
 }
+/* FREE 胶囊贴在模型名右侧（同一个 nameRow 里），空位留给状态条 */
+#modelDropdown.nmm .nmm-free-badge {
+    margin-inline-start: 2px;
+}
+/* 近 24h 状态条：与模型广场 .cancri-uptime 同口径（绑 / 黄 / 灰，每小时一根竖条，
+   高度 = 请求量占比）。固定 72px：24 根 × 2px + 23 个缝 × 1px = 71px，不随名字长度伸缩，
+   名字过长时由 .nmm-name-secondary 的省略号让位。 */
+#modelDropdown.nmm .nmm-uptime {
+    display: flex;
+    align-items: flex-end;
+    flex: 0 0 72px;
+    gap: 1px;
+    width: 72px;
+    height: 14px;
+    margin-inline-start: 8px;
+}
+#modelDropdown.nmm .nmm-uptime__seg {
+    flex: 1 1 0;
+    min-width: 0;
+    border-radius: 999px;
+}
+#modelDropdown.nmm .nmm-uptime__seg--ok {
+    background: #22c55e;
+}
+#modelDropdown.nmm .nmm-uptime__seg--bad {
+    background: #f59e0b;
+}
+#modelDropdown.nmm .nmm-uptime__seg--empty {
+    background: color-mix(in srgb, var(--c-texPri) 18%, transparent);
+}
 #modelDropdown.nmm .nmm-trailing {
     fill: var(--c-icoPri);
 }
@@ -352,7 +382,8 @@ html:not([data-theme="light"]):not([data-mode="light"]) .nmm {
 #modelDropdown.nmm .model-option.disabled .nmm-icon,
 #modelDropdown.nmm .model-option.disabled .nmm-name,
 #modelDropdown.nmm .model-option.disabled .nmm-name-secondary,
-#modelDropdown.nmm .model-option.disabled .nmm-free-badge {
+#modelDropdown.nmm .model-option.disabled .nmm-free-badge,
+#modelDropdown.nmm .model-option.disabled .nmm-uptime {
     opacity: 0.45;
 }
 #modelDropdown.nmm .model-option.disabled:not(.is-upgrade-gated) {

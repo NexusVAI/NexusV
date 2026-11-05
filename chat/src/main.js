@@ -17,6 +17,7 @@ import {
   renderCostSignal,
   renderNotionModelMenu,
 } from "./model-menu-notion.js";
+import { createHealthStore, paintHealthBars } from "./model-menu-health.js";
 
 // ── 账号记忆相关性选择 ──
 /**
@@ -2025,19 +2026,50 @@ function lastUserMessageText(messages) {
   // 从 chat-gateway 的 model_health 端点拉取真实请求统计（成功率、平均延迟），
   // 映射到 modelStatus Map，替代已禁用的批量 ping。数据来自服务端
   // model_health_logs 表的 fire-and-forget 写入，覆盖所有用户的聚合统计。
-  const HEALTH_STATUS_REFRESH_MS = 30 * 60 * 1000; // 30 分钟刷新一次
+  const HEALTH_STATUS_REFRESH_MS = 30 * 60 * 1000; // 后台兜底刷新；菜单状态条另在打开菜单时按 5 分钟新鲜度刷新
   let lastHealthStatusFetchedAt = 0;
   
-  async function fetchModelHealthStatus() {
+  // 菜单状态条的数据仓库（内存 + localStorage）。网关 model_health 本身有 300s 缓存，
+  // 这里再挡一层：数据 5 分钟内算新鲜不重复请求、失败指数退避、同一时刻只放一个请求在飞。
+  // 规则细节见 model-menu-health.js。
+  const modelHealthStore = createHealthStore({
+    storage: (() => {
+      try {
+        return window.localStorage;
+      } catch (_e) {
+        return null;
+      }
+    })(),
+  });
+  let modelHealthInflight = null;
+  
+  function fetchModelHealthStatus() {
+    if (modelHealthInflight) return modelHealthInflight;
+    if (!modelHealthStore.shouldFetch()) return Promise.resolve();
+    modelHealthInflight = fetchModelHealthStatusOnce().finally(() => {
+      modelHealthInflight = null;
+    });
+    return modelHealthInflight;
+  }
+  
+  async function fetchModelHealthStatusOnce() {
     try {
       const resp = await gatewayFetch(EDGE_FUNCTION_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
         body: JSON.stringify({ endpoint: "model_health", window_days: 1 }),
       });
-      if (!resp.ok) return;
+      if (!resp.ok) {
+        modelHealthStore.fail();
+        return;
+      }
       const data = await resp.json().catch(() => null);
-      if (!data || !Array.isArray(data.models)) return;
+      if (!data || !Array.isArray(data.models)) {
+        modelHealthStore.fail();
+        return;
+      }
+      modelHealthStore.apply(data);
+      paintHealthBars(modelDropdown, modelHealthStore);
   
       const now = Date.now();
       let changed = false;
@@ -2097,7 +2129,8 @@ function lastUserMessageText(messages) {
         persistModelTelemetryCache();
       }
     } catch (_e) {
-      // 静默失败，下次刷新再试
+      // 静默失败，下次刷新再试（状态条走指数退避，不会连环重试）
+      modelHealthStore.fail();
     }
   }
   
@@ -3063,6 +3096,7 @@ function lastUserMessageText(messages) {
   function updateModelDropdownIndicators() {
     if (!modelDropdown) return;
     clearExpiredQuotaLocks();
+    paintHealthBars(modelDropdown, modelHealthStore);
     modelDropdown.querySelectorAll(".model-option").forEach((opt) => {
       const modelId = opt.dataset.model;
       const status = getModelStatus(modelId);
@@ -19419,8 +19453,8 @@ function lastUserMessageText(messages) {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const isCompact = window.matchMedia("(max-width: 768px)").matches;
-    // Notion 三层菜单第一层宽 300（参考页 --x-width:300px）
-    const menuWidth = USE_LAYERED_MODEL_MENU ? 300 : 320;
+    // Notion 三层菜单第一层宽 340：参考页是 300，行尾新增 72px 的状态条后长模型名会被截断，加宽 40px 承接。
+    const menuWidth = USE_LAYERED_MODEL_MENU ? 340 : 320;
     const width = Math.round(
       isCompact
         ? Math.min(menuWidth, vw - 24)
@@ -19526,6 +19560,13 @@ function lastUserMessageText(messages) {
     }
     try {
       refreshQuotaState(false);
+    } catch (e) {
+      /* ignore */
+    }
+    // 状态条数据：打开菜单时按 5 分钟新鲜度补拉（新鲜 / 退避期 / 已有请求在飞都会直接跳过），
+    // 重复打开菜单不会多发请求。
+    try {
+      fetchModelHealthStatus().catch(() => {});
     } catch (e) {
       /* ignore */
     }
