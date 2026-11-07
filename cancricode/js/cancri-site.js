@@ -100,6 +100,30 @@
     });
   }
 
+  function initNavGeometry() {
+    var root = document.documentElement;
+    var banner = document.querySelector('.cancri-topbanner');
+    var navs = document.querySelectorAll('.nav_wrap');
+
+    function sync() {
+      var bannerHeight = banner ? banner.getBoundingClientRect().height : 0;
+      root.style.setProperty('--nav--banner-height', bannerHeight + 'px');
+      navs.forEach(function (nav) {
+        if (!nav.getClientRects().length) return;
+        nav.style.setProperty('--cancri-nav-bottom', nav.getBoundingClientRect().bottom + 'px');
+      });
+    }
+
+    if (typeof ResizeObserver !== 'undefined') {
+      var observer = new ResizeObserver(sync);
+      if (banner) observer.observe(banner);
+      navs.forEach(function (nav) { observer.observe(nav); });
+    }
+    window.addEventListener('resize', sync, { passive: true });
+    document.addEventListener('cancri:navmenu', sync);
+    sync();
+  }
+
   /** Top announcement banner close → html.hide-nav-banner (template CSS). */
   function initTopBanner() {
     var close = document.querySelector('[data-cancri-banner-close]');
@@ -115,6 +139,7 @@
     initHeroCtas();
     initNavCta();
     initTopBanner();
+    initNavGeometry();
   }
 
   if (document.readyState === 'loading') {

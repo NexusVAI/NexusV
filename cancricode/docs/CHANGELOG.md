@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-11-06 — 公告条与汉堡菜单布局修复
+
+* 胶囊变形仅作用于导航条，公告条保持顶部全宽，不再通过负边距补偿。
+* 分离导航横排与菜单展开层的布局，恢复菜单全宽矩形外形，按实际导航底部计算可用高度并保留按钮底部空间。
+* 汉堡菜单内的子菜单改为点击展开，保留桌面完整导航的悬停行为。
+* 导航展开与收缩始终使用自动水平边距，仅过渡顶部间距，修复上滑恢复横条时先向左漂移的问题。
+
+## 2026-11-06 — 导航栏文字标志替换
+
+* 导航栏文字标志改用本地 `images/logos/Cancri_Code_3_boil.svg`，并按素材留白调整容器高度。
+* 将字标滤镜位移强度调整为 `12`，修复缩小至导航栏尺寸后动画各帧相同的问题；保留 `0.4s` 无限循环。
+
 ## 2026-10-28 — 工作流卡片背景底板
 
 * 前三张横向滚动卡片依次使用本地 `images/New/new1.webp`、`new2.webp`、`new3.webp` 作背景底板；保留原截图和视频，以居中留白、圆角和阴影呈现悬浮窗口，完整显示媒体内容。
@@ -198,3 +210,4 @@
 - 2026-10-31：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.4.0/Cancri-Code_3.4.0_x64-setup.exe`（3 处；客户端 `cancri-code` tauri 版本 3.4.0 正式版）。
 - 2026-10-26：顶部公告横幅由模板橄榄绿改为主题蓝 `--cancri-brand` + 白字（`css/cancri-social.css`），文案 GPT-6-Luna → HaiKu 5.5。移除顶栏 QQ 图标悬浮卡（桌面 + 移动各一份，及其 CSS 与 `initQqNav`），改为右下角社区入口 `[data-cancri-section="community"]`（`css/cancri-community.css` + `js/cancri-community.js`，含 Apple 贝塞尔 squircle 裁切）。来源：`A.CancriCode/GitHub/chat/api_models.html` + `chat/api/oai-community.{css,js}`（去掉欢迎引导；配色改用 `--cancri-pill-*`）；二维码与图标复制自 `chat/assets/community/` 到 `images/community/`。
 - 2026-10-26：Codex 工作流区三行交错图文改为粘性横向滚动卡片带占位（`[data-cancri-role="hscroll"]`，`css/cancri-hscroll.css` + `js/cancri-hscroll.js`）。交互参考 trae.cn 首页「为你解锁全新可能」：桌面 ≥768px 吸顶、纵向滚动驱动横移，走完解除吸顶；移动端 / reduced-motion 退化为原生横滑 + scroll-snap。自写 sticky + transform，未复制 trae 源码与素材；第 4 张卡复用 `images/code1.png` 作占位。原 `.codex-row` 结构已移除，`cancri-rimlight.js` / `cancri-cornerkit.js` 里针对 `.codex-col-img` 的逻辑因此不再命中（未删，保留待后续决定）。
+- 2026-11-04：下载直链统一改为 `dl.nexusvai.xyz/cancri-code/3.4.2/Cancri-Code_3.4.2_x64-setup.exe`（客户端 `cancri-code` tauri 版本 3.4.2，CDN 实测 200）。

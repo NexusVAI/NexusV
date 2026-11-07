@@ -19,10 +19,10 @@
   );
   /* Host centers the bar so it can morph into a floating capsule */
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
+  align-items: center;
   padding: 0;
   pointer-events: none;
-  transition: padding 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html[data-cancri-theme="dark"] .nav_component {
@@ -41,7 +41,7 @@ html[data-cancri-theme="dark"] .nav_component {
   isolation: isolate;
   width: 100%;
   max-width: 100%;
-  margin: 0;
+  margin: 0 auto;
   pointer-events: auto;
   background: var(--cancri-nav-glass) !important;
   background-color: var(--cancri-nav-glass) !important;
@@ -53,21 +53,18 @@ html[data-cancri-theme="dark"] .nav_component {
   transition:
     width 0.55s cubic-bezier(0.22, 1, 0.36, 1),
     max-width 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-    margin 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    margin-top 0.55s cubic-bezier(0.22, 1, 0.36, 1),
     border-radius 0.55s cubic-bezier(0.22, 1, 0.36, 1),
     background-color 0.4s ease;
 }
 
 /* Scroll down → floating capsule; scroll up → full bar */
-html.cancri-nav-scrolled .nav_component {
-  padding: 10px 16px 0;
-}
-
 html.cancri-nav-scrolled .nav_wrap,
 html.cancri-nav-scrolled .nav_wrap.is-mobile,
 html.cancri-nav-scrolled .nav_wrap.is-desktop {
-  width: min(100%, 72rem);
-  max-width: min(100%, 72rem);
+  width: min(calc(100% - 32px), 72rem);
+  max-width: min(calc(100% - 32px), 72rem);
+  margin: 10px auto 0;
   border-radius: 999px;
   border: none;
   /* Clip square backdrop “ears”; reopen when menu/dropdown needs to escape */
@@ -83,8 +80,7 @@ html.cancri-nav-menu-busy .nav_wrap.is-desktop {
 }
 
 /* Keep content clear of the pill’s curved ends + vertically center row */
-html.cancri-nav-scrolled .nav_wrap .nav_contain,
-html.cancri-nav-scrolled .nav_wrap .nav_menu_contain {
+html.cancri-nav-scrolled .nav_wrap .nav_contain {
   display: flex !important;
   align-items: center !important;
   padding-left: clamp(1.25rem, 2vw, 2rem);
@@ -170,10 +166,61 @@ html.cancri-nav-scrolled .nav_wrap.cancri-glass-active::before {
   clip-path: inset(0 round 999px);
 }
 
-/* Keep chrome / dropdowns above the glare layer */
-.nav_wrap.cancri-glass-active > * {
+/* Keep chrome above glare without turning the overlay into a flow item. */
+.nav_wrap.cancri-glass-active > .nav_contain {
   position: relative;
+  z-index: 2;
+}
+
+html.cancri-nav-menu-busy .nav_wrap.is-mobile {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  border-radius: 0;
+  background: var(--cancri-bg) !important;
+  transition: none;
+}
+
+.nav_wrap.is-mobile > .w-nav-overlay {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: calc(100dvh - var(--cancri-nav-bottom, var(--nav--height-total))) !important;
+  min-height: 0;
   z-index: 1;
+}
+
+.nav_wrap.is-mobile .nav_menu_wrap {
+  top: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding-top: 0;
+}
+
+.nav_wrap.is-mobile .nav_menu_scroll {
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  overscroll-behavior: contain;
+}
+
+.nav_wrap.is-mobile .nav_menu_contain {
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 100%;
+  height: max-content;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.nav_wrap.is-mobile .nav_buttons_item {
+  flex: 1 0 auto;
+  padding-top: 24px;
+}
+
+.nav_wrap.is-mobile .nav_buttons_item .btn_main_wrap {
+  flex-shrink: 0;
 }
 
 /*

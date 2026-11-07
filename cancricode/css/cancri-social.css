@@ -123,12 +123,6 @@ html[data-cancri-theme="dark"] [data-cancri-role="faq-social"] {
   color: #ffffff;
 }
 
-/* Scrolled host gets padding:10px 16px 0 — keep the banner full-bleed. */
-html.cancri-nav-scrolled .cancri-topbanner {
-  width: calc(100% + 32px);
-  margin: -10px -16px 10px;
-}
-
 .cancri-topbanner .nav_banner_contain {
   align-items: center;
 }

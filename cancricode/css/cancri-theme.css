@@ -176,9 +176,9 @@ main.page_wrap.u-bg-ivory-medium {
   content: "";
   display: block;
   width: 152px;
-  height: 20px;
+  height: 38px;
   flex-shrink: 0;
-  background: url("../images/Cancri_Code_3.svg") center / contain no-repeat;
+  background: url("../images/logos/Cancri_Code_3_boil.svg") center / contain no-repeat;
 }
 
 html[data-cancri-theme="dark"] .nav_logo_wrap::after {
