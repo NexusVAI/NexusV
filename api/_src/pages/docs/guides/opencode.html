@@ -1,0 +1,80 @@
+---
+title: OpenCode
+description: 在 opencode.json 中添加一个自定义 provider，让 OpenCode 通过 AI SDK 调用 NexusVAI 的模型。
+tab: coding
+---
+<p><a href="https://github.com/sst/opencode">OpenCode</a> 是一个开源的终端编程智能体，用 AI SDK 的 provider 机制接入模型。你只需要在配置文件里添加一个指向 NexusVAI 的 provider，并列出要用的模型。</p>
+
+<h2 id="prerequisites">前提条件</h2>
+<ul>
+<li>已安装 OpenCode。</li>
+<li>一个 NexusVAI API 密钥，可以在<a href="/api/console/keys/">控制台</a>创建。</li>
+<li>要使用的模型 ID，取自 <code>GET /v1/models</code>。</li>
+</ul>
+
+<h2 id="configure">添加 provider</h2>
+<p>编辑用户级配置 <code>~/.config/opencode/opencode.json</code>，或项目根目录的 <code>opencode.json</code>：</p>
+<pre data-lang="json" data-title="opencode.json">{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "cancri": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "NexusVAI",
+      "options": {
+        "baseURL": "https://cn.nexusvai.xyz/v1",
+        "apiKey": "cancri_sk_..."
+      },
+      "models": {
+        "gpt-6-astra": {},
+        "claude-opus-5.5": {},
+        "deepseek-v4-flash": {},
+        "gemini-3.8-flash-high": {}
+      }
+    }
+  }
+}</pre>
+<table>
+<thead><tr><th>字段</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>provider.cancri</code></td><td>provider id，可以自定义。</td></tr>
+<tr><td><code>npm</code></td><td>使用的 AI SDK 包，决定请求哪个端点，见下一节。</td></tr>
+<tr><td><code>name</code></td><td>在 OpenCode 中显示的名称。</td></tr>
+<tr><td><code>options.baseURL</code></td><td><code>https://cn.nexusvai.xyz/v1</code>。</td></tr>
+<tr><td><code>options.apiKey</code></td><td>你的 API 密钥。</td></tr>
+<tr><td><code>models</code></td><td>要在 OpenCode 中使用的模型。键是 NexusVAI 的模型 ID。</td></tr>
+</tbody>
+</table>
+<callout type="warning"><p>项目根目录的 <code>opencode.json</code> 容易被一起提交到代码仓库。Key 写在里面时，请把文件加入 <code>.gitignore</code>，或者把 provider 配置放在用户级配置中。</p></callout>
+
+<h2 id="choose-package">选择 provider 包</h2>
+<table>
+<thead><tr><th><code>npm</code></th><th>请求的端点</th><th>适合</th></tr></thead>
+<tbody>
+<tr><td><code>@ai-sdk/openai-compatible</code>（默认）</td><td><code>/v1/chat/completions</code></td><td>大多数模型。</td></tr>
+<tr><td><code>@ai-sdk/openai</code></td><td><code>/v1/responses</code></td><td>想和 Codex 一样走 Responses 协议时，例如 <code>gpt-6-astra</code>。具体写法以 OpenCode 官方文档为准。</td></tr>
+</tbody>
+</table>
+
+<h2 id="verify">验证配置</h2>
+<p>在 OpenCode 中切换到 <code>cancri</code> provider 下的模型，发送一条简短的消息。然后查询这个 Key 最近的调用：</p>
+<pre data-lang="bash" data-title="确认请求已到达 NexusVAI">curl "https://cn.nexusvai.xyz/v1/balance?limit=5" \
+  -H "Authorization: Bearer cancri_sk_..."</pre>
+<p><code>recent_usage.data</code> 里应该出现刚才的请求。字段说明见<a href="/api/docs/guides/coding-tools/#verify">验证请求是否到达 NexusVAI</a>。</p>
+
+<h2 id="troubleshooting">排查问题</h2>
+<table>
+<thead><tr><th>现象</th><th>可能的原因</th><th>解决方法</th></tr></thead>
+<tbody>
+<tr><td>模型列表里看不到 NexusVAI 的模型</td><td>配置文件路径不对，或 JSON 格式有误。</td><td>确认文件位置，并检查 JSON 是否合法。</td></tr>
+<tr><td><code>404 model_not_found</code></td><td><code>models</code> 里的键不在 <code>GET /v1/models</code> 的列表中。</td><td>改成列表中的 id，注意大小写和连字符。</td></tr>
+<tr><td><code>401 invalid_api_key</code></td><td><code>options.apiKey</code> 填错或 Key 已撤销。</td><td>在控制台确认 Key 状态。</td></tr>
+<tr><td><code>421 relay_path_not_supported</code></td><td><code>baseURL</code> 少了末尾的 <code>/v1</code>。</td><td>填 <code>https://cn.nexusvai.xyz/v1</code>。</td></tr>
+</tbody>
+</table>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/chat-completions/" title="Chat Completions 协议">了解 @ai-sdk/openai-compatible 使用的端点。</card>
+<card href="/api/docs/models/" title="浏览模型" icon="cube">为 OpenCode 挑选更多模型。</card>
+<card href="/api/docs/guides/client-faq/" title="客户端常见问题">Base URL、模型 ID 与缓存相关的排查。</card>
+</cards>

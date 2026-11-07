@@ -1,0 +1,47 @@
+---
+title: LobeChat
+description: 在 LobeChat 的 OpenAI 或自定义 OpenAI 模块中填入 NexusVAI 的地址，用 NexusVAI 的模型聊天。
+tab: coding
+---
+<p>LobeChat 支持 OpenAI 兼容端点，可以通过 OpenAI 模块或自定义 OpenAI 模块接入 NexusVAI。</p>
+
+<h2 id="prerequisites">前提条件</h2>
+<ul>
+<li>可以使用的 LobeChat。</li>
+<li>一个 NexusVAI API 密钥，可以在<a href="/api/console/keys/">控制台</a>创建。</li>
+</ul>
+
+<h2 id="configure">配置语言模型</h2>
+<ol>
+<li>打开 LobeChat，点击左下角的头像，进入 <strong>设置</strong>。</li>
+<li>选择 <strong>语言模型</strong> 标签。</li>
+<li>展开 <strong>OpenAI</strong> 或 <strong>自定义 OpenAI</strong> 模块，打开开关，按下表填写。</li>
+<li>检查通过后，在模型列表中选择 NexusVAI 的模型。</li>
+</ol>
+<table>
+<thead><tr><th>设置项</th><th>值</th></tr></thead>
+<tbody>
+<tr><td>API 密钥</td><td><code>cancri_sk_...</code></td></tr>
+<tr><td>接口代理地址 / Base URL</td><td><code>https://cn.nexusvai.xyz/v1</code></td></tr>
+</tbody>
+</table>
+<p>如果模型列表没有刷新，手动输入 <code>GET /v1/models</code> 返回的模型 ID。</p>
+
+<h2 id="verify">验证配置</h2>
+<p>选择一个 NexusVAI 模型并发送一条简短的消息，收到回复即说明配置有效。要核对这次调用的扣费，可以查询 <code>GET /v1/balance</code>，见<a href="/api/docs/guides/coding-tools/#verify">验证请求是否到达 NexusVAI</a>。</p>
+
+<h2 id="troubleshooting">排查问题</h2>
+<table>
+<thead><tr><th>现象</th><th>可能的原因</th><th>解决方法</th></tr></thead>
+<tbody>
+<tr><td>模型列表仍是 OpenAI 的默认模型</td><td>列表没有刷新。</td><td>手动输入 <code>GET /v1/models</code> 中的模型 ID。</td></tr>
+<tr><td><code>404 model_not_found</code></td><td>选择的模型 ID 不在 NexusVAI 的列表中。</td><td>改用 <code>GET /v1/models</code> 中的 id。</td></tr>
+<tr><td><code>421 relay_path_not_supported</code></td><td>接口代理地址少了末尾的 <code>/v1</code>。</td><td>填 <code>https://cn.nexusvai.xyz/v1</code>。</td></tr>
+</tbody>
+</table>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/models/" title="浏览模型">比较各模型的能力与价格。</card>
+<card href="/api/docs/guides/client-faq/" title="客户端常见问题" icon="cube">模型 ID、缓存与维护相关的排查。</card>
+</cards>

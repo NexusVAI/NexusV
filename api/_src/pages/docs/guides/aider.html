@@ -1,0 +1,52 @@
+---
+title: Aider
+description: 通过 LiteLLM 的 OpenAI 兼容模式，在 Aider 中使用 NexusVAI 的模型。
+tab: coding
+---
+<p><a href="https://aider.chat">Aider</a> 是一个终端里的结对编程工具，通过 LiteLLM 支持 OpenAI 兼容端点。接入 NexusVAI 时，模型名写成 <code>openai/&lt;模型 ID&gt;</code>：<code>openai/</code> 是 LiteLLM 的 provider 前缀，发送请求时会被去掉。</p>
+
+<h2 id="prerequisites">前提条件</h2>
+<ul>
+<li>已安装 Aider。</li>
+<li>一个 NexusVAI API 密钥，可以在<a href="/api/console/keys/">控制台</a>创建，并保存在环境变量 <code>CANCRI_API_KEY</code> 中。</li>
+</ul>
+
+<h2 id="command-line">用命令行参数启动</h2>
+<pre data-lang="bash" data-title="启动 Aider">aider \
+  --model openai/gpt-6-astra \
+  --openai-api-base https://cn.nexusvai.xyz/v1 \
+  --openai-api-key "$CANCRI_API_KEY"</pre>
+
+<h2 id="config-file">用配置文件</h2>
+<p>不想每次都输入参数时，在项目根目录创建 <code>.aider.conf.yml</code>：</p>
+<pre data-lang="yaml" data-title=".aider.conf.yml">model: openai/gpt-6-astra
+openai-api-base: https://cn.nexusvai.xyz/v1
+openai-api-key: cancri_sk_...</pre>
+<callout type="warning"><p><code>.aider.conf.yml</code> 写有 Key 时，不要把它提交到代码仓库。</p></callout>
+
+<h2 id="choose-model">选择模型</h2>
+<p>编码任务推荐 <code>openai/gpt-6-astra</code>；需要 Claude 时使用 <code>openai/claude-opus-5.5</code>。实际请求的模型 ID 分别是 <code>gpt-6-astra</code> 和 <code>claude-opus-5.5</code>，其他可用模型见 <code>GET /v1/models</code>。</p>
+
+<h2 id="verify">验证配置</h2>
+<p>在 Aider 中提一个简单的问题，然后查询这个 Key 最近的调用：</p>
+<pre data-lang="bash" data-title="确认请求已到达 NexusVAI">curl "https://cn.nexusvai.xyz/v1/balance?limit=5" \
+  -H "Authorization: Bearer $CANCRI_API_KEY"</pre>
+<p><code>recent_usage.data</code> 里应该出现刚才的请求，<code>model</code> 为不带 <code>openai/</code> 前缀的模型 ID。字段说明见<a href="/api/docs/guides/coding-tools/#verify">验证请求是否到达 NexusVAI</a>。</p>
+
+<h2 id="troubleshooting">排查问题</h2>
+<table>
+<thead><tr><th>现象</th><th>可能的原因</th><th>解决方法</th></tr></thead>
+<tbody>
+<tr><td>请求没有出现在 <code>/v1/balance</code> 的记录里</td><td>模型名缺少 <code>openai/</code> 前缀，请求没有按 OpenAI 兼容方式发往 <code>openai-api-base</code>。</td><td>写成 <code>openai/gpt-6-astra</code> 这样的形式。</td></tr>
+<tr><td><code>404 model_not_found</code></td><td>前缀后面的模型 ID 不在 <code>GET /v1/models</code> 的列表中。</td><td>改成列表中的 id。</td></tr>
+<tr><td><code>421 relay_path_not_supported</code></td><td><code>openai-api-base</code> 少了末尾的 <code>/v1</code>。</td><td>填 <code>https://cn.nexusvai.xyz/v1</code>。</td></tr>
+<tr><td><code>401 invalid_api_key</code></td><td>Key 填错或已撤销。</td><td>在控制台确认 Key 状态。</td></tr>
+</tbody>
+</table>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/chat-completions/" title="Chat Completions 协议">了解 OpenAI 兼容端点支持的参数。</card>
+<card href="/api/docs/models/" title="浏览模型" icon="cube">比较各模型的能力与价格。</card>
+<card href="/api/docs/guides/client-faq/" title="客户端常见问题">Base URL、模型 ID 与缓存相关的排查。</card>
+</cards>

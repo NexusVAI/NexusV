@@ -1,0 +1,80 @@
+---
+title: NexusVAI API
+description: 用一把 API 密钥，通过 OpenAI 与 Anthropic 协议调用 GPT、Claude、Gemini、DeepSeek 等模型。
+---
+<p>NexusVAI API 把多家前沿模型放在同一个端点后面。你用同一把 <code>cancri_sk_</code> 密钥、同一份余额调用所有模型，接口兼容 OpenAI Chat Completions、OpenAI Responses 与 Anthropic Messages 三种协议。现有代码通常只需改 Base URL、密钥和模型 ID 就能运行。</p>
+
+<h2 id="first-request">发起第一次请求</h2>
+<p>先在<a href="/api/console/keys/">控制台</a>创建一把 API 密钥，并保存到环境变量 <code>CANCRI_API_KEY</code>。然后用 OpenAI 官方 SDK 发送请求：</p>
+<code-tabs title="发起第一次请求">
+<pre data-lang="python" data-label="Python">import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://cn.nexusvai.xyz/v1",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+
+response = client.chat.completions.create(
+    model="deepseek-v4-flash",
+    messages=[{"role": "user", "content": "用一句话介绍你自己。"}],
+)
+print(response.choices[0].message.content)</pre>
+<pre data-lang="javascript" data-label="Node.js">import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://cn.nexusvai.xyz/v1",
+  apiKey: process.env.CANCRI_API_KEY,
+});
+
+const response = await client.chat.completions.create({
+  model: "deepseek-v4-flash",
+  messages: [{ role: "user", content: "用一句话介绍你自己。" }],
+});
+console.log(response.choices[0].message.content);</pre>
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $CANCRI_API_KEY" \
+  -d '{
+    "model": "deepseek-v4-flash",
+    "messages": [{"role": "user", "content": "用一句话介绍你自己。"}]
+  }'</pre>
+</code-tabs>
+<p>完整步骤（含流式输出）见<a href="/api/docs/quickstart/">快速开始</a>。</p>
+
+<h2 id="base-url">Base URL</h2>
+<p>按客户端使用的协议填写 Base URL。OpenAI 兼容的 SDK 和工具以 <code>/v1</code> 结尾；Anthropic SDK 会自己拼接 <code>/v1/messages</code>，所以不带 <code>/v1</code>。</p>
+<table>
+<thead><tr><th>协议</th><th>Base URL</th><th>常见客户端</th></tr></thead>
+<tbody>
+<tr><td>OpenAI（Chat Completions、Responses）</td><td><code>https://cn.nexusvai.xyz/v1</code></td><td>OpenAI SDK、Codex CLI、Cursor、Cline、Continue、Cherry Studio</td></tr>
+<tr><td>Anthropic（Messages）</td><td><code>https://cn.nexusvai.xyz</code></td><td>Anthropic SDK、Claude Code、OpenClaw</td></tr>
+</tbody>
+</table>
+<p>你也可以使用备用地址 <code>https://chat.nexusvai.xyz/functions/v1/api-gateway</code>（OpenAI 协议在末尾加 <code>/v1</code>）。两个地址背后是同一套服务，密钥、模型 ID、请求格式与计费完全相同。</p>
+
+<h2 id="endpoints">端点</h2>
+<table>
+<thead><tr><th>端点</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td><code>POST /v1/chat/completions</code></td><td>OpenAI Chat Completions。支持的工具最多，适合大多数场景。见<a href="/api/docs/guides/chat-completions/">指南</a>。</td></tr>
+<tr><td><code>POST /v1/responses</code></td><td>OpenAI Responses。Codex CLI 等默认使用这个协议。见<a href="/api/docs/guides/responses/">指南</a>。</td></tr>
+<tr><td><code>POST /v1/messages</code></td><td>Anthropic Messages。Claude Code、Anthropic SDK 使用这个协议，<code>model</code> 不限于 Claude。见<a href="/api/docs/guides/messages/">指南</a>。</td></tr>
+<tr><td><code>POST /v1/messages/count_tokens</code></td><td>估算一次 Messages 请求的输入 token 数。Claude Code 会自动调用。</td></tr>
+<tr><td><code>GET /v1/models</code></td><td>列出可用模型。不校验密钥。见 <a href="/api/reference/models/">API 参考</a>。</td></tr>
+<tr><td><code>GET /v1/balance</code></td><td>查询余额、当前密钥的限额与最近的调用记录。见<a href="/api/docs/guides/usage/">查询余额与用量</a>。</td></tr>
+</tbody>
+</table>
+<p>前三个端点按用量计费，后三个端点免费。</p>
+<p>实时语音对话使用单独的 WebSocket 端点，见<a href="/api/docs/guides/realtime/">实时语音</a>。API 不提供图像生成、视频生成、Embeddings、音频转写、文件与向量库等端点；哪些能用、哪些不能用，见<a href="/api/docs/guides/conventions/">使用约定</a>。</p>
+
+<h2 id="pricing-and-limits">计费与限额</h2>
+<p>API 按用量从余额扣费，每个模型单独定价，价格见<a href="/api/docs/pricing/">价格</a>。标为免费的模型不扣余额，但计入每 24 小时 1 亿 token 的<a href="/api/docs/guides/free-tier/">免费额度</a>。</p>
+<p>速率限制按账户计算，只有每分钟请求数（RPM）和每分钟 token 数（TPM）两项，档位随累计充值提升。详见<a href="/api/docs/guides/billing/">计费与余额</a>和<a href="/api/docs/guides/rate-limits/">速率限制</a>。</p>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/quickstart/" title="快速开始" icon="bolt">创建密钥、安装 SDK，完成第一次调用与流式输出。</card>
+<card href="/api/docs/models/" title="浏览模型" icon="cube">比较各模型的能力、上下文长度与价格。</card>
+<card href="/api/docs/guides/migration/" title="从其他平台迁移" icon="bolt">从 OpenAI、Anthropic 或其他兼容服务切换过来。</card>
+</cards>

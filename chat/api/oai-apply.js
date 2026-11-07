@@ -6,7 +6,7 @@
   "use strict";
 
   var GW = (window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz") + "/functions/v1/chat-gateway";
-  var LOGIN_URL = "chat/index.html";
+  var LOGIN_URL = "/chat/";
   var sb = null;
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -155,12 +155,9 @@
 
   function bindUI() {
     var s = $("submit-btn"); if (s) s.addEventListener("click", submitTicket);
-    // 2026-08-16 修复：本页 <base href="../"> 把相对路径基准挪到了站点根目录
-    // （/chat/api_apply.html + "../" = /），"./api/keys.html" 因此落到不存在的
-    // /api/keys.html（404）。同一行下面的 back-to-chat-btn 早就用 "chat/..."
-    // 前缀补偿了，这里之前漏加，工单反馈"前往控制台"按钮 404。
-    var mk = $("manage-keys-btn"); if (mk) mk.addEventListener("click", function () { location.href = "chat/api/keys.html"; });
-    var bc = $("back-to-chat-btn"); if (bc) bc.addEventListener("click", function () { location.href = "chat/index.html"; });
+    // 本页带 <base href>，相对路径会按它解析（2026-08-16 曾因此 404）——跳转一律写绝对路径。
+    var mk = $("manage-keys-btn"); if (mk) mk.addEventListener("click", function () { location.href = "/api/console/keys/"; });
+    var bc = $("back-to-chat-btn"); if (bc) bc.addEventListener("click", function () { location.href = "/chat/"; });
     if (window.OaiTrustedLogos) {
       var host = $("cs-trusted-logos");
       if (host) window.OaiTrustedLogos.init(host);

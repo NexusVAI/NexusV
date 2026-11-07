@@ -1,0 +1,50 @@
+---
+title: GPT-Live 实时语音
+description: 用 gpt-live-1 构建边听边说的语音应用：持续推送麦克风音频，实时拿到语音回复和双向转写。
+tab: realtime
+---
+<p><code>gpt-live-1</code> 是 OpenAI 的全双工实时语音模型。你持续发送麦克风音频，模型一边听一边说，同时返回你和它的转写文本。NexusVAI 通过 WebSocket 提供这个模型，事件格式与 OpenAI Live 协议一致：沿用现有的 Live 客户端代码，换成 NexusVAI 的地址和 API 密钥即可。</p>
+
+<h2 id="how-it-works">工作方式</h2>
+<p>gpt-live-1 负责听和说。遇到需要推理、查资料或调用工具的问题，它把任务<strong>委派</strong>给一个后端，拿到结果后再用自己的话说出来。你在 <code>session.start</code> 的 <code>delegation</code> 字段里选择后端：</p>
+<table>
+<thead><tr><th>后端模式</th><th>怎么配置</th><th>谁来回答</th><th>适合</th></tr></thead>
+<tbody>
+<tr><td><strong>官方后端</strong>（默认）</td><td>省略 <code>delegation</code>，或把 <code>delegation.responses.model</code> 设为 <code>gpt-6-luna</code></td><td>OpenAI GPT-6-Luna。未指定 <code>tools</code> 时默认启用联网搜索，也可以加入你自己的函数工具</td><td>开箱即用的语音助手</td></tr>
+<tr><td><strong>站内模型</strong></td><td>把 <code>delegation.responses.model</code> 设为 <code>GET /v1/models</code> 中的任意模型，例如 <code>claude-haiku-5.5</code></td><td>你选的站内模型</td><td>需要特定模型的能力或口吻</td></tr>
+<tr><td><strong>只买语音层</strong></td><td>把 <code>delegation.type</code> 设为 <code>"client"</code></td><td>你自己的程序或 Agent</td><td>已有 Agent，只缺语音交互</td></tr>
+</tbody>
+</table>
+<p>每种模式的完整参数见<a href="/api/docs/guides/realtime-sessions/">会话与后端模式</a>。</p>
+
+<h2 id="session-lifecycle">一次会话的流程</h2>
+<ol>
+<li>用 WebSocket 连接 <code>wss://chat.nexusvai.xyz/functions/v1/api-gateway/v1/live/sessions</code>，握手时带上 API 密钥。</li>
+<li>在 20 秒内发送第一条事件 <code>session.start</code>。</li>
+<li>服务端预扣第一段 30 秒的语音费，然后连接上游。</li>
+<li>收到 <code>session.started</code> 和 <code>cancri.session.created</code> 后，持续发送 <code>session.input_audio.append</code>。</li>
+<li>同时接收回复音频（<code>session.output_audio.delta</code>）和双向转写。</li>
+<li>发送 <code>session.close</code>，等待 <code>session.closed</code> 和最终账单 <code>cancri.billing.updated</code>（<code>final: true</code>）。</li>
+</ol>
+<p>可运行的 Node.js、Python 和浏览器示例见<a href="/api/docs/guides/realtime-connect/#quickstart">快速开始</a>。</p>
+
+<h2 id="pricing">价格</h2>
+<p>语音按会话时长计费：<strong>¥0.009 / 秒</strong>（¥0.54 / 分钟）。后端另计：官方后端按 GPT-6-Luna 的 token 和联网次数计费，站内模型按该模型自己的价格计费，只买语音层没有后端费用。分段预扣、档位限制和会话时长上限见<a href="/api/docs/guides/realtime-billing/">计费与限制</a>。</p>
+
+<h2 id="limitations">暂不支持</h2>
+<ul>
+<li><strong>WebRTC 接入</strong>：只能使用 WebSocket。</li>
+<li><strong><code>cn.nexusvai.xyz</code></strong>：实时语音只能连接 <code>chat.nexusvai.xyz</code>，其他 HTTP 接口不受影响。</li>
+<li><strong>其他官方后端模型</strong>：官方后端只提供 GPT-6-Luna，也不支持 Fast / priority 档。<code>delegation.responses.model</code> 填其他 id 时，会按站内模型处理。</li>
+<li><strong>Decisions</strong>：不支持 <code>delegation.type = "decisions"</code> 和非空的 <code>triggers</code>。</li>
+<li><strong>会话存储与录音下载</strong>：<code>store</code> 只能为 <code>false</code>。</li>
+<li><strong>容器类工具</strong>：代码解释器、shell、图像生成等不可用。官方后端只接受 <code>web_search</code>、<code>function</code> 和 <code>custom</code> 三类工具。</li>
+</ul>
+<p><code>gpt-live-1</code> 只能通过这个 WebSocket 端点使用：它不在 <code>GET /v1/models</code> 的列表里，也不能用于 <code>/v1/chat/completions</code> 等 HTTP 端点。</p>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/realtime-connect/" title="连接与认证">建立 WebSocket 连接，跑通 Node.js、Python 与浏览器示例。</card>
+<card href="/api/docs/guides/realtime-sessions/" title="会话与后端模式" icon="cube">配置 session.start，选择合适的后端。</card>
+<card href="/api/docs/guides/realtime-billing/" title="计费与限制">了解分段预扣、档位限制和会话结束条件。</card>
+</cards>

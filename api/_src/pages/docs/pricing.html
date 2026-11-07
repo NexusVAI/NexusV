@@ -1,0 +1,65 @@
+---
+title: 价格
+description: NexusVAI API 所有模型的价格，以人民币计，按每百万 token 或按次计费。
+layout: wide
+tab: models
+css: /api/assets/models.css
+js: /chat/cancri_config.js, /api/assets/models.js, /api/assets/models-pricing.js
+---
+<div class="page-container md:max-w-6xl pb-12 pt-0" data-models-page="pricing">
+  <div class="mx-auto md:w-full grid grid-cols-1 gap-12 max-w-7xl xl:grid-cols-[minmax(0,1fr)_200px]">
+    <div data-content-page-toc-rail="" class="sticky z-30 hidden min-h-0 w-full self-start pb-6 xl:col-start-2 xl:row-start-1 xl:flex xl:flex-col" style="top: var(--docs-toc-offset); height: fit-content; max-height: calc(100vh - var(--docs-toc-offset))">
+      <nav class="hidden xl:block w-full overflow-y-auto min-h-0 shrink pr-1" aria-label="本页目录" data-pricing-toc hidden>
+        <div class="relative">
+          <div class="absolute left-0 top-0 bottom-0 w-[2.15px] bg-primary-soft"></div>
+          <div class="absolute left-0 w-[2.15px] bg-primary-solid transition-transform duration-200 ease-out" data-pricing-toc-indicator style="transform: translateY(0px); height: 20px"></div>
+          <ul class="relative list-none p-0 m-0 ml-3 [&amp;&gt;*+*]:mt-3" data-pricing-toc-list></ul>
+        </div>
+      </nav>
+      <div class="mt-4 shrink-0"><button type="button" class="page-copy-action" data-page-copy-action="" data-astro-cid-zl22b5wc=""><span class="page-copy-action__icon page-copy-action__icon--copy" aria-hidden="true" data-astro-cid-zl22b5wc=""><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path d="M12.7587 2H16.2413C17.0463 1.99999 17.7106 1.99998 18.2518 2.04419C18.8139 2.09012 19.3306 2.18868 19.816 2.43597C20.5686 2.81947 21.1805 3.43139 21.564 4.18404C21.8113 4.66937 21.9099 5.18608 21.9558 5.74817C22 6.28936 22 6.95372 22 7.75868V11.2413C22 12.0463 22 12.7106 21.9558 13.2518C21.9099 13.8139 21.8113 14.3306 21.564 14.816C21.1805 15.5686 20.5686 16.1805 19.816 16.564C19.3306 16.8113 18.8139 16.9099 18.2518 16.9558C17.8906 16.9853 17.4745 16.9951 16.9984 16.9984C16.9951 17.4745 16.9853 17.8906 16.9558 18.2518C16.9099 18.8139 16.8113 19.3306 16.564 19.816C16.1805 20.5686 15.5686 21.1805 14.816 21.564C14.3306 21.8113 13.8139 21.9099 13.2518 21.9558C12.7106 22 12.0463 22 11.2413 22H7.75868C6.95372 22 6.28936 22 5.74818 21.9558C5.18608 21.9099 4.66937 21.8113 4.18404 21.564C3.43139 21.1805 2.81947 20.5686 2.43597 19.816C2.18868 19.3306 2.09012 18.8139 2.04419 18.2518C1.99998 17.7106 1.99999 17.0463 2 16.2413V12.7587C1.99999 11.9537 1.99998 11.2894 2.04419 10.7482C2.09012 10.1861 2.18868 9.66937 2.43597 9.18404C2.81947 8.43139 3.43139 7.81947 4.18404 7.43598C4.66937 7.18868 5.18608 7.09012 5.74817 7.04419C6.10939 7.01468 6.52548 7.00487 7.00162 7.00162C7.00487 6.52548 7.01468 6.10939 7.04419 5.74817C7.09012 5.18608 7.18868 4.66937 7.43598 4.18404C7.81947 3.43139 8.43139 2.81947 9.18404 2.43597C9.66937 2.18868 10.1861 2.09012 10.7482 2.04419C11.2894 1.99998 11.9537 1.99999 12.7587 2ZM9.00176 7L11.2413 7C12.0463 6.99999 12.7106 6.99998 13.2518 7.04419C13.8139 7.09012 14.3306 7.18868 14.816 7.43598C15.5686 7.81947 16.1805 8.43139 16.564 9.18404C16.8113 9.66937 16.9099 10.1861 16.9558 10.7482C17 11.2894 17 11.9537 17 12.7587V14.9982C17.4455 14.9951 17.7954 14.9864 18.089 14.9624C18.5274 14.9266 18.7516 14.8617 18.908 14.782C19.2843 14.5903 19.5903 14.2843 19.782 13.908C19.8617 13.7516 19.9266 13.5274 19.9624 13.089C19.9992 12.6389 20 12.0566 20 11.2V7.8C20 6.94342 19.9992 6.36113 19.9624 5.91104C19.9266 5.47262 19.8617 5.24842 19.782 5.09202C19.5903 4.7157 19.2843 4.40973 18.908 4.21799C18.7516 4.1383 18.5274 4.07337 18.089 4.03755C17.6389 4.00078 17.0566 4 16.2 4H12.8C11.9434 4 11.3611 4.00078 10.911 4.03755C10.4726 4.07337 10.2484 4.1383 10.092 4.21799C9.7157 4.40973 9.40973 4.7157 9.21799 5.09202C9.1383 5.24842 9.07337 5.47262 9.03755 5.91104C9.01357 6.20463 9.00489 6.55447 9.00176 7ZM5.91104 9.03755C5.47262 9.07337 5.24842 9.1383 5.09202 9.21799C4.7157 9.40973 4.40973 9.7157 4.21799 10.092C4.1383 10.2484 4.07337 10.4726 4.03755 10.911C4.00078 11.3611 4 11.9434 4 12.8V16.2C4 17.0566 4.00078 17.6389 4.03755 18.089C4.07337 18.5274 4.1383 18.7516 4.21799 18.908C4.40973 19.2843 4.7157 19.5903 5.09202 19.782C5.24842 19.8617 5.47262 19.9266 5.91104 19.9624C6.36113 19.9992 6.94342 20 7.8 20H11.2C12.0566 20 12.6389 19.9992 13.089 19.9624C13.5274 19.9266 13.7516 19.8617 13.908 19.782C14.2843 19.5903 14.5903 19.2843 14.782 18.908C14.8617 18.7516 14.9266 18.5274 14.9624 18.089C14.9992 17.6389 15 17.0566 15 16.2V12.8C15 11.9434 14.9992 11.3611 14.9624 10.911C14.9266 10.4726 14.8617 10.2484 14.782 10.092C14.5903 9.7157 14.2843 9.40973 13.908 9.21799C13.7516 9.1383 13.5274 9.07337 13.089 9.03755C12.6389 9.00078 12.0566 9 11.2 9H7.8C6.94342 9 6.36113 9.00078 5.91104 9.03755Z" fill="currentColor"></path></svg></span><span class="page-copy-action__icon page-copy-action__icon--check" aria-hidden="true" data-astro-cid-zl22b5wc=""><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M18.063 5.674a1 1 0 0 1 .263 1.39l-7.5 11a1 1 0 0 1-1.533.143l-4.5-4.5a1 1 0 1 1 1.414-1.414l3.647 3.647 6.82-10.003a1 1 0 0 1 1.39-.263Z" clip-rule="evenodd"></path></svg></span><span data-page-copy-label="" data-astro-cid-zl22b5wc="">复制页面</span></button></div>
+    </div>
+    <div class="relative flex flex-col xl:col-start-1 xl:row-start-1">
+      <div class="flex flex-col gap-8 mb-2">
+        <header class="flex flex-col not-prose gap-1 pt-10 lg:pt-8 items-start text-left">
+          <div class="flex w-full items-start justify-between gap-4">
+            <div class="flex min-w-0 flex-wrap items-center gap-3 flex-1"><h1 class="heading-xl md:heading-2xl min-w-0 max-w-full">价格</h1></div>
+          </div>
+          <p class="text-lg text-secondary">所有价格以人民币（¥）计。按 token 计费的模型列出每百万 token 的输入、输出与缓存命中价格，按次计费的模型单独列出。</p>
+        </header>
+      </div>
+      <article id="mainContent" class="prose prose-content dark:prose-invert max-w-none pt-4 pb-0">
+        <div data-pricing-body aria-busy="true" aria-label="正在加载价格">
+          <div class="not-prose flex flex-col" aria-hidden="true">
+            <span class="models-skel models-skel-line models-skel-line--lg" style="width:28%;height:20px;margin-top:0"></span>
+            <span class="models-skel models-skel-line" style="width:40%;margin-top:28px"></span>
+            <span class="models-skel" style="height:240px;margin-top:20px;border-radius:12px"></span>
+            <span class="models-skel models-skel-line models-skel-line--lg" style="width:22%;height:20px;margin-top:60px"></span>
+            <span class="models-skel" style="height:160px;margin-top:20px;border-radius:12px"></span>
+          </div>
+        </div>
+
+        <div class="pricing-subsection pricing-section-heading mp-section">
+          <div class="anchor-heading-wrapper">
+            <h2 id="realtime" class="anchor-heading" data-name="realtime" data-anchor-id="realtime"><span>实时语音</span><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" class="anchor-heading-icon" role="presentation"><path d="M18.2929 5.7071C16.4743 3.88849 13.5257 3.88849 11.7071 5.7071L10.7071 6.7071C10.3166 7.09763 9.68341 7.09763 9.29289 6.7071C8.90236 6.31658 8.90236 5.68341 9.29289 5.29289L10.2929 4.29289C12.8926 1.69322 17.1074 1.69322 19.7071 4.29289C22.3068 6.89255 22.3068 11.1074 19.7071 13.7071L18.7071 14.7071C18.3166 15.0976 17.6834 15.0976 17.2929 14.7071C16.9024 14.3166 16.9024 13.6834 17.2929 13.2929L18.2929 12.2929C20.1115 10.4743 20.1115 7.52572 18.2929 5.7071ZM15.7071 8.29289C16.0976 8.68341 16.0976 9.31658 15.7071 9.7071L9.7071 15.7071C9.31658 16.0976 8.68341 16.0976 8.29289 15.7071C7.90236 15.3166 7.90236 14.6834 8.29289 14.2929L14.2929 8.29289C14.6834 7.90236 15.3166 7.90236 15.7071 8.29289ZM6.7071 9.29289C7.09763 9.68341 7.09763 10.3166 6.7071 10.7071L5.7071 11.7071C3.88849 13.5257 3.88849 16.4743 5.7071 18.2929C7.52572 20.1115 10.4743 20.1115 12.2929 18.2929L13.2929 17.2929C13.6834 16.9024 14.3166 16.9024 14.7071 17.2929C15.0976 17.6834 15.0976 18.3166 14.7071 18.7071L13.7071 19.7071C11.1074 22.3068 6.89255 22.3068 4.29289 19.7071C1.69322 17.1074 1.69322 12.8926 4.29289 10.2929L5.29289 9.29289C5.68341 8.90236 6.31658 8.90236 6.7071 9.29289Z" fill="currentColor"></path></svg></h2>
+          </div>
+          <div class="pricing-switcher-subheading">GPT-Live 全双工实时语音。</div>
+        </div>
+        <p>GPT-Live（<code>gpt-live-1</code>）通过 WebSocket 接入，语音部分按秒计费，委派给后端模型的部分另行计费。具体价格与计费规则见<a href="/api/docs/guides/realtime-billing/">实时语音计费</a>。</p>
+
+        <div class="pricing-subsection pricing-section-heading mp-section">
+          <div class="anchor-heading-wrapper">
+            <h2 id="billing-notes" class="anchor-heading" data-name="billing-notes" data-anchor-id="billing-notes"><span>计费说明</span><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" class="anchor-heading-icon" role="presentation"><path d="M18.2929 5.7071C16.4743 3.88849 13.5257 3.88849 11.7071 5.7071L10.7071 6.7071C10.3166 7.09763 9.68341 7.09763 9.29289 6.7071C8.90236 6.31658 8.90236 5.68341 9.29289 5.29289L10.2929 4.29289C12.8926 1.69322 17.1074 1.69322 19.7071 4.29289C22.3068 6.89255 22.3068 11.1074 19.7071 13.7071L18.7071 14.7071C18.3166 15.0976 17.6834 15.0976 17.2929 14.7071C16.9024 14.3166 16.9024 13.6834 17.2929 13.2929L18.2929 12.2929C20.1115 10.4743 20.1115 7.52572 18.2929 5.7071ZM15.7071 8.29289C16.0976 8.68341 16.0976 9.31658 15.7071 9.7071L9.7071 15.7071C9.31658 16.0976 8.68341 16.0976 8.29289 15.7071C7.90236 15.3166 7.90236 14.6834 8.29289 14.2929L14.2929 8.29289C14.6834 7.90236 15.3166 7.90236 15.7071 8.29289ZM6.7071 9.29289C7.09763 9.68341 7.09763 10.3166 6.7071 10.7071L5.7071 11.7071C3.88849 13.5257 3.88849 16.4743 5.7071 18.2929C7.52572 20.1115 10.4743 20.1115 12.2929 18.2929L13.2929 17.2929C13.6834 16.9024 14.3166 16.9024 14.7071 17.2929C15.0976 17.6834 15.0976 18.3166 14.7071 18.7071L13.7071 19.7071C11.1074 22.3068 6.89255 22.3068 4.29289 19.7071C1.69322 17.1074 1.69322 12.8926 4.29289 10.2929L5.29289 9.29289C5.68341 8.90236 6.31658 8.90236 6.7071 9.29289Z" fill="currentColor"></path></svg></h2>
+          </div>
+        </div>
+        <ul>
+          <li>按 token 计费的模型分别对输入与输出计价，单位为每百万 token（1M tokens）。</li>
+          <li>命中缓存的输入 token 默认按输入价格的 1 折计费，Claude Opus 5.5（含 Thinking）按 3 折，以价格表中的缓存命中价为准；上游返回缓存写入用量（cache write）时，写入部分按输入价格的 1.25 倍计费。</li>
+          <li>按次计费的模型，每次成功的请求按固定价格扣费一次，与 token 数量无关。</li>
+          <li>扣费以响应中的 <code>usage</code> 为准。返回 4xx 或 5xx 的失败请求不扣费；未定价的模型不可调用，返回 <code>402 model_not_priced</code>。</li>
+          <li>标有「免费」的模型不扣余额，调用计入免费额度，并受速率限制约束，详见<a href="/api/docs/guides/free-tier/">免费模型与免费额度</a>。</li>
+          <li>API 调用从账户的 API 余额扣费，团队 API 密钥从团队余额扣费。充值与账单在<a href="/api/console/billing/">控制台</a>查看。</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</div>

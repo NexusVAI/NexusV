@@ -32,13 +32,13 @@
       title: "Microsoft Office",
       desc: "与 Cancri 协作分析数据、生成幻灯片与文档。",
       imgKey: 2,
-      href: "./api_docs.html",
+      href: "/api/docs/",
     },
     {
       title: "NexusV 平台",
       desc: "开放平台套餐、API Key 与多模型统一接入。",
       imgKey: 3,
-      href: "./api/",
+      href: "/api/",
     },
   ];
 

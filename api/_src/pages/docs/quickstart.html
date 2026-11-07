@@ -1,0 +1,133 @@
+---
+title: 快速开始
+description: 创建 API 密钥，安装 SDK，几分钟内发出第一个请求。
+---
+<p>这篇指南带你完成第一次调用：创建密钥、安装官方 SDK、发送请求，再把它改成流式输出。示例使用 OpenAI SDK 和 Chat Completions 协议；如果你在用 Anthropic SDK，流程相同，代码见 <a href="/api/docs/guides/messages/">Messages 指南</a>。</p>
+
+<h2 id="create-key">创建 API 密钥</h2>
+<ol>
+<li>登录 NexusVAI。注册后即可创建密钥，无需审核。</li>
+<li>打开控制台的 <a href="/api/console/keys/">API 密钥</a>页，创建一把新密钥。</li>
+<li>复制并保存完整密钥。它以 <code>cancri_sk_</code> 开头，只在创建时显示一次。</li>
+</ol>
+<p>把密钥存进环境变量，不要写在代码里：</p>
+<code-tabs title="设置环境变量">
+<pre data-lang="bash" data-label="macOS / Linux">export CANCRI_API_KEY="cancri_sk_..."</pre>
+<pre data-lang="text" data-label="Windows PowerShell">$env:CANCRI_API_KEY = "cancri_sk_..."</pre>
+</code-tabs>
+
+<h2 id="install-sdk">安装 SDK</h2>
+<p>NexusVAI 兼容 OpenAI 官方 SDK，不需要额外的客户端库。使用 cURL 时可以跳过这一步。</p>
+<code-tabs title="安装 OpenAI SDK">
+<pre data-lang="bash" data-label="Python">pip install openai</pre>
+<pre data-lang="bash" data-label="Node.js">npm install openai</pre>
+</code-tabs>
+
+<h2 id="first-request">发起第一次请求</h2>
+<p>把 <code>base_url</code> 指向 <code>https://cn.nexusvai.xyz/v1</code>，然后照常调用 SDK：</p>
+<code-tabs title="生成一段回复">
+<pre data-lang="python" data-label="Python">import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://cn.nexusvai.xyz/v1",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+
+response = client.chat.completions.create(
+    model="deepseek-v4-flash",
+    messages=[
+        {"role": "system", "content": "你是一个简洁的助手。"},
+        {"role": "user", "content": "用一句话解释什么是行级安全。"},
+    ],
+)
+print(response.choices[0].message.content)</pre>
+<pre data-lang="javascript" data-label="Node.js">import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://cn.nexusvai.xyz/v1",
+  apiKey: process.env.CANCRI_API_KEY,
+});
+
+const response = await client.chat.completions.create({
+  model: "deepseek-v4-flash",
+  messages: [
+    { role: "system", content: "你是一个简洁的助手。" },
+    { role: "user", content: "用一句话解释什么是行级安全。" },
+  ],
+});
+console.log(response.choices[0].message.content);</pre>
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $CANCRI_API_KEY" \
+  -d '{
+    "model": "deepseek-v4-flash",
+    "messages": [
+      {"role": "system", "content": "你是一个简洁的助手。"},
+      {"role": "user", "content": "用一句话解释什么是行级安全。"}
+    ]
+  }'</pre>
+</code-tabs>
+<p>响应是标准的 Chat Completions 对象。模型的回答在 <code>choices[0].message.content</code>，本次用量在 <code>usage</code>：</p>
+<pre data-lang="json" data-title="响应">{
+  "id": "chatcmpl-...",
+  "object": "chat.completion",
+  "created": 1762480000,
+  "model": "deepseek-v4-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "行级安全是一种按行控制谁能读写数据的数据库策略。"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": { "prompt_tokens": 28, "completion_tokens": 19, "total_tokens": 47 }
+}</pre>
+<p><code>model</code> 换成任意可用的模型 ID 即可切换模型。可用的 ID 见<a href="/api/docs/models/">模型</a>，也可以请求 <code>GET /v1/models</code>。</p>
+
+<h2 id="streaming">流式输出</h2>
+<p>设置 <code>stream: true</code>，模型会边生成边返回增量文本，适合聊天界面和较长的回答：</p>
+<code-tabs title="流式输出">
+<pre data-lang="python" data-label="Python">stream = client.chat.completions.create(
+    model="deepseek-v4-flash",
+    messages=[{"role": "user", "content": "写一首关于秋天的四行诗。"}],
+    stream=True,
+)
+for chunk in stream:
+    if chunk.choices and chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="", flush=True)</pre>
+<pre data-lang="javascript" data-label="Node.js">const stream = await client.chat.completions.create({
+  model: "deepseek-v4-flash",
+  messages: [{ role: "user", content: "写一首关于秋天的四行诗。" }],
+  stream: true,
+});
+for await (const chunk of stream) {
+  process.stdout.write(chunk.choices[0]?.delta?.content ?? "");
+}</pre>
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/chat/completions \
+  -N \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $CANCRI_API_KEY" \
+  -d '{
+    "model": "deepseek-v4-flash",
+    "messages": [{"role": "user", "content": "写一首关于秋天的四行诗。"}],
+    "stream": true
+  }'</pre>
+</code-tabs>
+<callout type="warning"><p>流式响应的最后一个 chunk 携带本次的 <code>usage</code>，它的 <code>choices</code> 是空数组。读取 <code>choices[0]</code> 之前先判断数组非空，否则 Python 会抛出 <code>IndexError</code>。</p></callout>
+
+<h2 id="check-key">检查密钥与余额</h2>
+<p><code>GET /v1/models</code> 不校验密钥，能返回结果不代表密钥有效。要确认密钥可用，请调用 <code>GET /v1/balance</code>：它校验密钥并返回账户余额，不计费。</p>
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/balance \
+  -H "Authorization: Bearer $CANCRI_API_KEY"</pre>
+<p>返回 <code>401 invalid_api_key</code> 说明密钥无效或已撤销。其他错误见<a href="/api/docs/guides/error-codes/">错误码</a>。</p>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/chat-completions/" title="Chat Completions 指南" icon="bolt">多轮对话、推理参数与工具调用。</card>
+<card href="/api/docs/guides/authentication/" title="认证与 API 密钥" icon="cube">请求头、密钥格式、单密钥限额与安全建议。</card>
+<card href="/api/docs/guides/production-best-practices/" title="生产最佳实践" icon="bolt">上线前检查重试、超时与用量监控。</card>
+</cards>

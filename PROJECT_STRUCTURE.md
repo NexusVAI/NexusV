@@ -29,10 +29,18 @@
 | 路径 | 说明 |
 | --- | --- |
 | `chat/` | NexusV 对话应用及其静态资源。 |
-| `chat/api/` | API 平台、管理后台和相关页面脚本。 |
+| `chat/api/` | 管理后台、控制台共用的脚本与样式，以及旧 API 区地址的跳转桩（新站见下方 `api/`）。 |
 | `chat/shop/` | 商店、订单与管理页面。 |
 | `chat/assets/`、`chat/img/`、`chat/fonts/` | Chat 应用专用静态资源。 |
 | `chat/styles/`、`chat/js/` | Chat 应用拆分出的样式和脚本。 |
+
+## API 开发者站点
+
+| 路径 | 说明 |
+| --- | --- |
+| `api/` | 开发者站点 `/api/`：首页、文档、模型、API 参考与控制台。 |
+| `api/_src/` | 文档站源码。`node api/_src/build.mjs` 把 `pages/**` 生成为 `api/**/index.html`，生成的文件不要直接修改；下划线目录不会被 GitHub Pages 发布。 |
+| `api/assets/` | 站点脚本与样式；`legacy-redirect.js` 负责把旧地址（`/chat/api/`、`/chat/api_*.html`、`/api/models/`）跳到新站。 |
 
 ## 嵌入的第三方示例
 

@@ -1,0 +1,262 @@
+---
+title: Chat Completions
+description: 用 OpenAI Chat Completions 协议生成文本、流式输出、调整推理强度和调用工具。
+---
+<p><code>POST /v1/chat/completions</code> 兼容 OpenAI Chat Completions 协议，是支持的客户端和工具最多的端点，适合大多数场景。你用 OpenAI 官方 SDK 或任何 OpenAI 兼容客户端，把 Base URL 设为 <code>https://cn.nexusvai.xyz/v1</code> 即可调用全部模型。完整的参数与响应结构见 <a href="/api/reference/chat-completions/">API 参考</a>。</p>
+
+<h2 id="basic-request">生成回复</h2>
+<p>传入模型 ID 和消息列表，模型的回答在 <code>choices[0].message.content</code>：</p>
+<code-tabs title="生成回复">
+<pre data-lang="python" data-label="Python">import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://cn.nexusvai.xyz/v1",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+
+response = client.chat.completions.create(
+    model="deepseek-v4-flash",
+    messages=[
+        {"role": "system", "content": "你是一个简洁的助手。"},
+        {"role": "user", "content": "用一句话解释什么是行级安全。"},
+    ],
+)
+print(response.choices[0].message.content)</pre>
+<pre data-lang="javascript" data-label="Node.js">import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://cn.nexusvai.xyz/v1",
+  apiKey: process.env.CANCRI_API_KEY,
+});
+
+const response = await client.chat.completions.create({
+  model: "deepseek-v4-flash",
+  messages: [
+    { role: "system", content: "你是一个简洁的助手。" },
+    { role: "user", content: "用一句话解释什么是行级安全。" },
+  ],
+});
+console.log(response.choices[0].message.content);</pre>
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $CANCRI_API_KEY" \
+  -d '{
+    "model": "deepseek-v4-flash",
+    "messages": [
+      {"role": "system", "content": "你是一个简洁的助手。"},
+      {"role": "user", "content": "用一句话解释什么是行级安全。"}
+    ]
+  }'</pre>
+</code-tabs>
+<pre data-lang="json" data-title="响应">{
+  "id": "chatcmpl-...",
+  "object": "chat.completion",
+  "created": 1762480000,
+  "model": "deepseek-v4-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "行级安全是一种按行控制谁能读写数据的数据库策略。"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": { "prompt_tokens": 28, "completion_tokens": 19, "total_tokens": 47 }
+}</pre>
+<p><code>finish_reason</code> 为 <code>length</code> 时，说明回答被输出上限截断，可以调大 <code>max_tokens</code> 后重试。</p>
+
+<h2 id="multi-turn">系统提示与多轮对话</h2>
+<p>接口是无状态的：模型只看到你这一次发送的 <code>messages</code>。要进行多轮对话，把之前的问答按顺序放进列表，再追加新问题：</p>
+<ul>
+<li><code>system</code>：对模型的总体指示，放在最前面。</li>
+<li><code>user</code>：用户的输入。</li>
+<li><code>assistant</code>：模型之前的回答。</li>
+<li><code>tool</code>：工具的执行结果，见<a href="#tool-calling">工具调用</a>。</li>
+</ul>
+<pre data-lang="python" data-title="多轮对话">messages = [
+    {"role": "system", "content": "你是一个简洁的助手。"},
+    {"role": "user", "content": "推荐一本入门编程的书。"},
+    {"role": "assistant", "content": "《Python 编程：从入门到实践》。"},
+    {"role": "user", "content": "它适合完全没有基础的人吗？"},
+]
+response = client.chat.completions.create(model="deepseek-v4-flash", messages=messages)
+messages.append({"role": "assistant", "content": response.choices[0].message.content})</pre>
+<p>历史越长，输入 token 越多，费用和 TPM 占用也越高。对长对话，可以截断或摘要较早的轮次。</p>
+
+<h2 id="streaming">流式输出</h2>
+<p>设置 <code>stream: true</code>，响应以 Server-Sent Events（SSE）逐块返回：</p>
+<code-tabs title="流式输出">
+<pre data-lang="python" data-label="Python">stream = client.chat.completions.create(
+    model="deepseek-v4-flash",
+    messages=[{"role": "user", "content": "写一首关于秋天的四行诗。"}],
+    stream=True,
+)
+for chunk in stream:
+    if chunk.choices and chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="", flush=True)
+    if chunk.usage:
+        print("\n", chunk.usage)</pre>
+<pre data-lang="javascript" data-label="Node.js">const stream = await client.chat.completions.create({
+  model: "deepseek-v4-flash",
+  messages: [{ role: "user", content: "写一首关于秋天的四行诗。" }],
+  stream: true,
+});
+for await (const chunk of stream) {
+  process.stdout.write(chunk.choices[0]?.delta?.content ?? "");
+  if (chunk.usage) console.log("\n", chunk.usage);
+}</pre>
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/chat/completions \
+  -N \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $CANCRI_API_KEY" \
+  -d '{
+    "model": "deepseek-v4-flash",
+    "messages": [{"role": "user", "content": "写一首关于秋天的四行诗。"}],
+    "stream": true
+  }'</pre>
+</code-tabs>
+<p>每个事件是一行以 <code>data: </code> 开头的 JSON，<code>choices[0].delta.content</code> 是增量文本，最后以 <code>data: [DONE]</code> 结束：</p>
+<pre data-lang="text" data-title="SSE 事件">data: {"id":"chatcmpl-...","object":"chat.completion.chunk","model":"deepseek-v4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"秋"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-...","object":"chat.completion.chunk","model":"deepseek-v4-flash","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: {"id":"chatcmpl-...","object":"chat.completion.chunk","model":"deepseek-v4-flash","choices":[],"usage":{"prompt_tokens":18,"completion_tokens":42,"total_tokens":60}}
+
+data: [DONE]</pre>
+<callout type="warning"><p>网关总是为流式请求开启 <code>stream_options.include_usage</code>。所以每个流在 <code>[DONE]</code> 之前都有一个 <code>choices</code> 为空数组、带 <code>usage</code> 的 chunk。读取 <code>choices[0]</code> 前先判断数组非空。</p></callout>
+<p>流式响应还有两点需要处理：</p>
+<ul>
+<li>模型长时间思考时，流里会出现以冒号开头的 <code>: keep-alive</code> 注释行，用来保持连接。官方 SDK 会自动忽略。</li>
+<li>如果生成中途失败，流的末尾会出现一个带 <code>error</code> 字段的 chunk，随后是 <code>data: [DONE]</code>。错误码与是否计费见<a href="/api/docs/guides/error-codes/#stream-errors">流式输出中的错误</a>。</li>
+</ul>
+
+<h2 id="reasoning">推理模型</h2>
+<p>用 <code>reasoning_effort</code> 调整推理模型思考的深度。更高的强度通常回答更好，但更慢、输出 token 更多：</p>
+<pre data-lang="python" data-title="调整推理强度">response = client.chat.completions.create(
+    model="gpt-6-astra",
+    reasoning_effort="high",
+    messages=[{"role": "user", "content": "证明根号 2 是无理数。"}],
+)
+print(response.choices[0].message.content)
+print(response.usage.completion_tokens_details)</pre>
+<ul>
+<li>GPT 系列模型的 <code>reasoning_effort</code> 只接受 <code>none</code>、<code>low</code>、<code>medium</code>、<code>high</code>、<code>xhigh</code>、<code>max</code>，其他值返回 <code>400 invalid_request_parameter</code>。</li>
+<li>其他模型会收到你传入的值，是否生效取决于模型。</li>
+<li>推理消耗的 token 计入输出 token，可以在 <code>usage.completion_tokens_details.reasoning_tokens</code> 中查看。</li>
+<li>会公开推理过程的模型，把推理文本放在 <code>message.reasoning_content</code>（或 <code>reasoning</code>）字段；流式时出现在 <code>delta</code> 的同名字段中。</li>
+</ul>
+
+<h2 id="tool-calling">工具调用</h2>
+<p>在 <code>tools</code> 中描述你的函数，模型决定需要时会返回 <code>tool_calls</code>。你在自己的代码里执行函数，把结果以 <code>tool</code> 消息发回，模型再给出最终回答。并非所有模型都支持工具调用，请先在<a href="/api/docs/models/">模型</a>页确认。</p>
+<code-tabs title="函数调用往返">
+<pre data-lang="python" data-label="Python">import json
+
+tools = [{
+    "type": "function",
+    "function": {
+        "name": "get_weather",
+        "description": "查询指定城市的当前天气",
+        "parameters": {
+            "type": "object",
+            "properties": {"city": {"type": "string", "description": "城市名，例如 北京"}},
+            "required": ["city"],
+        },
+    },
+}]
+messages = [{"role": "user", "content": "北京现在天气怎么样？"}]
+
+response = client.chat.completions.create(model="gpt-6-astra", messages=messages, tools=tools)
+message = response.choices[0].message
+
+if message.tool_calls:
+    messages.append(message)
+    for call in message.tool_calls:
+        args = json.loads(call.function.arguments)
+        result = {"city": args["city"], "weather": "晴", "temperature_c": 18}  # 换成你的实现
+        messages.append({
+            "role": "tool",
+            "tool_call_id": call.id,
+            "content": json.dumps(result, ensure_ascii=False),
+        })
+    final = client.chat.completions.create(model="gpt-6-astra", messages=messages, tools=tools)
+    print(final.choices[0].message.content)</pre>
+<pre data-lang="javascript" data-label="Node.js">const tools = [{
+  type: "function",
+  function: {
+    name: "get_weather",
+    description: "查询指定城市的当前天气",
+    parameters: {
+      type: "object",
+      properties: { city: { type: "string", description: "城市名，例如 北京" } },
+      required: ["city"],
+    },
+  },
+}];
+const messages = [{ role: "user", content: "北京现在天气怎么样？" }];
+
+const response = await client.chat.completions.create({ model: "gpt-6-astra", messages, tools });
+const message = response.choices[0].message;
+
+if (message.tool_calls) {
+  messages.push(message);
+  for (const call of message.tool_calls) {
+    const args = JSON.parse(call.function.arguments);
+    const result = { city: args.city, weather: "晴", temperature_c: 18 }; // 换成你的实现
+    messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
+  }
+  const final = await client.chat.completions.create({ model: "gpt-6-astra", messages, tools });
+  console.log(final.choices[0].message.content);
+}</pre>
+</code-tabs>
+<p>只支持 <code>type: "function"</code> 的自定义工具。OpenAI 的托管工具（网页搜索、文件检索、代码解释器等）不会在服务端执行。</p>
+
+<h2 id="images">图片输入</h2>
+<p>向支持视觉的模型发送图片时，把 <code>content</code> 写成内容块数组，图片用 <code>image_url</code> 块传入公开的图片 URL 或 base64 data URL：</p>
+<pre data-lang="json" data-title="带图片的消息">{
+  "model": "支持视觉的模型 ID",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        { "type": "text", "text": "这张图里有什么？" },
+        { "type": "image_url", "image_url": { "url": "https://example.com/photo.jpg" } }
+      ]
+    }
+  ]
+}</pre>
+<p>只接受文本的模型收到图片时返回 <code>400 image_input_unsupported</code>。哪些模型支持视觉，见<a href="/api/docs/models/">模型</a>页。</p>
+
+<h2 id="parameters">常用参数</h2>
+<p>请求体中的字段会转发给模型。下表列出网关会特别处理的字段，完整参数见 <a href="/api/reference/chat-completions/">API 参考</a>。</p>
+<table>
+<thead><tr><th>参数</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>model</code></td><td>必填。NexusVAI 模型 ID。</td></tr>
+<tr><td><code>messages</code></td><td>必填。对话历史，元素包含 <code>role</code> 与 <code>content</code>。</td></tr>
+<tr><td><code>stream</code></td><td>为 <code>true</code> 时以 SSE 流式返回，默认 <code>false</code>。网关会自动开启 <code>stream_options.include_usage</code>。</td></tr>
+<tr><td><code>max_tokens</code> / <code>max_completion_tokens</code></td><td>输出 token 上限。省略时，网关按该模型的最大输出 token 数补上。这个值也用于预占 TPM，见<a href="/api/docs/guides/rate-limits/#metering">速率限制</a>。</td></tr>
+<tr><td><code>temperature</code>、<code>top_p</code></td><td>采样参数，必须是非负数。取值范围与默认值以模型为准。</td></tr>
+<tr><td><code>tools</code>、<code>tool_choice</code>、<code>parallel_tool_calls</code></td><td>函数工具，部分模型支持。</td></tr>
+<tr><td><code>reasoning_effort</code></td><td>推理强度。GPT 系列只接受 <code>none</code> 到 <code>max</code> 这 6 个值。</td></tr>
+<tr><td><code>service_tier</code></td><td>只接受省略、<code>"auto"</code> 或 <code>"default"</code>，且不会转发给模型；其他值返回 <code>400</code>。</td></tr>
+</tbody>
+</table>
+<p>其他 OpenAI 标准参数（如 <code>stop</code>、<code>seed</code>、<code>response_format</code>）原样转发，是否生效取决于模型。</p>
+
+<h2 id="differences">与 OpenAI 的差异</h2>
+<ul>
+<li>响应只保留标准字段：<code>id</code> 由 NexusVAI 生成，<code>model</code> 返回你请求的模型 ID，没有 <code>system_fingerprint</code>。</li>
+<li><code>usage</code> 只包含 <code>prompt_tokens</code>、<code>completion_tokens</code>、<code>total_tokens</code> 和 <code>completion_tokens_details.reasoning_tokens</code>，不包含缓存命中的 token 数。</li>
+<li>流式响应总是在结尾附带 usage chunk，并可能夹带 <code>: keep-alive</code> 注释行。</li>
+<li>错误使用 OpenAI 的错误格式，<code>error.code</code> 是 NexusVAI 的错误码，见<a href="/api/docs/guides/error-codes/">错误码</a>。</li>
+</ul>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/reference/chat-completions/" title="Chat Completions API 参考" icon="cube">完整的请求参数与响应结构。</card>
+<card href="/api/docs/guides/responses/" title="Responses" icon="bolt">Codex CLI 等客户端使用的 OpenAI 新协议。</card>
+<card href="/api/docs/guides/rate-limits/" title="速率限制" icon="bolt">RPM、TPM 与 <code>max_tokens</code> 的关系。</card>
+</cards>

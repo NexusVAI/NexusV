@@ -102,7 +102,7 @@
 
   // 每张模型卡点击进入对应详情页（OpenAI 同款布局，动态计价模型显示两档价）。
   function detailUrl(id) {
-    return "./api/model_detail.html?model=" + encodeURIComponent(id);
+    return "/api/docs/models/detail/?model=" + encodeURIComponent(id);
   }
 
   function esc(s) {

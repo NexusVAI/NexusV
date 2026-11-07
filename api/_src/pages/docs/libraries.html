@@ -1,0 +1,109 @@
+---
+title: SDK 与兼容性
+description: 用 OpenAI 或 Anthropic 的官方 SDK、常见框架和工具调用 NexusVAI，只需修改 Base URL 与密钥。
+---
+<p>NexusVAI 没有自己的 SDK。接口兼容 OpenAI 协议（Chat Completions、Responses）和 Anthropic 协议（Messages），你可以直接使用这两家的官方 SDK，以及基于它们构建的框架和工具。切换时只需修改两个参数：Base URL 和 API 密钥。</p>
+
+<h2 id="openai-sdk">OpenAI SDK</h2>
+<p>安装官方 <code>openai</code> 包，把 Base URL 设为 <code>https://cn.nexusvai.xyz/v1</code>：</p>
+<code-tabs title="配置 OpenAI SDK">
+<pre data-lang="python" data-label="Python"># pip install openai
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://cn.nexusvai.xyz/v1",
+    api_key=os.environ["CANCRI_API_KEY"],
+)</pre>
+<pre data-lang="javascript" data-label="Node.js">// npm install openai
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://cn.nexusvai.xyz/v1",
+  apiKey: process.env.CANCRI_API_KEY,
+});</pre>
+</code-tabs>
+<p>官方 SDK 也会读取环境变量。只设置环境变量、不改代码也可以：</p>
+<pre data-lang="bash" data-title="OpenAI SDK 环境变量">export OPENAI_BASE_URL="https://cn.nexusvai.xyz/v1"
+export OPENAI_API_KEY="cancri_sk_..."</pre>
+<p>Chat Completions 用 <code>client.chat.completions.create</code>，Responses 用 <code>client.responses.create</code>。用法见 <a href="/api/docs/guides/chat-completions/">Chat Completions</a> 与 <a href="/api/docs/guides/responses/">Responses</a> 指南。</p>
+
+<h2 id="anthropic-sdk">Anthropic SDK</h2>
+<p>安装官方 Anthropic SDK（Python 包名 <code>anthropic</code>，Node.js 包名 <code>@anthropic-ai/sdk</code>），把 Base URL 设为 <code>https://cn.nexusvai.xyz</code>。SDK 会自动拼接 <code>/v1/messages</code>，不要自己再加 <code>/v1</code>。</p>
+<code-tabs title="配置 Anthropic SDK">
+<pre data-lang="python" data-label="Python"># pip install anthropic
+import os
+from anthropic import Anthropic
+
+client = Anthropic(
+    base_url="https://cn.nexusvai.xyz",
+    api_key=os.environ["CANCRI_API_KEY"],
+)</pre>
+<pre data-lang="javascript" data-label="Node.js">// npm install @anthropic-ai/sdk
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  baseURL: "https://cn.nexusvai.xyz",
+  apiKey: process.env.CANCRI_API_KEY,
+});</pre>
+</code-tabs>
+<p>使用环境变量时，密钥可以放在 <code>ANTHROPIC_API_KEY</code>（以 <code>x-api-key</code> 请求头发送，推荐）或 <code>ANTHROPIC_AUTH_TOKEN</code>（以 <code>Authorization: Bearer</code> 发送）中，二选一：</p>
+<pre data-lang="bash" data-title="Anthropic SDK 环境变量">export ANTHROPIC_BASE_URL="https://cn.nexusvai.xyz"
+export ANTHROPIC_API_KEY="cancri_sk_..."</pre>
+<p>用法见 <a href="/api/docs/guides/messages/">Messages 指南</a>。</p>
+
+<h2 id="frameworks">框架与聚合工具</h2>
+<p>基于上述协议的框架也可以直接使用：</p>
+<table>
+<thead><tr><th>框架或工具</th><th>使用的包或类</th><th>协议</th></tr></thead>
+<tbody>
+<tr><td>Vercel AI SDK</td><td><code>@ai-sdk/openai</code>、<code>@ai-sdk/openai-compatible</code>、<code>@ai-sdk/anthropic</code></td><td>OpenAI / Anthropic</td></tr>
+<tr><td>LangChain</td><td><code>ChatOpenAI</code>、<code>ChatAnthropic</code></td><td>OpenAI / Anthropic</td></tr>
+<tr><td>LiteLLM、OneAPI、Cherry Studio 等聚合工具</td><td>选择 OpenAI 兼容的渠道或提供商</td><td>OpenAI</td></tr>
+</tbody>
+</table>
+<code-tabs title="在框架中使用">
+<pre data-lang="python" data-label="LangChain (Python)"># pip install langchain-openai
+import os
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(
+    model="deepseek-v4-flash",
+    base_url="https://cn.nexusvai.xyz/v1",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+print(llm.invoke("用一句话介绍你自己。").content)</pre>
+<pre data-lang="javascript" data-label="Vercel AI SDK">// npm install ai @ai-sdk/openai-compatible
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { generateText } from "ai";
+
+const nexusvai = createOpenAICompatible({
+  name: "nexusvai",
+  baseURL: "https://cn.nexusvai.xyz/v1",
+  apiKey: process.env.CANCRI_API_KEY,
+});
+
+const { text } = await generateText({
+  model: nexusvai("deepseek-v4-flash"),
+  prompt: "用一句话介绍你自己。",
+});
+console.log(text);</pre>
+</code-tabs>
+
+<h2 id="coding-tools">编程工具与客户端</h2>
+<p>Codex CLI、Claude Code、OpenCode、OpenClaw、Aider 等命令行智能体，以及 Cursor、Cline、Continue、Cherry Studio 等编辑器和客户端，都可以通过自定义 Base URL 接入。各工具的配置步骤见<a href="/api/docs/guides/coding-tools/">编程工具</a>。</p>
+
+<h2 id="compatibility">兼容范围</h2>
+<ul>
+<li><strong>同一把密钥可以同时用于两类 SDK。</strong>速率限制按账户计算，不区分协议与密钥。</li>
+<li><strong>请求与响应格式与原协议一致。</strong>支持流式输出、usage 统计和自定义函数工具（部分模型支持工具调用）。</li>
+<li><strong>只有模型推理相关的端点。</strong>OpenAI 的文件、向量库、托管工具（网页搜索、文件检索、代码解释器、computer use）和 Responses 的服务端会话状态都不可用。</li>
+</ul>
+<p>完整的功能边界见<a href="/api/docs/guides/conventions/">使用约定</a>。</p>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/quickstart/" title="快速开始" icon="bolt">用 OpenAI SDK 完成第一次调用。</card>
+<card href="/api/docs/guides/migration/" title="从其他平台迁移" icon="cube">把现有项目切换到 NexusVAI。</card>
+<card href="/api/docs/guides/coding-tools/" title="编程工具" icon="bolt">在 Codex、Claude Code、Cursor 中接入。</card>
+</cards>

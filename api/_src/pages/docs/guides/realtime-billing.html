@@ -1,0 +1,91 @@
+---
+title: 计费与限制
+description: 实时语音的价格、分段预扣方式、按档位的会话限制，以及服务端何时结束会话。
+tab: realtime
+---
+<p>实时语音按会话时长计费，后端费用另计，都从账户余额中扣除。服务端分段预扣语音费，会话结束后按实际秒数结算。</p>
+
+<h2 id="pricing">价格</h2>
+<table>
+<thead><tr><th>项目</th><th>价格</th><th>适用模式</th></tr></thead>
+<tbody>
+<tr><td>语音（gpt-live-1）</td><td><strong>¥0.009 / 秒</strong>（¥0.54 / 分钟）</td><td>全部</td></tr>
+<tr><td>GPT-6-Luna 输入</td><td>¥1.2 / 百万 token</td><td>官方后端</td></tr>
+<tr><td>GPT-6-Luna 缓存输入</td><td>¥0.12 / 百万 token</td><td>官方后端</td></tr>
+<tr><td>GPT-6-Luna 输出</td><td>¥6 / 百万 token</td><td>官方后端</td></tr>
+<tr><td>联网搜索</td><td>¥0.12 / 次</td><td>官方后端（启用 <code>web_search</code> 且实际发生搜索时）</td></tr>
+<tr><td>站内模型</td><td>按该模型的<a href="/api/docs/pricing/">价格</a></td><td>站内模型</td></tr>
+</tbody>
+</table>
+<p>实际单价以会话开始时 <code>cancri.session.created</code> 中 <code>pricing</code> 返回的数值为准。</p>
+
+<h2 id="how-billing-works">扣费方式</h2>
+<ul>
+<li><strong>按会话时长，而不是说话时长。</strong>从 <code>session.started</code> 到会话结束，每一秒都计费，包括双方都沉默的时间。不用时请及时发送 <code>session.close</code>。</li>
+<li><strong>分段预扣。</strong>会话开始前预扣 30 秒（¥0.27）；本段还剩约 10 秒时预扣下一段；结束后按实际秒数多退少补。余额连一段都不够时，会话不会开始。</li>
+<li><strong>计费秒数。</strong>以 <code>session.closed</code> 中的 <code>usage.seconds</code> 为准，向上取整。连接异常断开、拿不到最终值时，取最后一次 <code>usage.seconds</code> 与服务端计时中较大的一个。</li>
+<li><strong>没开始不收费。</strong>认证失败、参数被拒、余额不足、上游连接失败等在 <code>session.started</code> 之前结束的会话，预扣金额全部退回。</li>
+<li><strong>后端按回答结算。</strong>官方后端每结束一次回答（<code>response.completed</code> 等带 usage 的终态事件），按其 usage 扣费一次；联网按实际搜索次数扣费。每轮回答都会带上此前的对话作为输入，所以长会话的输入 token 会逐轮增加。</li>
+<li><strong>余额用完。</strong>续段预扣失败时，你会收到 <code>cancri.session.closing</code>（<code>reason</code> 为 <code>insufficient_balance</code>，带 <code>closes_in_seconds</code>）。已预付的时长用完后连接关闭，关闭码为 <code>4402</code>。</li>
+</ul>
+
+<h3 id="estimates">费用估算</h3>
+<table>
+<thead><tr><th>场景</th><th>大约费用</th></tr></thead>
+<tbody>
+<tr><td>只买语音层，10 分钟</td><td>¥5.4</td></tr>
+<tr><td>官方后端闲聊，10 分钟（Luna token 很少）</td><td>约 ¥5.5</td></tr>
+<tr><td>官方后端，每分钟一次联网问答，10 分钟</td><td>约 ¥5.4 + 10 × ¥0.12 + Luna token ≈ ¥6.7</td></tr>
+</tbody>
+</table>
+
+<h2 id="rate-limits">速率限制</h2>
+<p>实时语音按<strong>会话</strong>限制，而不是按请求：同时进行的会话数、每分钟新建的会话数，以及单个会话的最长时长。档位与 <a href="/api/docs/guides/rate-limits/">API 速率限制</a>的口径相同，取累计充值档位与有效套餐档位中较高的一个；套餐对应的档位为 Go = T1、Plus = T2、Pro = T3。</p>
+<table>
+<thead><tr><th>档位</th><th>累计充值</th><th>同时会话</th><th>每分钟新建</th><th>单会话最长</th></tr></thead>
+<tbody>
+<tr><td>T0</td><td>&lt; ¥10</td><td>1</td><td>4</td><td>10 分钟</td></tr>
+<tr><td>T1</td><td>≥ ¥10</td><td>2</td><td>8</td><td>20 分钟</td></tr>
+<tr><td>T2</td><td>≥ ¥30</td><td>3</td><td>12</td><td>30 分钟</td></tr>
+<tr><td>T3</td><td>≥ ¥80</td><td>5</td><td>20</td><td>30 分钟</td></tr>
+<tr><td>T4</td><td>≥ ¥300</td><td>10</td><td>40</td><td>60 分钟</td></tr>
+<tr><td>T5</td><td>≥ ¥1,000</td><td>20</td><td>60</td><td>60 分钟</td></tr>
+</tbody>
+</table>
+<ul>
+<li>限额按账户计算，同一账户的所有 Key 共享；团队 Key 计入团队。</li>
+<li>充值或开通套餐后，新档位可能需要几分钟才生效，不需要重新创建 Key。</li>
+<li>超出限制时，握手响应带有 <code>X-Cancri-Live-Tier</code>、<code>X-Cancri-Live-Max-Concurrent</code>、<code>X-Cancri-Live-Max-Duration</code>（秒）和 <code>Retry-After</code> 头。</li>
+<li>全站同时在线的会话数也有上限。服务繁忙时，握手返回 <code>503 live_capacity_exhausted</code>，请按 <code>Retry-After</code> 稍后重试。</li>
+</ul>
+
+<h2 id="session-end">会话何时结束</h2>
+<p>除了你主动发送 <code>session.close</code>，服务端会在以下情况结束会话。结束前会发送 <code>cancri.session.closing</code>，其中的 <code>reason</code> 就是下表的值。</p>
+<table>
+<thead><tr><th>reason</th><th>触发条件</th></tr></thead>
+<tbody>
+<tr><td><code>max_duration</code></td><td>达到本档的单会话最长时长。需要更长的对话时，在客户端自动开启新会话，可以用 <code>session.input</code> 带上历史。</td></tr>
+<tr><td><code>idle_timeout</code></td><td>连续 90 秒（以 <code>limits.idle_timeout_seconds</code> 为准）没有转写、没有后端回答，也没有 <code>session.input_audio.*</code> 以外的客户端事件。只发送音频（包括静音）不算活动。</td></tr>
+<tr><td><code>insufficient_balance</code></td><td>余额不足以预扣下一段。已预付的时长用完后关闭，关闭码为 <code>4402</code>。</td></tr>
+<tr><td><code>billing_unavailable</code></td><td>计费服务暂时不可用，已预付的时长用完后结束。</td></tr>
+<tr><td><code>key_revoked</code></td><td>会话期间 Key 被停用或删除。服务端在每次续段前检查。</td></tr>
+<tr><td><code>banned</code></td><td>会话期间账户被封禁。</td></tr>
+<tr><td><code>upstream_closed</code> / <code>upstream_error</code></td><td>上游连接中断。按已用秒数结算。</td></tr>
+<tr><td><code>start_timeout</code></td><td>连接后 20 秒内没有发送 <code>session.start</code>。</td></tr>
+</tbody>
+</table>
+<p>服务端关闭连接时，WebSocket 关闭码为 <code>1000</code>（余额不足时为 <code>4402</code>），关闭原因与 <code>reason</code> 相同。服务更新时，进行中的会话也可能断开，同样按已用秒数结算；建议客户端在非主动关闭时自动重连。</p>
+
+<h2 id="reduce-cost">降低费用</h2>
+<ul>
+<li>不说话时尽快发送 <code>session.close</code>：沉默的时间同样计费。</li>
+<li>不需要联网时，在官方后端里传 <code>tools: []</code>，关闭默认的联网搜索。</li>
+<li>把 <code>reasoning.effort</code> 设为 <code>none</code> 或 <code>low</code>。</li>
+<li>只需要语音交互、回答由自己的程序生成时，使用<a href="/api/docs/guides/realtime-sessions/#voice-only">只买语音层</a>。</li>
+</ul>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/realtime-errors/" title="错误与排查">握手被拒或会话中断时，按错误码定位原因。</card>
+<card href="/api/console/billing/" title="充值" icon="cube">在控制台查看余额并充值。</card>
+</cards>

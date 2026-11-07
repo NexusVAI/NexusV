@@ -224,7 +224,7 @@
       '  <div class="claude-quota-stat">',
       '    <span>当前档位 <b>' + escapeHtml(tierLabel) + '</b></span>',
       '  </div>',
-      '  <p class="claude-quota-note">仅真实充值计入累计（代金券/折现不计）。充值后最多 60 秒自动升档。各档位并发/RPM/TPM/TPD 上限详见 <a href="./api_docs.html#rate-limit">API 文档</a>。</p>',
+      '  <p class="claude-quota-note">仅真实充值计入累计（代金券/折现不计）。充值后最多 60 秒自动升档。各档位并发/RPM/TPM/TPD 上限详见 <a href="/api/docs/guides/rate-limits/">API 文档</a>。</p>',
       '</div>',
     ].join('');
 
@@ -375,7 +375,7 @@
       '    <span>已用 <b>' + CC.num(pool.consumed || 0) + '</b> / ' + CC.num(pool.budget || 100000000) + ' 积分</span>',
       '    <span>' + poolPercent.toFixed(1) + '%</span>',
       '  </div>',
-      '  <p class="claude-quota-note">本月共享池将于 <b>' + fmtDate(pool.period_end) + ' 00:00（UTC+8）</b> 重置。余额以积分计（1 积分 = 1 万 token），按上游真实计费（缓存命中按 10% 折算）× 模型权重换算，详见 <a href="./api_docs.html#quota">API 文档</a>。</p>',
+      '  <p class="claude-quota-note">本月共享池将于 <b>' + fmtDate(pool.period_end) + ' 00:00（UTC+8）</b> 重置。余额以积分计（1 积分 = 1 万 token），按上游真实计费（缓存命中按 10% 折算）× 模型权重换算，详见 <a href="/api/docs/guides/billing/">API 文档</a>。</p>',
       '</div>',
 
       '<div class="claude-quota-card">',

@@ -11,8 +11,8 @@
 <p align="center">
   <a href="https://www.nexusvai.xyz">官网</a> ·
   <a href="https://www.nexusvai.xyz/chat/">在线对话</a> ·
-  <a href="https://www.nexusvai.xyz/chat/api_docs.html">API 文档</a> ·
-  <a href="https://www.nexusvai.xyz/chat/api_models.html">模型广场</a>
+  <a href="https://www.nexusvai.xyz/api/docs/">API 文档</a> ·
+  <a href="https://www.nexusvai.xyz/api/docs/models/">模型广场</a>
 </p>
 
 ---
@@ -99,7 +99,7 @@ curl https://chat.nexusvai.xyz/functions/v1/api-gateway/v1/chat/completions \
   }'
 ```
 
-API Key 在 [API 管理页](https://www.nexusvai.xyz/chat/api_keys.html) 生成，完整文档见 [API Docs](https://www.nexusvai.xyz/chat/api_docs.html)。
+API Key 在 [API 管理页](https://www.nexusvai.xyz/api/console/keys/) 生成，完整文档见 [API Docs](https://www.nexusvai.xyz/api/docs/)。
 
 ## 项目结构（本仓库 / 前端）
 
@@ -115,9 +115,10 @@ API Key 在 [API 管理页](https://www.nexusvai.xyz/chat/api_keys.html) 生成�
 │   ├── index.html          # 聊天主界面
 │   ├── cancri_chat.js      # 聊天核心逻辑
 │   ├── cancri_config.js    # 前端公开配置（网关地址 / 公钥）
-│   ├── api/                # API 开放平台与管理后台界面
+│   ├── api/                # 管理后台、共享脚本与旧 API 地址跳转桩
 │   ├── shop/               # 商店 / 订单界面
-│   └── api_docs.html · api_keys.html · api_models.html
+│   └── api_docs.html · api_keys.html · api_models.html   # 旧地址跳转桩 → /api/
+├── api/                    # 开发者站点 /api/（文档 / 模型 / API 参考 / 控制台）
 ├── js/                     # 官网公共脚本（导航 / 主题 / 搜索 / 评论等）
 ├── css/                    # 样式
 └── Logo/                   # 品牌素材

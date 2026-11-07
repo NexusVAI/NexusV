@@ -1,0 +1,64 @@
+---
+title: 免费模型与免费额度
+description: 免费模型不扣余额，但计入每个账户每 24 小时 1 亿 token 的免费额度，并受速率限制约束。
+---
+<p>在<a href="/api/docs/models/">模型</a>中标为免费的模型，可以直接用普通的 <code>cancri_sk_</code> 密钥调用，不扣余额，也无需申请。免费模型的调用计入账户的<strong>免费额度</strong>，同时和付费模型一样受<a href="/api/docs/guides/rate-limits/">速率限制</a>约束。</p>
+<p>哪些模型免费以模型页为准。<code>GET /v1/models</code> 的返回不标注价格或是否免费。</p>
+
+<h2 id="free-quota">免费额度</h2>
+<table>
+<thead><tr><th>项目</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>额度</td><td>每个账户每 24 小时 100,000,000 token（1 亿），显示为 10,000 积分（1 积分 = 1 万 token）。</td></tr>
+<tr><td>计入方式</td><td>输入与输出 token 合计。只有免费模型的调用计入，付费模型不占用免费额度。</td></tr>
+<tr><td>周期</td><td>滚动 24 小时，从周期外的第一次使用开始计时。周期结束后不会自动开始新周期，下一次使用时才重新计时。</td></tr>
+<tr><td>共享范围</td><td>同一账户的网页、桌面端、Bot 与 API 共用。</td></tr>
+<tr><td>不受限制的账户</td><td>有有效套餐的账户，或累计充值达到 ¥10 的账户。这些账户的 RPM 与 TPM 仍然生效。</td></tr>
+</tbody>
+</table>
+
+<h2 id="quota-exhausted">额度用完时</h2>
+<p>额度用完后，调用免费模型返回 <code>429 free_plan_exhausted</code>。这个错误不可重试：响应带 <code>x-should-retry: false</code>，不带 <code>Retry-After</code>，官方 SDK 不会自动重试。错误对象里的额外字段告诉你什么时候恢复：</p>
+<pre data-lang="json" data-title="429 free_plan_exhausted">{
+  "error": {
+    "type": "rate_limit_error",
+    "message": "免费计划 24 小时额度（10,000 积分）已用完，将于 2026-11-08 12:30（UTC+8）重置。开通套餐可解除限制。",
+    "code": "free_plan_exhausted",
+    "resets_at": "2026-11-08T04:30:00.000Z",
+    "limit_tokens": 100000000,
+    "used_tokens": 100004096,
+    "retry_after_seconds": 41250
+  }
+}</pre>
+<table>
+<thead><tr><th>字段</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>resets_at</code></td><td>额度重置时间，ISO 8601 格式（UTC）。</td></tr>
+<tr><td><code>limit_tokens</code></td><td>周期额度，单位 token。</td></tr>
+<tr><td><code>used_tokens</code></td><td>本周期已用量，单位 token。</td></tr>
+<tr><td><code>retry_after_seconds</code></td><td>距离重置还有多少秒。</td></tr>
+</tbody>
+</table>
+<p>在 <code>/v1/messages</code> 上，同样的字段位于 Anthropic 格式的 <code>error</code> 对象中。</p>
+
+<h2 id="remove-limit">解除限制</h2>
+<p>累计充值达到 ¥10，或开通套餐后，免费模型不再受免费额度限制。充值与套餐见控制台的<a href="/api/console/billing/">账单</a>页。</p>
+
+<h2 id="team-keys">团队密钥</h2>
+<p>用团队密钥调用免费模型时，用量计入持有这把密钥的成员自己的免费额度，不会因为建了团队而多出一份额度。团队累计划转到团队余额的金额达到 ¥10 后，团队密钥不再受免费额度限制。见<a href="/api/docs/guides/teams/">团队</a>。</p>
+
+<h2 id="unavailable-models">不对 API 开放的免费模型</h2>
+<ul>
+<li>桌面端专属的免费模型只在 Cancri Code 中可用，通过 API 调用返回 <code>403 model_ide_only</code>。</li>
+<li>限时开放的免费模型过了访问期后不再可用，调用返回 <code>404 model_not_found</code>。</li>
+</ul>
+
+<h2 id="context-length">上下文长度</h2>
+<p>上下文长度与最大输出 token 数按模型而定，见模型页的模型卡片。输入超过模型上限时请求会失败，请缩短上下文或换用上下文更长的模型。</p>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/models/" title="浏览模型" icon="cube">查看哪些模型免费，以及它们的上下文长度。</card>
+<card href="/api/docs/guides/rate-limits/" title="速率限制" icon="bolt">免费模型同样受 RPM 与 TPM 限制。</card>
+<card href="/api/docs/guides/billing/" title="计费与余额" icon="bolt">付费模型怎么计费，以及如何充值。</card>
+</cards>

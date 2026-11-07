@@ -1,0 +1,114 @@
+---
+title: 查询余额与用量
+description: 用 GET /v1/balance 查询账户余额、当前密钥的限额，以及当前密钥最近的调用记录与扣费。
+---
+<p><code>GET /v1/balance</code> 返回账户余额、当前密钥的用量上限，以及当前密钥最近的调用记录。它不计费，不计入推理接口的 RPM 与 TPM，认证方式与推理接口相同。</p>
+
+<h2 id="query-balance">查询余额</h2>
+<code-tabs title="查询余额与最近调用">
+<pre data-lang="python" data-label="Python">import os
+import requests
+
+resp = requests.get(
+    "https://cn.nexusvai.xyz/v1/balance",
+    headers={"Authorization": f"Bearer {os.environ['CANCRI_API_KEY']}"},
+    params={"limit": 20},
+    timeout=10,
+)
+resp.raise_for_status()
+data = resp.json()
+print(data["balance"], data["currency"])
+for row in data["recent_usage"]["data"]:
+    print(row["created_at"], row["model"], row["cost"])</pre>
+<pre data-lang="javascript" data-label="Node.js">const resp = await fetch("https://cn.nexusvai.xyz/v1/balance?limit=20", {
+  headers: { Authorization: `Bearer ${process.env.CANCRI_API_KEY}` },
+});
+if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+const data = await resp.json();
+console.log(data.balance, data.currency);
+for (const row of data.recent_usage.data) {
+  console.log(row.created_at, row.model, row.cost);
+}</pre>
+<pre data-lang="bash" data-label="cURL">curl "https://cn.nexusvai.xyz/v1/balance?limit=20" \
+  -H "Authorization: Bearer $CANCRI_API_KEY"</pre>
+</code-tabs>
+<pre data-lang="json" data-title="响应">{
+  "object": "balance",
+  "currency": "CNY",
+  "balance": 332.0632,
+  "debt": 0,
+  "key_limits": {
+    "max_total_tokens": null,
+    "used_total_tokens": 1176,
+    "remaining_total_tokens": null,
+    "max_request_count": null,
+    "used_request_count": 3,
+    "remaining_request_count": null
+  },
+  "recent_usage": {
+    "object": "list",
+    "data": [
+      {
+        "model": "doubao-seed-2-0-mini-260215",
+        "prompt_tokens": 50,
+        "completion_tokens": 390,
+        "status_code": 200,
+        "cost": 0.000044,
+        "created_at": "2026-09-29T08:24:08.424Z"
+      }
+    ]
+  }
+}</pre>
+
+<h2 id="query-parameters">查询参数</h2>
+<table>
+<thead><tr><th>参数</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>limit</code></td><td>可选。返回最近调用记录的条数，取值为 0–100 的整数，默认 20。传 <code>0</code> 时只返回余额，<code>recent_usage.data</code> 为空数组。超出范围或不是整数时返回 <code>400 invalid_limit</code>。</td></tr>
+</tbody>
+</table>
+
+<h2 id="response-fields">响应字段</h2>
+<table>
+<thead><tr><th>字段</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>balance</code></td><td>可用余额，单位为元。个人密钥返回账户的 API 余额（该账户下所有个人密钥共用）；团队密钥返回所属团队的团队余额。</td></tr>
+<tr><td><code>debt</code></td><td>欠费金额，单位为元，通常为 0。结算时实际费用超过预扣且余额不足时产生，见<a href="/api/docs/guides/billing/#prededuction">预扣与结算</a>。</td></tr>
+<tr><td><code>key_limits</code></td><td>当前密钥的累计 token 上限与累计请求数上限，以及已用量和剩余量。未设置上限的项返回 <code>null</code>；没有设置上限时，已用量最多有约 60 秒的延迟。</td></tr>
+<tr><td><code>recent_usage.data</code></td><td>当前密钥最近的调用记录，按时间倒序。只包含这一把密钥的记录，不包含同账户其他密钥的记录。</td></tr>
+<tr><td><code>prompt_tokens</code> / <code>completion_tokens</code></td><td>该次调用的输入与输出 token 数。</td></tr>
+<tr><td><code>status_code</code></td><td>该次调用的状态码。</td></tr>
+<tr><td><code>cost</code></td><td>该次调用的实际扣费，单位为元，已包含缓存折扣。免费模型为 <code>0</code>；请求仍在结算中时为 <code>null</code>，求和时请跳过。</td></tr>
+<tr><td><code>created_at</code></td><td>调用时间，ISO 8601 格式（UTC）。</td></tr>
+</tbody>
+</table>
+
+<h2 id="limits-and-security">调用限制与安全</h2>
+<ul>
+<li>每个账户每分钟最多查询 30 次，超出时返回 <code>429 rate_limit_exceeded</code>，按 <code>Retry-After</code>（60 秒）等待。</li>
+<li>余额服务暂时不可用时返回 <code>503 service_unavailable</code>，稍后重试。</li>
+<li>响应带 <code>Cache-Control: no-store</code>，不要在中间层缓存它。</li>
+</ul>
+<callout type="warning"><p>任何持有密钥的人都能查询账户余额。不要把密钥交给不应看到余额的人。</p></callout>
+
+<h2 id="response-usage">每次响应中的 usage</h2>
+<p>每个推理响应都带有本次调用的 token 用量，适合按功能或用户汇总：</p>
+<table>
+<thead><tr><th>协议</th><th>字段</th></tr></thead>
+<tbody>
+<tr><td>Chat Completions</td><td><code>usage.prompt_tokens</code>、<code>completion_tokens</code>、<code>total_tokens</code>，推理模型另有 <code>completion_tokens_details.reasoning_tokens</code></td></tr>
+<tr><td>Responses</td><td><code>usage.input_tokens</code>、<code>output_tokens</code>、<code>total_tokens</code></td></tr>
+<tr><td>Messages</td><td><code>usage.input_tokens</code>、<code>output_tokens</code></td></tr>
+</tbody>
+</table>
+<p>流式请求的 usage 在流的结尾返回。<code>usage</code> 不包含缓存命中的 token 数，实际扣费以 <code>cost</code> 为准。</p>
+
+<h2 id="console">在控制台查看</h2>
+<p>控制台的<a href="/api/console/usage/">用量</a>页可以查看最近 30 天所有个人密钥的调用记录、token 用量与消费金额；<a href="/api/console/billing/">账单</a>页可以查看余额与充值记录。团队的用量在<a href="/api/console/team/">团队</a>页查看。</p>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/billing/" title="计费与余额" icon="bolt">预扣、结算与哪些情况会扣费。</card>
+<card href="/api/docs/guides/production-best-practices/#monitoring" title="监控余额与用量" icon="cube">在生产环境中设置余额告警。</card>
+<card href="/api/reference/models/" title="模型列表 API" icon="bolt">用 <code>GET /v1/models</code> 获取可用的模型 ID。</card>
+</cards>

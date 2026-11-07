@@ -94,3 +94,6 @@ css/**/docs/celebrate-s3-setup.ps1
 css/**/supabase/backups/
 css/**/supabase/tasks/
 库/devin_auto/
+
+# OpenAI Sans 只做本机预览（OpenAI 的字体，不随站点发布），见 api/_preview-fonts/oai-sans.css。
+api/_preview-fonts/

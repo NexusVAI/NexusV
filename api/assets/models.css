@@ -1,0 +1,377 @@
+/* /api 模型页（目录 / 详情 / 价格）在原样搬来的 OpenAI CSS 之上的补充。
+ * 结构与 class 照搬 OpenAI 的 ModelOverview / ModelView / 价格页；这里只放它们没有的东西：
+ * 流体封面宿主、封面字标自适应、骨架屏、近 24 小时状态条、分组胶囊、定位高亮、出错状态、价格表。 */
+
+/* ── 封面：grok-fluid-covers.js 往 .cancri-thumb 里插一个 absolute、z-index 0 的 canvas ── */
+.cancri-thumb {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: var(--color-background-primary-soft);
+  background-size: cover;
+  background-position: center;
+}
+.cancri-thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgb(0 0 0 / 0.12);
+  pointer-events: none;
+}
+.cancri-thumb > :not(canvas) {
+  position: relative;
+  z-index: 2;
+}
+
+/* 字标按字数缩放（OpenAI 的字标都是 4~5 个字母，我们的模型名更长）。--wm-len 由 models.js 写入。 */
+.models-wordmark {
+  font-size: clamp(1.25rem, min(18cqw, calc(149cqw / var(--wm-len, 6))), 5rem);
+}
+.models-wordmark[data-wm="wrap"] {
+  white-space: normal;
+  text-wrap: balance;
+  line-height: 1.05;
+  font-size: clamp(1.15rem, min(13cqw, calc(260cqw / var(--wm-len, 12))), 3rem);
+}
+
+/* ── 骨架屏 ── */
+.models-skel {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--color-background-primary-soft) 25%,
+    var(--color-surface-secondary) 50%,
+    var(--color-background-primary-soft) 75%
+  );
+  background-size: 200% 100%;
+  animation: models-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes models-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .models-skel {
+    animation: none;
+  }
+}
+.models-skel-art {
+  height: 180px;
+  border-radius: 10px;
+}
+.models-skel-line {
+  height: 12px;
+  margin-top: 10px;
+}
+.models-skel-line--lg {
+  height: 16px;
+  width: 55%;
+}
+.models-skel-icon {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+}
+
+/* ── 近 24 小时状态条（数据：chat-gateway model_health，按小时 24 格） ── */
+.models-uptime {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 2px;
+  height: 16px;
+  min-width: 0;
+}
+.models-uptime[data-size="lg"] {
+  justify-content: flex-start;
+  gap: 3px;
+  height: 28px;
+}
+.models-uptime__seg {
+  flex: 0 1 4px;
+  min-width: 2px;
+  border-radius: 1px;
+  background: var(--color-background-primary-soft);
+}
+.models-uptime[data-size="lg"] .models-uptime__seg {
+  flex-basis: 8px;
+  border-radius: 2px;
+}
+.models-uptime__seg[data-state="ok"] {
+  background: var(--green-500);
+}
+.models-uptime__seg[data-state="bad"] {
+  background: var(--orange-400);
+}
+
+/* ── 分组胶囊（外观同 OpenAI 卡片里的 Reasoning 胶囊，可点） ── */
+.models-variant {
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  border: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.models-variant:hover {
+  background-color: var(--color-background-primary-soft);
+}
+.models-variant[aria-pressed="true"] {
+  background-color: var(--color-background-primary-solid);
+  color: var(--color-text-primary-solid);
+  box-shadow: none;
+}
+.models-variant:focus-visible,
+.models-copy:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 1px;
+}
+/* Our ids run longer than OpenAI's ("claude-sonnet-5.5" vs "gpt-6-astra"); one px less keeps most on one line. */
+.models-id-chip {
+  font-size: 13px;
+  word-break: break-all;
+}
+.models-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 4px;
+  padding: 0 6px;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  background: var(--color-background-primary-soft);
+}
+
+/* 复制按钮：复制后换成对勾 */
+.models-copy .models-icon-check,
+.models-copy[data-copied] .models-icon-copy {
+  display: none;
+}
+.models-copy[data-copied] .models-icon-check {
+  display: block;
+}
+
+/* ── 旧链接 #model-<id> 定位后的高亮 ── */
+.models-anchor {
+  scroll-margin-top: calc(var(--docs-scroll-offset, 158px) + 16px);
+}
+[data-located]:not(tr) {
+  border-radius: 12px;
+  outline: 2px solid var(--link-primary-text-color, #0169cc);
+  outline-offset: 6px;
+  transition: outline-color 0.6s ease;
+}
+tr[data-located] td {
+  background-color: var(--color-background-primary-soft);
+  transition: background-color 0.6s ease;
+}
+
+/* 详情页：JS 渲染的区块插进这些容器，它们自己不占布局 */
+.models-contents {
+  display: contents;
+}
+
+/* ── 出错 / 空状态 ── */
+.models-grid-full {
+  grid-column: 1 / -1;
+}
+.models-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface-secondary);
+}
+
+/* ── 价格表（照 OpenAI TextTokenPricingTables 的行内样式写成 class） ── */
+.mp-scroll {
+  overflow-x: auto;
+  margin: 0;
+  padding: 0;
+}
+.mp-table {
+  width: 100%;
+  min-width: 640px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0;
+  font-size: 14px;
+}
+.mp-table th,
+.mp-table td {
+  font-size: 14px;
+  color: var(--color-text-primary);
+  text-align: left;
+  vertical-align: middle;
+}
+.mp-table thead th {
+  border-bottom: 1px solid var(--color-border-primary-surface);
+  font-weight: 600;
+  padding: 0.75rem 16px 0.75rem 0;
+}
+.mp-table thead tr.mp-caption th {
+  border-bottom: 0;
+  padding: 0;
+  height: 20px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+.mp-table thead tr.mp-caption th.mp-cache {
+  text-align: center;
+  white-space: nowrap;
+  padding: 12px 16px 4px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+.mp-table thead tr.mp-caption th.mp-cache > div {
+  margin-inline: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border-primary-surface);
+}
+.mp-table td {
+  border-bottom: 1px solid var(--color-border-primary-surface);
+  padding: 0.5rem 16px 0.5rem 0;
+  white-space: pre-line;
+}
+.mp-table .mp-cache {
+  background-color: var(--color-surface-secondary);
+  padding-left: 16px;
+  padding-right: 16px;
+  white-space: nowrap;
+}
+.mp-table tbody tr.mp-last td {
+  border-bottom: 0;
+  padding-bottom: 16px;
+}
+.mp-table tbody tr.mp-last td.mp-cache {
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+.mp-table tbody tr[hidden] {
+  display: none;
+}
+.mp-cell {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  width: 100%;
+}
+.mp-cell a {
+  color: inherit;
+  font-weight: 500;
+  text-decoration: none;
+}
+.mp-cell a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.mp-more {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 32px;
+  margin-bottom: 24px;
+}
+.mp-more svg {
+  height: 0.75rem;
+  width: 0.75rem;
+  transition: transform 0.2s ease;
+}
+.mp-more [aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.mp-section {
+  scroll-margin-top: var(--docs-scroll-offset, 158px);
+}
+
+/* ── 厂商 logo（模型名前；目录页点它按厂商筛选，详情 / 价格页跳到筛选后的目录） ── */
+.models-brand-logo {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin: -3px 0;
+  padding: 3px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.models-brand-logo:hover {
+  background: var(--color-background-primary-soft-alpha);
+}
+.models-brand-logo:focus-visible {
+  outline: 2px solid var(--color-ring, #0169cc);
+  outline-offset: 1px;
+}
+.models-brand-logo img {
+  display: block;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+html.dark .models-brand-logo img[data-mono] {
+  filter: invert(1);
+}
+
+/* 卡片 / 列表行整块可点：一层铺满的链接，logo 叠在它上面单独可点 */
+.models-stretched {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 10px;
+}
+.models-stretched:focus-visible {
+  outline: 2px solid var(--color-ring, #0169cc);
+  outline-offset: 2px;
+}
+.models-row:hover .models-row-inner {
+  background-color: var(--color-background-primary-soft);
+}
+
+/* 厂商筛选条 */
+.models-brand-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border-primary-surface);
+  border-radius: 12px;
+  background: var(--color-surface-secondary);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  scroll-margin-top: calc(var(--docs-scroll-offset, 158px) + 16px);
+}
+.models-brand-bar[hidden] {
+  display: none;
+}
+.models-brand-bar__text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.models-brand-bar strong {
+  color: var(--color-text-emphasis, inherit);
+  font-weight: 600;
+}

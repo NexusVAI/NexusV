@@ -1,0 +1,72 @@
+---
+title: 常见问题
+description: 接入 NexusVAI API 时最常遇到的问题与答案。
+---
+<p>没有找到答案？先看<a href="/api/docs/guides/error-codes/">错误码</a>和<a href="/api/docs/guides/conventions/">使用约定</a>，或者<a href="/api/contact/">联系我们</a>。</p>
+
+<h2 id="getting-started">接入</h2>
+
+<h3 id="which-endpoint">三个端点我该用哪个？</h3>
+<ul>
+<li>通用对话用 <a href="/api/docs/guides/chat-completions/"><code>/v1/chat/completions</code></a>，支持的工具最多。</li>
+<li>Codex CLI 等默认使用 Responses 协议的客户端，用 <a href="/api/docs/guides/responses/"><code>/v1/responses</code></a>。</li>
+<li>Claude Code、Anthropic SDK、OpenClaw 用 <a href="/api/docs/guides/messages/"><code>/v1/messages</code></a>。</li>
+</ul>
+<p>三个端点使用同一份模型目录、同一把密钥和同一套计费。Claude Code 还会自动调用 <code>/v1/messages/count_tokens</code> 估算上下文长度，这个端点不计费，无需配置。</p>
+
+<h3 id="images-and-video">能通过 API 生成图片或视频吗？</h3>
+<p>不能。<code>/v1/images/generations</code> 与 <code>/v1/videos/generations</code> 只对网页版开放，用 API 密钥调用返回 <code>403 endpoint_disabled</code>。网页版的图像生成按次计费，价格见<a href="/api/docs/pricing/">价格</a>。</p>
+
+<h3 id="cli-missing-model">命令行工具的模型列表里找不到我要的模型</h3>
+<p>命令行客户端（尤其是 Claude Code）通常在启动时读取一次 <code>GET /v1/models</code>，填写的模型 ID 必须在这个列表里。你可以直接请求 <code>GET /v1/models</code>，或在<a href="/api/docs/models/">模型</a>页查询可用 ID。模型厂商的原始版本号（如 <code>claude-3-5-sonnet-20241022</code>）不可用。</p>
+<p>Claude Code 会按自己的规则过滤选择器里显示的模型。非 Claude 命名的模型能否使用，取决于客户端是否允许手动填写模型 ID。</p>
+
+<h3 id="tool-calling">支持工具调用吗？</h3>
+<p>支持自定义函数工具与工具调用往返，具体是否可用取决于模型。OpenAI 的托管工具（网页搜索、文件检索、代码解释器、computer use）不会在服务端执行。</p>
+
+<h3 id="browser-calls">能在浏览器里直接调用 API 吗？</h3>
+<p>不要这样做。前端代码里的密钥对所有访问者可见，等同于公开；而且 API 的跨域访问只对 NexusVAI 自己的网站开放，第三方网页的浏览器请求会被拦截。请从你自己的服务端发起请求，把密钥保存在服务端环境变量里。</p>
+
+<h3 id="region-limits">有地区或 IP 限制吗？</h3>
+<p>不按国家或地区限制访问。检测到异常 IP 或滥用行为时，可能临时限制访问。同一 IP 在短时间内多次使用不存在的密钥，会收到 <code>429 auth_rate_limited</code>。</p>
+
+<h3 id="lost-key">密钥丢了怎么办？</h3>
+<p>完整密钥只在创建时显示一次，之后无法找回。在控制台的 <a href="/api/console/keys/">API 密钥</a>页撤销旧密钥，再创建一把新的。</p>
+
+<h2 id="billing">计费与额度</h2>
+
+<h3 id="how-billing-works">怎么计费？</h3>
+<p>按实际用量从余额扣费，每个模型的价格见<a href="/api/docs/pricing/">价格</a>：多数模型按输入与输出 token 计费，命中缓存的输入默认按输入价格的 1 折计算（Claude Opus 5.5 含 Thinking 为 3 折），部分能力按次计费。请求开始前按预估金额预扣，结束后按实际 <code>usage</code> 结算，多退少补。详见<a href="/api/docs/guides/billing/">计费与余额</a>。</p>
+
+<h3 id="no-cache-shown">第三方工具显示「无缓存」，缓存真的生效了吗？</h3>
+<p>缓存折扣已经计入每次调用的扣费，但出于安全考虑，响应的 <code>usage</code> 不返回缓存命中的 token 数，按其他服务的字段格式检测的工具会显示「无缓存」。你可以用 <code>GET /v1/balance</code> 返回的 <code>cost</code> 或控制台用量页核对实际扣费。另外，缓存只在请求前缀完全一致、长度达到模型的最低要求时命中，且只保留几分钟。见<a href="/api/docs/guides/billing/#prompt-caching">提示缓存</a>。</p>
+
+<h3 id="free-vs-paid">免费账户和已充值账户有什么区别？</h3>
+<p>没有充值也没有套餐的账户是 Tier 0：60 RPM、2,000,000 TPM，免费模型受每 24 小时 1 亿 token 的免费额度限制。累计充值达到 ¥10 或开通套餐后，档位提升，免费模型也不再受免费额度限制。见<a href="/api/docs/guides/rate-limits/">速率限制</a>与<a href="/api/docs/guides/free-tier/">免费模型与免费额度</a>。</p>
+
+<h3 id="raise-tier">怎么提升速率限制档位？</h3>
+<p>累计充值达到门槛或开通套餐后，档位自动提升，通常 1 分钟内生效，无需重新创建密钥。档位门槛见<a href="/api/docs/guides/rate-limits/#tiers">速率限制</a>。充值方式：在控制台的<a href="/api/console/billing/">账单</a>页购买充值卡并兑换卡密，兑换后立即到账。</p>
+
+<h3 id="track-usage">怎么查看用量？</h3>
+<p>调用 <code>GET /v1/balance</code> 可以查看余额、当前密钥的限额和最近的调用记录；控制台的<a href="/api/console/usage/">用量</a>页可以查看最近 30 天的调用与消费。见<a href="/api/docs/guides/usage/">查询余额与用量</a>。</p>
+
+<h2 id="troubleshooting">故障排查</h2>
+
+<h3 id="api-paused">返回 503 api_paused 是什么意思？</h3>
+<p>API 正在维护。维护期间 <code>GET /v1/models</code> 仍可读取模型列表，推理接口返回 <code>503 api_paused</code>，响应带 <code>Retry-After</code>。更换密钥或客户端无法解除，请等待维护结束。</p>
+
+<h3 id="model-not-found">返回 404 model_not_found</h3>
+<p>模型 ID 必须与 <code>GET /v1/models</code> 的返回值完全一致，包括大小写与连字符。部分客户端会自动改写模型名，这时请在模型设置中手动填写 NexusVAI 模型 ID（如 <code>gpt-6-astra</code>、<code>claude-sonnet-5.5</code>）。</p>
+
+<h3 id="model-busy">模型返回 upstream_rate_limit 或 upstream_error</h3>
+<p>这类错误表示所选模型暂时繁忙或不可用，与你的密钥、余额和档位无关。按 <code>Retry-After</code> 退避后重试，或换用其他模型。见<a href="/api/docs/guides/error-codes/#model-unavailable">模型暂时不可用</a>。</p>
+
+<h3 id="sla">有 SLA 吗？</h3>
+<p>NexusVAI 不提供 SLA。在生产环境中，建议自己实现重试与故障转移，例如在模型不可用时切换到备用模型。见<a href="/api/docs/guides/production-best-practices/">生产最佳实践</a>。</p>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/quickstart/" title="快速开始" icon="bolt">几分钟内完成第一次调用。</card>
+<card href="/api/docs/guides/error-codes/" title="错误码" icon="cube">每个错误码的含义与处理方式。</card>
+<card href="/api/contact/" title="联系我们" icon="bolt">商务合作、发票与工单。</card>
+</cards>

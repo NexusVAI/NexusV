@@ -1,0 +1,142 @@
+---
+title: 错误码
+description: 错误响应使用标准 HTTP 状态码，error.code 给出具体原因。请按 error.code 处理错误。
+---
+<p>请求失败时，NexusVAI 返回标准的 HTTP 状态码，并在响应体的 <code>error.code</code> 中给出具体原因。同一个状态码可能对应多种原因，所以处理错误时请以 <code>error.code</code> 为准；它是稳定的机器可读标识，<code>error.message</code> 只供人阅读，可能调整。</p>
+
+<h2 id="error-format">错误格式</h2>
+<p>OpenAI 协议端点（<code>/v1/chat/completions</code>、<code>/v1/responses</code>）以及 <code>/v1/models</code>、<code>/v1/balance</code> 使用 OpenAI 的错误格式：</p>
+<pre data-lang="json" data-title="OpenAI 格式">{
+  "error": {
+    "message": "Invalid API key. Provide a valid key as Bearer token (Authorization) or x-api-key header.",
+    "type": "authentication_error",
+    "code": "invalid_api_key"
+  }
+}</pre>
+<p>Anthropic 协议端点（<code>/v1/messages</code>）的错误大多使用 Anthropic 格式，Anthropic SDK、Claude Code 与 OpenClaw 可以直接解析：</p>
+<pre data-lang="json" data-title="Anthropic 格式">{
+  "type": "error",
+  "error": {
+    "type": "permission_error",
+    "message": "Account balance insufficient. Please top up and retry.",
+    "code": "insufficient_balance"
+  }
+}</pre>
+<callout type="warning"><p><code>/v1/messages</code> 上，鉴权、请求体大小、参数校验和密钥级限制这些在路由前完成的检查，返回的是 OpenAI 格式（没有外层的 <code>"type": "error"</code>）。<code>404</code> 模型不存在时返回 Anthropic 格式，但只有 <code>error.type</code>（<code>not_found_error</code>），没有 <code>error.code</code>。自己解析错误时，两种格式都要兼容：先读 <code>error.code</code>，没有时再读 <code>error.type</code>。</p></callout>
+
+<h2 id="error-codes">错误码列表</h2>
+
+<h3 id="request-errors">请求错误（400、404、413）</h3>
+<table>
+<thead><tr><th>HTTP</th><th><code>error.code</code></th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>400</td><td>无（<code>null</code>）</td><td>请求体不是合法的 JSON，或缺少 <code>model</code>。<code>type</code> 为 <code>invalid_request_error</code>。</td></tr>
+<tr><td>400</td><td><code>invalid_request_parameter</code></td><td>参数不合规，<code>error.param</code> 指出字段：<code>service_tier</code> 不是省略、<code>auto</code> 或 <code>default</code>；GPT 系列的推理强度不在允许范围；<code>max_tokens</code>、<code>max_output_tokens</code>、<code>temperature</code>、<code>top_p</code> 不是非负数。见<a href="/api/docs/guides/conventions/#request-validation">请求参数校验</a>。</td></tr>
+<tr><td>400</td><td><code>unsupported_anthropic_content</code></td><td><code>/v1/messages</code> 的请求中有不支持的内容块（如 <code>document</code>、<code>thinking</code>）。见 <a href="/api/docs/guides/messages/#supported-content">Messages 指南</a>。</td></tr>
+<tr><td>400</td><td><code>image_input_unsupported</code></td><td>该模型只接受文本输入。去掉图片，或换用支持视觉的模型。</td></tr>
+<tr><td>400</td><td><code>context_too_long</code></td><td>部分按次计费的模型对单次请求的上下文另有上限，错误信息会给出上限和本次的估算值。缩短上下文后再试。</td></tr>
+<tr><td>400</td><td><code>invalid_content_length</code></td><td><code>Content-Length</code> 请求头的值无效。</td></tr>
+<tr><td>400</td><td><code>invalid_limit</code></td><td><code>GET /v1/balance</code> 的 <code>limit</code> 不是 0–100 的整数。</td></tr>
+<tr><td>404</td><td><code>model_not_found</code></td><td><code>model</code> 不在可用列表中。用 <code>GET /v1/models</code> 核对模型 ID，大小写与连字符必须完全一致。</td></tr>
+<tr><td>404</td><td>无（<code>null</code>）</td><td>端点不存在，例如 <code>/v1/embeddings</code>。</td></tr>
+<tr><td>413</td><td><code>payload_too_large</code></td><td>请求体超过 10 MB。缩短上下文或拆分请求。</td></tr>
+</tbody>
+</table>
+
+<h3 id="auth-errors">认证与权限（401、403）</h3>
+<table>
+<thead><tr><th>HTTP</th><th><code>error.code</code></th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>401</td><td><code>invalid_api_key</code></td><td>缺少密钥、格式错误、密钥不存在或已撤销。见<a href="/api/docs/guides/authentication/">认证与 API 密钥</a>。</td></tr>
+<tr><td>403</td><td><code>account_suspended</code></td><td>账户已被限制使用。如有疑问请<a href="/api/contact/">联系我们</a>。</td></tr>
+<tr><td>403</td><td><code>endpoint_disabled</code></td><td>该端点不对 API 开放（如 <code>/v1/images/generations</code>、<code>/v1/videos/generations</code>），仅网页版可用。</td></tr>
+<tr><td>403</td><td><code>model_ide_only</code></td><td>该模型只在 Cancri Code 桌面端可用，不对 API 开放。</td></tr>
+<tr><td>403</td><td><code>model_not_in_whitelist</code></td><td>这把密钥设置了模型白名单，所选模型不在其中。</td></tr>
+<tr><td>403</td><td><code>model_not_in_group</code></td><td>这把密钥限定了模型分组，所选模型不在该分组中。</td></tr>
+<tr><td>401 / 403</td><td><code>upstream_auth_error</code></td><td>该模型暂时不可用，与你的 API 密钥无关。换用其他模型。</td></tr>
+</tbody>
+</table>
+
+<h3 id="billing-errors">余额与计费（402）</h3>
+<table>
+<thead><tr><th>HTTP</th><th><code>error.code</code></th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>402</td><td><code>insufficient_balance</code></td><td>余额不足以支付本次请求的预估费用（团队密钥看团队余额）。不可重试，充值后再试。见<a href="/api/docs/guides/billing/#prededuction">预扣与结算</a>。</td></tr>
+<tr><td>402</td><td><code>model_not_priced</code></td><td>该模型尚未定价，暂不可调用。换用其他模型。</td></tr>
+</tbody>
+</table>
+
+<h3 id="rate-limit-errors">限额（429）</h3>
+<table>
+<thead><tr><th>HTTP</th><th><code>error.code</code></th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>超出 RPM 或 TPM，按 <code>Retry-After</code> 等待后重试。也用于 <code>GET /v1/balance</code> 超过每分钟 30 次。见<a href="/api/docs/guides/rate-limits/">速率限制</a>。</td></tr>
+<tr><td>429</td><td><code>request_too_large</code></td><td>单次请求的预占 token 超过本档 TPM 的 4 倍。不可重试，缩短上下文或调低 <code>max_tokens</code>。</td></tr>
+<tr><td>429</td><td><code>free_plan_exhausted</code></td><td>免费额度已用完，<code>error.resets_at</code> 给出重置时间。不可重试，见<a href="/api/docs/guides/free-tier/">免费额度</a>。</td></tr>
+<tr><td>429</td><td><code>key_token_quota_exhausted</code><br><code>key_request_quota_exhausted</code></td><td>这把密钥的累计 token 或累计请求数上限已用完。不可重试，改用其他密钥。</td></tr>
+<tr><td>429</td><td><code>upstream_rate_limit</code></td><td>所选模型暂时繁忙，与你的账户限额无关。稍后重试或换模型。</td></tr>
+<tr><td>429</td><td><code>auth_rate_limited</code></td><td>同一 IP 短时间内多次使用不存在的密钥。按 <code>Retry-After</code> 等待，并修正密钥配置。</td></tr>
+</tbody>
+</table>
+
+<h3 id="server-errors">服务与模型（5xx）</h3>
+<table>
+<thead><tr><th>HTTP</th><th><code>error.code</code></th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>随模型侧而定</td><td><code>upstream_error</code></td><td>模型侧返回了错误，状态码沿用模型侧的状态码，可能是 4xx 或 5xx。常见原因是模型暂时不可用，也可能是请求超出了该模型的限制（如上下文长度）。稍后重试，或换用其他模型。</td></tr>
+<tr><td>502</td><td><code>upstream_error</code></td><td>模型返回了无效的响应，本次不扣费。稍后重试。</td></tr>
+<tr><td>503</td><td><code>api_paused</code></td><td>API 维护中。<code>/v1/models</code> 仍可读取，推理接口暂停，响应带 <code>Retry-After: 86400</code>。</td></tr>
+<tr><td>503</td><td><code>maintenance_mode</code></td><td>系统维护中，所有 API 端点暂停服务，包括 <code>/v1/models</code>。</td></tr>
+<tr><td>503</td><td><code>service_unavailable</code></td><td>认证或余额服务暂时不可用，与你的密钥无关。稍后重试。</td></tr>
+<tr><td>503</td><td><code>quota_check_failed</code></td><td>计费服务暂时不可用，本次未扣费。稍后重试。</td></tr>
+<tr><td>503</td><td><code>model_group_unavailable</code></td><td>密钥限定了模型分组，但暂时无法读取分组信息。稍后重试。</td></tr>
+<tr><td>503</td><td><code>hyperdrive_quota_exhausted</code></td><td>服务暂时降级。按 <code>Retry-After</code> 等待后重试。</td></tr>
+<tr><td>504</td><td><code>upstream_error</code></td><td>模型在 180 秒内没有开始响应。非流式请求需要在这段时间内生成完毕，输出较长时改用流式输出，或调低 <code>max_tokens</code> 后重试。</td></tr>
+</tbody>
+</table>
+
+<h2 id="stream-errors">流式输出中的错误</h2>
+<p>流式响应开始后，HTTP 状态码已经是 200，之后出现的错误会以事件的形式出现在流里：</p>
+<table>
+<thead><tr><th>协议</th><th>错误的形式</th></tr></thead>
+<tbody>
+<tr><td>Chat Completions</td><td>流的末尾出现一个带 <code>error</code> 字段的 chunk，随后是 <code>data: [DONE]</code>。</td></tr>
+<tr><td>Responses</td><td>以 <code>response.failed</code> 结束，原因在 <code>response.error.code</code>；或以 <code>response.incomplete</code> 结束，原因在 <code>response.incomplete_details.reason</code>（如 <code>upstream_interrupted</code>、<code>upstream_truncated</code>）。</td></tr>
+<tr><td>Messages</td><td>收到 <code>error</code> 事件，原因在 <code>error.code</code>。</td></tr>
+</tbody>
+</table>
+<p>Chat Completions 流里常见的错误码：</p>
+<table>
+<thead><tr><th><code>error.code</code></th><th>含义</th><th>是否计费</th></tr></thead>
+<tbody>
+<tr><td><code>model_temporary_failure</code></td><td>模型暂时繁忙，没有生成有效内容。<code>error.retry_after_seconds</code> 给出建议的等待时间。</td><td>不计费，可以稍后重试或换模型</td></tr>
+<tr><td><code>upstream_stream_interrupted</code></td><td>模型侧连接在回复中途断开，回答不完整。</td><td>不计费</td></tr>
+<tr><td><code>stream_incomplete_billed</code></td><td>回答不完整，已按实际产生的 token 计费（<code>error.billed</code> 为 <code>true</code>）。</td><td>已计费；重试会产生一次新的计费请求</td></tr>
+</tbody>
+</table>
+<pre data-lang="text" data-title="Chat Completions 流内错误">data: {"id":"chatcmpl-...","object":"chat.completion.chunk","error":{"message":"该模型当前繁忙，请稍后或切换其他模型。","type":"api_error","code":"model_temporary_failure","retry_after_seconds":30}}
+
+data: [DONE]</pre>
+
+<h2 id="model-unavailable">模型暂时不可用</h2>
+<p>所选模型暂时繁忙或不可用时，返回 <code>upstream_rate_limit</code>、<code>upstream_auth_error</code> 或 <code>upstream_error</code>（包括超时的 <code>504</code>），流式时可能是 <code>model_temporary_failure</code>。</p>
+<ul>
+<li>这类错误与你的 API 密钥、余额和账户档位无关。</li>
+<li>模型不会因此从 <code>GET /v1/models</code> 中移除。</li>
+<li>按 <code>Retry-After</code> 退避后重试，或换用其他模型。见<a href="/api/docs/guides/production-best-practices/#fallback-models">准备备用模型</a>。</li>
+</ul>
+
+<h2 id="retries">重试</h2>
+<ul>
+<li>响应带 <code>Retry-After</code> 时，按其取值（秒）等待后重试。</li>
+<li>没有 <code>Retry-After</code> 的 429 与 5xx，使用指数退避，并加入随机抖动。</li>
+<li>不要重试不可重试的错误：<code>402 insufficient_balance</code>、<code>429 request_too_large</code>、<code>429 free_plan_exhausted</code>、<code>429 key_token_quota_exhausted</code>、<code>429 key_request_quota_exhausted</code>。它们的响应都带 <code>x-should-retry: false</code>，官方 OpenAI 与 Anthropic SDK 读到这个响应头就不会自动重试。</li>
+<li>其他 4xx 说明请求本身有问题，修正后再发。</li>
+</ul>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/production-best-practices/" title="生产最佳实践" icon="bolt">重试、超时与备用模型的完整做法。</card>
+<card href="/api/docs/guides/rate-limits/" title="速率限制" icon="cube">429 的来源与响应头。</card>
+<card href="/api/docs/faq/" title="常见问题" icon="bolt">接入时最常遇到的问题。</card>
+</cards>

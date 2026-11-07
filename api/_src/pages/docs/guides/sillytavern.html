@@ -1,0 +1,48 @@
+---
+title: SillyTavern
+description: 在 SillyTavern 中使用 Chat Completion 的自定义 OpenAI 兼容来源，连接 NexusVAI 的模型。
+tab: coding
+---
+<p>SillyTavern 支持自定义的 OpenAI 兼容端点。选择 Chat Completion 类型的 API 并填入 NexusVAI 的地址，就能在角色对话中使用 NexusVAI 的模型。</p>
+
+<h2 id="prerequisites">前提条件</h2>
+<ul>
+<li>已启动 SillyTavern，并能打开它的网页界面。</li>
+<li>一个 NexusVAI API 密钥，可以在<a href="/api/console/keys/">控制台</a>创建。</li>
+</ul>
+
+<h2 id="configure">配置 API 连接</h2>
+<ol>
+<li>在网页界面顶部点击 <strong>API 连接</strong>（插头图标）。</li>
+<li><strong>API</strong> 下拉菜单选择 <strong>Chat Completion</strong>。</li>
+<li><strong>Chat Completion Source</strong> 选择 <strong>Custom (OpenAI-compatible)</strong>，按下表填写。</li>
+<li>点击 <strong>Connect</strong>。</li>
+<li>连接成功后，在 <strong>Model</strong> 下拉列表中选择模型 ID，例如 <code>gpt-6-astra</code>、<code>claude-opus-5.5</code> 或 <code>deepseek-v4-flash</code>。</li>
+</ol>
+<table>
+<thead><tr><th>设置项</th><th>值</th></tr></thead>
+<tbody>
+<tr><td>Custom Endpoint</td><td><code>https://cn.nexusvai.xyz/v1</code></td></tr>
+<tr><td>API Key</td><td><code>cancri_sk_...</code></td></tr>
+</tbody>
+</table>
+<p>不同模型适合的 Prompt 格式不同，切换模型后可以相应调整 SillyTavern 的 Prompt 预设。</p>
+
+<h2 id="verify">验证配置</h2>
+<p>点击 <strong>Connect</strong> 后能看到模型列表，说明地址和 Key 有效；再发送一条消息并收到回复，说明所选模型可用。要核对这次调用的扣费，可以查询 <code>GET /v1/balance</code>，见<a href="/api/docs/guides/coding-tools/#verify">验证请求是否到达 NexusVAI</a>。</p>
+
+<h2 id="troubleshooting">排查问题</h2>
+<table>
+<thead><tr><th>现象</th><th>可能的原因</th><th>解决方法</th></tr></thead>
+<tbody>
+<tr><td>Connect 失败</td><td>Custom Endpoint 与上表不一致。</td><td>填 <code>https://cn.nexusvai.xyz/v1</code>。</td></tr>
+<tr><td>发送消息报 <code>401</code></td><td>Key 填错或已撤销。</td><td>在控制台确认 Key 状态。</td></tr>
+<tr><td><code>404 model_not_found</code></td><td>选择的模型不在 <code>GET /v1/models</code> 的列表中。</td><td>重新连接后从列表中选择。</td></tr>
+</tbody>
+</table>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/models/" title="浏览模型">比较各模型的能力与价格。</card>
+<card href="/api/docs/guides/client-faq/" title="客户端常见问题" icon="cube">模型 ID、缓存与维护相关的排查。</card>
+</cards>

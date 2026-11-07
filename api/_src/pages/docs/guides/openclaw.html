@@ -1,0 +1,93 @@
+---
+title: OpenClaw
+description: 在 openclaw.json 的 models.providers 中添加 NexusVAI，用 Anthropic Messages 或 Responses 协议调用模型。
+tab: coding
+---
+<p><a href="https://github.com/openclaw/openclaw">OpenClaw</a> 通过 <code>models.providers</code> 添加自定义 provider。你可以接入一个 Anthropic 兼容的 provider，也可以再加一个 OpenAI Responses 兼容的 provider，两者共用同一个 API 密钥。</p>
+
+<h2 id="prerequisites">前提条件</h2>
+<ul>
+<li>已安装 OpenClaw。</li>
+<li>一个 NexusVAI API 密钥，可以在<a href="/api/console/keys/">控制台</a>创建。</li>
+<li>要使用的模型 ID，取自 <code>GET /v1/models</code>。</li>
+</ul>
+
+<h2 id="anthropic-provider">添加 Anthropic 兼容的 provider</h2>
+<p>编辑 <code>~/.openclaw/openclaw.json</code> 或项目根目录的 <code>openclaw.json</code>。Anthropic 兼容的 provider 的 <code>baseUrl</code> <strong>不带</strong> <code>/v1</code>：</p>
+<pre data-lang="json" data-title="openclaw.json">{
+  "env": { "CANCRI_API_KEY": "cancri_sk_..." },
+  "agents": {
+    "defaults": {
+      "model": { "primary": "cancri/claude-opus-5.5" }
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "cancri": {
+        "baseUrl": "https://cn.nexusvai.xyz",
+        "apiKey": "${CANCRI_API_KEY}",
+        "api": "anthropic-messages",
+        "models": [
+          { "id": "claude-opus-5.5", "name": "Claude Opus 5.5" },
+          { "id": "claude-sonnet-5.5", "name": "Claude Sonnet 5.5" }
+        ]
+      }
+    }
+  }
+}</pre>
+<table>
+<thead><tr><th>字段</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>env.CANCRI_API_KEY</code></td><td>保存 API 密钥，供下面的 <code>${CANCRI_API_KEY}</code> 引用。</td></tr>
+<tr><td><code>models.mode</code></td><td><code>"merge"</code>：与已有的 provider 配置合并。</td></tr>
+<tr><td><code>providers.cancri.baseUrl</code></td><td><code>https://cn.nexusvai.xyz</code>，不带 <code>/v1</code>。</td></tr>
+<tr><td><code>providers.cancri.api</code></td><td><code>"anthropic-messages"</code>，使用 Anthropic Messages 协议。</td></tr>
+<tr><td><code>providers.cancri.models[].id</code></td><td>NexusVAI 模型 ID，<strong>不带</strong> provider 前缀。</td></tr>
+<tr><td><code>agents.defaults.model.primary</code></td><td>默认模型，<strong>要带</strong> provider id 前缀，例如 <code>cancri/claude-opus-5.5</code>。</td></tr>
+</tbody>
+</table>
+
+<h2 id="responses-provider">添加 OpenAI Responses 兼容的 provider</h2>
+<p>想通过 OpenAI 兼容协议调用 <code>gpt-6-astra</code> 等模型时，在同一个文件里再加一个 provider。这一个的 <code>baseUrl</code> 要带 <code>/v1</code>：</p>
+<pre data-lang="json" data-title="openclaw.json（追加）">{
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "cancri-oai": {
+        "baseUrl": "https://cn.nexusvai.xyz/v1",
+        "apiKey": "${CANCRI_API_KEY}",
+        "api": "openai-responses",
+        "models": [
+          { "id": "gpt-6-astra", "name": "GPT-6 Astra" },
+          { "id": "gpt-5.5", "name": "GPT-5.5" }
+        ]
+      }
+    }
+  }
+}</pre>
+<p>引用这里的模型时使用 <code>cancri-oai/</code> 前缀，例如 <code>cancri-oai/gpt-6-astra</code>。</p>
+
+<h2 id="verify">验证配置</h2>
+<p>启动 OpenClaw，用默认模型发送一条简短的消息。然后查询这个 Key 最近的调用：</p>
+<pre data-lang="bash" data-title="确认请求已到达 NexusVAI">curl "https://cn.nexusvai.xyz/v1/balance?limit=5" \
+  -H "Authorization: Bearer cancri_sk_..."</pre>
+<p><code>recent_usage.data</code> 里应该出现刚才的请求，<code>model</code> 不带 provider 前缀。字段说明见<a href="/api/docs/guides/coding-tools/#verify">验证请求是否到达 NexusVAI</a>。</p>
+
+<h2 id="troubleshooting">排查问题</h2>
+<table>
+<thead><tr><th>现象</th><th>可能的原因</th><th>解决方法</th></tr></thead>
+<tbody>
+<tr><td><code>404</code>，消息为 <code>Not found: /v1/v1/messages</code></td><td>Anthropic 兼容 provider 的 <code>baseUrl</code> 多了 <code>/v1</code>。</td><td>改成 <code>https://cn.nexusvai.xyz</code>。</td></tr>
+<tr><td><code>421 relay_path_not_supported</code></td><td>Responses provider 的 <code>baseUrl</code> 少了 <code>/v1</code>。</td><td>改成 <code>https://cn.nexusvai.xyz/v1</code>。</td></tr>
+<tr><td>模型不存在</td><td><code>models[].id</code> 带了 provider 前缀，或不在 <code>GET /v1/models</code> 中。</td><td><code>id</code> 只写模型 ID；只在 <code>primary</code> 等引用处加前缀。</td></tr>
+<tr><td><code>401</code></td><td><code>${CANCRI_API_KEY}</code> 没有取到值，或 Key 已撤销。</td><td>检查 <code>env</code> 中的变量名与引用是否一致。</td></tr>
+</tbody>
+</table>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/messages/" title="Messages 协议">了解 anthropic-messages provider 使用的端点。</card>
+<card href="/api/docs/guides/responses/" title="Responses 协议" icon="cube">了解 openai-responses provider 使用的端点。</card>
+<card href="/api/docs/guides/client-faq/" title="客户端常见问题">Base URL、模型 ID 与缓存相关的排查。</card>
+</cards>

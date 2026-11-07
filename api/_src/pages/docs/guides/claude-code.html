@@ -1,0 +1,70 @@
+---
+title: Claude Code
+description: 设置两个环境变量，让 Claude Code 通过 Anthropic Messages 协议使用 NexusVAI 的模型。
+tab: coding
+---
+<p>Claude Code 是 Anthropic 的终端编程智能体，使用 Anthropic Messages 协议。把 Base URL 和 API 密钥换成 NexusVAI 的，就能在 Claude Code 中调用 NexusVAI 的模型，包括非 Claude 系列的模型。</p>
+
+<h2 id="prerequisites">前提条件</h2>
+<ul>
+<li>已安装 Claude Code。</li>
+<li>一个 NexusVAI API 密钥，可以在<a href="/api/console/keys/">控制台</a>创建。</li>
+</ul>
+
+<h2 id="configure">设置环境变量</h2>
+<code-tabs title="配置并启动 Claude Code">
+<pre data-lang="bash" data-label="macOS / Linux">export ANTHROPIC_BASE_URL="https://cn.nexusvai.xyz"
+export ANTHROPIC_API_KEY="cancri_sk_..."
+claude</pre>
+<pre data-lang="powershell" data-label="Windows PowerShell">$env:ANTHROPIC_BASE_URL = "https://cn.nexusvai.xyz"
+$env:ANTHROPIC_API_KEY = "cancri_sk_..."
+claude</pre>
+</code-tabs>
+<callout type="warning"><p><strong>Base URL 不要带 <code>/v1</code>。</strong>Claude Code 会在 <code>ANTHROPIC_BASE_URL</code> 后面自动拼接 <code>/v1/messages</code> 和 <code>/v1/messages/count_tokens</code>。填成 <code>https://cn.nexusvai.xyz/v1</code> 会请求 <code>/v1/v1/messages</code>，返回 404。</p></callout>
+
+<h3 id="auth-header">选择认证方式</h3>
+<p>两个变量对应两种请求头，NexusVAI 都接受：</p>
+<table>
+<thead><tr><th>环境变量</th><th>发送的请求头</th><th>何时使用</th></tr></thead>
+<tbody>
+<tr><td><code>ANTHROPIC_API_KEY</code></td><td><code>x-api-key: cancri_sk_...</code></td><td>默认方式。</td></tr>
+<tr><td><code>ANTHROPIC_AUTH_TOKEN</code></td><td><code>Authorization: Bearer cancri_sk_...</code></td><td>你的环境要求使用 Bearer 认证时。</td></tr>
+</tbody>
+</table>
+<p>只设置其中一个。如果两个都设置了，请确保它们是同一个 Key。</p>
+
+<h2 id="how-it-works">启动后会发生什么</h2>
+<ul>
+<li>Claude Code 请求 <code>GET /v1/models</code>。请求带 <code>anthropic-version</code> 头，NexusVAI 会返回 Anthropic 格式的模型列表。</li>
+<li>它调用 <code>/v1/messages/count_tokens</code> 估算上下文长度。这个端点不计费，不需要额外配置。</li>
+<li>对话通过 <code>/v1/messages</code> 以流式输出返回。</li>
+</ul>
+
+<h2 id="choose-model">选择模型</h2>
+<p>模型 ID 必须在 <code>GET /v1/models</code> 的列表里，例如 <code>claude-opus-5.5</code>、<code>claude-sonnet-5.5</code>、<code>claude-haiku-5.5</code>。模型厂商带日期的原始版本号（例如 <code>claude-3-5-sonnet-20241022</code>）不可用。</p>
+<p>模型选择器里显示哪些模型，由 Claude Code 自己的过滤规则决定。<code>/v1/messages</code> 不限于 Claude 系列：<code>gpt-6-astra</code>、<code>deepseek-v4-flash</code> 等模型也能调用，前提是 Claude Code 允许你手动填写模型 ID。</p>
+
+<h2 id="verify">验证配置</h2>
+<p>在 Claude Code 中发送一条简短的消息，然后用同一个 Key 查询最近的调用：</p>
+<pre data-lang="bash" data-title="确认请求已到达 NexusVAI">curl "https://cn.nexusvai.xyz/v1/balance?limit=5" \
+  -H "x-api-key: $ANTHROPIC_API_KEY"</pre>
+<p><code>recent_usage.data</code> 里应该出现刚才的请求，<code>model</code> 为你选择的模型。字段说明见<a href="/api/docs/guides/coding-tools/#verify">验证请求是否到达 NexusVAI</a>。</p>
+
+<h2 id="troubleshooting">排查问题</h2>
+<table>
+<thead><tr><th>现象</th><th>可能的原因</th><th>解决方法</th></tr></thead>
+<tbody>
+<tr><td><code>404</code>，消息为 <code>Not found: /v1/v1/messages</code></td><td><code>ANTHROPIC_BASE_URL</code> 末尾多了 <code>/v1</code>。</td><td>改成 <code>https://cn.nexusvai.xyz</code>。</td></tr>
+<tr><td><code>401 invalid_api_key</code></td><td>Key 无效、已撤销，或没有在启动 Claude Code 的终端里设置。</td><td>检查环境变量，必要时在控制台重新创建 Key。</td></tr>
+<tr><td><code>404</code> <code>not_found_error</code>：<code>The model '…' does not exist.</code></td><td>模型 ID 不在 <code>GET /v1/models</code> 的列表里。</td><td>换成列表中的 id。</td></tr>
+<tr><td>模型选择器里找不到想要的模型</td><td>Claude Code 按自身规则过滤了列表。</td><td>手动填写模型 ID。</td></tr>
+<tr><td>请求里的 <code>cache_control</code> 没有效果</td><td>NexusVAI 不处理 <code>cache_control</code>，前缀缓存按实际命中自动计费。</td><td>见<a href="/api/docs/guides/client-faq/#prompt-caching">提示缓存</a>。</td></tr>
+</tbody>
+</table>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/messages/" title="Messages 协议">了解 /v1/messages 支持的字段和不支持的功能。</card>
+<card href="/api/docs/guides/cc-switch/" title="CC Switch" icon="cube">在 Claude Code、Codex 等工具之间切换 provider。</card>
+<card href="/api/docs/guides/client-faq/" title="客户端常见问题">缓存、维护和模型 ID 相关的排查。</card>
+</cards>

@@ -180,7 +180,7 @@ const articleData = {
                 '技术架构',
                 'NexusVAI 采用纯云端处理架构：前端通过 <code>chat.nexusvai.xyz</code>（Cloudflare Workers）接入，聊天推理网关（chat-gateway）与公开 API 网关（api-gateway）在边缘执行，流式 SSE 响应不经 Supabase 出站；认证、PostgreSQL 数据库、chat-history、user-memory 等仍由 Supabase 提供，其余路径由 Worker 透明反代。用户对话经网关转发至 60+ 上游线路，结果实时流式返回。客户端响应式设计，适配桌面、平板与移动设备。',
                 '未来展望',
-                'NexusVAI 当前为 Beta 阶段，我们将持续迭代优化。后续计划包括：接入更多 AI 模型、完善视频生成能力、增强 API 与项目协作等。开放 API 已上线，详见 <a href="chat/api_docs.html">API 文档</a>。我们致力于将 NexusVAI 打造为最便捷、最开放的 AI 聚合平台。',
+                'NexusVAI 当前为 Beta 阶段，我们将持续迭代优化。后续计划包括：接入更多 AI 模型、完善视频生成能力、增强 API 与项目协作等。开放 API 已上线，详见 <a href="/api/docs/">API 文档</a>。我们致力于将 NexusVAI 打造为最便捷、最开放的 AI 聚合平台。',
                 '立即体验：打开 NexusVAI 即刻开始与 AI 对话。一个入口，所有模型，统一体验。',
                 '—— NexusVAI 呈献'
             ]
@@ -253,7 +253,7 @@ const articleData = {
                 'Technical Architecture',
                 'NexusVAI is a pure cloud stack: the client hits <code>chat.nexusvai.xyz</code> (Cloudflare Workers) where chat-gateway and api-gateway run at the edge; streaming SSE bypasses Supabase egress. Auth, PostgreSQL, chat-history, and user-memory remain on Supabase, with other paths transparently proxied. Requests fan out to 60+ upstream routes and stream back in real time. Responsive UI for desktop, tablet, and mobile.',
                 'Future Outlook',
-                'NexusVAI is in Beta. Upcoming work includes more models, better video generation, and richer API/project collaboration. The OpenAI-compatible API is already live — see <a href="chat/api_docs.html">API docs</a>. We aim to be the most convenient open AI aggregation platform.',
+                'NexusVAI is in Beta. Upcoming work includes more models, better video generation, and richer API/project collaboration. The OpenAI-compatible API is already live — see <a href="/api/docs/">API docs</a>. We aim to be the most convenient open AI aggregation platform.',
                 'Try it now: Open NexusVAI and start talking to AI immediately. One entry point, all models, one unified experience.',
                 '— Presented by NexusVAI'
             ]

@@ -1,0 +1,71 @@
+---
+title: 计费与余额
+description: API 按用量从余额扣费：请求开始前按预估金额预扣，结束后按实际 usage 结算，多退少补。
+---
+<p>NexusVAI API 按用量计费。账户有余额就可以调用已定价的模型，每次调用从账户的 API 余额扣费；团队密钥从团队余额扣费，见<a href="/api/docs/guides/teams/">团队</a>。</p>
+
+<h2 id="pricing">按量计费</h2>
+<p>每个模型单独定价，价格见<a href="/api/docs/pricing/">价格</a>与<a href="/api/docs/models/">模型</a>页的模型卡片：</p>
+<ul>
+<li>多数模型按输入与输出 token 计费，单价以「元 / 百万 token」表示。</li>
+<li>命中缓存的输入 token 默认按输入单价的 1 折计算（Claude Opus 5.5 含 Thinking 为 3 折），见<a href="#prompt-caching">提示缓存</a>。</li>
+<li>部分能力按次计费，每次调用收取固定费用。</li>
+</ul>
+<p>扣费以响应中的 <code>usage</code> 为准，三种协议的计费规则相同。</p>
+
+<h2 id="prededuction">预扣与结算</h2>
+<ol>
+<li><strong>预扣。</strong>请求发给模型之前，按「预估输入 token × 输入单价 + 输出上限 × 输出单价」预扣（按次计费的模型预扣单次价格）。输出上限就是你传入的 <code>max_tokens</code>（Responses 为 <code>max_output_tokens</code>）；没传时按该模型的最大输出 token 数。</li>
+<li><strong>余额不足时拒绝。</strong>余额低于预估金额时返回 <code>402 insufficient_balance</code>，请求不会发给模型，也不扣费。这个错误带 <code>x-should-retry: false</code>，充值后再试。</li>
+<li><strong>结算。</strong>请求结束后按实际 <code>usage</code> 结算，多退少补。实际费用超过预扣、余额又不够补足时，差额记为欠费，通过 <a href="/api/docs/guides/usage/"><code>GET /v1/balance</code></a> 的 <code>debt</code> 字段查看。</li>
+</ol>
+<callout type="info"><p>余额较少时，给请求设置合理的 <code>max_tokens</code> 可以降低预扣金额，避免因为按模型最大输出预扣而收到 <code>402</code>。最终扣费只按实际用量计算，不受这个上限影响。</p></callout>
+
+<h2 id="what-gets-charged">哪些情况会扣费</h2>
+<table>
+<thead><tr><th>情况</th><th>是否扣费</th></tr></thead>
+<tbody>
+<tr><td>请求成功</td><td>按 <code>usage</code> 扣费</td></tr>
+<tr><td>返回 4xx 或 5xx 错误</td><td>不扣费，预扣金额全部退回</td></tr>
+<tr><td>流式输出中途被截断，流末尾收到 <code>stream_incomplete_billed</code></td><td>按已经产生的 token 扣费</td></tr>
+<tr><td>流式输出因模型侧故障中断，收到 <code>model_temporary_failure</code> 或 <code>upstream_stream_interrupted</code></td><td>不扣费</td></tr>
+<tr><td>请求已发给模型后，你主动断开连接（包括中途停止流式输出）</td><td>按已经产生的 token 扣费；还没有输出时只收输入部分</td></tr>
+<tr><td>请求发出后 2 秒内、模型还没开始响应时断开</td><td>不扣费</td></tr>
+</tbody>
+</table>
+<p>这样设计是因为模型收到请求后就开始消耗算力。需要取消时，尽量在请求刚发出时取消。</p>
+
+<h2 id="prompt-caching">提示缓存</h2>
+<p>支持缓存的模型会自动缓存请求的前缀。命中缓存（cache read）的输入 token 默认按输入单价的 1 折计费（Claude Opus 5.5 含 Thinking 为 3 折，各模型的缓存命中价见<a href="/api/docs/pricing/">价格</a>页），按每个请求的实际命中量结算，你不需要做任何配置。</p>
+<ul>
+<li><strong>命中条件。</strong>请求前缀必须完全一致、长度达到模型的最低要求，而且缓存只保留几分钟（Anthropic 模型默认约 5 分钟）。单次请求或前缀不断变化的请求不会命中。把固定不变的内容（系统提示、工具定义、长文档）放在前面、把变化的内容放在后面，更容易命中。</li>
+<li><strong><code>cache_control</code> 不生效。</strong>Messages 请求中的 <code>cache_control</code> 会被忽略，缓存由模型自动完成。</li>
+<li><strong>usage 不显示缓存命中。</strong>出于安全考虑，响应的 <code>usage</code> 不返回缓存命中的 token 数，按其他服务的字段格式检测缓存的第三方工具可能显示「无缓存」。缓存折扣已计入每次调用的扣费，可以用 <code>GET /v1/balance</code> 返回的 <code>cost</code> 或控制台的<a href="/api/console/usage/">用量</a>页核对。</li>
+</ul>
+
+<h2 id="free-and-unpriced">免费模型与未定价模型</h2>
+<ul>
+<li><strong>免费模型</strong>不扣余额，但计入每 24 小时 1 亿 token 的免费额度，并受速率限制约束。见<a href="/api/docs/guides/free-tier/">免费模型与免费额度</a>。</li>
+<li><strong>未定价的模型</strong>不可调用，返回 <code>402 model_not_priced</code>。请换用其他模型。</li>
+</ul>
+
+<h2 id="api-balance-and-plans">API 余额与套餐</h2>
+<ul>
+<li>API 调用只从 API 余额扣费。网页对话与 Cancri Code 的套餐额度不能用于 API。</li>
+<li>反过来，如果你订阅了套餐且当期套餐额度已用完，网页对话与 Cancri Code 超出的部分会按量从同一份余额扣除。</li>
+<li>团队密钥只从团队余额扣费，不会动用成员的个人余额。</li>
+</ul>
+
+<h2 id="top-up">充值</h2>
+<p>在控制台的<a href="/api/console/billing/">账单</a>页购买充值卡，兑换卡密后立即到账。充值后继续使用原来的密钥即可。</p>
+<p>累计充值达到门槛时，速率限制档位会自动提升，见<a href="/api/docs/guides/rate-limits/#tiers">速率限制</a>。代金券与赠送额度不计入累计充值。</p>
+
+<h2 id="check-balance">查看余额与扣费</h2>
+<p>调用 <a href="/api/docs/guides/usage/"><code>GET /v1/balance</code></a> 可以查询账户余额、欠费、当前密钥的限额，以及当前密钥最近的调用记录与每次扣费。也可以在控制台的<a href="/api/console/billing/">账单</a>页和<a href="/api/console/usage/">用量</a>页查看。</p>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/pricing/" title="价格" icon="cube">每个模型的输入、输出与按次价格。</card>
+<card href="/api/docs/guides/usage/" title="查询余额与用量" icon="bolt">用 <code>GET /v1/balance</code> 查看余额和最近的扣费。</card>
+<card href="/api/docs/guides/rate-limits/" title="速率限制" icon="bolt">累计充值如何决定 RPM 与 TPM。</card>
+</cards>

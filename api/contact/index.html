@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" /><script src="/js/clean-url.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; form-action 'self';" />
+  <title>联系我们 | NexusVAI API</title>
+  <meta name="description" content="向 NexusVAI 提交工单或反馈，我们会通过你的注册邮箱回复。注册即可创建 API Key。" />
+    <link rel="canonical" href="https://www.nexusvai.xyz/api/contact/" />
+    <meta property="og:title" content="联系我们 | NexusVAI API">
+    <meta property="og:description" content="向 NexusVAI 提交工单或反馈，我们会通过你的注册邮箱回复。注册即可创建 API Key。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.nexusvai.xyz/api/contact/">
+    <meta property="og:image" content="https://www.nexusvai.xyz/Logo/nexusvai-og.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="联系我们 | NexusVAI API">
+    <meta name="twitter:description" content="向 NexusVAI 提交工单或反馈，我们会通过你的注册邮箱回复。注册即可创建 API Key。">
+    <meta name="twitter:image" content="https://www.nexusvai.xyz/Logo/nexusvai-og.png">
+  <base href="/" />
+  <script>
+    (() => {
+      let theme = 'warm';
+      try { theme = localStorage.getItem('theme') || 'warm'; } catch (e) {}
+      if (theme === 'light') document.documentElement.classList.add('light-theme');
+      if (theme === 'warm') document.documentElement.classList.add('warm-theme');
+      if (theme === 'blue') document.documentElement.classList.add('blue-theme');
+      if (theme === 'dark') document.documentElement.classList.add('dark-theme');
+    })();
+  </script>
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <link rel="preconnect" href="https://chat.nexusvai.xyz" crossorigin />
+  <link rel="preconnect" href="https://cn.nexusvai.xyz" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="/css/variables.css" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <link rel="stylesheet" href="/css/mobile-menu.css" />
+  <link rel="stylesheet" href="/css/footer.css" />
+  <link rel="stylesheet" href="/css/inter-fonts.css" />
+  <link href="/fonts/gf/newsreader-notosanssc.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/display-fonts.css" />
+  <link rel="stylesheet" href="/chat/api/oai-home.css?v=20260830-menu-scale" />
+</head>
+<body class="cs-page" data-login-url="/chat/">
+<link rel="stylesheet" type="text/css" href="/chat/assets/p2m-loader.css" />
+<div id="p2m-loader" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="-80 -80 1184 1184" width="180" height="180" role="img" aria-label="N logo" overflow="visible" id="p2m-logo">
+    <g id="mark" fill="#111111" fill-rule="evenodd">
+      <path id="part-main" d="M760 252 L760 645 L372 330 L371 613 L262 722 L262 222 L422 222 L535 324 L695 460 L696 325 Z"/>
+      <path id="part-tr" d="M562 318 L562 222 L760 222 L672 313 L672 413 Z"/>
+      <path id="part-diag" d="M395 378 L758 671 L760 735 L641 735 L397 551 L394 548 Z"/>
+      <path id="part-bl" d="M395 578 L472 638 L472 735 L287 736 L395 627 Z"/>
+    </g>
+  </svg>
+</div>
+<script src="/chat/assets/p2m-loader.js" defer></script>
+
+  <main class="api-home">
+    <div class="cs-wrap">
+      <!-- 顶部渐变背景图（对标 OpenAI form-bg，全宽，延伸到导航栏后方） -->
+      <div class="cs-hero-bg" aria-hidden="true"></div>
+
+      <div class="cs-container">
+      <!-- HERO：标题 + 副标题 -->
+      <div class="cs-head">
+        <h1 class="cs-head__title">联系我们</h1>
+        <p class="cs-head__sub">提交工单或反馈，我们会通过你的注册邮箱回复。需要 API？现在无需申请，<a href="/api/console/keys/">直接创建 Key</a>。</p>
+      </div>
+
+      <!-- 两栏：左功能 / 右表单 -->
+      <div class="cs-cols">
+        <!-- 左栏：功能 + Trusted by -->
+        <aside class="cs-col-left">
+          <div>
+            <p class="cs-features-label">说明</p>
+            <ul class="cs-features">
+              <li class="cs-feature">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 20 20"><path stroke="currentColor" stroke-linecap="round" stroke-width="1.531" d="M9.243 4.044h-.46c-1.714 0-2.571 0-3.226.333a3.06 3.06 0 0 0-1.339 1.339c-.333.654-.333 1.512-.333 3.227v2.45c0 1.714 0 2.571.333 3.226a3.06 3.06 0 0 0 1.339 1.338c.655.334 1.512.334 3.227.334h2.45c1.714 0 2.572 0 3.226-.334a3.06 3.06 0 0 0 1.34-1.337c.333-.655.333-1.512.333-3.227v-.46"></path><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.531" d="m11.112 11.36 4.636-4.637a1.624 1.624 0 0 0-2.296-2.297L8.815 9.063a3.06 3.06 0 0 0-.866 1.732l-.238 1.669 1.669-.239a3.06 3.06 0 0 0 1.732-.866"></path></svg>
+                <p>注册即可直接创建 API Key，无需审核</p>
+              </li>
+              <li class="cs-feature">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 13 12"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="m8.215 10.25-1.25-2m-2.25 2 1.25-2M7.71 2.716 2.773 4.769A1 1 0 0 0 2.205 6l.19.586a1 1 0 0 0 1.223.653L5.18 6.8m2.429-.683 1.104-.31m1.108.164.476-.154a.75.75 0 0 0 .481-.945l-.927-2.854a.75.75 0 0 0-.945-.481l-.475.154a1 1 0 0 0-.643 1.26l.773 2.378a1 1 0 0 0 1.26.642"></path><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M6.465 8.25a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5"></path></svg>
+                <p>付费订阅仍走人工审批，请附上订单号</p>
+              </li>
+              <li class="cs-feature">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 22 18"><path fill="currentColor" d="M6.821 2.571a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5m-4.25 2.25a4.25 4.25 0 1 1 8.5 0 4.25 4.25 0 0 1-8.5 0M15.643 3.5a1.786 1.786 0 1 0 0 3.571 1.786 1.786 0 0 0 0-3.571m-3.786 1.786a3.786 3.786 0 1 1 7.572 0 3.786 3.786 0 0 1-7.572 0m-8.202 7.711c-.82.73-1.405 1.846-1.405 3.432a1 1 0 1 1-2 0c0-2.129.808-3.799 2.077-4.927 1.25-1.11 2.889-1.645 4.494-1.645 1.606 0 3.245.534 4.495 1.645 1.269 1.128 2.077 2.798 2.077 4.927a1 1 0 1 1-2 0c0-1.586-.585-2.702-1.405-3.432-.84-.746-1.987-1.14-3.167-1.14s-2.326.394-3.166 1.14m14.547-.557c-.918-.58-2.132-.735-3.216-.43a1 1 0 0 1-.543-1.924c1.593-.45 3.397-.24 4.827.663 1.468.928 2.48 2.55 2.48 4.751a1 1 0 1 1-2 0c0-1.522-.667-2.503-1.548-3.06"></path></svg>
+                <p>账号被封请走申诉入口，不要在此重复提单</p>
+              </li>
+              <li class="cs-feature">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M8.75 17.25a2 2 0 1 0-4 0 2 2 0 0 0 4 0m10.5 0a2 2 0 1 0-4 0 2 2 0 0 0 4 0M8.75 6.75a2 2 0 1 0-4 0 2 2 0 0 0 4 0m10.5 0a2 2 0 1 0-4 0 2 2 0 0 0 4 0m2 10.5a4 4 0 1 1-8 0 4 4 0 0 1 8 0m-10.5-10.5a4 4 0 1 1-8 0 4 4 0 0 1 8 0m10.5 0a4 4 0 1 1-6.032 3.445l-5.023 5.023a4 4 0 1 1-1.414-1.414l5.023-5.023A4 4 0 1 1 21.25 6.75"></path></svg>
+                <p>一般 1–2 个工作日内回复，同时最多 3 张未处理工单</p>
+              </li>
+            </ul>
+          </div>
+
+          <div class="cs-trusted">
+            <p class="cs-trusted__label">接入数十个企业级的 AI，例如</p>
+            <div class="cs-trusted__logos trusted-logos trusted-logos--apply" id="cs-trusted-logos"></div>
+          </div>
+        </aside>
+
+        <!-- 右栏：表单区 -->
+        <div class="cs-col-right">
+          <div id="loading" class="cs-form-skeleton" aria-busy="true" aria-label="正在加载表单">
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--half">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field"></span>
+            </div>
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--half">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field"></span>
+            </div>
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--half">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field"></span>
+            </div>
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--half">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field"></span>
+            </div>
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--half">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field"></span>
+            </div>
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--half">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field"></span>
+            </div>
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--full">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field"></span>
+            </div>
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--full">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field cs-form-skeleton__field--tall"></span>
+            </div>
+            <span class="cs-form-skeleton__block cs-form-skeleton__btn"></span>
+          </div>
+
+          <!-- 已登录：申请区 -->
+          <div id="apply-section" style="display:none">
+            <div id="existing-status" style="display:none"></div>
+
+            <form id="apply-form" class="cs-form" onsubmit="return false">
+              <div class="cs-field cs-field--half">
+                <label class="cs-label" for="cs-interest">工单类型&nbsp;<span class="req">*</span></label>
+                <div class="cs-select-wrap">
+                  <select id="cs-interest" class="cs-select" required>
+                    <option value="" disabled selected>从下拉列表中选择一项。</option>
+                    <option value="账号问题">账号问题</option>
+                    <option value="计费与订单">计费与订单</option>
+                    <option value="API 使用">API 使用</option>
+                    <option value="模型效果">模型效果</option>
+                    <option value="Bug 反馈">Bug 反馈</option>
+                    <option value="建议与其他">建议与其他</option>
+                  </select>
+                  <svg class="cs-select-chevron" xmlns="http://www.w3.org/2000/svg" width="10" fill="none" viewBox="0 0 10 16"><path fill="currentColor" d="M.21 5.352a.714.714 0 0 1 1.01 0L5 9.132l3.78-3.78a.714.714 0 0 1 1.01 1.01l-4.285 4.286a.714.714 0 0 1-1.01 0L.209 6.362a.714.714 0 0 1 0-1.01"></path></svg>
+                </div>
+              </div>
+
+              <div class="cs-field cs-field--half">
+                <label class="cs-label" for="email">回复邮箱（注册邮箱）</label>
+                <input id="email" class="cs-input" type="email" autocomplete="email" disabled />
+              </div>
+
+              <div class="cs-field">
+                <label class="cs-label" for="cs-order">相关订单号（选填，付费订阅请填）</label>
+                <input id="cs-order" class="cs-input" type="text" autocomplete="off" />
+              </div>
+
+              <div class="cs-field">
+                <label class="cs-label" for="cs-need">问题描述&nbsp;<span class="req">*</span></label>
+                <textarea id="cs-need" class="cs-textarea" placeholder="请尽量写清楚：你做了什么、期望什么、实际发生什么，有报错请粘贴原文。"></textarea>
+              </div>
+
+              <button id="submit-btn" type="button" class="cs-btn">提交</button>
+              <div id="msg" class="cs-msg"></div>
+            </form>
+
+            <p class="cs-help">如有其他问题，请访问我们的<a href="/chat/">帮助中心</a>。</p>
+
+            <div id="key-section" class="cs-state" style="display:none;margin-top:24px">
+              <button id="manage-keys-btn" class="cs-btn">前往控制台 · API 密钥</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div><!-- /.cs-container -->
+    </div>
+  </main>
+
+  <div data-page-footer></div>
+
+  <script src="/js/components.js?v=20261001-discord" defer></script>
+  <script src="/js/i18n.js?v=2026-09-28-api-nav" defer></script>
+  <script src="/js/theme.js" defer></script>
+  <script src="/js/main.js?v=20261001-discord" defer></script>
+  <script src="/js/menu.js?v=2026-09-28-api-nav" defer></script>
+  <script src="/js/vendor/supabase-js-2.46.1.js"></script>
+  <script src="/chat/cancri_config.js?v=2026-05-13e"></script>
+  <script src="/chat/api/oai-trusted-logos.js?v=20260817-logos-cap2" defer></script>
+  <script src="/chat/api/oai-apply.js?v=20261107-apiroot" defer></script>
+  <script>document.addEventListener('DOMContentLoaded', function () { if (window.injectComponents) injectComponents({}); });
+  window.addEventListener('nexus:components-injected', function () {
+    if (window.initMegaMenu) window.initMegaMenu();
+    if (window.initMobileMenu) window.initMobileMenu();
+    if (window.initActiveNavItem) window.initActiveNavItem();
+  });
+  </script>
+</body>
+</html>

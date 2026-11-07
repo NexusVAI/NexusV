@@ -1,0 +1,160 @@
+---
+title: 计算输入 token 数
+fullTitle: 计算输入 token 数（count_tokens）| NexusVAI Developers
+description: 估算一个 Anthropic Messages 请求的输入 token 数。不计费，Claude Code 会自动调用。
+layout: wide
+tab: reference
+transform: true
+css: /api/assets/oai/primitives.css, /api/assets/reference.css
+js: /api/assets/reference.js
+---
+<div class="ref-root">
+<div class="ref-renderer">
+
+<div class="stl-page-nav-container">
+<nav aria-label="面包屑" class="_breadcrumbs_8beoj_1"><div class="_item_8beoj_9"><a class="_link_8beoj_15" href="/api/reference/">API 参考</a></div><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="_separator_8beoj_28"><path fill-rule="evenodd" d="M8.293 4.293a1 1 0 0 1 1.414 0l7 7a1 1 0 0 1 0 1.414l-7 7a1 1 0 0 1-1.414-1.414L14.586 12 8.293 5.707a1 1 0 0 1 0-1.414Z" clip-rule="evenodd"></path></svg><div class="_item_8beoj_9"><a class="_link_8beoj_15" href="/api/reference/messages/">Messages</a></div></nav>
+<button type="button" class="page-copy-action" data-page-copy-action="" data-astro-cid-zl22b5wc=""><span class="page-copy-action__icon page-copy-action__icon--copy" aria-hidden="true" data-astro-cid-zl22b5wc=""><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2V4Zm2 2h4a2 2 0 0 1 2 2v6h2V4h-8v2ZM6 8v12h8V8H6Z" clip-rule="evenodd"></path></svg></span><span class="page-copy-action__icon page-copy-action__icon--check" aria-hidden="true" data-astro-cid-zl22b5wc=""><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M18.063 5.674a1 1 0 0 1 .263 1.39l-7.5 11a1 1 0 0 1-1.533.143l-4.5-4.5a1 1 0 1 1 1.414-1.414l3.647 3.647 6.82-10.003a1 1 0 0 1 1.39-.263Z" clip-rule="evenodd"></path></svg></span><span data-page-copy-label="" data-astro-cid-zl22b5wc="">复制页面</span></button>
+</div>
+
+<div class="stldocs-method _method_1btwc_3 stldocs-method-double-pane">
+<div class="stldocs-method-header _header_1yhgz_1 _pageHeader_1yhgz_20">
+<h1 class="stldocs-method-title text-emphasis heading-2xl">计算输入 token 数</h1>
+<div class="stldocs-method-route _route_1yhgz_28"><div class="_Badge_10t5o_1 not-content font-mono shrink-0" data-color="info" data-size="sm" data-variant="soft"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.243 6.757a1 1 0 0 1 1 1v7.072a1 1 0 0 1-2 0v-4.657L8.464 16.95a1 1 0 0 1-1.414-1.414l6.778-6.779H9.172a1 1 0 0 1 0-2h7.07Z" clip-rule="evenodd"></path></svg><span>POST</span></div><span class="stldocs-method-route-endpoint _endpoint_1yhgz_35">/v1/messages/count_tokens</span></div>
+</div>
+
+<div class="stldocs-method-body _body_1btwc_10" id="mainContent">
+<div class="stldocs-method-content-column _contentColumn_1btwc_16">
+
+<div class="stldocs-method-description _description_1btwc_20"><div class="ref-prose">
+<p>估算一个 <a href="/api/reference/messages/">Messages</a> 请求会消耗多少输入 token。Claude Code 在发送消息前会自动调用它来管理上下文长度，你不需要手动配置。</p>
+<p>结果由网关在本地估算，不请求模型，所以与实际计费的 <code>input_tokens</code> 可能有出入，并且会略微偏大。调用不计费，也不计入 RPM 与 TPM。</p>
+</div></div>
+
+<div class="stldocs-method-info _info_1btwc_39">
+
+<div class="_section_1btwc_47" id="body">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>请求体</span></h5>
+<p class="ref-section-lead">与 <a href="/api/reference/messages/#body">Messages 请求体</a>相同，只有下面的字段参与估算。</p>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="body"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-model">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">model</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>不参与估算，也不校验，可以照常传入。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-messages">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">messages</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>统计 <code>text</code>、<code>tool_use</code>（名称与输入）、<code>tool_result</code> 中的文本。每张 <code>image</code> 按 250 个 token 计，每个 <code>document</code> 按 2,000 个字符计，每条消息另加 4 个 token。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-system">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">system</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string or array</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>系统提示中的文本。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-tools">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">tools</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>工具的 <code>name</code>、<code>description</code> 与 <code>input_schema</code>，每个工具另加 8 个 token。</p></div>
+</div></div>
+</div></div>
+<p class="ref-section-foot">文本按约 3.5 个字符折合 1 个 token 计算。请求体最大 10 MB。</p>
+</div>
+
+<div class="_section_1btwc_47" id="returns">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>返回</span></h5>
+<div class="stldocs-method-returns _properties_1btwc_61" data-stldocs-property-group="returns"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-input_tokens">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">input_tokens</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">integer</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>估算的输入 token 数，最小为 1。</p></div>
+</div></div>
+</div></div>
+</div>
+
+<div class="_section_1btwc_47" id="errors">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>错误</span></h5>
+<p class="ref-section-lead">错误使用 Anthropic 格式，只有 <code>error.type</code>，不含 <code>code</code>。</p>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="errors"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-invalid_request_error">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">invalid_request_error</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">400</span><span class="stldocs-text-punctuation"> / </span><span class="stldocs-literal-numeric">413</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>请求体不是合法的 JSON，<code>Content-Length</code> 无效，或请求体超过 10 MB（413）。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-authentication_error">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">authentication_error</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">401</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>密钥缺失或无效。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-permission_error">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">permission_error</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">403</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>账户已被限制使用。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-rate_limit_error">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">rate_limit_error</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">429</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>每个密钥每分钟最多调用 600 次，超出后带 <code>Retry-After: 60</code>。同一网络多次使用无效密钥时也会返回 429。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-api_error">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">api_error</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">503</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>认证服务暂时不可用，可以重试。</p></div>
+</div></div>
+</div></div>
+</div>
+
+</div>
+</div>
+
+<div class="stldocs-method-example _example_1btwc_28 not-content">
+<div class="stldocs-snippet">
+<div class="ref-snippet-head" data-method="POST">
+<code-tabs title="计算输入 token 数">
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/messages/count_tokens \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: $CANCRI_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{
+    "model": "claude-sonnet-5.5",
+    "system": "你是一个简洁的助手。",
+    "messages": [{"role": "user", "content": "用一句话解释什么是 RLS。"}]
+  }'</pre>
+<pre data-lang="python" data-label="Python">import os
+from anthropic import Anthropic
+
+client = Anthropic(
+    base_url="https://cn.nexusvai.xyz",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+
+result = client.messages.count_tokens(
+    model="claude-sonnet-5.5",
+    system="你是一个简洁的助手。",
+    messages=[{"role": "user", "content": "用一句话解释什么是 RLS。"}],
+)
+print(result.input_tokens)</pre>
+<pre data-lang="javascript" data-label="Node.js">import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  baseURL: "https://cn.nexusvai.xyz",
+  apiKey: process.env.CANCRI_API_KEY,
+});
+
+const result = await client.messages.countTokens({
+  model: "claude-sonnet-5.5",
+  system: "你是一个简洁的助手。",
+  messages: [{ role: "user", content: "用一句话解释什么是 RLS。" }],
+});
+console.log(result.input_tokens);</pre>
+</code-tabs>
+</div>
+<div class="ref-response">
+<pre data-lang="json" data-title="响应示例">{
+  "input_tokens": 11
+}</pre>
+</div>
+</div>
+</div>
+
+<div class="stldocs-method-response-column _responses_1btwc_72">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>返回示例</span></h5>
+<pre data-lang="json" data-title="响应示例">{
+  "input_tokens": 11
+}</pre>
+</div>
+
+</div>
+</div>
+
+</div>
+</div>

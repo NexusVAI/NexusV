@@ -381,7 +381,7 @@
             ["汽游", "https://moddown.com/"],
             ["知乎", "https://www.zhihu.com/"],
         ], ""],
-        ["资源", [["NexusV", "https://www.nexusvai.xyz/"], ["NexusVAI", "https://www.nexusvai.xyz/chat/api/"]], ""],
+        ["资源", [["NexusV", "https://www.nexusvai.xyz/"], ["NexusVAI", "https://www.nexusvai.xyz/api/"]], ""],
     ];
 
     function findLeafByText(root, pattern) {

@@ -1,0 +1,533 @@
+---
+title: 创建消息
+fullTitle: 创建消息（Anthropic Messages）| NexusVAI Developers
+description: 兼容 Anthropic Messages 协议的文本生成端点，适用于 Claude Code、Anthropic SDK 等客户端。model 不限于 Claude 系列。
+layout: wide
+tab: reference
+transform: true
+css: /api/assets/oai/primitives.css, /api/assets/reference.css
+js: /api/assets/reference.js
+---
+<div class="ref-root">
+<div class="ref-renderer">
+
+<div class="stl-page-nav-container">
+<nav aria-label="面包屑" class="_breadcrumbs_8beoj_1"><div class="_item_8beoj_9"><a class="_link_8beoj_15" href="/api/reference/">API 参考</a></div><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="_separator_8beoj_28"><path fill-rule="evenodd" d="M8.293 4.293a1 1 0 0 1 1.414 0l7 7a1 1 0 0 1 0 1.414l-7 7a1 1 0 0 1-1.414-1.414L14.586 12 8.293 5.707a1 1 0 0 1 0-1.414Z" clip-rule="evenodd"></path></svg><div class="_item_8beoj_9"><span class="_label_8beoj_16">文本生成</span></div></nav>
+<button type="button" class="page-copy-action" data-page-copy-action="" data-astro-cid-zl22b5wc=""><span class="page-copy-action__icon page-copy-action__icon--copy" aria-hidden="true" data-astro-cid-zl22b5wc=""><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2V4Zm2 2h4a2 2 0 0 1 2 2v6h2V4h-8v2ZM6 8v12h8V8H6Z" clip-rule="evenodd"></path></svg></span><span class="page-copy-action__icon page-copy-action__icon--check" aria-hidden="true" data-astro-cid-zl22b5wc=""><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M18.063 5.674a1 1 0 0 1 .263 1.39l-7.5 11a1 1 0 0 1-1.533.143l-4.5-4.5a1 1 0 1 1 1.414-1.414l3.647 3.647 6.82-10.003a1 1 0 0 1 1.39-.263Z" clip-rule="evenodd"></path></svg></span><span data-page-copy-label="" data-astro-cid-zl22b5wc="">复制页面</span></button>
+</div>
+
+<div class="stldocs-method _method_1btwc_3 stldocs-method-double-pane">
+<div class="stldocs-method-header _header_1yhgz_1 _pageHeader_1yhgz_20">
+<h1 class="stldocs-method-title text-emphasis heading-2xl">创建消息</h1>
+<div class="stldocs-method-route _route_1yhgz_28"><div class="_Badge_10t5o_1 not-content font-mono shrink-0" data-color="info" data-size="sm" data-variant="soft"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.243 6.757a1 1 0 0 1 1 1v7.072a1 1 0 0 1-2 0v-4.657L8.464 16.95a1 1 0 0 1-1.414-1.414l6.778-6.779H9.172a1 1 0 0 1 0-2h7.07Z" clip-rule="evenodd"></path></svg><span>POST</span></div><span class="stldocs-method-route-endpoint _endpoint_1yhgz_35">/v1/messages</span></div>
+</div>
+
+<div class="stldocs-method-body _body_1btwc_10" id="mainContent">
+<div class="stldocs-method-content-column _contentColumn_1btwc_16">
+
+<div class="stldocs-method-description _description_1btwc_20"><div class="ref-prose">
+<p>根据对话生成下一条助手消息。请求与响应遵循 Anthropic Messages 协议，Claude Code、官方 Anthropic SDK 等客户端把 Base URL 设为 <code>https://cn.nexusvai.xyz</code>（不带 <code>/v1</code>）即可使用。<code>model</code> 不限于 Claude 系列，<code>GET /v1/models</code> 中的模型都可以调用。用法见 <a href="/api/docs/guides/messages/">Messages 指南</a>。</p>
+<p>网关会把请求转换成 Chat Completions 发给模型，再把结果转换回 Anthropic 格式，所以只转发下面列出的字段。请求中的内容块只支持 <code>text</code>、<code>image</code>、<code>tool_use</code> 与 <code>tool_result</code>，其他类型返回 <code>400 unsupported_anthropic_content</code>，不会被悄悄丢弃。</p>
+</div></div>
+
+<div class="stldocs-method-info _info_1btwc_39">
+
+<div class="_section_1btwc_47" id="headers">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>请求头</span></h5>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="headers"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="header-x-api-key">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">x-api-key</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>你的 API 密钥 <code>cancri_sk_…</code>。也可以改用 <code>Authorization: Bearer cancri_sk_…</code>（Anthropic SDK 的 <code>authToken</code> 或 Claude Code 的 <code>ANTHROPIC_AUTH_TOKEN</code>）。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="header-anthropic-version">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">anthropic-version</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>可以照常发送（例如 <code>2023-06-01</code>），网关不校验它的取值。<code>anthropic-beta</code> 同样不会改变网关行为。</p></div>
+</div></div>
+</div></div>
+</div>
+
+<div class="_section_1btwc_47" id="body">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>请求体</span><button type="button" class="_Button_6dmow_1 ml-auto appearance-none border-0 bg-transparent" data-color="secondary" data-variant="ghost" data-size="sm" aria-expanded="false" data-reference-property-toggle="body"><span class="_ButtonInner_6dmow_4"><span data-reference-expand-label="true"><span class="inline-flex items-center gap-1"><span>展开</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0V8h-3a1 1 0 0 1-1-1Zm-5 5a1 1 0 0 1 1 1v3h3a1 1 0 1 1 0 2H7a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1Z" clip-rule="evenodd"></path></svg></span></span><span data-reference-collapse-label="true" hidden=""><span class="inline-flex items-center gap-1"><span>收起</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 14a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-3H6a1 1 0 0 1-1-1Zm9-9a1 1 0 0 1 1 1v3h3a1 1 0 1 1 0 2h-4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"></path></svg></span></span></span></button></h5>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="body"><div class="stldocs-properties _properties_mjoyi_119">
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-model">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">model</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>要使用的模型 ID，取值见 <a href="/api/reference/models/">GET /v1/models</a>。模型厂商的原始版本号（如 <code>claude-3-5-sonnet-20241022</code>）不可用。不存在时返回 <code>404</code>（<code>not_found_error</code>）。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-max_tokens">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">max_tokens</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">integer</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>本次最多生成的 token 数，必须是非负数。Anthropic 协议要求必填，官方 SDK 也会校验；网关在缺省时按模型目录的输出上限补上，不会因此拒绝请求。这个值也用于预占本次请求的 TPM。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4">
+<details class="stldocs-expander _disclosure_mjoyi_138">
+<summary class="stldocs-expander-summary _summary_mjoyi_12"><span class="stldocs-expander-summary-icon _icon_mjoyi_143" aria-hidden="true"></span><div class="stldocs-expander-summary-content _summaryContent_mjoyi_12"><div class="stldocs-property-info _info_mjoyi_16" id="body-messages">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">messages</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>对话历史，<code>user</code> 与 <code>assistant</code> 交替出现。</p></div>
+</div></div></summary>
+<div class="stldocs-expander-content _disclosureContent_mjoyi_189"><div class="stldocs-property-children _children_mjoyi_192"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-messages-role">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">role</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">"user"</span><span class="stldocs-text-punctuation"> or </span><span class="stldocs-literal-string">"assistant"</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4">
+<details class="stldocs-expander _disclosure_mjoyi_138">
+<summary class="stldocs-expander-summary _summary_mjoyi_12"><span class="stldocs-expander-summary-icon _icon_mjoyi_143" aria-hidden="true"></span><div class="stldocs-expander-summary-content _summaryContent_mjoyi_12"><div class="stldocs-property-info _info_mjoyi_16" id="body-messages-content">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">content</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string or array</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>字符串，或内容块数组。内容块上的 <code>cache_control</code> 不生效。</p></div>
+</div></div></summary>
+<div class="stldocs-expander-content _disclosureContent_mjoyi_189"><div class="stldocs-property-children _children_mjoyi_192">
+<div class="stldocs-property-annotation _annotation_mjoyi_80">支持以下内容块：</div>
+<div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-content-text">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">text</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>{"type": "text", "text": "…"}</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-content-image">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">image</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>仅用户消息。<code>source</code> 为 <code>{"type": "base64", "media_type": "image/png", "data": "…"}</code> 或 <code>{"type": "url", "url": "…"}</code>，需要模型支持视觉输入。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-content-tool_use">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">tool_use</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>仅助手消息。模型此前发起的工具调用：<code>id</code>、<code>name</code>、<code>input</code>，按上一轮响应原样回传。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-content-tool_result">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">tool_result</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>仅用户消息。工具的执行结果：<code>tool_use_id</code> 与 <code>content</code>（字符串或 <code>text</code> 块数组；不支持图片）。</p></div>
+</div></div>
+</div>
+<div class="stldocs-property-annotation _annotation_mjoyi_80">PDF 等 <code>document</code> 块、<code>thinking</code> / <code>redacted_thinking</code> 块以及其他类型会返回 <code>400 unsupported_anthropic_content</code>。</div>
+</div></div>
+</details>
+</div>
+</div></div></div>
+</details>
+</div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-system">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">system</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string or array</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>系统提示：字符串，或 <code>text</code> 块组成的数组（其他块类型返回 <code>400</code>）。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-stream">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">stream</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">boolean</span></span><span class="ref-flag" data-flag="optional">可选</span><span class="ref-default">默认 false</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>设为 <code>true</code> 时返回 Anthropic 流式事件，见<a href="#streaming">流式事件</a>。Claude Code 默认使用流式输出。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-temperature">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">temperature</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">number</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>采样温度，必须是非负数。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-top_p">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">top_p</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">number</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>核采样阈值，必须是非负数。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-stop_sequences">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">stop_sequences</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>停止序列。命中时 <code>stop_reason</code> 为 <code>end_turn</code>，<code>stop_sequence</code> 始终为 <code>null</code>。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4">
+<details class="stldocs-expander _disclosure_mjoyi_138">
+<summary class="stldocs-expander-summary _summary_mjoyi_12"><span class="stldocs-expander-summary-icon _icon_mjoyi_143" aria-hidden="true"></span><div class="stldocs-expander-summary-content _summaryContent_mjoyi_12"><div class="stldocs-property-info _info_mjoyi_16" id="body-tools">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">tools</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>自定义工具，调用结果通过 <code>tool_use</code> / <code>tool_result</code> 往返。不支持 <code>web_search</code>、代码执行等 Anthropic 服务端工具。</p></div>
+</div></div></summary>
+<div class="stldocs-expander-content _disclosureContent_mjoyi_189"><div class="stldocs-property-children _children_mjoyi_192"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-tools-name">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">name</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>工具名。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-tools-description">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">description</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>工具用途。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-tools-input_schema">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">input_schema</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>描述工具输入的 JSON Schema。省略时按空对象处理。</p></div>
+</div></div>
+</div></div></div>
+</details>
+</div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-tool_choice">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">tool_choice</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>{"type": "auto"}</code>、<code>{"type": "any"}</code>（必须调用某个工具）、<code>{"type": "none"}</code>，或 <code>{"type": "tool", "name": "…"}</code>。<code>disable_parallel_tool_use</code> 会被忽略。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-thinking">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">thinking</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>{"type": "enabled", "budget_tokens": N}</code> 会按预算换算成推理强度：低于 4,096 为 <code>low</code>，低于 16,384 为 <code>medium</code>，低于 32,768 为 <code>high</code>，更高为 <code>max</code>。只对已验证支持推理强度的模型生效。思考内容以普通 <code>text</code> 块返回，不返回 <code>thinking</code> 块与签名。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-output_config">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">output_config</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>output_config.effort</code>（<code>low</code>、<code>medium</code>、<code>high</code>、<code>xhigh</code>、<code>max</code>）优先于 <code>thinking</code>，同样只对已验证的模型生效。</p></div>
+</div></div>
+
+</div></div>
+<p class="ref-section-foot">其他字段会被忽略，包括 <code>metadata</code>、<code>top_k</code>、<code>container</code>、<code>mcp_servers</code>。<code>service_tier</code> 只接受 <code>auto</code> 或 <code>default</code>（也可以省略），<code>standard_only</code> 等其他值返回 <code>400 invalid_request_parameter</code>。</p>
+</div>
+
+<div class="_section_1btwc_47" id="returns">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>返回</span></h5>
+<div class="stldocs-method-returns _properties_1btwc_61" data-stldocs-property-group="returns"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-id">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">id</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>格式为 <code>msg_</code> 加 24 位十六进制字符，由 NexusVAI 生成。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-type">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">type</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">"message"</span></span></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-role">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">role</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">"assistant"</span></span></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-model">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">model</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>公开模型 ID。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-content">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">content</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>text</code> 块（模型的思考内容与拒绝说明也以 <code>text</code> 块返回，排在回答之前）与 <code>tool_use</code> 块（<code>id</code> 以 <code>toolu_cx</code> 开头，<code>name</code>，<code>input</code>）。工具参数不是合法 JSON 时，<code>input</code> 为 <code>{"_raw": "…"}</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-stop_reason">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">stop_reason</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>end_turn</code>、<code>max_tokens</code> 或 <code>tool_use</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-stop_sequence">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">stop_sequence</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">null</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>始终为 <code>null</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-usage">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">usage</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>input_tokens</code> 与 <code>output_tokens</code>。不返回 <code>cache_read_input_tokens</code> 等缓存字段；缓存折扣已计入扣费。</p></div>
+</div></div>
+</div></div>
+</div>
+
+<div class="_section_1btwc_47" id="streaming">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>流式事件</span></h5>
+<p class="ref-section-lead">事件按以下顺序出现，每个事件由 <code>event:</code> 与 <code>data:</code> 两行组成。网关不发送 <code>ping</code> 事件。</p>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="stream"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="event-message_start">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">message_start</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>消息骨架，<code>content</code> 为空。其中的 <code>usage</code> 为 0，实际用量在 <code>message_delta</code> 中给出。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="event-content_block_start">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">content_block_start</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>一个 <code>text</code> 或 <code>tool_use</code> 块开始，带 <code>index</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="event-content_block_delta">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">content_block_delta</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>增量内容：<code>text_delta</code>（文本）或 <code>input_json_delta</code>（工具输入的 JSON 片段，按顺序拼接）。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="event-content_block_stop">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">content_block_stop</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>一个块结束。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="event-message_delta">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">message_delta</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>给出 <code>stop_reason</code> 与 <code>usage</code>（<code>input_tokens</code>、<code>output_tokens</code>）。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="event-message_stop">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">message_stop</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>消息正常结束。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="event-error">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">error</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>流在中途失败：先发送 <code>stop_reason</code> 为 <code>null</code> 的 <code>message_delta</code>，再发送 <code>error</code>，不发送 <code>message_stop</code>。<code>error.code</code> 为模型给出的原因，或 <code>upstream_interrupted</code>、<code>upstream_truncated</code>、<code>upstream_empty_response</code>。</p></div>
+</div></div>
+</div></div>
+</div>
+
+<div class="_section_1btwc_47" id="errors">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>错误</span></h5>
+<p class="ref-section-lead">模型、计费、限流与上游错误使用 Anthropic 格式 <code>{"type": "error", "error": {"type", "message", "code"}}</code>。认证、请求体校验与密钥限制等前置检查返回的错误（如 <code>401 invalid_api_key</code>、<code>413 payload_too_large</code>、<code>403 model_not_in_whitelist</code>）使用 OpenAI 格式 <code>{"error": {"message", "type", "code"}}</code>。</p>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="errors"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-unsupported_anthropic_content">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">unsupported_anthropic_content</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">400</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>请求包含不支持的内容块，<code>message</code> 指出具体位置，例如 <code>messages[0].content[1]</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-not_found_error">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">not_found_error</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">404</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>模型不存在（这是 <code>error.type</code>，不带 <code>code</code>）。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-insufficient_balance">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">insufficient_balance</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">402</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>余额不足以支付本次请求的预估费用，不要自动重试。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-rate_limit_exceeded">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">rate_limit_exceeded</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">429</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>超出 RPM 或 TPM，按 <code>Retry-After</code> 等待后重试。响应带 <code>anthropic-ratelimit-*</code> 响应头。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-upstream_error">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">upstream_error</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">4xx / 5xx</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>模型暂时不可用或超时（<code>error.type</code> 为 <code>api_error</code>）。<code>upstream_rate_limit</code>（429）表示模型繁忙，与你的账户限额无关。</p></div>
+</div></div>
+</div></div>
+<p class="ref-section-foot">完整列表见<a href="/api/reference/#errors">错误</a>。</p>
+</div>
+
+</div>
+</div>
+
+<div class="stldocs-method-example _example_1btwc_28 not-content">
+<div class="stldocs-snippet-multi" data-ref-examples>
+<div class="_root_1v3qb_1"><div role="radiogroup" class="_SegmentedControl_16x8u_1 _options_1v3qb_8" data-size="xl" aria-label="请求示例"><div class="_SegmentedControlThumb_16x8u_226" data-ref-thumb></div><button type="button" role="radio" aria-checked="true" data-state="on" class="_SegmentedControlOption_16x8u_142" data-ref-example="0"><span class="relative">默认</span></button><button type="button" role="radio" aria-checked="false" data-state="off" tabindex="-1" class="_SegmentedControlOption_16x8u_142" data-ref-example="1"><span class="relative">流式输出</span></button><button type="button" role="radio" aria-checked="false" data-state="off" tabindex="-1" class="_SegmentedControlOption_16x8u_142" data-ref-example="2"><span class="relative">工具调用</span></button></div></div>
+<div class="stldocs-snippet-multi-content">
+
+<div class="stldocs-snippet-multi-pane" data-ref-pane="0">
+<div class="ref-snippet-head" data-method="POST">
+<code-tabs title="创建消息">
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/messages \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: $CANCRI_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{
+    "model": "claude-sonnet-5.5",
+    "max_tokens": 256,
+    "system": "你是一个简洁的助手。",
+    "messages": [{"role": "user", "content": "用一句话解释什么是 RLS。"}]
+  }'</pre>
+<pre data-lang="python" data-label="Python">import os
+from anthropic import Anthropic
+
+client = Anthropic(
+    base_url="https://cn.nexusvai.xyz",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+
+message = client.messages.create(
+    model="claude-sonnet-5.5",
+    max_tokens=256,
+    system="你是一个简洁的助手。",
+    messages=[{"role": "user", "content": "用一句话解释什么是 RLS。"}],
+)
+print(message.content[0].text)</pre>
+<pre data-lang="javascript" data-label="Node.js">import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  baseURL: "https://cn.nexusvai.xyz",
+  apiKey: process.env.CANCRI_API_KEY,
+});
+
+const message = await client.messages.create({
+  model: "claude-sonnet-5.5",
+  max_tokens: 256,
+  system: "你是一个简洁的助手。",
+  messages: [{ role: "user", content: "用一句话解释什么是 RLS。" }],
+});
+console.log(message.content[0].text);</pre>
+</code-tabs>
+</div>
+<div class="ref-response">
+<pre data-lang="json" data-title="响应示例">{
+  "id": "msg_5e2a8c1f7b3d9e4a6c0b2d81",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-sonnet-5.5",
+  "content": [
+    {
+      "type": "text",
+      "text": "RLS（行级安全）按行控制谁能读写表中的数据。"
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 27,
+    "output_tokens": 19
+  }
+}</pre>
+</div>
+</div>
+
+<div class="stldocs-snippet-multi-pane" data-ref-pane="1" hidden>
+<div class="ref-snippet-head" data-method="POST">
+<code-tabs title="流式输出">
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/messages \
+  -N \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: $CANCRI_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{
+    "model": "claude-sonnet-5.5",
+    "max_tokens": 256,
+    "messages": [{"role": "user", "content": "你好"}],
+    "stream": true
+  }'</pre>
+<pre data-lang="python" data-label="Python">import os
+from anthropic import Anthropic
+
+client = Anthropic(base_url="https://cn.nexusvai.xyz", api_key=os.environ["CANCRI_API_KEY"])
+
+stream = client.messages.create(
+    model="claude-sonnet-5.5",
+    max_tokens=256,
+    messages=[{"role": "user", "content": "你好"}],
+    stream=True,
+)
+for event in stream:
+    if event.type == "content_block_delta" and event.delta.type == "text_delta":
+        print(event.delta.text, end="", flush=True)</pre>
+<pre data-lang="javascript" data-label="Node.js">import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({ baseURL: "https://cn.nexusvai.xyz", apiKey: process.env.CANCRI_API_KEY });
+
+const stream = await client.messages.create({
+  model: "claude-sonnet-5.5",
+  max_tokens: 256,
+  messages: [{ role: "user", content: "你好" }],
+  stream: true,
+});
+for await (const event of stream) {
+  if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+    process.stdout.write(event.delta.text);
+  }
+}</pre>
+</code-tabs>
+</div>
+<div class="ref-response ref-wrap">
+<pre data-lang="text" data-title="响应示例">event: message_start
+data: {"type":"message_start","message":{"id":"msg_5e2a8c1f7b3d9e4a6c0b2d81","type":"message","role":"assistant","model":"claude-sonnet-5.5","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}
+
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"你好！有什么可以帮你？"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0}
+
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"input_tokens":9,"output_tokens":10}}
+
+event: message_stop
+data: {"type":"message_stop"}</pre>
+</div>
+</div>
+
+<div class="stldocs-snippet-multi-pane" data-ref-pane="2" hidden>
+<div class="ref-snippet-head" data-method="POST">
+<code-tabs title="工具调用">
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/messages \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: $CANCRI_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{
+    "model": "claude-sonnet-5.5",
+    "max_tokens": 512,
+    "tools": [{
+      "name": "get_weather",
+      "description": "查询城市的实时天气",
+      "input_schema": {
+        "type": "object",
+        "properties": {"city": {"type": "string"}},
+        "required": ["city"]
+      }
+    }],
+    "messages": [{"role": "user", "content": "上海现在天气怎么样？"}]
+  }'</pre>
+<pre data-lang="python" data-label="Python">import os
+from anthropic import Anthropic
+
+client = Anthropic(base_url="https://cn.nexusvai.xyz", api_key=os.environ["CANCRI_API_KEY"])
+
+message = client.messages.create(
+    model="claude-sonnet-5.5",
+    max_tokens=512,
+    tools=[{
+        "name": "get_weather",
+        "description": "查询城市的实时天气",
+        "input_schema": {
+            "type": "object",
+            "properties": {"city": {"type": "string"}},
+            "required": ["city"],
+        },
+    }],
+    messages=[{"role": "user", "content": "上海现在天气怎么样？"}],
+)
+for block in message.content:
+    if block.type == "tool_use":
+        print(block.name, block.input)</pre>
+<pre data-lang="javascript" data-label="Node.js">import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({ baseURL: "https://cn.nexusvai.xyz", apiKey: process.env.CANCRI_API_KEY });
+
+const message = await client.messages.create({
+  model: "claude-sonnet-5.5",
+  max_tokens: 512,
+  tools: [{
+    name: "get_weather",
+    description: "查询城市的实时天气",
+    input_schema: {
+      type: "object",
+      properties: { city: { type: "string" } },
+      required: ["city"],
+    },
+  }],
+  messages: [{ role: "user", content: "上海现在天气怎么样？" }],
+});
+for (const block of message.content) {
+  if (block.type === "tool_use") console.log(block.name, block.input);
+}</pre>
+</code-tabs>
+</div>
+<div class="ref-response">
+<pre data-lang="json" data-title="响应示例">{
+  "id": "msg_1c9e4b7a2f6d8e3a5b0c7d92",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-sonnet-5.5",
+  "content": [
+    {
+      "type": "tool_use",
+      "id": "toolu_cx6b1e9d3a7c2f4e8b0a5d1c3e",
+      "name": "get_weather",
+      "input": { "city": "上海" }
+    }
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 88,
+    "output_tokens": 21
+  }
+}</pre>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<div class="stldocs-method-response-column _responses_1btwc_72">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>返回示例</span></h5>
+<pre data-lang="json" data-title="响应示例">{
+  "id": "msg_5e2a8c1f7b3d9e4a6c0b2d81",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-sonnet-5.5",
+  "content": [
+    {
+      "type": "text",
+      "text": "RLS（行级安全）按行控制谁能读写表中的数据。"
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 27,
+    "output_tokens": 19
+  }
+}</pre>
+</div>
+
+</div>
+</div>
+
+</div>
+</div>

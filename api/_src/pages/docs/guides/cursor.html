@@ -1,0 +1,52 @@
+---
+title: Cursor
+description: 用 Override OpenAI Base URL，在 Cursor 的对话中使用 NexusVAI 的模型。
+tab: coding
+---
+<p><a href="https://cursor.com">Cursor</a> 允许覆盖 OpenAI 的 Base URL。开启后，Cursor 会用你的 API 密钥和自定义地址调用 NexusVAI 的模型。对话、Agent、Composer 和行内补全是否使用这个地址，取决于 Cursor 的版本。</p>
+
+<h2 id="prerequisites">前提条件</h2>
+<ul>
+<li>已安装 Cursor。</li>
+<li>一个 NexusVAI API 密钥，可以在<a href="/api/console/keys/">控制台</a>创建。</li>
+<li>要使用的模型 ID，例如 <code>gpt-6-astra</code> 或 <code>claude-opus-5.5</code>。</li>
+</ul>
+
+<h2 id="configure">配置自定义 Base URL</h2>
+<ol>
+<li>打开 <strong>Settings → Models</strong>，找到 <strong>OpenAI API Key</strong>。</li>
+<li>填入你的 API 密钥，并开启 <strong>Override OpenAI Base URL</strong>。</li>
+<li>按下表填写，然后手动添加要用的模型 ID。</li>
+</ol>
+<table>
+<thead><tr><th>设置项</th><th>值</th></tr></thead>
+<tbody>
+<tr><td>Override URL</td><td><code>https://cn.nexusvai.xyz/v1</code></td></tr>
+<tr><td>API Key</td><td><code>cancri_sk_...</code></td></tr>
+<tr><td>Model</td><td>NexusVAI 模型 ID，例如 <code>gpt-6-astra</code>、<code>claude-opus-5.5</code></td></tr>
+</tbody>
+</table>
+<callout type="warning"><p><strong>自定义地址通常只对对话生效。</strong>Agent、Composer 和行内补全可能仍然使用 Cursor 自己的服务，对话能用不代表所有功能都已切换。需要可以自定义 Base URL 的编程智能体时，推荐使用 <a href="/api/docs/guides/claude-code/">Claude Code</a>、<a href="/api/docs/guides/cline/">Cline</a> 或 <a href="/api/docs/guides/continue/">Continue</a>。</p></callout>
+
+<h2 id="verify">验证配置</h2>
+<p>在 Cursor 的对话里选择你添加的模型，发送一条简短的消息。然后查询这个 Key 最近的调用：</p>
+<pre data-lang="bash" data-title="确认请求已到达 NexusVAI">curl "https://cn.nexusvai.xyz/v1/balance?limit=5" \
+  -H "Authorization: Bearer cancri_sk_..."</pre>
+<p>如果 <code>recent_usage.data</code> 里出现了这次请求，说明对话已经走 NexusVAI。用同样的方法检查 Agent 或补全：使用后没有新增记录，就说明那个功能没有使用自定义地址。字段说明见<a href="/api/docs/guides/coding-tools/#verify">验证请求是否到达 NexusVAI</a>。</p>
+
+<h2 id="troubleshooting">排查问题</h2>
+<table>
+<thead><tr><th>现象</th><th>可能的原因</th><th>解决方法</th></tr></thead>
+<tbody>
+<tr><td>对话正常，但 Agent 或补全没有调用记录</td><td>该功能不使用自定义 Base URL。</td><td>改用 Claude Code、Cline 或 Continue。</td></tr>
+<tr><td><code>404 model_not_found</code></td><td>模型 ID 与 <code>GET /v1/models</code> 不一致，或被客户端改写。</td><td>手动填入列表中的 id。</td></tr>
+<tr><td><code>401 invalid_api_key</code></td><td>Key 填错或已撤销。</td><td>在控制台确认 Key 状态。</td></tr>
+</tbody>
+</table>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/cline/" title="Cline">在 VS Code 中使用可自定义 Base URL 的编程智能体。</card>
+<card href="/api/docs/guides/continue/" title="Continue" icon="cube">在 VS Code 或 JetBrains 中接入 NexusVAI。</card>
+<card href="/api/docs/guides/client-faq/" title="客户端常见问题">模型 ID、缓存与维护相关的排查。</card>
+</cards>

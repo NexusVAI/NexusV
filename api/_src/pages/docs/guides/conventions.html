@@ -1,0 +1,70 @@
+---
+title: 使用约定
+description: 接入前需要知道的几条约定：限额按账户计算、模型 ID 必须精确、Base URL 按协议填写，以及 API 的功能边界。
+---
+<p>这一页汇总接入时最容易误解的地方。照着它检查一遍配置，可以避开大部分 <code>401</code>、<code>404</code> 和 <code>429</code>。</p>
+
+<h2 id="account-level-limits">限额按账户计算</h2>
+<p>速率限制按账户计算。同一账户的网页、桌面端、Bot 与 API 调用共用一组 RPM 与 TPM 限额，增加密钥不会提高限额。团队密钥使用团队自己的限额。详见<a href="/api/docs/guides/rate-limits/">速率限制</a>。</p>
+
+<h2 id="model-ids">使用 NexusVAI 模型 ID</h2>
+<ul>
+<li><code>model</code> 必须是 NexusVAI 的模型 ID，取值见<a href="/api/docs/models/">模型</a>或 <code>GET /v1/models</code>。</li>
+<li>ID 按字符精确匹配，大小写与连字符都要一致。不在列表里的 ID 返回 <code>404 model_not_found</code>。</li>
+<li>模型厂商的原始版本号（如 <code>gpt-4-turbo</code>、<code>claude-3-5-sonnet-20241022</code>）不可用。</li>
+<li>限时开放的模型过了访问期后不再可用，调用同样返回 <code>404 model_not_found</code>。</li>
+</ul>
+
+<h2 id="base-url">Base URL 按协议填写</h2>
+<ul>
+<li>只使用<a href="/api/docs/">概览</a>中列出的地址。</li>
+<li>OpenAI 兼容 SDK 的 Base URL 以 <code>/v1</code> 结尾：<code>https://cn.nexusvai.xyz/v1</code>。</li>
+<li>Anthropic SDK 与 Claude Code 不带 <code>/v1</code>：<code>https://cn.nexusvai.xyz</code>。它们会自动拼接 <code>/v1/messages</code> 与 <code>/v1/messages/count_tokens</code>。</li>
+</ul>
+
+<h2 id="models-endpoint">模型列表不代表可用性</h2>
+<ul>
+<li><code>GET /v1/models</code> 不校验密钥，也不计费。它能返回结果，只说明服务在线，不说明你的密钥有效。验证密钥请调用 <code>GET /v1/balance</code>。</li>
+<li>API 维护期间仍可读取模型列表，但 <code>/v1/chat/completions</code>、<code>/v1/messages</code>、<code>/v1/responses</code> 会返回 <code>503 api_paused</code>。</li>
+<li>模型列表只包含 ID 等基本信息，不包含价格，也不标注是否免费。价格与免费标记见<a href="/api/docs/models/">模型</a>与<a href="/api/docs/pricing/">价格</a>。</li>
+</ul>
+
+<h2 id="supported-features">功能范围</h2>
+<p>API 只提供模型推理相关的能力：</p>
+<table>
+<thead><tr><th>能力</th><th>状态</th></tr></thead>
+<tbody>
+<tr><td>对话生成、流式输出、usage 统计</td><td>支持，三种协议都可用</td></tr>
+<tr><td>自定义函数工具与工具调用往返</td><td>支持，部分模型可用</td></tr>
+<tr><td>图片输入</td><td>支持视觉的模型可用；只接受文本的模型返回 <code>400 image_input_unsupported</code></td></tr>
+<tr><td>推理强度参数</td><td>部分模型生效，见各协议指南</td></tr>
+<tr><td>实时语音</td><td>使用单独的 WebSocket 端点，见<a href="/api/docs/guides/realtime/">实时语音</a></td></tr>
+<tr><td>图像生成、视频生成</td><td>不对 API 开放，返回 <code>403 endpoint_disabled</code>，仅网页版可用</td></tr>
+<tr><td>Embeddings、音频转写、文件、向量库等端点</td><td>不提供，返回 <code>404</code></td></tr>
+<tr><td>OpenAI 托管工具（网页搜索、文件检索、代码解释器、computer use）</td><td>不在服务端执行</td></tr>
+<tr><td>Responses 的服务端会话状态（<code>previous_response_id</code>、<code>store</code>）</td><td>不支持，需要自己传完整历史</td></tr>
+</tbody>
+</table>
+
+<h2 id="request-validation">请求参数校验</h2>
+<p>网关会在转发前检查几个参数，不合规时返回 <code>400 invalid_request_parameter</code>，<code>error.param</code> 指出出错的字段：</p>
+<ul>
+<li><code>service_tier</code> 只接受省略、<code>"auto"</code> 或 <code>"default"</code>。合规的值也不会转发给模型。</li>
+<li>GPT 系列模型的 <code>reasoning_effort</code>（Responses 为 <code>reasoning.effort</code>）只接受 <code>none</code>、<code>low</code>、<code>medium</code>、<code>high</code>、<code>xhigh</code>、<code>max</code>；<code>reasoning.effort</code> 额外接受 <code>minimal</code>。</li>
+<li><code>max_tokens</code>、<code>max_output_tokens</code>、<code>temperature</code>、<code>top_p</code> 必须是非负的有限数。</li>
+</ul>
+<p>请求体不能超过 10 MB，否则返回 <code>413 payload_too_large</code>。</p>
+
+<h2 id="response-fields">响应字段</h2>
+<ul>
+<li>响应只保留各协议的标准字段。<code>id</code> 由 NexusVAI 生成，<code>model</code> 返回你请求的模型 ID。</li>
+<li><code>usage</code> 只包含输入、输出与总 token 数（Chat Completions 另有 <code>completion_tokens_details.reasoning_tokens</code>），不包含缓存命中的 token 数。缓存折扣体现在实际扣费里，可以用 <a href="/api/docs/guides/usage/"><code>GET /v1/balance</code></a> 查看每次调用的 <code>cost</code>。</li>
+<li>Chat Completions 中，模型公开的推理文本放在 <code>message.reasoning_content</code>（或 <code>reasoning</code>）字段。</li>
+</ul>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/free-tier/" title="免费模型与免费额度" icon="bolt">免费模型的额度、周期和解除方式。</card>
+<card href="/api/docs/guides/error-codes/" title="错误码" icon="cube">按 <code>error.code</code> 处理每一种错误。</card>
+<card href="/api/docs/guides/rate-limits/" title="速率限制" icon="bolt">档位、计量方式与响应头。</card>
+</cards>

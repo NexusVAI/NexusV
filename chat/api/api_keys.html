@@ -1,23 +1,17 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" /><script src="/js/clean-url.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="robots" content="noindex, follow" />
-  <link rel="canonical" href="https://www.nexusvai.xyz/chat/api/keys.html" />
-  <title>正在跳转到 API 密钥管理 · NexusVAI</title>
-  <!-- 兼容旧地址；密钥管理与鉴权统一由当前控制台维护。 -->
-  <noscript><meta http-equiv="refresh" content="0; url=./keys.html" /></noscript>
+  <meta charset="utf-8">
+  <!-- 旧地址跳转桩：API 控制台已迁到 /api/console/、/api/contact/。必须带上 search 与 hash ——
+       已分享出去的团队邀请链接（?invite=）和账单页分区（#bills 等）都靠它们。 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>正在跳转到 API 密钥 · NexusVAI</title>
+  <link rel="canonical" href="https://www.nexusvai.xyz/api/console/keys/">
+  <meta http-equiv="refresh" content="2;url=/api/console/keys/">
+  <script>location.replace("/api/console/keys/" + location.search + location.hash);</script>
 </head>
 <body>
-  <p>正在跳转到 API 密钥管理…若没有自动跳转，请<a id="fallback" href="./keys.html">点击这里继续</a>。</p>
-  <script>
-    (function () {
-      var target = "./keys.html" + (window.location.search || "") + (window.location.hash || "");
-      var link = document.getElementById("fallback");
-      if (link) link.setAttribute("href", target);
-      window.location.replace(target);
-    })();
-  </script>
+  <p>页面已迁移到新地址。若没有自动跳转，请<a href="/api/console/keys/">点击这里前往 API 密钥</a>。</p>
 </body>
 </html>

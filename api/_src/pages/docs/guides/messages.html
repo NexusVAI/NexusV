@@ -1,0 +1,223 @@
+---
+title: Messages（Anthropic）
+description: 用 Anthropic Messages 协议调用模型，适合 Claude Code、Anthropic SDK 与 OpenClaw。
+---
+<p><code>POST /v1/messages</code> 兼容 Anthropic Messages 协议，适用于 Claude Code、官方 Anthropic SDK、OpenClaw 等客户端。<code>model</code> 不限于 Claude 系列：<code>claude-sonnet-5.5</code>、<code>gpt-6-astra</code>、<code>deepseek-v4-flash</code> 都可以通过这个端点调用。完整的参数与响应结构见 <a href="/api/reference/messages/">API 参考</a>。</p>
+<p>Base URL 填 <code>https://cn.nexusvai.xyz</code>，不带 <code>/v1</code>：Anthropic SDK 会自己拼接 <code>/v1/messages</code>。</p>
+
+<h2 id="basic-request">发送消息</h2>
+<code-tabs title="发送消息">
+<pre data-lang="python" data-label="Python">import os
+from anthropic import Anthropic
+
+client = Anthropic(
+    base_url="https://cn.nexusvai.xyz",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+
+message = client.messages.create(
+    model="claude-sonnet-5.5",
+    max_tokens=1024,
+    system="你是一个简洁的助手。",
+    messages=[{"role": "user", "content": "用一句话解释什么是行级安全。"}],
+)
+for block in message.content:
+    if block.type == "text":
+        print(block.text)</pre>
+<pre data-lang="javascript" data-label="Node.js">import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  baseURL: "https://cn.nexusvai.xyz",
+  apiKey: process.env.CANCRI_API_KEY,
+});
+
+const message = await client.messages.create({
+  model: "claude-sonnet-5.5",
+  max_tokens: 1024,
+  system: "你是一个简洁的助手。",
+  messages: [{ role: "user", content: "用一句话解释什么是行级安全。" }],
+});
+for (const block of message.content) {
+  if (block.type === "text") console.log(block.text);
+}</pre>
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/messages \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: $CANCRI_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{
+    "model": "claude-sonnet-5.5",
+    "max_tokens": 1024,
+    "system": "你是一个简洁的助手。",
+    "messages": [{"role": "user", "content": "用一句话解释什么是行级安全。"}]
+  }'</pre>
+</code-tabs>
+<pre data-lang="json" data-title="响应">{
+  "id": "msg_...",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-sonnet-5.5",
+  "content": [
+    { "type": "text", "text": "行级安全是一种按行控制谁能读写数据的数据库策略。" }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": { "input_tokens": 28, "output_tokens": 19 }
+}</pre>
+<p><code>stop_reason</code> 的取值：<code>end_turn</code>（正常结束）、<code>max_tokens</code>（达到输出上限）、<code>tool_use</code>（模型要调用工具）。</p>
+<p>密钥可以放在 <code>x-api-key</code> 或 <code>Authorization: Bearer</code> 请求头中。<code>anthropic-version</code> 由 SDK 自动发送；网关不校验它的值。</p>
+
+<h2 id="multi-turn">系统提示与多轮对话</h2>
+<p><code>system</code> 可以是字符串，也可以是 text 块数组。多轮对话时，把之前的 <code>user</code> 与 <code>assistant</code> 消息按顺序放进 <code>messages</code>：</p>
+<pre data-lang="python" data-title="多轮对话">message = client.messages.create(
+    model="claude-sonnet-5.5",
+    max_tokens=1024,
+    system="你是一个简洁的助手。",
+    messages=[
+        {"role": "user", "content": "推荐一本入门编程的书。"},
+        {"role": "assistant", "content": "《Python 编程：从入门到实践》。"},
+        {"role": "user", "content": "它适合完全没有基础的人吗？"},
+    ],
+)</pre>
+
+<h2 id="streaming">流式输出</h2>
+<p>设置 <code>stream: true</code>，响应以 Anthropic 的 SSE 事件返回。Claude Code 默认使用流式输出。</p>
+<code-tabs title="流式输出">
+<pre data-lang="python" data-label="Python">with client.messages.stream(
+    model="claude-sonnet-5.5",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "写一首关于秋天的四行诗。"}],
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)</pre>
+<pre data-lang="javascript" data-label="Node.js">const stream = await client.messages.create({
+  model: "claude-sonnet-5.5",
+  max_tokens: 1024,
+  messages: [{ role: "user", content: "写一首关于秋天的四行诗。" }],
+  stream: true,
+});
+for await (const event of stream) {
+  if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+    process.stdout.write(event.delta.text);
+  }
+}</pre>
+</code-tabs>
+<p>事件顺序为：<code>message_start</code> → <code>content_block_start</code> → <code>content_block_delta</code>（若干个）→ <code>content_block_stop</code> → <code>message_delta</code> → <code>message_stop</code>。文本增量的 <code>delta.type</code> 为 <code>text_delta</code>，工具参数增量为 <code>input_json_delta</code>。生成中途失败时会收到 <code>error</code> 事件，见<a href="/api/docs/guides/error-codes/#stream-errors">流式输出中的错误</a>。</p>
+
+<h2 id="thinking">扩展思考</h2>
+<p>你可以用 <code>thinking</code> 或 <code>output_config.effort</code> 要求模型思考得更深入：</p>
+<pre data-lang="json" data-title="启用思考">{
+  "model": "claude-sonnet-5.5",
+  "max_tokens": 16000,
+  "thinking": { "type": "enabled", "budget_tokens": 8000 },
+  "messages": [{ "role": "user", "content": "证明根号 2 是无理数。" }]
+}</pre>
+<ul>
+<li>网关把它换算成推理强度，只传给已验证支持该参数的模型；其他模型使用默认行为。</li>
+<li><code>output_config.effort</code> 优先，可选 <code>low</code>、<code>medium</code>、<code>high</code>、<code>xhigh</code>、<code>max</code>。</li>
+<li>只给 <code>thinking.budget_tokens</code> 时按预算分档：低于 4,096 为 <code>low</code>，低于 16,384 为 <code>medium</code>，低于 32,768 为 <code>high</code>，其余为 <code>max</code>。<code>thinking.type</code> 为 <code>adaptive</code> 时由模型自行决定。</li>
+</ul>
+<callout type="warning"><p>响应中不会出现 <code>thinking</code> 块。模型公开的推理文本以普通 <code>text</code> 块返回，位于回答之前、单独成块；流式时同样是一个单独的 text 内容块。只想展示回答时，请按块区分，不要直接拼接所有文本。</p></callout>
+
+<h2 id="tool-use">工具调用</h2>
+<p>用 <code>tools</code> 定义工具（<code>name</code>、<code>description</code>、<code>input_schema</code>）。模型要调用工具时，<code>stop_reason</code> 为 <code>tool_use</code>，<code>content</code> 中有 <code>tool_use</code> 块；你执行后把结果作为 <code>tool_result</code> 块放进下一条 <code>user</code> 消息：</p>
+<pre data-lang="python" data-title="工具调用往返">import json
+
+tools = [{
+    "name": "get_weather",
+    "description": "查询指定城市的当前天气",
+    "input_schema": {
+        "type": "object",
+        "properties": {"city": {"type": "string"}},
+        "required": ["city"],
+    },
+}]
+messages = [{"role": "user", "content": "北京现在天气怎么样？"}]
+
+response = client.messages.create(
+    model="claude-sonnet-5.5", max_tokens=1024, tools=tools, messages=messages,
+)
+if response.stop_reason == "tool_use":
+    messages.append({"role": "assistant", "content": response.content})
+    results = []
+    for block in response.content:
+        if block.type == "tool_use":
+            result = {"city": block.input["city"], "weather": "晴", "temperature_c": 18}  # 换成你的实现
+            results.append({
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": json.dumps(result, ensure_ascii=False),
+            })
+    messages.append({"role": "user", "content": results})
+    final = client.messages.create(
+        model="claude-sonnet-5.5", max_tokens=1024, tools=tools, messages=messages,
+    )</pre>
+<ul>
+<li><code>tool_choice</code> 支持 <code>auto</code>、<code>any</code>、<code>none</code> 和 <code>{"type": "tool", "name": "..."}</code>。</li>
+<li><code>tool_result</code> 的内容只能是文本（字符串或 text 块）。</li>
+<li>不支持 <code>web_search</code> 等 Anthropic 内置的服务端工具，只支持自定义工具。</li>
+</ul>
+
+<h2 id="images">图片输入</h2>
+<p>向支持视觉的模型发送图片时，在 <code>user</code> 消息中使用 <code>image</code> 块，<code>source.type</code> 为 <code>base64</code> 或 <code>url</code>：</p>
+<pre data-lang="json" data-title="image 块">{
+  "role": "user",
+  "content": [
+    { "type": "image", "source": { "type": "url", "url": "https://example.com/photo.jpg" } },
+    { "type": "text", "text": "这张图里有什么？" }
+  ]
+}</pre>
+
+<h2 id="supported-content">支持的内容块</h2>
+<table>
+<thead><tr><th>位置</th><th>支持的块</th></tr></thead>
+<tbody>
+<tr><td><code>system</code></td><td><code>text</code></td></tr>
+<tr><td><code>user</code> 消息</td><td><code>text</code>、<code>image</code>（<code>base64</code> 或 <code>url</code>）、<code>tool_result</code></td></tr>
+<tr><td><code>assistant</code> 消息</td><td><code>text</code>、<code>tool_use</code></td></tr>
+</tbody>
+</table>
+<p>其他块（如 <code>document</code>、PDF、<code>thinking</code>、<code>redacted_thinking</code>）无法无损转换，请求会在扣费前被拒绝，返回 <code>400 unsupported_anthropic_content</code>，<code>message</code> 中指出出错块的位置。</p>
+
+<h2 id="count-tokens">计算 token</h2>
+<p><code>POST /v1/messages/count_tokens</code> 接受与 <code>/v1/messages</code> 相同的请求体，返回输入 token 数的估算值。Claude Code 会自动调用它来管理上下文，你不需要手动配置。</p>
+<pre data-lang="bash" data-title="估算输入 token">curl https://cn.nexusvai.xyz/v1/messages/count_tokens \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: $CANCRI_API_KEY" \
+  -d '{
+    "model": "claude-sonnet-5.5",
+    "messages": [{"role": "user", "content": "你好"}]
+  }'
+# {"input_tokens": 12}</pre>
+<p>这个端点不计费、不占用 RPM 与 TPM，每把密钥每分钟最多调用 600 次。返回值是本地估算，可能与实际计费的输入 token 数略有差异。</p>
+
+<h2 id="supported-fields">支持的字段</h2>
+<table>
+<thead><tr><th>字段</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>model</code></td><td>必填。NexusVAI 模型 ID，与其他端点共用同一份<a href="/api/docs/models/">模型目录</a>。</td></tr>
+<tr><td><code>messages</code></td><td>必填。对话历史，支持的内容块见上表。</td></tr>
+<tr><td><code>max_tokens</code></td><td>输出 token 上限。Anthropic SDK 要求必填；网关不强制，省略时按该模型的最大输出 token 数。也用于预占 TPM，见<a href="/api/docs/guides/rate-limits/#metering">速率限制</a>。</td></tr>
+<tr><td><code>system</code></td><td>系统提示，字符串或 text 块数组。</td></tr>
+<tr><td><code>stream</code></td><td>为 <code>true</code> 时返回 SSE 事件。</td></tr>
+<tr><td><code>temperature</code>、<code>top_p</code></td><td>采样参数，必须是非负数。</td></tr>
+<tr><td><code>stop_sequences</code></td><td>停止序列。</td></tr>
+<tr><td><code>tools</code>、<code>tool_choice</code></td><td>自定义工具与选择策略。</td></tr>
+<tr><td><code>thinking</code>、<code>output_config.effort</code></td><td>推理强度，见<a href="#thinking">扩展思考</a>。</td></tr>
+</tbody>
+</table>
+<p>其他字段（如 <code>top_k</code>、<code>metadata</code>、<code>cache_control</code>）不会生效。</p>
+
+<h2 id="differences">与 Anthropic 的差异</h2>
+<ul>
+<li><strong>提示缓存。</strong>请求中的 <code>cache_control</code> 不生效；支持缓存的模型会自动缓存前缀，命中部分按实际命中量享受折扣。见<a href="/api/docs/guides/billing/#prompt-caching">提示缓存</a>。</li>
+<li><strong>思考内容。</strong>不返回 <code>thinking</code> 块与签名，推理文本以 <code>text</code> 块返回。</li>
+<li><strong>usage。</strong>只包含 <code>input_tokens</code> 与 <code>output_tokens</code>，不包含缓存读写的 token 数。</li>
+<li><strong>错误格式。</strong>多数错误使用 Anthropic 格式 <code>{"type": "error", "error": {...}}</code>；但鉴权、请求体大小、参数校验等在路由前完成的检查返回 OpenAI 格式 <code>{"error": {...}}</code>。解析时请两种都兼容，见<a href="/api/docs/guides/error-codes/#error-format">错误格式</a>。</li>
+</ul>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/reference/messages/" title="Messages API 参考" icon="cube">完整的请求参数、内容块与事件结构。</card>
+<card href="/api/docs/guides/coding-tools/" title="编程工具" icon="bolt">在 Claude Code 与 OpenClaw 中接入。</card>
+<card href="/api/docs/guides/error-codes/" title="错误码" icon="bolt">Messages 端点的错误格式与处理方式。</card>
+</cards>

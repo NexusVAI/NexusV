@@ -8539,16 +8539,14 @@ function lastUserMessageText(messages) {
       name: "NexusV / Cancri 开放平台",
       base_url:
         "https://chat.nexusvai.xyz/functions/v1/api-gateway",
-      // api_docs.html 只是一个 meta-refresh 跳板，且会把 query string 丢掉；
-      // 直接给 api_docs_detail.html + 锚点，否则用户点开永远落在 #intro。
-      docs_url: "https://www.nexusvai.xyz/chat/api_docs_detail.html",
-      models_url: "https://www.nexusvai.xyz/chat/api_models.html",
+      docs_url: "https://www.nexusvai.xyz/api/docs/",
+      models_url: "https://www.nexusvai.xyz/api/docs/models/",
       pricing_url: "https://www.nexusvai.xyz/chat/pricing.html",
-      console_url: "https://www.nexusvai.xyz/chat/api/console.html",
-      keys_url: "https://www.nexusvai.xyz/chat/api/keys.html",
-      contact_url: "https://www.nexusvai.xyz/chat/api_apply.html",
+      console_url: "https://www.nexusvai.xyz/api/console/",
+      keys_url: "https://www.nexusvai.xyz/api/console/keys/",
+      contact_url: "https://www.nexusvai.xyz/api/contact/",
       access_note:
-        "创建 API Key 不需要申请或审核，注册登录后直接在 Keys 管理页创建即可。api_apply.html 现在是「联系我们」工单页，不是申请入口。",
+        "创建 API Key 不需要申请或审核，注册登录后直接在 Keys 管理页创建即可。/api/contact/ 是「联系我们」工单页，不是申请入口。",
       key_format: "cancri_sk_xxx",
       protocols: [
         "OpenAI Chat Completions",
@@ -8871,7 +8869,7 @@ function lastUserMessageText(messages) {
       },
       {
         q: "Key 怎么撤销？",
-        a: "https://www.nexusvai.xyz/chat/api/keys.html 控制台单击 Key 行的「撤销」按钮。撤销后立即失效，新建一个不影响其他 Key。每个账号同时最多 5 个活跃 Key。",
+        a: "https://www.nexusvai.xyz/api/console/keys/ 控制台单击 Key 行的「撤销」按钮。撤销后立即失效，新建一个不影响其他 Key。每个账号同时最多 5 个活跃 Key。",
       },
       {
         q: "为什么 Claude Code 连不上？",
@@ -18681,7 +18679,7 @@ function lastUserMessageText(messages) {
   }
     // [arena 死分支已删除] leaderboardSegmentButtons 接线
   document.getElementById("helpToastBtn").addEventListener("click", () => {
-    window.open("./api_docs_detail.html#intro", "_blank", "noopener,noreferrer");
+    window.open("/api/docs/", "_blank", "noopener,noreferrer");
   });
   document.getElementById("nicknameEditBtn").addEventListener("click", () => {
     closePopover();
@@ -18924,7 +18922,7 @@ function lastUserMessageText(messages) {
   on("appearanceRow", "click", cycleAppearance);
   on("accentRow", "click", cycleAccent);
   on("apiPlatformRow", "click", () => {
-    window.location.href = "./api/";
+    window.location.href = "/api/";
   });
   
   if (dismissMfaBtn) {

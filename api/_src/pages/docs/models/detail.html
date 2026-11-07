@@ -1,0 +1,71 @@
+---
+title: 模型详情
+description: 查看模型的价格、上下文长度、能力与调用示例。
+layout: wide
+tab: models
+nav: /api/docs/models/
+search: false
+transform: true
+css: /api/assets/oai/markdown.css, /api/assets/models.css
+js: /chat/cancri_config.js, /chat/api/grok-fluid-covers.js, /api/assets/models.js, /api/assets/models-detail.js
+---
+<div class="relative">
+  <div class="relative mx-4 flex flex-col gap-4 overflow-hidden px-4 pt-8 pb-10 sm:mx-8 md:mx-auto md:w-full md:max-w-6xl md:px-12 xl:px-4" data-models-page="detail">
+    <div class="flex w-fit flex-row items-center gap-2">
+      <a href="/api/docs/models/" class="_TextLink_ssta1_1"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M15.707 4.293a1 1 0 0 1 0 1.414L9.414 12l6.293 6.293a1 1 0 0 1-1.414 1.414l-7-7a1 1 0 0 1 0-1.414l7-7a1 1 0 0 1 1.414 0Z" clip-rule="evenodd"></path></svg>模型</a>
+    </div>
+
+    <div class="flex flex-col gap-8" data-detail-loading aria-busy="true" aria-label="正在加载模型">
+      <div class="flex flex-row items-center gap-4" aria-hidden="true">
+        <span class="models-skel" style="width:64px;height:64px;border-radius:10px"></span>
+        <div class="flex flex-1 flex-col"><span class="models-skel models-skel-line models-skel-line--lg" style="width:30%;margin-top:0"></span><span class="models-skel models-skel-line" style="width:45%"></span></div>
+      </div>
+      <span class="models-skel" style="height:104px;border-radius:10px" aria-hidden="true"></span>
+      <div class="flex flex-col" aria-hidden="true"><span class="models-skel models-skel-line" style="width:70%"></span><span class="models-skel models-skel-line" style="width:55%"></span><span class="models-skel models-skel-line" style="width:62%"></span></div>
+    </div>
+
+    <div data-detail-state hidden></div>
+
+    <div class="flex flex-col gap-8" data-detail-main hidden>
+      <div class="models-contents" data-detail-top></div>
+      <div class="h-px w-full bg-primary-soft"></div>
+      <div class="flex flex-col gap-4 lg:flex-row models-anchor" id="use-in-api">
+        <div class="flex w-[200px] shrink-0">在 API 中使用</div>
+        <div class="flex min-w-0 flex-1 flex-col gap-4">
+          <div class="_MarkdownContent_13d6z_1 _Compact_13d6z_289">
+            <p>把请求中的 <code>model</code> 设为 <code>__MODEL_ID__</code>，Base URL 设为 <code>https://cn.nexusvai.xyz/v1</code>，就能用 OpenAI SDK 调用。同一个模型也可以通过 <a href="/api/docs/guides/responses/" class="_TextLink_ssta1_1" data-underline="always">Responses</a> 和 <a href="/api/docs/guides/messages/" class="_TextLink_ssta1_1" data-underline="always">Messages（Anthropic 协议）</a>接口调用。</p>
+          </div>
+<code-tabs title="调用 __MODEL_NAME__">
+<pre data-lang="python" data-label="Python">import os
+from openai import OpenAI
+
+client = OpenAI(base_url="https://cn.nexusvai.xyz/v1", api_key=os.environ.get("CANCRI_API_KEY"))
+
+response = client.chat.completions.create(
+    model="__MODEL_ID__",
+    messages=[{"role": "user", "content": "用一句话介绍你自己"}],
+)
+print(response.choices[0].message.content)</pre>
+<pre data-lang="javascript" data-label="Node.js">import OpenAI from "openai";
+
+const client = new OpenAI({ baseURL: "https://cn.nexusvai.xyz/v1", apiKey: process.env.CANCRI_API_KEY });
+
+const response = await client.chat.completions.create({
+  model: "__MODEL_ID__",
+  messages: [{ role: "user", content: "用一句话介绍你自己" }],
+});
+console.log(response.choices[0].message.content);</pre>
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $CANCRI_API_KEY" \
+  -d '{
+    "model": "__MODEL_ID__",
+    "messages": [{"role": "user", "content": "用一句话介绍你自己"}]
+  }'</pre>
+</code-tabs>
+        </div>
+      </div>
+      <div class="models-contents" data-detail-bottom></div>
+    </div>
+  </div>
+</div>

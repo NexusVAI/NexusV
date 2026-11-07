@@ -96,7 +96,7 @@
   })();
 
   // 首页「推荐模型」四张卡。name/desc 纯展示；id 只喂给「在对话中打开」的
-  // ../index.html?models= 参数，目前聊天页还没有消费这个参数的代码，写错不会白屏。
+  // /chat/?models= 参数，目前聊天页还没有消费这个参数的代码，写错不会白屏。
   var FEATURED_MODELS = [
     {
       id: "gpt-6-astra",
@@ -629,7 +629,7 @@
     if (document.querySelector('link[href*="console.css"]')) return;
     var l = document.createElement("link");
     l.rel = "stylesheet";
-    l.href = "console.css?v=20260908-logsfilters";
+    l.href = "/chat/api/console.css?v=20260908-logsfilters";
     document.head.appendChild(l);
   }
 
@@ -833,7 +833,7 @@
   // （主题、记忆、用量）。控制台各页根本不加载 claude_ui.js 与 CancriApp，
   // 整块搬等于把聊天页一半依赖拖进来；且 OAI 控制台的 HIDE_NAV 本就含 "Settings"。
   // 因此这里只做：完整邮箱 + 一键复制 + 跳转到聊天页设置（deep-link，复用既有 UI）。
-  var CHAT_SETTINGS_URL = "../index.html#settings";
+  var CHAT_SETTINGS_URL = "/chat/#settings";
 
   function updateUserChip(user) {
     var email = (user && user.email) || "";
@@ -936,7 +936,7 @@
   // getSupabase / getSession / isValidSession / requireSession（platform-auth.js:101-110），
   // **没有 signOut**。所以走 supabase client 自己的 signOut，别去调不存在的方法。
   function doSignOut() {
-    var done = function () { window.location.href = "../index.html"; };
+    var done = function () { window.location.href = "/chat/"; };
     try {
       var sb = window.PlatformAuth && window.PlatformAuth.getSupabase && window.PlatformAuth.getSupabase();
       if (sb && sb.auth && typeof sb.auth.signOut === "function") {
@@ -3056,7 +3056,7 @@
   function rewriteActionLinks(card, modelId) {
     var links = card.querySelectorAll("a");
     if (links[0]) {
-      links[0].setAttribute("href", "../index.html?models=" + encodeURIComponent(modelId));
+      links[0].setAttribute("href", "/chat/?models=" + encodeURIComponent(modelId));
       links[0].removeAttribute("target");
       links[0].removeAttribute("rel");
       // keep icon, replace trailing text
@@ -3067,7 +3067,7 @@
       links[0].appendChild(document.createTextNode(" 在对话中打开"));
     }
     if (links[1]) {
-      links[1].setAttribute("href", "../api_docs_detail.html#intro");
+      links[1].setAttribute("href", "/api/docs/");
       links[1].setAttribute("target", "_blank");
       links[1].setAttribute("rel", "noopener noreferrer");
       var nodes2 = Array.prototype.slice.call(links[1].childNodes);
@@ -3119,7 +3119,7 @@
       if (t.indexOf("Explore in playground") >= 0 || t.indexOf("在对话中打开") >= 0) {
         // normalize label
         var href = a.getAttribute("href") || "";
-        if (/models=/.test(href) || /index\.html/.test(href)) {
+        if (/models=/.test(href) || /index\.html/.test(href) || /^\/chat\/(?:[?#]|$)/.test(href)) {
           var nodes = Array.prototype.slice.call(a.childNodes);
           nodes.forEach(function (n) {
             if (n.nodeType === 3) n.nodeValue = "";
@@ -3260,7 +3260,7 @@
       if (e && e.message === "supabase_not_loaded") {
         var login =
           (document.body && document.body.getAttribute("data-login-url")) ||
-          "../index.html";
+          "/chat/";
         if (window.PlatformAuth) PlatformAuth.redirectToLogin();
         else window.location.replace(login);
         return;

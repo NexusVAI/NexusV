@@ -1,0 +1,115 @@
+---
+title: 模型
+description: 浏览 NexusVAI API 提供的全部模型，比较能力、上下文长度与价格。
+layout: wide
+tab: models
+css: /api/assets/models.css
+js: /chat/cancri_config.js, /chat/api/grok-fluid-covers.js, /api/assets/models.js, /api/assets/models-catalog.js
+---
+<div class="relative mx-4 flex flex-col gap-4 overflow-hidden px-4 pt-8 pb-10 sm:mx-8 md:mx-auto md:w-full md:max-w-6xl md:px-12 xl:px-4" data-models-page="catalog">
+  <div class="flex flex-col gap-8">
+    <div class="flex flex-col gap-[60px]">
+      <div class="flex flex-col gap-12">
+        <div>
+          <div><h1 class="_ModelsTitle_163e7_1">模型</h1></div>
+        </div>
+        <div class="flex flex-col gap-4">
+          <h2 class="text-3xl font-semibold tracking-tight">选择模型</h2>
+          <p class="text-base text-emphasis">
+            不确定从哪里开始，就先用 <a href="/api/docs/models/detail/?model=gpt-6.1-sol" class="_TextLink_ssta1_1" data-underline="always" data-model-link="gpt-6.1-sol">GPT-6.1 Sol</a>；更看重某个场景时，再浏览下方的旗舰模型与全部模型。需要控制成本，可以在<a href="/api/docs/pricing/" class="_TextLink_ssta1_1" data-underline="always">价格</a>页比较各模型的单价，或从<a href="#free-models" class="_TextLink_ssta1_1" data-underline="always">免费模型</a>开始。
+          </p>
+          <p class="text-base text-emphasis">
+            所有模型都通过同一个 Base URL 调用，兼容 <a href="/api/docs/guides/chat-completions/" class="_TextLink_ssta1_1" data-underline="always">OpenAI</a> 与 <a href="/api/docs/guides/messages/" class="_TextLink_ssta1_1" data-underline="always">Anthropic</a> 协议，换模型只需修改请求中的 model 参数。命中缓存的输入 token 默认按输入价格的 1 折计费（Claude Opus 5.5 含 Thinking 为 3 折），<a href="/api/docs/guides/client-faq/" class="_TextLink_ssta1_1" data-underline="always">为什么检测工具显示无缓存？</a>
+          </p>
+          <div class="flex flex-wrap items-center gap-2 text-sm">
+            <span class="text-secondary">Base URL</span>
+            <span class="rounded-sm bg-primary-outline-active px-2 py-0.5 font-mono text-sm font-normal text-emphasis shadow-[inset_0_0_0_1px_var(--color-background-primary-soft-alpha)]">https://cn.nexusvai.xyz/v1</span>
+            <button type="button" class="_Button_6dmow_1 models-copy" data-color="primary" data-variant="ghost" data-pill="" data-size="xs" data-icon-size="sm" data-copy="https://cn.nexusvai.xyz/v1" aria-label="复制 Base URL" title="复制 Base URL"><span class="_ButtonInner_6dmow_4"><span class="block relative h-[var(--button-icon-size)] w-[var(--button-icon-size)]"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="models-icon-copy h-full w-full"><path d="M12.7587 2H16.2413C17.0463 1.99999 17.7106 1.99998 18.2518 2.04419C18.8139 2.09012 19.3306 2.18868 19.816 2.43597C20.5686 2.81947 21.1805 3.43139 21.564 4.18404C21.8113 4.66937 21.9099 5.18608 21.9558 5.74817C22 6.28936 22 6.95372 22 7.75868V11.2413C22 12.0463 22 12.7106 21.9558 13.2518C21.9099 13.8139 21.8113 14.3306 21.564 14.816C21.1805 15.5686 20.5686 16.1805 19.816 16.564C19.3306 16.8113 18.8139 16.9099 18.2518 16.9558C17.8906 16.9853 17.4745 16.9951 16.9984 16.9984C16.9951 17.4745 16.9853 17.8906 16.9558 18.2518C16.9099 18.8139 16.8113 19.3306 16.564 19.816C16.1805 20.5686 15.5686 21.1805 14.816 21.564C14.3306 21.8113 13.8139 21.9099 13.2518 21.9558C12.7106 22 12.0463 22 11.2413 22H7.75868C6.95372 22 6.28936 22 5.74818 21.9558C5.18608 21.9099 4.66937 21.8113 4.18404 21.564C3.43139 21.1805 2.81947 20.5686 2.43597 19.816C2.18868 19.3306 2.09012 18.8139 2.04419 18.2518C1.99998 17.7106 1.99999 17.0463 2 16.2413V12.7587C1.99999 11.9537 1.99998 11.2894 2.04419 10.7482C2.09012 10.1861 2.18868 9.66937 2.43597 9.18404C2.81947 8.43139 3.43139 7.81947 4.18404 7.43598C4.66937 7.18868 5.18608 7.09012 5.74817 7.04419C6.10939 7.01468 6.52548 7.00487 7.00162 7.00162C7.00487 6.52548 7.01468 6.10939 7.04419 5.74817C7.09012 5.18608 7.18868 4.66937 7.43598 4.18404C7.81947 3.43139 8.43139 2.81947 9.18404 2.43597C9.66937 2.18868 10.1861 2.09012 10.7482 2.04419C11.2894 1.99998 11.9537 1.99999 12.7587 2ZM9.00176 7L11.2413 7C12.0463 6.99999 12.7106 6.99998 13.2518 7.04419C13.8139 7.09012 14.3306 7.18868 14.816 7.43598C15.5686 7.81947 16.1805 8.43139 16.564 9.18404C16.8113 9.66937 16.9099 10.1861 16.9558 10.7482C17 11.2894 17 11.9537 17 12.7587V14.9982C17.4455 14.9951 17.7954 14.9864 18.089 14.9624C18.5274 14.9266 18.7516 14.8617 18.908 14.782C19.2843 14.5903 19.5903 14.2843 19.782 13.908C19.8617 13.7516 19.9266 13.5274 19.9624 13.089C19.9992 12.6389 20 12.0566 20 11.2V7.8C20 6.94342 19.9992 6.36113 19.9624 5.91104C19.9266 5.47262 19.8617 5.24842 19.782 5.09202C19.5903 4.7157 19.2843 4.40973 18.908 4.21799C18.7516 4.1383 18.5274 4.07337 18.089 4.03755C17.6389 4.00078 17.0566 4 16.2 4H12.8C11.9434 4 11.3611 4.00078 10.911 4.03755C10.4726 4.07337 10.2484 4.1383 10.092 4.21799C9.7157 4.40973 9.40973 4.7157 9.21799 5.09202C9.1383 5.24842 9.07337 5.47262 9.03755 5.91104C9.01357 6.20463 9.00489 6.55447 9.00176 7ZM5.91104 9.03755C5.47262 9.07337 5.24842 9.1383 5.09202 9.21799C4.7157 9.40973 4.40973 9.7157 4.21799 10.092C4.1383 10.2484 4.07337 10.4726 4.03755 10.911C4.00078 11.3611 4 11.9434 4 12.8V16.2C4 17.0566 4.00078 17.6389 4.03755 18.089C4.07337 18.5274 4.1383 18.7516 4.21799 18.908C4.40973 19.2843 4.7157 19.5903 5.09202 19.782C5.24842 19.8617 5.47262 19.9266 5.91104 19.9624C6.36113 19.9992 6.94342 20 7.8 20H11.2C12.0566 20 12.6389 19.9992 13.089 19.9624C13.5274 19.9266 13.7516 19.8617 13.908 19.782C14.2843 19.5903 14.5903 19.2843 14.782 18.908C14.8617 18.7516 14.9266 18.5274 14.9624 18.089C14.9992 17.6389 15 17.0566 15 16.2V12.8C15 11.9434 14.9992 11.3611 14.9624 10.911C14.9266 10.4726 14.8617 10.2484 14.782 10.092C14.5903 9.7157 14.2843 9.40973 13.908 9.21799C13.7516 9.1383 13.5274 9.07337 13.089 9.03755C12.6389 9.00078 12.0566 9 11.2 9H7.8C6.94342 9 6.36113 9.00078 5.91104 9.03755Z" fill="currentColor"></path></svg><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="models-icon-check h-full w-full"><path fill-rule="evenodd" d="M18.063 5.674a1 1 0 0 1 .263 1.39l-7.5 11a1 1 0 0 1-1.533.143l-4.5-4.5a1 1 0 1 1 1.414-1.414l3.647 3.647 6.82-10.003a1 1 0 0 1 1.39-.263Z" clip-rule="evenodd"></path></svg></span></span></button>
+          </div>
+        </div>
+        <div class="h-px w-full bg-primary-soft"></div>
+        <div class="mb-7 flex w-full flex-col gap-7 models-anchor" id="flagship">
+          <div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+            <div class="flex max-w-[980px] flex-col gap-1 pr-2">
+              <h2 class="text-3xl font-semibold tracking-tight">旗舰模型</h2>
+              <div class="text-secondary text-sm">比较各模型的能力与规格。一张卡片可能包含多个分组，点击分组可查看各自的价格与 Model ID；分组只区分 Model ID，同一把 API 密钥可以调用所有分组。</div>
+            </div>
+            <div class="mt-2 md:mt-0">
+              <div class="flex items-center gap-2">
+                <a href="#all-models" class="_Button_6dmow_1" data-color="primary" data-variant="outline" data-pill="" data-size="xl"><span class="_ButtonInner_6dmow_4">查看全部</span></a>
+                <a href="/api/docs/pricing/" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill="" data-size="xl"><span class="_ButtonInner_6dmow_4">比较模型</span></a>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-x-8 xl:grid-cols-4" data-models-grid="flagship" aria-busy="true" aria-label="正在加载旗舰模型">
+            <div class="flex flex-col" aria-hidden="true"><span class="models-skel models-skel-art"></span><span class="models-skel models-skel-line models-skel-line--lg" style="margin-top:20px"></span><span class="models-skel models-skel-line" style="width:85%"></span><span class="models-skel models-skel-line" style="width:92%;margin-top:40px"></span><span class="models-skel models-skel-line" style="width:76%"></span><span class="models-skel models-skel-line" style="width:64%"></span></div>
+            <div class="flex flex-col" aria-hidden="true"><span class="models-skel models-skel-art"></span><span class="models-skel models-skel-line models-skel-line--lg" style="margin-top:20px"></span><span class="models-skel models-skel-line" style="width:85%"></span><span class="models-skel models-skel-line" style="width:92%;margin-top:40px"></span><span class="models-skel models-skel-line" style="width:76%"></span><span class="models-skel models-skel-line" style="width:64%"></span></div>
+            <div class="flex flex-col" aria-hidden="true"><span class="models-skel models-skel-art"></span><span class="models-skel models-skel-line models-skel-line--lg" style="margin-top:20px"></span><span class="models-skel models-skel-line" style="width:85%"></span><span class="models-skel models-skel-line" style="width:92%;margin-top:40px"></span><span class="models-skel models-skel-line" style="width:76%"></span><span class="models-skel models-skel-line" style="width:64%"></span></div>
+            <div class="flex flex-col" aria-hidden="true"><span class="models-skel models-skel-art"></span><span class="models-skel models-skel-line models-skel-line--lg" style="margin-top:20px"></span><span class="models-skel models-skel-line" style="width:85%"></span><span class="models-skel models-skel-line" style="width:92%;margin-top:40px"></span><span class="models-skel models-skel-line" style="width:76%"></span><span class="models-skel models-skel-line" style="width:64%"></span></div>
+          </div>
+          <div class="flex justify-center pt-1" data-models-more="flagship" hidden></div>
+        </div>
+      </div>
+      <div class="mb-7 flex w-full flex-col gap-7 models-anchor" id="free-models" data-models-section="free">
+        <div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+          <div class="flex max-w-[980px] flex-col gap-1 pr-2">
+            <h2 class="text-3xl font-semibold tracking-tight">免费模型</h2>
+            <div class="text-secondary text-sm">无需充值，用普通 API 密钥即可调用，不扣余额。调用计入免费额度，并受速率限制约束。</div>
+          </div>
+          <div class="mt-2 md:mt-0">
+            <div class="flex items-center gap-2">
+              <a href="/api/docs/guides/free-tier/" class="_Button_6dmow_1" data-color="primary" data-variant="outline" data-pill="" data-size="xl"><span class="_ButtonInner_6dmow_4">了解免费额度</span></a>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-x-8 xl:grid-cols-4" data-models-grid="free" aria-busy="true" aria-label="正在加载免费模型">
+          <div class="flex flex-col" aria-hidden="true"><span class="models-skel models-skel-art"></span><span class="models-skel models-skel-line models-skel-line--lg" style="margin-top:20px"></span><span class="models-skel models-skel-line" style="width:85%"></span></div>
+          <div class="flex flex-col" aria-hidden="true"><span class="models-skel models-skel-art"></span><span class="models-skel models-skel-line models-skel-line--lg" style="margin-top:20px"></span><span class="models-skel models-skel-line" style="width:85%"></span></div>
+        </div>
+        <div class="flex justify-center pt-1" data-models-more="free" hidden></div>
+      </div>
+      <div class="-mt-4 mb-5 models-anchor" id="all-models" data-models-section="all">
+        <div class="flex w-full flex-col gap-6">
+          <div class="flex flex-col gap-1">
+            <h2 class="text-3xl font-semibold tracking-tight">全部模型</h2>
+            <p class="text-sm text-secondary">按场景与厂商浏览。点击模型查看价格、上下文长度与调用示例。</p>
+          </div>
+          <div class="flex flex-col" data-models-groups aria-busy="true" aria-label="正在加载全部模型">
+            <div class="h-px w-full bg-primary-soft"></div>
+            <div class="flex flex-col gap-4 py-4 md:flex-row md:items-start md:justify-between" aria-hidden="true">
+              <div class="flex min-w-[220px] max-w-[320px] flex-col gap-1 md:w-[320px] md:min-w-[320px] md:max-w-[320px] md:flex-none md:pr-6"><span class="models-skel models-skel-line models-skel-line--lg" style="width:40%"></span><span class="models-skel models-skel-line" style="width:60%"></span></div>
+              <div class="-mx-2 grid min-w-0 flex-1 grid-cols-1 gap-2 md:grid-cols-2">
+                <div class="flex flex-row items-start gap-4 rounded-lg p-2"><span class="models-skel models-skel-icon"></span><div class="flex flex-1 flex-col"><span class="models-skel models-skel-line models-skel-line--lg" style="margin-top:4px"></span><span class="models-skel models-skel-line" style="width:80%"></span></div></div>
+                <div class="flex flex-row items-start gap-4 rounded-lg p-2"><span class="models-skel models-skel-icon"></span><div class="flex flex-1 flex-col"><span class="models-skel models-skel-line models-skel-line--lg" style="margin-top:4px"></span><span class="models-skel models-skel-line" style="width:80%"></span></div></div>
+                <div class="flex flex-row items-start gap-4 rounded-lg p-2"><span class="models-skel models-skel-icon"></span><div class="flex flex-1 flex-col"><span class="models-skel models-skel-line models-skel-line--lg" style="margin-top:4px"></span><span class="models-skel models-skel-line" style="width:80%"></span></div></div>
+                <div class="flex flex-row items-start gap-4 rounded-lg p-2"><span class="models-skel models-skel-icon"></span><div class="flex flex-1 flex-col"><span class="models-skel models-skel-line models-skel-line--lg" style="margin-top:4px"></span><span class="models-skel models-skel-line" style="width:80%"></span></div></div>
+              </div>
+            </div>
+            <div class="h-px w-full bg-primary-soft"></div>
+          </div>
+        </div>
+      </div>
+      <div class="pt-0">
+        <div class="h-px w-full bg-primary-soft"></div>
+        <div class="pt-[70px] pb-20">
+          <div class="w-full">
+            <div class="flex max-w-[560px] flex-col gap-8">
+              <div class="flex flex-col gap-2">
+                <h2 class="text-3xl font-semibold tracking-tight">比较所有模型的价格</h2>
+                <p class="text-base text-secondary">共 <span data-models-count>—</span> 个可调用的 Model ID，按实际用量计费，失败的请求不扣费。</p>
+              </div>
+              <div class="flex flex-wrap gap-3">
+                <a href="/api/docs/pricing/" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill="" data-size="xl"><span class="_ButtonInner_6dmow_4">查看价格</span></a>
+                <a href="/api/console/keys/" class="_Button_6dmow_1" data-color="primary" data-variant="outline" data-pill="" data-size="xl"><span class="_ButtonInner_6dmow_4">创建 API 密钥</span></a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="h-px w-full bg-primary-soft"></div>
+        <div class="pt-6">
+          <a href="/api/docs/guides/free-tier/" color="secondary" class="_TextLink_ssta1_1" data-underline="always">免费模型与免费额度</a><span class="mx-2">·</span><a href="/api/docs/guides/rate-limits/" color="secondary" class="_TextLink_ssta1_1" data-underline="always">速率限制</a><span class="mx-2">·</span><a href="/api/docs/guides/error-codes/" color="secondary" class="_TextLink_ssta1_1" data-underline="always">错误码</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

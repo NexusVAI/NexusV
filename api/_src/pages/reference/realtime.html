@@ -1,0 +1,291 @@
+---
+title: 建立实时语音会话
+fullTitle: 建立实时语音会话（WebSocket）| NexusVAI Developers
+description: 通过 WebSocket 与 gpt-live-1 进行全双工语音对话。事件格式与 OpenAI Live 协议一致，认证与限流在握手阶段完成。
+layout: wide
+tab: reference
+transform: true
+css: /api/assets/oai/primitives.css, /api/assets/reference.css
+js: /api/assets/reference.js
+---
+<div class="ref-root">
+<div class="ref-renderer">
+
+<div class="stl-page-nav-container">
+<nav aria-label="面包屑" class="_breadcrumbs_8beoj_1"><div class="_item_8beoj_9"><a class="_link_8beoj_15" href="/api/reference/">API 参考</a></div><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="_separator_8beoj_28"><path fill-rule="evenodd" d="M8.293 4.293a1 1 0 0 1 1.414 0l7 7a1 1 0 0 1 0 1.414l-7 7a1 1 0 0 1-1.414-1.414L14.586 12 8.293 5.707a1 1 0 0 1 0-1.414Z" clip-rule="evenodd"></path></svg><div class="_item_8beoj_9"><span class="_label_8beoj_16">实时语音</span></div></nav>
+<button type="button" class="page-copy-action" data-page-copy-action="" data-astro-cid-zl22b5wc=""><span class="page-copy-action__icon page-copy-action__icon--copy" aria-hidden="true" data-astro-cid-zl22b5wc=""><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2V4Zm2 2h4a2 2 0 0 1 2 2v6h2V4h-8v2ZM6 8v12h8V8H6Z" clip-rule="evenodd"></path></svg></span><span class="page-copy-action__icon page-copy-action__icon--check" aria-hidden="true" data-astro-cid-zl22b5wc=""><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M18.063 5.674a1 1 0 0 1 .263 1.39l-7.5 11a1 1 0 0 1-1.533.143l-4.5-4.5a1 1 0 1 1 1.414-1.414l3.647 3.647 6.82-10.003a1 1 0 0 1 1.39-.263Z" clip-rule="evenodd"></path></svg></span><span data-page-copy-label="" data-astro-cid-zl22b5wc="">复制页面</span></button>
+</div>
+
+<div class="stldocs-method _method_1btwc_3 stldocs-method-double-pane">
+<div class="stldocs-method-header _header_1yhgz_1 _pageHeader_1yhgz_20">
+<h1 class="stldocs-method-title text-emphasis heading-2xl">建立实时语音会话</h1>
+<div class="stldocs-method-route _route_1yhgz_28"><div class="_Badge_10t5o_1 not-content font-mono shrink-0" data-color="discovery" data-size="sm" data-variant="soft"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M14.447 7.106a1 1 0 0 1 .447 1.341l-4 8a1 1 0 1 1-1.788-.894l4-8a1 1 0 0 1 1.341-.447ZM6.6 7.2a1 1 0 0 1 .2 1.4L4.25 12l2.55 3.4a1 1 0 0 1-1.6 1.2l-3-4a1 1 0 0 1 0-1.2l3-4a1 1 0 0 1 1.4-.2Zm10.8 0a1 1 0 0 1 1.4.2l3 4a1 1 0 0 1 0 1.2l-3 4a1 1 0 0 1-1.6-1.2l2.55-3.4-2.55-3.4a1 1 0 0 1 .2-1.4Z" clip-rule="evenodd"></path></svg><span>WS</span></div><span class="stldocs-method-route-endpoint _endpoint_1yhgz_35">wss://chat.nexusvai.xyz/functions/v1/api-gateway/v1/live/sessions</span></div>
+</div>
+
+<div class="stldocs-method-body _body_1btwc_10" id="mainContent">
+<div class="stldocs-method-content-column _contentColumn_1btwc_16">
+
+<div class="stldocs-method-description _description_1btwc_20"><div class="ref-prose">
+<p>用 <code>GET</code> 发起 WebSocket 升级，建立一个与 <code>gpt-live-1</code> 的全双工语音会话：你持续发送麦克风音频，模型边听边说，并返回双向转写。事件格式与 OpenAI Live 协议一致。指南见 <a href="/api/docs/guides/realtime/">GPT-Live 概览</a>。</p>
+<p>认证、账户状态与限流都在握手阶段检查，未通过时直接返回 HTTP 错误，WebSocket 不会建立。握手成功后，在 20 秒内发送第一条事件 <code>session.start</code>。</p>
+<callout type="warning"><p>实时语音只能连接 <code>chat.nexusvai.xyz</code>。<code>cn.nexusvai.xyz</code> 不支持 WebSocket，连接会返回 <code>426 websocket_required</code>。不支持 WebRTC：用 <code>POST</code> 创建会话会返回 <code>400 live_webrtc_not_supported</code>。</p></callout>
+</div></div>
+
+<div class="stldocs-method-info _info_1btwc_39">
+
+<div class="_section_1btwc_47" id="handshake">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>握手请求头</span></h5>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="handshake"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="header-authorization">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">Authorization</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>Bearer cancri_sk_…</code>，服务端程序推荐使用；也可以用 <code>x-api-key</code>。三种方式至少提供一种。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="header-sec-websocket-protocol">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">Sec-WebSocket-Protocol</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>浏览器不能自定义 WebSocket 请求头，可以把密钥放在子协议 <code>openai-insecure-api-key.cancri_sk_…</code>（别名 <code>cancri-key.cancri_sk_…</code>）中，并同时附带一个普通子协议（例如 <code>cancri-live</code>）。服务端会选用普通子协议，密钥不会出现在响应头中。</p></div>
+</div></div>
+</div></div>
+<p class="ref-section-foot">密钥设置了模型白名单时，白名单必须包含 <code>gpt-live-1</code>；绑定了模型分组的密钥不能用于实时语音。不要把正式密钥写进公开网页，浏览器直连只适合本地调试。</p>
+</div>
+
+<div class="_section_1btwc_47" id="session-start">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>第一条事件：session.start</span><button type="button" class="_Button_6dmow_1 ml-auto appearance-none border-0 bg-transparent" data-color="secondary" data-variant="ghost" data-size="sm" aria-expanded="false" data-reference-property-toggle="session"><span class="_ButtonInner_6dmow_4"><span data-reference-expand-label="true"><span class="inline-flex items-center gap-1"><span>展开</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0V8h-3a1 1 0 0 1-1-1Zm-5 5a1 1 0 0 1 1 1v3h3a1 1 0 1 1 0 2H7a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1Z" clip-rule="evenodd"></path></svg></span></span><span data-reference-collapse-label="true" hidden=""><span class="inline-flex items-center gap-1"><span>收起</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 14a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-3H6a1 1 0 0 1-1-1Zm9-9a1 1 0 0 1 1 1v3h3a1 1 0 1 1 0 2h-4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"></path></svg></span></span></span></button></h5>
+<p class="ref-section-lead">必须是第一条事件且只能发送一次。未列出的字段会被拒绝（<code>unknown_parameter</code>），不会被忽略。</p>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="session"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="start-type">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">type</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">"session.start"</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4">
+<details class="stldocs-expander _disclosure_mjoyi_138">
+<summary class="stldocs-expander-summary _summary_mjoyi_12"><span class="stldocs-expander-summary-icon _icon_mjoyi_143" aria-hidden="true"></span><div class="stldocs-expander-summary-content _summaryContent_mjoyi_12"><div class="stldocs-property-info _info_mjoyi_16" id="start-session">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">session</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>会话设置。</p></div>
+</div></div></summary>
+<div class="stldocs-expander-content _disclosureContent_mjoyi_189"><div class="stldocs-property-children _children_mjoyi_192"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="start-session-model">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">model</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">"gpt-live-1"</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>只能是 <code>gpt-live-1</code>，可以省略。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="start-session-instructions">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">instructions</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>语音层的系统提示（语气、人设、语言等），最多 64,000 个字符。省略时使用默认指令；填写后按原文使用。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="start-session-audio">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">audio</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>format</code>：<code>{"type": "audio/pcm", "rate": 24000}</code>（默认）或 <code>rate: 16000</code>；电话场景可用 <code>audio/pcmu</code> / <code>audio/pcma</code>，<code>rate: 8000</code>。PCM 为 16 位小端、单声道。<code>output.voice</code>：音色名，例如 <code>marin</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="start-session-input">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">input</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>预置的对话历史，最多 128 条，<code>role</code> 为 <code>developer</code>、<code>user</code> 或 <code>assistant</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="start-session-delegation">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">delegation</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>后端设置：省略为官方 GPT-6-Luna 后端；<code>responses.model</code> 填站内模型 ID 时由该模型回答；<code>type: "client"</code> 只使用语音层。<code>acknowledgement_delay_ms</code> 取 0–10000。详见<a href="/api/docs/guides/realtime-sessions/">会话与后端模式</a>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="start-session-store">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">store</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">false</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>只能为 <code>false</code> 或省略。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="start-session-triggers">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">triggers</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">array</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>只能是空数组或省略（不支持 Decisions）。</p></div>
+</div></div>
+</div></div></div>
+</details>
+</div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="start-event_id">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">event_id</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>最多 128 个字符。出错时会在 <code>error.client_event_id</code> 中原样带回，所有客户端事件都可以带。</p></div>
+</div></div>
+</div></div>
+</div>
+
+<div class="_section_1btwc_47" id="client-events">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>客户端事件</span></h5>
+<p class="ref-section-lead">所有事件都是 JSON 文本帧，不接受二进制帧。会话开始前发送的事件会排队，最多 200 条。</p>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="client"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="client-input_audio">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">session.input_audio.append</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>持续推送麦克风音频，<code>audio</code> 为 base64，单条最多 2,000,000 个字符，建议每 20–100 ms 发送一块。静音也要发送。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="client-mute">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">session.input_audio.mute</span><span class="stldocs-text-punctuation"> / </span><span class="stldocs-text-identifier">.unmute</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>暂停或恢复收音。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="client-update">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">session.update</span><span class="stldocs-text-punctuation"> · </span><span class="stldocs-text-identifier">response.item.create</span><span class="stldocs-text-punctuation"> · </span><span class="stldocs-text-identifier">response.create</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>仅官方后端模式：修改后端设置、交回函数结果、让后端继续生成。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="client-append">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">session.commentary.append</span><span class="stldocs-text-punctuation"> 等</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>session.commentary.append</code>、<code>session.thinking.append</code>、<code>session.instructions.append</code>：只使用语音层时，由你的程序向语音层提供内容。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="client-close">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">session.close</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>结束会话。服务端返回 <code>session.closed</code>（带最终计费秒数）后断开。</p></div>
+</div></div>
+</div></div>
+</div>
+
+<div class="_section_1btwc_47" id="server-events">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>服务端事件</span></h5>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="server"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="server-started">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">session.started</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>会话已开始，之后开始持续发送音频。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="server-audio">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">session.output_audio.delta</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>回复音频（base64，格式同 <code>audio.format</code>）。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="server-transcript">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">session.input_transcript.delta</span><span class="stldocs-text-punctuation"> / </span><span class="stldocs-text-identifier">session.output_transcript.delta</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>用户语音与回复的转写增量。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="server-usage">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">session.usage.updated</span><span class="stldocs-text-punctuation"> / </span><span class="stldocs-text-identifier">session.closed</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>usage.seconds</code> 为累计计费秒数（不要相加）；<code>session.closed</code> 另带结束原因 <code>reason</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="server-cancri">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">cancri.*</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>NexusVAI 扩展事件，用于显示费用与状态：<code>cancri.session.created</code>、<code>cancri.billing.updated</code>、<code>cancri.session.closing</code>、<code>cancri.delegation.completed</code>。忽略它们不影响协议兼容。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="server-error">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">error</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>{"type": "error", "error": {"type", "code", "message", "param", "client_event_id"}}</code>。部分错误只拒绝这一条事件，会话继续，见<a href="/api/docs/guides/realtime-errors/">实时语音错误码</a>。</p></div>
+</div></div>
+</div></div>
+<p class="ref-section-foot">完整的事件字段见<a href="/api/docs/guides/realtime-events/">事件参考</a>。</p>
+</div>
+
+<div class="_section_1btwc_47" id="handshake-errors">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>握手错误</span></h5>
+<p class="ref-section-lead">握手失败时返回 OpenAI 格式的 JSON 错误。浏览器的 WebSocket 读不到状态码与响应体，只会触发 <code>onerror</code>，排查时请用服务端程序或 <code>curl</code>。</p>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="handshake-errors"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-live_webrtc_not_supported">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">live_webrtc_not_supported</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">400</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>用了 <code>POST</code>（WebRTC 的建会话方式），请改用 WebSocket。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-websocket_required">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">websocket_required</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">426</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>不是 WebSocket 升级请求，或连接了 <code>cn.nexusvai.xyz</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-invalid_api_key">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">invalid_api_key</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">401</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>密钥缺失、格式错误或已撤销。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-model_not_in_whitelist">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">model_not_in_whitelist</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">403</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>密钥的白名单不包含 <code>gpt-live-1</code>。绑定了模型分组时返回 <code>model_not_in_group</code>；账户被限制时返回 <code>account_suspended</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-key_quota">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">key_token_quota_exhausted</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">429</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>密钥的累计 token 上限已用完；累计请求数用完时为 <code>key_request_quota_exhausted</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-live_rate_limited">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">live_rate_limited</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">429</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>每分钟新建的会话数超过本档上限，按 <code>Retry-After</code> 等待。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-live_concurrency_limit">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">live_concurrency_limit</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">429</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>同时进行的会话数达到本档上限。关闭一个会话后重试。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-live_capacity_exhausted">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">live_capacity_exhausted</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">503</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>语音服务繁忙；<code>service_unavailable</code> 与 <code>live_disabled</code> 表示暂时不可用。按 <code>Retry-After</code> 重试。</p></div>
+</div></div>
+</div></div>
+<p class="ref-section-foot">限流错误的响应头带 <code>X-Cancri-Live-Tier</code>、<code>X-Cancri-Live-Max-Concurrent</code> 与 <code>X-Cancri-Live-Max-Duration</code>（秒）。各档位的会话限制见<a href="/api/docs/guides/realtime-billing/">计费与限制</a>。</p>
+</div>
+
+</div>
+</div>
+
+<div class="stldocs-method-example _example_1btwc_28 not-content">
+<div class="stldocs-snippet">
+<div class="ref-snippet-head" data-method="WS">
+<code-tabs title="建立实时语音会话">
+<pre data-lang="javascript" data-label="Node.js">import WebSocket from "ws";
+
+const url = "wss://chat.nexusvai.xyz/functions/v1/api-gateway/v1/live/sessions";
+const ws = new WebSocket(url, {
+  headers: { Authorization: `Bearer ${process.env.CANCRI_API_KEY}` },
+});
+
+ws.on("open", () => {
+  ws.send(JSON.stringify({
+    type: "session.start",
+    session: {
+      model: "gpt-live-1",
+      instructions: "你是一个简洁的中文语音助手。",
+      audio: { format: { type: "audio/pcm", rate: 24000 }, output: { voice: "marin" } },
+    },
+  }));
+});
+
+ws.on("message", (buf) => {
+  const event = JSON.parse(buf.toString());
+  if (event.type === "session.started") {
+    // 开始持续发送 session.input_audio.append
+  }
+  if (event.type === "session.output_transcript.delta") process.stdout.write(event.delta);
+  if (event.type === "error") console.error(event.error);
+});</pre>
+<pre data-lang="python" data-label="Python">import asyncio, json, os
+import websockets
+
+URL = "wss://chat.nexusvai.xyz/functions/v1/api-gateway/v1/live/sessions"
+
+async def main():
+    headers = {"Authorization": f"Bearer {os.environ['CANCRI_API_KEY']}"}
+    async with websockets.connect(URL, additional_headers=headers, max_size=None) as ws:
+        await ws.send(json.dumps({
+            "type": "session.start",
+            "session": {"model": "gpt-live-1", "audio": {"format": {"type": "audio/pcm", "rate": 24000}}},
+        }))
+        async for raw in ws:
+            event = json.loads(raw)
+            if event["type"] == "session.output_transcript.delta":
+                print(event["delta"], end="", flush=True)
+            elif event["type"] == "error":
+                print("error", event["error"])
+
+asyncio.run(main())</pre>
+<pre data-lang="javascript" data-label="浏览器">// 仅限本地调试：浏览器里的密钥对所有访问者可见
+const url = "wss://chat.nexusvai.xyz/functions/v1/api-gateway/v1/live/sessions";
+const ws = new WebSocket(url, ["cancri-live", "openai-insecure-api-key." + KEY]);
+
+ws.onopen = () => ws.send(JSON.stringify({
+  type: "session.start",
+  session: { model: "gpt-live-1", audio: { format: { type: "audio/pcm", rate: 24000 } } },
+}));
+ws.onmessage = (e) => console.log(JSON.parse(e.data).type);</pre>
+</code-tabs>
+</div>
+<div class="ref-response ref-wrap">
+<pre data-lang="text" data-title="服务端事件示例">{"type": "session.started", "session": {"id": "…"}}
+{"type": "cancri.session.created", "session_id": "live_9c93…", "mode": "official", "backend_model": "gpt-6-luna", "limits": {"max_duration_seconds": 1800, "idle_timeout_seconds": 90, "segment_seconds": 30}, "pricing": {"currency": "CNY", …}}
+{"type": "session.input_transcript.delta", "delta": "今天上海天气怎么样"}
+{"type": "session.output_transcript.delta", "delta": "我查一下。"}
+{"type": "session.output_audio.delta", "delta": "UklGR…"}
+{"type": "cancri.billing.updated", "final": false, "estimated": true, "seconds": 21, …}
+{"type": "session.closed", "reason": "…", "usage": {"seconds": 34}}</pre>
+</div>
+</div>
+</div>
+
+<div class="stldocs-method-response-column _responses_1btwc_72">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>服务端事件示例</span></h5>
+<div class="ref-wrap">
+<pre data-lang="text" data-title="服务端事件示例">{"type": "session.started", "session": {"id": "…"}}
+{"type": "cancri.session.created", "session_id": "live_9c93…", "mode": "official", "backend_model": "gpt-6-luna", "limits": {"max_duration_seconds": 1800, "idle_timeout_seconds": 90, "segment_seconds": 30}, "pricing": {"currency": "CNY", …}}
+{"type": "session.output_transcript.delta", "delta": "我查一下。"}
+{"type": "session.closed", "reason": "…", "usage": {"seconds": 34}}</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+</div>

@@ -30,7 +30,7 @@
   function detectSurface() {
     var p = String(global.location.pathname || "");
     if (/api_models\.html$/i.test(p) || p.indexOf("api_models") >= 0) return "api";
-    if (/\/chat\/api\//.test(p) || /\/api\/index\.html$/i.test(p)) return "api";
+    if (/\/chat\/api\//.test(p) || /^\/api(\/|$)/i.test(p) || /\/api\/index\.html$/i.test(p)) return "api";
     return "chat";
   }
 

@@ -1,0 +1,256 @@
+---
+title: API 参考
+description: 查阅 NexusVAI API 的端点、请求与响应格式、流式事件，以及认证、错误和速率限制等通用约定。
+tab: reference
+---
+<p>NexusVAI API 在同一个 Base URL 下提供三种文本生成协议：OpenAI Chat Completions、OpenAI Responses 与 Anthropic Messages，另有模型列表、余额查询和实时语音端点。所有端点使用同一把 API 密钥，按同一套规则计费和限速。</p>
+
+<h2 id="start-here">开始之前</h2>
+<ol>
+<li>选择协议：
+<ul>
+<li><a href="/api/reference/chat-completions/">Chat Completions</a>：通用对话，绝大多数 SDK 与客户端都支持。</li>
+<li><a href="/api/reference/responses/">Responses</a>：Codex CLI 等默认使用 Responses 协议的客户端。</li>
+<li><a href="/api/reference/messages/">Messages</a>：Claude Code、Anthropic SDK 等 Anthropic 协议客户端。</li>
+<li><a href="/api/reference/realtime/">实时语音会话</a>：通过 WebSocket 与 <code>gpt-live-1</code> 进行全双工语音对话。</li>
+</ul>
+</li>
+<li>在<a href="/api/console/keys/">控制台</a>创建 API 密钥（以 <code>cancri_sk_</code> 开头）。</li>
+<li>安装 OpenAI 或 Anthropic 官方 SDK，把 Base URL 指向 NexusVAI；也可以直接发送 HTTP 请求。步骤见<a href="/api/docs/quickstart/">快速开始</a>。</li>
+<li>用 <a href="/api/reference/models/"><code>GET /v1/models</code></a> 选择模型 ID，用 <a href="/api/reference/balance/"><code>GET /v1/balance</code></a> 确认密钥有效。</li>
+<li>上线前阅读本页的<a href="#errors">错误</a>与<a href="#rate-limit-headers">速率限制响应头</a>，并参考<a href="/api/docs/guides/rate-limits/">速率限制</a>指南。</li>
+</ol>
+
+<h2 id="endpoints">端点一览</h2>
+<table>
+<thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td><code>POST</code></td><td><a href="/api/reference/chat-completions/"><code>/v1/chat/completions</code></a></td><td>创建对话补全（OpenAI Chat Completions）</td></tr>
+<tr><td><code>POST</code></td><td><a href="/api/reference/responses/"><code>/v1/responses</code></a></td><td>创建响应（OpenAI Responses）</td></tr>
+<tr><td><code>POST</code></td><td><a href="/api/reference/messages/"><code>/v1/messages</code></a></td><td>创建消息（Anthropic Messages）</td></tr>
+<tr><td><code>POST</code></td><td><a href="/api/reference/count-tokens/"><code>/v1/messages/count_tokens</code></a></td><td>估算 Messages 请求的输入 token 数</td></tr>
+<tr><td><code>GET</code></td><td><a href="/api/reference/models/"><code>/v1/models</code></a></td><td>列出可用模型</td></tr>
+<tr><td><code>GET</code></td><td><a href="/api/reference/balance/"><code>/v1/balance</code></a></td><td>查询账户余额与当前密钥的最近用量</td></tr>
+<tr><td><code>GET</code>（WebSocket）</td><td><a href="/api/reference/realtime/"><code>/v1/live/sessions</code></a></td><td>建立 <code>gpt-live-1</code> 实时语音会话</td></tr>
+</tbody>
+</table>
+<p><code>/v1/images/generations</code> 与 <code>/v1/videos/generations</code> 只对网页版开放，通过 API 调用返回 <code>403 endpoint_disabled</code>。本页没有列出的路径（例如 <code>/v1/embeddings</code>、<code>/v1/models/{id}</code>）不存在，返回 <code>404</code>。</p>
+
+<h2 id="base-url">Base URL</h2>
+<table>
+<thead><tr><th>用途</th><th>Base URL</th></tr></thead>
+<tbody>
+<tr><td>OpenAI 协议的 SDK 与客户端</td><td><code>https://cn.nexusvai.xyz/v1</code></td></tr>
+<tr><td>Anthropic SDK、Claude Code</td><td><code>https://cn.nexusvai.xyz</code>（不带 <code>/v1</code>，SDK 会自动拼接 <code>/v1/messages</code>）</td></tr>
+<tr><td>实时语音（WebSocket）</td><td><code>wss://chat.nexusvai.xyz/functions/v1/api-gateway/v1/live/sessions</code></td></tr>
+</tbody>
+</table>
+<p>也可以使用备用地址 <code>https://chat.nexusvai.xyz/functions/v1/api-gateway</code>（OpenAI 协议在末尾加 <code>/v1</code>），两个地址的密钥、模型 ID、请求格式与计费完全相同。<code>cn.nexusvai.xyz</code> 不支持 WebSocket，实时语音只能连接上表中的 <code>chat.nexusvai.xyz</code> 地址。</p>
+
+<h2 id="authentication">认证</h2>
+<p>NexusVAI API 使用 API 密钥认证。在请求头中用下面任一方式携带密钥：</p>
+<pre data-lang="http" data-label="HTTP">Authorization: Bearer cancri_sk_...
+x-api-key: cancri_sk_...</pre>
+<p>OpenAI SDK 发送 <code>Authorization</code>，Anthropic SDK 发送 <code>x-api-key</code>，两种写法在所有端点上等价；同时出现时以 <code>Authorization</code> 为准。密钥由前缀 <code>cancri_sk_</code> 加 48 个 base64url 字符组成，共 58 个字符。</p>
+<code-tabs title="携带密钥">
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/balance \
+  -H "Authorization: Bearer $CANCRI_API_KEY"</pre>
+<pre data-lang="python" data-label="Python">import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://cn.nexusvai.xyz/v1",
+    api_key=os.environ["CANCRI_API_KEY"],  # 以 Authorization: Bearer 发送
+)</pre>
+<pre data-lang="javascript" data-label="Node.js">import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  baseURL: "https://cn.nexusvai.xyz",
+  apiKey: process.env.CANCRI_API_KEY, // 以 x-api-key 发送
+});</pre>
+</code-tabs>
+<ul>
+<li><code>GET /v1/models</code> 不校验密钥；其他端点缺少密钥或密钥无效时返回 <code>401 invalid_api_key</code>。</li>
+<li>同一网络在短时间内反复使用不存在的密钥，会暂时收到 <code>429 auth_rate_limited</code>，请按 <code>Retry-After</code> 等待。</li>
+<li>团队密钥的格式与个人密钥相同，费用从团队余额扣除，速率限制按团队计算，见<a href="/api/docs/guides/teams/">团队</a>。</li>
+<li>API 密钥只用于 <code>/v1/*</code> 接口；网页登录会话不能代替密钥。</li>
+</ul>
+<callout type="warning"><p><strong>密钥是机密。</strong>不要把它写进浏览器代码、移动应用或公开仓库。API 只允许 NexusVAI 自己的网站跨域调用，第三方网页无法在浏览器里直接请求；请从你的服务端发起请求，把密钥放在环境变量或密钥管理服务中。</p></callout>
+
+<h2 id="conventions">请求与响应约定</h2>
+<p>三个文本生成端点共用下面的规则。各端点还有自己的字段说明，见对应的参考页。</p>
+<table>
+<thead><tr><th>项目</th><th>规则</th></tr></thead>
+<tbody>
+<tr><td>请求体</td><td>JSON 对象，<code>Content-Type: application/json</code>。不是合法的 JSON 对象时返回 <code>400</code>。</td></tr>
+<tr><td>大小上限</td><td>10 MB（10,485,760 字节），超出返回 <code>413 payload_too_large</code>。</td></tr>
+<tr><td><code>model</code></td><td>填 <code>GET /v1/models</code> 返回的 ID。响应中的 <code>model</code> 始终是这个公开 ID。</td></tr>
+<tr><td>数值参数</td><td><code>max_tokens</code>、<code>max_output_tokens</code>、<code>temperature</code>、<code>top_p</code> 必须是非负的有限数，否则返回 <code>400 invalid_request_parameter</code>。</td></tr>
+<tr><td><code>service_tier</code></td><td>只接受省略、<code>null</code>、<code>"auto"</code>、<code>"default"</code>，其他值返回 <code>400 invalid_request_parameter</code>。接受的值也不会转发给模型。</td></tr>
+<tr><td>推理强度</td><td>GPT 系列模型（ID 含 <code>gpt-</code>）的 <code>reasoning_effort</code> 与 <code>reasoning.effort</code> 只接受 <code>none</code>、<code>low</code>、<code>medium</code>、<code>high</code>、<code>xhigh</code>、<code>max</code>（<code>reasoning.effort</code> 另接受 <code>minimal</code>）。</td></tr>
+<tr><td>输出上限</td><td>没有设置 <code>max_tokens</code>、<code>max_completion_tokens</code> 或 <code>max_output_tokens</code> 时，网关按模型目录补上 <code>max_tokens</code>，取值与 <code>GET /v1/models</code> 中的 <code>max_output_tokens</code> 相同。</td></tr>
+<tr><td>字段转发</td><td>Chat Completions 原样转发参考页未列出的字段。Responses 与 Messages 会先转换成 Chat Completions，只转发参考页列出的字段，其余字段被忽略。</td></tr>
+<tr><td>ID</td><td>响应 ID 由 NexusVAI 生成（<code>chatcmpl-</code>、<code>resp_</code>、<code>msg_</code> 前缀）。工具调用 ID 改写为 <code>call_cx</code> 或 <code>toolu_cx</code> 开头，同一个调用在流式与非流式响应中、以及你在下一轮回传时保持一致。</td></tr>
+<tr><td><code>usage</code></td><td>只返回 token 数量（Chat Completions 另含 <code>completion_tokens_details.reasoning_tokens</code>），不返回缓存命中明细。缓存折扣已计入扣费，可在 <code>GET /v1/balance</code> 的 <code>cost</code> 中核对。</td></tr>
+<tr><td>超时</td><td>网关等待模型开始响应最多 180 秒，超时返回 <code>504</code>。流式响应开始输出后不再受这个限制。</td></tr>
+</tbody>
+</table>
+
+<h2 id="streaming">流式输出</h2>
+<p>在请求中设置 <code>"stream": true</code>，三个文本生成端点都会以 Server-Sent Events（<code>text/event-stream</code>）返回增量结果：</p>
+<table>
+<thead><tr><th>端点</th><th>事件格式</th><th>结束标志</th><th>用量</th></tr></thead>
+<tbody>
+<tr><td>Chat Completions</td><td>每行 <code>data: {chat.completion.chunk}</code></td><td><code>data: [DONE]</code></td><td>最后一个数据块（<code>choices</code> 为空）</td></tr>
+<tr><td>Responses</td><td><code>event: response.*</code>，数据中带 <code>type</code> 与 <code>sequence_number</code></td><td><code>response.completed</code></td><td><code>response.completed</code> 的 <code>usage</code></td></tr>
+<tr><td>Messages</td><td><code>event: message_start</code>、<code>content_block_*</code>、<code>message_delta</code></td><td><code>message_stop</code></td><td><code>message_delta</code> 的 <code>usage</code></td></tr>
+</tbody>
+</table>
+<code-tabs title="流式输出">
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/chat/completions \
+  -N \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $CANCRI_API_KEY" \
+  -d '{
+    "model": "deepseek-v4-flash",
+    "messages": [{"role": "user", "content": "写一句问候语"}],
+    "stream": true
+  }'</pre>
+<pre data-lang="python" data-label="Python">import os
+from openai import OpenAI
+
+client = OpenAI(base_url="https://cn.nexusvai.xyz/v1", api_key=os.environ["CANCRI_API_KEY"])
+
+stream = client.chat.completions.create(
+    model="deepseek-v4-flash",
+    messages=[{"role": "user", "content": "写一句问候语"}],
+    stream=True,
+)
+for chunk in stream:
+    if chunk.choices:
+        print(chunk.choices[0].delta.content or "", end="", flush=True)</pre>
+<pre data-lang="javascript" data-label="Node.js">import OpenAI from "openai";
+
+const client = new OpenAI({ baseURL: "https://cn.nexusvai.xyz/v1", apiKey: process.env.CANCRI_API_KEY });
+
+const stream = await client.chat.completions.create({
+  model: "deepseek-v4-flash",
+  messages: [{ role: "user", content: "写一句问候语" }],
+  stream: true,
+});
+for await (const chunk of stream) {
+  process.stdout.write(chunk.choices[0]?.delta?.content || "");
+}</pre>
+</code-tabs>
+<ul>
+<li>Chat Completions 的流式请求总会被设置 <code>stream_options.include_usage: true</code>，所以最后一个数据块一定带 <code>usage</code>。</li>
+<li>模型思考较久时，Chat Completions 流中会出现 <code>: keep-alive</code> 注释行，按 SSE 规范忽略即可。</li>
+<li>流开始后才发生的错误不会改变 HTTP 状态码（已经是 <code>200</code>），而是以协议内的事件返回：Chat Completions 为带 <code>error</code> 字段的数据块，Responses 为 <code>response.failed</code> 或 <code>response.incomplete</code>，Messages 为 <code>event: error</code>。具体取值见各端点页。</li>
+<li>中途断开连接（例如用户按下停止）不会撤销计费，网关仍按已发送的输入和已生成的输出结算。</li>
+</ul>
+
+<h2 id="rate-limit-headers">速率限制响应头</h2>
+<p>速率限制按账户计算（团队密钥按团队计算），指标是 RPM（每分钟请求数）与 TPM（每分钟 token 数）。Chat Completions 与 Responses 的响应带以下响应头：</p>
+<table>
+<thead><tr><th>响应头</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>x-ratelimit-limit-requests</code></td><td>RPM 上限</td></tr>
+<tr><td><code>x-ratelimit-remaining-requests</code></td><td>剩余的请求数</td></tr>
+<tr><td><code>x-ratelimit-reset-requests</code></td><td>请求额度恢复到上限所需的时间，例如 <code>1s</code>、<code>6m0s</code></td></tr>
+<tr><td><code>x-ratelimit-limit-tokens</code></td><td>TPM 上限</td></tr>
+<tr><td><code>x-ratelimit-remaining-tokens</code></td><td>剩余的 token 数</td></tr>
+<tr><td><code>x-ratelimit-reset-tokens</code></td><td>token 额度恢复到上限所需的时间</td></tr>
+</tbody>
+</table>
+<p>Messages 返回对应的 <code>anthropic-ratelimit-requests-limit</code>、<code>anthropic-ratelimit-requests-remaining</code>、<code>anthropic-ratelimit-requests-reset</code> 与 <code>anthropic-ratelimit-tokens-*</code>，其中 reset 是 RFC 3339 时间。响应头的值取账户限额与密钥限额中更严的一层。超出限额时返回 <code>429 rate_limit_exceeded</code>，<code>error.limit</code> 为 <code>requests</code> 或 <code>tokens</code>，<code>error.scope</code> 为 <code>account</code> 或 <code>key</code>。各档位的数值见<a href="/api/docs/guides/rate-limits/">速率限制</a>。</p>
+
+<h2 id="errors">错误</h2>
+<p>错误使用标准 HTTP 状态码，<code>error.code</code> 给出具体原因。请按 <code>error.code</code> 处理错误，不要依赖 <code>message</code> 的文字。</p>
+<code-tabs title="错误格式">
+<pre data-lang="json" data-label="OpenAI 格式">{
+  "error": {
+    "message": "Invalid API key. Provide a valid key as Bearer token (Authorization) or x-api-key header.",
+    "type": "authentication_error",
+    "code": "invalid_api_key"
+  }
+}</pre>
+<pre data-lang="json" data-label="Anthropic 格式">{
+  "type": "error",
+  "error": {
+    "type": "rate_limit_error",
+    "message": "Rate limit reached for requests per minute (RPM): limit 60. Please try again in 2s.",
+    "code": "rate_limit_exceeded"
+  }
+}</pre>
+</code-tabs>
+<ul>
+<li>Chat Completions、Responses、<code>/v1/models</code>、<code>/v1/balance</code> 与实时语音握手使用 OpenAI 格式。</li>
+<li>Messages 的模型、计费、限流与上游错误使用 Anthropic 格式；认证、请求体校验与密钥限制这些前置检查返回的错误仍是 OpenAI 格式。</li>
+<li><code>/v1/messages/count_tokens</code> 使用 Anthropic 格式，且不含 <code>code</code> 字段。</li>
+<li>官方 SDK 都能解析这两种格式。自己解析时，先读 <code>error.code</code>，再读 <code>error.type</code>。</li>
+</ul>
+
+<h3 id="error-codes">错误码</h3>
+<table>
+<thead><tr><th>HTTP</th><th><code>error.code</code></th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>400</td><td><code>invalid_request_parameter</code></td><td>参数取值不被接受：<code>service_tier</code>、<code>reasoning_effort</code> / <code>reasoning.effort</code>（<code>error.param</code> 指出字段），或数值参数为负数。</td></tr>
+<tr><td>400</td><td><code>invalid_content_length</code></td><td><code>Content-Length</code> 请求头不是合法的非负数。</td></tr>
+<tr><td>400</td><td><code>null</code></td><td>请求体不是合法的 JSON 对象，或缺少 <code>model</code>。</td></tr>
+<tr><td>400</td><td><code>unsupported_anthropic_content</code></td><td>Messages 请求包含网关无法转换的内容块，例如 PDF 文档或思考块。</td></tr>
+<tr><td>400</td><td><code>image_input_unsupported</code></td><td>所选模型只接受文本输入。去掉图片，或换用支持视觉输入的模型。</td></tr>
+<tr><td>400</td><td><code>invalid_limit</code></td><td><code>GET /v1/balance</code> 的 <code>limit</code> 不是 0–100 的整数。</td></tr>
+<tr><td>401</td><td><code>invalid_api_key</code></td><td>密钥缺失、格式错误、不存在或已撤销。</td></tr>
+<tr><td>402</td><td><code>insufficient_balance</code></td><td>余额不足以支付本次请求的预估费用。不可重试，充值后再试。</td></tr>
+<tr><td>402</td><td><code>model_not_priced</code></td><td>该模型尚未定价，暂不可调用。请换用其他模型。</td></tr>
+<tr><td>403</td><td><code>account_suspended</code></td><td>账户已被限制使用。</td></tr>
+<tr><td>403</td><td><code>model_ide_only</code></td><td>该模型只在 Cancri Code 桌面端可用，不对 API 开放。</td></tr>
+<tr><td>403</td><td><code>model_not_in_whitelist</code></td><td>密钥设置了模型白名单，所选模型不在其中。</td></tr>
+<tr><td>403</td><td><code>model_not_in_group</code></td><td>密钥绑定了模型分组，所选模型不在该分组中。</td></tr>
+<tr><td>403</td><td><code>endpoint_disabled</code></td><td>图像与视频生成端点不对 API 开放。</td></tr>
+<tr><td>404</td><td><code>model_not_found</code></td><td>模型不存在、已下架或已停用（Messages 返回 <code>not_found_error</code>，不含 <code>code</code>）。</td></tr>
+<tr><td>404</td><td><code>null</code></td><td>请求的路径不存在。</td></tr>
+<tr><td>410</td><td><code>market_discontinued</code></td><td>请求了已下线功能的模型（<code>px:</code> 前缀）。</td></tr>
+<tr><td>413</td><td><code>payload_too_large</code></td><td>请求体超过 10 MB。</td></tr>
+<tr><td>426</td><td><code>websocket_required</code></td><td>实时语音端点只接受 WebSocket 升级请求。</td></tr>
+<tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>超出 RPM 或 TPM。按 <code>Retry-After</code> 等待后重试。</td></tr>
+<tr><td>429</td><td><code>request_too_large</code></td><td>单次请求的预估 token 超过本档 TPM 的 4 倍。不可重试，请缩短上下文或调低输出上限。</td></tr>
+<tr><td>429</td><td><code>free_plan_exhausted</code></td><td>免费额度已用完，<code>error.resets_at</code> 给出重置时间。不可重试，见<a href="/api/docs/guides/free-tier/">免费额度</a>。</td></tr>
+<tr><td>429</td><td><code>key_token_quota_exhausted</code></td><td>密钥自设的累计 token 上限已用完。不可重试，在<a href="/api/console/keys/">控制台</a>调整。</td></tr>
+<tr><td>429</td><td><code>key_request_quota_exhausted</code></td><td>密钥自设的累计请求数上限已用完。不可重试。</td></tr>
+<tr><td>429</td><td><code>auth_rate_limited</code></td><td>同一网络短时间内多次使用无效密钥。按 <code>Retry-After</code> 等待。</td></tr>
+<tr><td>429</td><td><code>upstream_rate_limit</code></td><td>所选模型暂时繁忙，与你的账户限额无关。稍后重试或换用其他模型。</td></tr>
+<tr><td>401&nbsp;/&nbsp;403</td><td><code>upstream_auth_error</code></td><td>所选模型暂时不可用，与你的密钥无关。请换用其他模型。</td></tr>
+<tr><td>4xx&nbsp;/&nbsp;5xx</td><td><code>upstream_error</code></td><td>模型返回错误、超时（<code>504</code>）或返回了无效响应（<code>502</code>）。稍后重试或换用其他模型。</td></tr>
+<tr><td>503</td><td><code>service_unavailable</code></td><td>认证或查询服务暂时不可用，可以重试。</td></tr>
+<tr><td>503</td><td><code>quota_check_failed</code></td><td>计费服务暂时不可用，可以重试。</td></tr>
+<tr><td>503</td><td><code>model_group_unavailable</code></td><td>暂时无法确认密钥绑定的模型分组，可以重试。</td></tr>
+<tr><td>503</td><td><code>hyperdrive_quota_exhausted</code></td><td>服务暂时降级，按 <code>Retry-After</code> 重试。<code>GET /v1/models</code> 不受影响。</td></tr>
+<tr><td>503</td><td><code>api_paused</code></td><td>API 维护中，带 <code>Retry-After: 86400</code>。<code>GET /v1/models</code> 仍可读取。</td></tr>
+<tr><td>503</td><td><code>maintenance_mode</code></td><td>系统维护中，所有端点暂停服务。</td></tr>
+</tbody>
+</table>
+<p>实时语音握手另有 <code>live_*</code> 系列错误码，见<a href="/api/reference/realtime/#handshake-errors">实时语音会话</a>。</p>
+
+<h3 id="retries">重试</h3>
+<ul>
+<li>响应带 <code>Retry-After</code> 时，按其取值（秒）等待后重试。</li>
+<li>响应带 <code>x-should-retry: false</code> 时不要重试：<code>402 insufficient_balance</code>、<code>429 request_too_large</code>、<code>429 free_plan_exhausted</code>、<code>429 key_token_quota_exhausted</code>、<code>429 key_request_quota_exhausted</code>。官方 OpenAI 与 Anthropic SDK 会读取这个响应头，自动停止重试。</li>
+<li>其他 <code>429</code> 与 <code>5xx</code> 没有 <code>Retry-After</code> 时，使用带随机抖动的指数退避。</li>
+<li><code>400</code>、<code>401</code>、<code>403</code>、<code>404</code> 需要先修正请求或配置，原样重试不会成功。</li>
+</ul>
+
+<h2 id="compatibility">版本与兼容性</h2>
+<ul>
+<li>路径固定为 <code>/v1</code>，没有单独的 API 版本号或版本请求头。<code>anthropic-version</code> 可以照常发送，网关不校验它的取值。</li>
+<li>请求与响应遵循 OpenAI 与 Anthropic 的公开协议，官方 SDK 可以直接使用。各端点页列出了网关读取、改写或忽略的字段。</li>
+<li>网关不保存对话状态：Responses 的 <code>previous_response_id</code>、<code>store</code>、<code>background</code> 会被忽略，每次请求都要带上完整上下文。网关也不执行任何工具，网页搜索、文件检索、代码解释器等托管工具不会在服务端运行。</li>
+<li>模型会上下架，以 <code>GET /v1/models</code> 为准；部分已退役的模型 ID 会被自动映射到替代模型。目录变化可能要几分钟后才反映到 <code>GET /v1/models</code>。</li>
+</ul>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/reference/chat-completions/" title="创建对话补全" icon="cube">从最常用的 Chat Completions 端点开始。</card>
+<card href="/api/docs/guides/error-codes/" title="处理错误">按错误码区分可重试与不可重试的情况。</card>
+<card href="/api/docs/guides/rate-limits/" title="速率限制">了解各档位的 RPM 与 TPM。</card>
+</cards>

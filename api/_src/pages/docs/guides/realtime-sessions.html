@@ -1,0 +1,185 @@
+---
+title: 会话与后端模式
+description: 用 session.start 配置语音层的指令、音频格式和对话历史，并在官方后端、站内模型和只买语音层之间选择。
+tab: realtime
+---
+<p>每个会话都以 <code>session.start</code> 开始。它决定语音层怎么说话、用什么音频格式，也决定由哪个后端回答问题。会话开始后，只有官方后端的参数还能修改，其他设置都固定下来。</p>
+
+<h2 id="session-start">配置 session.start</h2>
+<pre data-lang="json" data-title="session.start">{
+  "type": "session.start",
+  "session": {
+    "model": "gpt-live-1",
+    "instructions": "你是一个简洁的中文语音助手。",
+    "audio": {
+      "format": { "type": "audio/pcm", "rate": 24000 },
+      "output": { "voice": "marin" }
+    }
+  }
+}</pre>
+<p><code>session.start</code> 必须是第一条事件，且只能发送一次。服务端只接受下表中的字段：未列出的字段会返回 <code>unknown_parameter</code> 并结束会话，而不是被忽略。</p>
+<table>
+<thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>session.model</code></td><td>string</td><td>只能是 <code>gpt-live-1</code>，可以省略。</td></tr>
+<tr><td><code>session.instructions</code></td><td>string</td><td>语音层的系统提示，用来设定语气、人设和语言，最多 64,000 个字符。省略时使用默认指令：用用户的语言简短自然地回答，需要事实、实时信息、计算或推理时交给后端。填写后按原文使用，不再叠加默认指令。</td></tr>
+<tr><td><code>session.audio.format</code></td><td>object</td><td>输入与输出共用的音频格式。<code>{"type": "audio/pcm", "rate": 24000}</code>（默认）或 <code>rate: 16000</code>；电话场景可用 <code>audio/pcmu</code> 或 <code>audio/pcma</code>，<code>rate</code> 为 <code>8000</code>。PCM 为 16 位小端、单声道。</td></tr>
+<tr><td><code>session.audio.output.voice</code></td><td>string</td><td>音色名，例如 <code>marin</code>。可用音色以 OpenAI 的 GPT-Live 文档为准。</td></tr>
+<tr><td><code>session.input</code></td><td>array</td><td>预置的对话历史，最多 128 条。每条只能包含 <code>type</code>（<code>"message"</code> 或省略）、<code>role</code>（<code>developer</code>、<code>user</code> 或 <code>assistant</code>）、<code>content</code> 和 <code>id</code>。</td></tr>
+<tr><td><code>session.store</code></td><td>boolean</td><td>只能为 <code>false</code> 或省略。</td></tr>
+<tr><td><code>session.triggers</code></td><td>array</td><td>只能为空数组或省略（不支持 Decisions）。</td></tr>
+<tr><td><code>session.delegation</code></td><td>object</td><td>后端设置，见<a href="#choose-backend">选择后端</a>。省略时使用官方后端 GPT-6-Luna，并默认启用联网搜索。</td></tr>
+<tr><td><code>session.delegation.acknowledgement_delay_ms</code></td><td>integer</td><td>委派开始后，等待多少毫秒让语音层先说一句「好的，我查一下」之类的话。取值 0–10000。</td></tr>
+<tr><td><code>event_id</code></td><td>string</td><td>可选，最多 128 个字符，随 <code>session.start</code> 一起转发给上游。</td></tr>
+</tbody>
+</table>
+
+<h2 id="choose-backend">选择后端</h2>
+<p>gpt-live-1 只负责听和说。需要回答实质问题时，它发起一次<strong>委派</strong>，由后端给出答案。<code>cancri.session.created</code> 事件的 <code>mode</code> 字段会告诉你会话最终使用了哪种模式。</p>
+<table>
+<thead><tr><th>模式</th><th>怎么配置 <code>delegation</code></th><th><code>mode</code></th><th>后端费用</th></tr></thead>
+<tbody>
+<tr><td>官方后端</td><td>省略；或 <code>type</code> 为 <code>"responses"</code>，<code>responses.model</code> 省略或为 <code>gpt-6-luna</code></td><td><code>official</code></td><td>GPT-6-Luna 的 token 与联网次数</td></tr>
+<tr><td>站内模型</td><td><code>type</code> 为 <code>"responses"</code>，<code>responses.model</code> 为站内模型 id</td><td><code>site</code></td><td>按该模型的价格</td></tr>
+<tr><td>只买语音层</td><td><code>type</code> 为 <code>"client"</code></td><td><code>voice_only</code></td><td>无</td></tr>
+</tbody>
+</table>
+<p>写了 <code>delegation</code> 时，<code>type</code> 必填，只能是 <code>responses</code> 或 <code>client</code>。</p>
+
+<h2 id="official-backend">官方后端：GPT-6-Luna</h2>
+<p>默认模式。GPT-6-Luna 通过 Responses 协议生成答案，可以联网搜索，也可以调用你定义的函数。</p>
+<pre data-lang="json" data-title="官方后端 + 联网 + 函数工具">{
+  "type": "session.start",
+  "session": {
+    "model": "gpt-live-1",
+    "instructions": "你是旅行助手，回答简短。",
+    "delegation": {
+      "type": "responses",
+      "responses": {
+        "model": "gpt-6-luna",
+        "instructions": "需要实时信息时先联网搜索。",
+        "tools": [
+          { "type": "web_search" },
+          {
+            "type": "function",
+            "name": "get_order",
+            "description": "查订单状态",
+            "parameters": {
+              "type": "object",
+              "properties": { "order_id": { "type": "string" } },
+              "required": ["order_id"]
+            }
+          }
+        ],
+        "tool_choice": "auto",
+        "reasoning": { "effort": "low" },
+        "max_output_tokens": 2048
+      }
+    }
+  }
+}</pre>
+<table>
+<thead><tr><th><code>delegation.responses</code> 字段</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>model</code></td><td>只能是 <code>gpt-6-luna</code>，省略即为它。</td></tr>
+<tr><td><code>instructions</code></td><td>后端的系统提示，最多 64,000 个字符。省略时使用默认指令：答案依赖实时或不确定的事实时联网搜索，回答简短（会被朗读出来）。</td></tr>
+<tr><td><code>tools</code></td><td>最多 32 个，类型只能是 <code>web_search</code>（按次计费）、<code>function</code> 或 <code>custom</code>（由你执行，没有工具费）。<code>function</code> 和 <code>custom</code> 必须带 <code>name</code>。其他类型返回 <code>live_tool_not_allowed</code>。省略时默认 <code>[{"type": "web_search"}]</code>；传 <code>[]</code> 可关闭联网。</td></tr>
+<tr><td><code>tool_choice</code></td><td><code>auto</code>、<code>none</code>、<code>required</code>，或指向上述类型的某个工具。省略 <code>tools</code> 时默认为 <code>auto</code>。</td></tr>
+<tr><td><code>parallel_tool_calls</code></td><td>boolean。</td></tr>
+<tr><td><code>max_output_tokens</code></td><td>整数，16–128000。</td></tr>
+<tr><td><code>reasoning.effort</code></td><td><code>none</code>、<code>low</code>、<code>medium</code>、<code>high</code>、<code>xhigh</code> 或 <code>max</code>。越高越慢，输出 token 越多，费用也越高。</td></tr>
+<tr><td><code>service_tier</code></td><td>只能是 <code>default</code>。不支持 Fast / priority，其他取值返回 <code>live_service_tier_not_allowed</code>。</td></tr>
+<tr><td><code>text</code></td><td>object，含义与 Responses API 相同。</td></tr>
+</tbody>
+</table>
+
+<h3 id="update-backend">在会话中修改后端</h3>
+<p>官方后端模式下，可以用 <code>session.update</code> 修改 <code>delegation.responses</code>，同样受上表约束。音色、音频格式、<code>instructions</code> 等其他字段在会话开始后不能修改，会返回 <code>immutable_field_update</code>；把 <code>model</code> 改成 <code>gpt-6-luna</code> 以外的值会返回 <code>live_backend_model_not_allowed</code>。这些错误只拒绝当前这条事件，会话继续。</p>
+<pre data-lang="json" data-title="session.update">{
+  "type": "session.update",
+  "session": {
+    "delegation": {
+      "responses": { "reasoning": { "effort": "medium" } }
+    }
+  }
+}</pre>
+
+<h3 id="function-calls">处理函数调用</h3>
+<p>后端调用你的函数时，<code>response.event</code> 里会出现 <code>function_call</code> 输出项。执行完函数后，把结果交回，再让后端继续生成：</p>
+<pre data-lang="javascript" data-title="交回函数结果">ws.send(JSON.stringify({
+  type: "response.item.create",
+  item: {
+    type: "function_call_output",
+    call_id: "call_...", // 与 function_call 中的 call_id 相同
+    output: JSON.stringify({ status: "已发货" }),
+  },
+}));
+ws.send(JSON.stringify({ type: "response.create" }));</pre>
+<p><code>response.item.create</code> 只接受 <code>function_call_output</code> 和 <code>custom_tool_call_output</code> 两种 item，且必须带 <code>call_id</code>。</p>
+
+<h2 id="site-backend">站内模型做后端</h2>
+<p>把 <code>responses.model</code> 设为 <code>GET /v1/models</code> 中的任意模型 id。语音层仍是 gpt-live-1，回答交给你选的模型：</p>
+<pre data-lang="json" data-title="站内模型做后端">{
+  "type": "session.start",
+  "session": {
+    "model": "gpt-live-1",
+    "delegation": {
+      "type": "responses",
+      "responses": {
+        "model": "claude-haiku-5.5",
+        "instructions": "用中文一两句话回答。",
+        "max_output_tokens": 512
+      }
+    }
+  }
+}</pre>
+<p>每次语音层发起委派，服务端会把截至当前的双向转写（最近 60 轮、约 24,000 个字符）整理成对话，用<strong>你的 Key</strong> 调用一次 <code>/v1/chat/completions</code>，再把答案交给语音层朗读。</p>
+<ul>
+<li>只接受 <code>model</code>、<code>instructions</code> 和 <code>max_output_tokens</code>（16–4096，默认 1024）。不支持工具：传入 <code>tools</code> 等其他字段会返回 <code>live_site_backend_unsupported_parameter</code>。需要联网时请使用官方后端。</li>
+<li>模型不在 <code>GET /v1/models</code> 中时，会话不会开始（<code>live_backend_model_not_allowed</code>），也不收费。</li>
+<li>后端调用和普通 API 调用完全一样：按该模型的价格计费，出现在用量记录里，并受 Key 的模型白名单和额度约束。</li>
+<li>每次回答完成后，你会收到 <a href="/api/docs/guides/realtime-events/#cancri-delegation-completed"><code>cancri.delegation.completed</code></a>，里面有模型原文、耗时和 token 数，方便显示或记录。</li>
+<li>后端收到的是语音识别出的文字，可能有错字。</li>
+<li>同一时间最多处理 2 个回答，超出时语音层会请用户稍等。单次回答最长 90 秒，超时后语音层会请用户再说一次。</li>
+<li>站内模型模式不能用 <code>session.update</code> 修改后端，也不能使用 <code>response.*</code> 事件。</li>
+</ul>
+
+<h2 id="voice-only">只买语音层</h2>
+<p>如果你已经有自己的 Agent，只缺语音交互，把 <code>delegation.type</code> 设为 <code>client</code>。这种模式只收语音费。</p>
+<pre data-lang="json" data-title="只买语音层">{
+  "type": "session.start",
+  "session": { "model": "gpt-live-1", "delegation": { "type": "client" } }
+}</pre>
+<p>语音层需要答案时，会发来一个委派事件：</p>
+<pre data-lang="json" data-title="session.delegation.created">{
+  "type": "session.delegation.created",
+  "delegation": { "id": "item_9tA2bF3h7K9m2P5q8R1s4", "type": "delegation", "target": "client" }
+}</pre>
+<p>根据转写（<code>session.input_transcript.delta</code>）算出答案后，用同一个 <code>delegation_id</code> 交回：</p>
+<pre data-lang="json" data-title="session.commentary.append">{
+  "type": "session.commentary.append",
+  "event_id": "result_1",
+  "delegation_id": "item_9tA2bF3h7K9m2P5q8R1s4",
+  "content": "订单今天已发货，明天送达。"
+}</pre>
+<table>
+<thead><tr><th>事件</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td><code>session.commentary.append</code></td><td>要说给用户听的结果。语音层可能会转述。</td></tr>
+<tr><td><code>session.thinking.append</code></td><td>只给语音层参考、不念出来的进度或事实。<code>content</code> 传 <code>""</code> 可以取消自动的「好的，我查一下」。</td></tr>
+<tr><td><code>session.instructions.append</code></td><td><code>delegation_id</code> 为 <code>null</code> 时，追加一条会话级指令。</td></tr>
+</tbody>
+</table>
+<ul>
+<li>同一个委派可以多次追加。每条 <code>content</code> 最多 8,000 个字符；上游对单条的限制约为 500 token，较长的结果请分段发送。</li>
+<li><code>delegation_id</code> 是字符串（最多 128 个字符）或 <code>null</code>。</li>
+<li>追加成功后会收到对应的确认事件，例如 <code>session.commentary.appended</code>。</li>
+<li>这三个事件在官方后端和站内模型模式下也能使用，例如随时补充背景信息。</li>
+</ul>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/realtime-events/" title="事件参考">全部客户端事件、服务端事件与 cancri.* 扩展事件。</card>
+<card href="/api/docs/guides/realtime-billing/" title="计费与限制" icon="cube">各后端模式的费用、档位限制与会话时长。</card>
+<card href="/api/docs/models/" title="浏览模型">为站内模型后端挑选合适的模型。</card>
+</cards>

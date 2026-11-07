@@ -1,0 +1,82 @@
+---
+title: 错误与排查
+description: 实时语音的握手错误、会话中的 error 事件，以及常见问题的排查方法。
+tab: realtime
+---
+<p>实时语音的错误分两类。握手阶段被拒绝时，服务端返回普通的 HTTP 响应，WebSocket 不会建立；会话开始后的问题通过 <code>error</code> 事件返回，其中一部分会随后关闭连接。</p>
+
+<h2 id="handshake-errors">握手错误</h2>
+<p>握手失败时，响应体是 OpenAI 格式的 JSON：<code>{"error": {"message": "…", "type": "…", "code": "…"}}</code>。</p>
+<table>
+<thead><tr><th>HTTP</th><th>code</th><th>原因</th><th>处理</th></tr></thead>
+<tbody>
+<tr><td>400</td><td><code>live_webrtc_not_supported</code></td><td>用 POST 创建会话（WebRTC 的方式）。</td><td>改用 WebSocket（GET + Upgrade）。</td></tr>
+<tr><td>426</td><td><code>websocket_required</code></td><td>请求不是 WebSocket 升级，或者连接了 <code>cn.nexusvai.xyz</code>。</td><td>连接 <code>wss://chat.nexusvai.xyz/…/v1/live/sessions</code>。</td></tr>
+<tr><td>401</td><td><code>invalid_api_key</code></td><td>Key 缺失、不是 <code>cancri_sk_</code> 开头，或已停用。</td><td>检查 Key 与传递方式。</td></tr>
+<tr><td>403</td><td><code>account_suspended</code></td><td>账户已被封禁。</td><td><a href="/api/contact/">联系我们</a>。</td></tr>
+<tr><td>403</td><td><code>model_not_in_whitelist</code><br><code>model_not_in_group</code></td><td>Key 的模型限制不包含 <code>gpt-live-1</code>。</td><td>把 <code>gpt-live-1</code> 加入白名单，或换一个不绑定分组的 Key。</td></tr>
+<tr><td>429</td><td><code>key_token_quota_exhausted</code><br><code>key_request_quota_exhausted</code></td><td>Key 的累计额度已用完。</td><td>提高额度或换一个 Key。</td></tr>
+<tr><td>429</td><td><code>live_rate_limited</code></td><td>每分钟新建的会话数超过本档上限。</td><td>按 <code>Retry-After</code> 等待后重试。</td></tr>
+<tr><td>429</td><td><code>live_concurrency_limit</code></td><td>同时进行的会话数达到本档上限。</td><td>关闭一个会话后重试，或提升档位。</td></tr>
+<tr><td>503</td><td><code>live_capacity_exhausted</code></td><td>全站语音容量已满。</td><td>按 <code>Retry-After</code> 稍后重试。</td></tr>
+<tr><td>503</td><td><code>service_unavailable</code></td><td>认证、限速或会话服务暂时不可用。</td><td>稍后重试。</td></tr>
+<tr><td>503</td><td><code>live_disabled</code></td><td>实时语音暂时关闭。</td><td>稍后重试。</td></tr>
+</tbody>
+</table>
+<p>全站维护或降级期间，握手还可能返回其他 503 错误，含义与 HTTP 接口相同，见<a href="/api/docs/guides/error-codes/">错误码</a>。限流类错误的响应头说明见<a href="/api/docs/guides/realtime-billing/#rate-limits">速率限制</a>。</p>
+
+<h3 id="debug-handshake">查看握手失败的原因</h3>
+<p>浏览器的 WebSocket 读不到握手失败的状态码和响应体，只会触发 <code>onerror</code>（关闭码 <code>1006</code>）。用 curl 发起同样的握手，就能看到完整的响应：</p>
+<pre data-lang="bash" data-title="用 curl 检查握手">curl --http1.1 -i -N --max-time 5 \
+  https://chat.nexusvai.xyz/functions/v1/api-gateway/v1/live/sessions \
+  -H "Authorization: Bearer $CANCRI_API_KEY" \
+  -H "Connection: Upgrade" \
+  -H "Upgrade: websocket" \
+  -H "Sec-WebSocket-Version: 13" \
+  -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ=="</pre>
+<p>返回 <code>101 Switching Protocols</code> 表示握手已通过，其他状态码对应上表的错误。curl 会在 5 秒后断开；这个连接没有发送 <code>session.start</code>，不产生费用。</p>
+
+<h2 id="session-errors">会话中的错误</h2>
+<p>会话中的错误以 <code>error</code> 事件返回，格式见<a href="/api/docs/guides/realtime-events/#error-event">error 事件</a>。下表的「断开」一列说明错误之后连接是否关闭：「首条时是」表示错误出在 <code>session.start</code> 时会结束会话，出在之后的事件上则只拒绝那一条，会话继续。</p>
+<table>
+<thead><tr><th>code</th><th>断开</th><th>原因</th></tr></thead>
+<tbody>
+<tr><td><code>insufficient_balance</code></td><td>是</td><td>余额不足一段（30 秒）的语音费。没有收费。</td></tr>
+<tr><td><code>session_start_timeout</code></td><td>是</td><td>连接后 20 秒内没有收到 <code>session.start</code>。</td></tr>
+<tr><td><code>invalid_json</code><br><code>invalid_request</code></td><td>首条时是</td><td>首条事件不是合法的 <code>session.start</code>；事件不是 JSON 文本帧；或重复发送 <code>session.start</code>。</td></tr>
+<tr><td><code>unknown_parameter</code><br><code>invalid_value</code></td><td>首条时是</td><td>字段不认识或取值不合法，<code>param</code> 指出具体字段。</td></tr>
+<tr><td><code>model_not_found</code></td><td>是</td><td><code>session.model</code> 不是 <code>gpt-live-1</code>。</td></tr>
+<tr><td><code>live_backend_model_not_allowed</code></td><td>首条时是</td><td><code>session.start</code>：后端模型既不是 <code>gpt-6-luna</code>，也不在 <code>GET /v1/models</code> 中。<code>session.update</code>：试图把后端改成 <code>gpt-6-luna</code> 以外的模型。</td></tr>
+<tr><td><code>live_tool_not_allowed</code></td><td>首条时是</td><td>工具类型不是 <code>web_search</code>、<code>function</code> 或 <code>custom</code>。</td></tr>
+<tr><td><code>live_service_tier_not_allowed</code></td><td>首条时是</td><td><code>service_tier</code> 不是 <code>default</code>。</td></tr>
+<tr><td><code>live_store_not_allowed</code><br><code>live_decisions_not_allowed</code></td><td>首条时是</td><td>不支持会话存储或 Decisions。</td></tr>
+<tr><td><code>live_site_backend_unsupported_parameter</code></td><td>是</td><td>站内模型后端传了不支持的字段，例如 <code>tools</code>。</td></tr>
+<tr><td><code>immutable_field_update</code></td><td>否</td><td><code>session.update</code> 试图修改不可改的字段，或在非官方后端模式下修改后端。</td></tr>
+<tr><td><code>live_event_not_allowed</code><br><code>live_item_not_allowed</code></td><td>否</td><td>事件类型或 item 类型不受支持，例如在站内模型模式下发送 <code>response.create</code>。</td></tr>
+<tr><td><code>live_not_priced</code><br><code>quota_check_failed</code><br><code>live_upstream_unavailable</code><br><code>live_capacity_exhausted</code></td><td>是</td><td>服务暂时不可用，会话没能开始。没有收费，请稍后重试。</td></tr>
+</tbody>
+</table>
+<p>会话开始后，上游返回的错误也以 <code>error</code> 事件转发，格式相同。</p>
+
+<h2 id="faq">常见问题</h2>
+
+<h3 id="openai-sdk">可以用 OpenAI 官方 SDK 吗？</h3>
+<p>可以。事件格式与 OpenAI Live 协议一致，任何能连接 WebSocket 并收发 JSON 的客户端都能使用：把地址换成 NexusVAI 的端点，Key 换成 <code>cancri_sk_</code> 开头的 Key。SDK 中固定使用 WebRTC 的流程不可用。</p>
+
+<h3 id="no-reply">模型一直不说话</h3>
+<p>确认你在持续发送音频帧（包括静音），并且音频格式与 <code>session.audio.format</code> 一致，默认是 24 kHz、16 位、单声道 PCM。只发一段录音就停止发帧时，模型可能一直在等你说完。</p>
+
+<h3 id="idle-close">会话在一段时间没人说话后被关闭</h3>
+<p>这是空闲超时（<code>idle_timeout</code>）。只发送音频不算活动：连续 90 秒没有转写、没有后端回答，也没有其他客户端事件时，服务端会结束会话。实际时长以 <code>cancri.session.created</code> 中的 <code>limits.idle_timeout_seconds</code> 为准。</p>
+
+<h3 id="session-dropped">会话中途断开了</h3>
+<p>先看最后收到的 <code>cancri.session.closing</code> 的 <code>reason</code>，对照<a href="/api/docs/guides/realtime-billing/#session-end">会话何时结束</a>。服务更新也会断开进行中的会话；只要不是你主动关闭，就自动重新连接，必要时用 <code>session.input</code> 带上之前的对话。</p>
+
+<h3 id="lower-cost">如何降低费用？</h3>
+<p>及时关闭会话、不需要时关闭联网、调低 <code>reasoning.effort</code>，或者改用只买语音层。详见<a href="/api/docs/guides/realtime-billing/#reduce-cost">降低费用</a>。</p>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/realtime-connect/" title="连接与认证">重新检查端点、Key 的传递方式和 Key 的模型限制。</card>
+<card href="/api/docs/guides/error-codes/" title="API 错误码" icon="cube">HTTP 接口的完整错误码列表。</card>
+</cards>

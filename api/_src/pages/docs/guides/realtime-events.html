@@ -1,0 +1,172 @@
+---
+title: 事件参考
+description: 实时语音会话中客户端与服务端交换的全部事件，包括 NexusVAI 扩展的 cancri.* 事件。
+tab: realtime
+---
+<p>会话中的所有事件都是 JSON 文本帧，二进制帧会被拒绝。服务端按白名单处理客户端事件：不在下表中的事件类型会收到 <code>error</code> 事件，不会转发给上游，也不收费。</p>
+
+<h2 id="client-events">客户端事件</h2>
+<table>
+<thead><tr><th>type</th><th>字段</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>session.start</code></td><td><code>session</code></td><td>第一条事件，只能发送一次。见<a href="/api/docs/guides/realtime-sessions/#session-start">配置 session.start</a>。</td></tr>
+<tr><td><code>session.input_audio.append</code></td><td><code>audio</code>（base64）</td><td>持续发送麦克风音频。单条 base64 最多 2,000,000 个字符，建议每块 20–100 ms。</td></tr>
+<tr><td><code>session.input_audio.mute</code><br><code>session.input_audio.unmute</code></td><td>—</td><td>暂停或恢复收音。</td></tr>
+<tr><td><code>session.output_audio.fixture.play</code></td><td><code>audio</code>（base64）</td><td>OpenAI 协议原有事件，含义与 OpenAI 文档相同。单条长度限制同上。</td></tr>
+<tr><td><code>session.commentary.append</code><br><code>session.thinking.append</code><br><code>session.instructions.append</code></td><td><code>content</code>、<code>delegation_id</code></td><td>向语音层追加内容，<code>content</code> 最多 8,000 个字符。见<a href="/api/docs/guides/realtime-sessions/#voice-only">只买语音层</a>。</td></tr>
+<tr><td><code>session.update</code></td><td><code>session.delegation.responses</code></td><td>仅官方后端模式。修改后端参数。</td></tr>
+<tr><td><code>response.item.create</code></td><td><code>item</code></td><td>仅官方后端模式。交回函数执行结果。</td></tr>
+<tr><td><code>response.create</code></td><td>—</td><td>仅官方后端模式。让后端继续生成。</td></tr>
+<tr><td><code>session.close</code></td><td>—</td><td>结束会话。服务端返回 <code>session.closed</code> 后断开连接。</td></tr>
+</tbody>
+</table>
+<p>会话开始后，服务端按上表的字段重建每条事件再转发，多余的字段会被丢弃。只有 <code>session.start</code> 会因为未知字段而被拒绝。</p>
+
+<h3 id="event-id">用 event_id 关联错误</h3>
+<p>客户端事件都可以带 <code>event_id</code>（最多 128 个字符）。<code>session.start</code> 之后的事件被拒绝时，<code>error</code> 事件会在 <code>error.client_event_id</code> 中带回这个值，方便你对应到具体的请求。</p>
+
+<h2 id="server-events">服务端事件</h2>
+<p>以下事件来自 OpenAI Live 协议，由服务端原样转发。上游的其他事件也会转发，客户端应忽略不认识的类型。</p>
+<table>
+<thead><tr><th>type</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>session.started</code></td><td>会话已开始。<code>session.id</code> 是上游会话 id。</td></tr>
+<tr><td><code>session.output_audio.delta</code></td><td><code>delta</code>：回复音频（base64），格式与 <code>audio.format</code> 相同。</td></tr>
+<tr><td><code>session.input_transcript.delta</code></td><td><code>delta</code>：用户语音的转写增量。</td></tr>
+<tr><td><code>session.output_transcript.delta</code></td><td><code>delta</code>：回复的转写增量。</td></tr>
+<tr><td><code>session.delegation.created</code></td><td>语音层发起了一次委派。只买语音层模式下需要你来回答。</td></tr>
+<tr><td><code>session.commentary.appended</code> 等</td><td>追加事件的确认。<code>client_event_id</code> 对应你发送的 <code>event_id</code>。</td></tr>
+<tr><td><code>response.event</code></td><td>官方后端模式下嵌套的 Responses 流式事件（在 <code>event</code> 字段里），包括工具调用和带 usage 的 <code>response.completed</code>。</td></tr>
+<tr><td><code>session.usage.updated</code></td><td><code>usage.seconds</code>：截至目前的<strong>累计</strong>计费秒数。它是总数，不要相加。</td></tr>
+<tr><td><code>session.closed</code></td><td>会话已结束。<code>usage.seconds</code> 是最终计费秒数。</td></tr>
+<tr><td><code>error</code></td><td>错误，格式见下文。</td></tr>
+</tbody>
+</table>
+
+<h3 id="error-event">error 事件</h3>
+<p>格式与 OpenAI 相同。由 NexusVAI 生成的错误 <code>event_id</code> 以 <code>evt_cancri_</code> 开头：</p>
+<pre data-lang="json" data-title="error">{
+  "type": "error",
+  "event_id": "evt_cancri_...",
+  "error": {
+    "type": "invalid_request_error",
+    "code": "immutable_field_update",
+    "message": "session.audio cannot be changed after start.",
+    "param": "session.audio",
+    "client_event_id": "update_1"
+  },
+  "client_event_id": "update_1"
+}</pre>
+<p>全部错误码及是否会断开会话，见<a href="/api/docs/guides/realtime-errors/#session-errors">会话中的错误</a>。</p>
+
+<h2 id="cancri-events">NexusVAI 扩展事件</h2>
+<p>以 <code>cancri.</code> 开头的事件由 NexusVAI 发出，用于显示费用和会话状态。忽略这些事件不影响协议兼容。</p>
+<table>
+<thead><tr><th>type</th><th>何时发送</th></tr></thead>
+<tbody>
+<tr><td><a href="#cancri-session-created"><code>cancri.session.created</code></a></td><td>会话开始时一次，紧跟在 <code>session.started</code> 之后。</td></tr>
+<tr><td><a href="#cancri-billing-updated"><code>cancri.billing.updated</code></a></td><td>会话进行中约每 10 秒一次；结束时再发一次 <code>final: true</code>。</td></tr>
+<tr><td><a href="#cancri-session-closing"><code>cancri.session.closing</code></a></td><td>服务端即将结束会话时。</td></tr>
+<tr><td><a href="#cancri-delegation-completed"><code>cancri.delegation.completed</code></a></td><td>站内模型模式下，每次后端回答完成或失败时。</td></tr>
+</tbody>
+</table>
+
+<h3 id="cancri-session-created">cancri.session.created</h3>
+<pre data-lang="json" data-title="cancri.session.created">{
+  "type": "cancri.session.created",
+  "session_id": "live_9c93...",
+  "upstream_session_id": "live_u7_...",
+  "mode": "official",
+  "backend_model": "gpt-6-luna",
+  "limits": { "max_duration_seconds": 1800, "idle_timeout_seconds": 90, "segment_seconds": 30 },
+  "pricing": {
+    "currency": "CNY",
+    "voice_per_second": 0.009,
+    "backend_input_per_million": 1.2,
+    "backend_cached_input_per_million": 0.12,
+    "backend_output_per_million": 6,
+    "web_search_per_call": 0.12
+  }
+}</pre>
+<table>
+<thead><tr><th>字段</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>session_id</code></td><td>NexusVAI 会话 id，以 <code>live_</code> 开头。</td></tr>
+<tr><td><code>upstream_session_id</code></td><td>上游会话 id，与 <code>session.started</code> 中的 <code>session.id</code> 相同。</td></tr>
+<tr><td><code>mode</code></td><td><code>official</code>、<code>site</code> 或 <code>voice_only</code>。</td></tr>
+<tr><td><code>backend_model</code></td><td>官方后端为 <code>gpt-6-luna</code>，站内模型模式为你选的模型，只买语音层为 <code>null</code>。</td></tr>
+<tr><td><code>limits.max_duration_seconds</code></td><td>本档单个会话的最长秒数。</td></tr>
+<tr><td><code>limits.idle_timeout_seconds</code></td><td>空闲多少秒后服务端结束会话。</td></tr>
+<tr><td><code>limits.segment_seconds</code></td><td>每段预扣的秒数。</td></tr>
+<tr><td><code>pricing</code></td><td>本会话的单价（人民币元）。<code>backend_*</code> 与 <code>web_search_per_call</code> 只在官方后端模式下有值，其他模式为 <code>null</code>。</td></tr>
+</tbody>
+</table>
+
+<h3 id="cancri-billing-updated">cancri.billing.updated</h3>
+<pre data-lang="json" data-title="cancri.billing.updated">{
+  "type": "cancri.billing.updated",
+  "final": false,
+  "seconds": 21,
+  "prepaid_through_seconds": 30,
+  "voice_cny": 0.189,
+  "backend_tokens": { "input": 5161, "output": 272 },
+  "backend_cny": 0.007825,
+  "web_search_calls": 1,
+  "web_search_cny": 0.12,
+  "total_cny": 0.316825,
+  "estimated": true
+}</pre>
+<table>
+<thead><tr><th>字段</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>final</code></td><td>会话结束时的最后一次为 <code>true</code>。</td></tr>
+<tr><td><code>estimated</code></td><td>与 <code>final</code> 相反。会话进行中的金额是估算值。</td></tr>
+<tr><td><code>seconds</code></td><td>截至目前的计费秒数。</td></tr>
+<tr><td><code>prepaid_through_seconds</code></td><td>已经预付到第几秒。</td></tr>
+<tr><td><code>voice_cny</code></td><td>语音费。</td></tr>
+<tr><td><code>backend_tokens</code>、<code>backend_cny</code></td><td>官方后端累计的输入 / 输出 token 及费用。</td></tr>
+<tr><td><code>web_search_calls</code>、<code>web_search_cny</code></td><td>联网次数及费用。</td></tr>
+<tr><td><code>total_cny</code></td><td>以上合计。</td></tr>
+</tbody>
+</table>
+<p>这些金额用于显示，实际扣费以账户账单为准。<code>backend_*</code> 只统计官方后端；站内模型的费用按普通 API 调用单独记账，请看 <code>cancri.delegation.completed</code> 或控制台的用量页。</p>
+
+<h3 id="cancri-session-closing">cancri.session.closing</h3>
+<pre data-lang="json" data-title="cancri.session.closing">{
+  "type": "cancri.session.closing",
+  "reason": "insufficient_balance",
+  "closes_in_seconds": 12,
+  "message": "余额不足，会话将在已预付时长用完后结束。"
+}</pre>
+<ul>
+<li><code>reason</code>：结束原因，取值见<a href="/api/docs/guides/realtime-billing/#session-end">会话何时结束</a>。会话没能开始时，<code>reason</code> 与 <code>error</code> 事件的 <code>code</code> 相同。</li>
+<li><code>closes_in_seconds</code>、<code>message</code>：只在余额不足时出现，提前告诉你还剩多少秒。</li>
+<li><code>upstream_close</code>：只在上游连接中断、且没有拿到最终用量时出现，包含上游的关闭码和原因。</li>
+</ul>
+<p>你主动发送 <code>session.close</code> 或自己断开连接时，不会收到这个事件。</p>
+
+<h3 id="cancri-delegation-completed">cancri.delegation.completed</h3>
+<p>站内模型模式下，每次后端回答结束时发送。成功时：</p>
+<pre data-lang="json" data-title="成功">{
+  "type": "cancri.delegation.completed",
+  "delegation_id": "item_...",
+  "model": "claude-haiku-5.5",
+  "ok": true,
+  "latency_ms": 6995,
+  "usage": { "prompt_tokens": 8727, "completion_tokens": 66 },
+  "text": "..."
+}</pre>
+<p>失败时 <code>ok</code> 为 <code>false</code>，并带上 <code>error</code>。<code>error.code</code> 是后端调用返回的错误码（拿不到时为 <code>http_&lt;状态码&gt;</code>），超时为 <code>backend_timeout</code>：</p>
+<pre data-lang="json" data-title="失败">{
+  "type": "cancri.delegation.completed",
+  "delegation_id": "item_...",
+  "model": "claude-haiku-5.5",
+  "ok": false,
+  "error": { "code": "backend_timeout", "message": "..." }
+}</pre>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/realtime-errors/" title="错误与排查">按错误码判断原因，以及会话是否会被关闭。</card>
+<card href="/api/docs/guides/realtime-billing/" title="计费与限制" icon="cube">计费秒数怎么算，以及会话何时被服务端结束。</card>
+</cards>

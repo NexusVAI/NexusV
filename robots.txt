@@ -11,6 +11,9 @@ Disallow: /chat/turnstile_check
 Disallow: /chat/appeal
 Disallow: /chat/api/checkout
 Disallow: /chat/api/model_detail
+Disallow: /api/console/
+Disallow: /api/contact/
+Disallow: /api/docs/models/detail/
 Disallow: /chat/desktop-login
 Disallow: /chat/model-menu-preview
 Disallow: /chat/claude_chat_replica

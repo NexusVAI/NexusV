@@ -1,0 +1,137 @@
+---
+title: 生产最佳实践
+description: 上线前检查密钥管理、重试与超时、流式输出、备用模型和用量监控。
+---
+<p>从原型走向生产时，可靠性主要取决于你怎么处理密钥、错误和成本。这一页按上线前要检查的顺序，列出基于 NexusVAI 实际行为的做法。</p>
+
+<h2 id="api-keys">管理 API 密钥</h2>
+<ul>
+<li><strong>只在服务端保存密钥。</strong>放在环境变量或密钥管理服务中，不要出现在前端代码、移动端安装包或代码仓库里。</li>
+<li><strong>按应用和环境拆分密钥。</strong>开发、测试、生产各用一把，出问题时可以单独撤销，不影响其他服务。每个账户最多 5 把有效密钥。</li>
+<li><strong>收窄权限。</strong>创建密钥时可以指定模型分组，让它只能调用需要的模型。</li>
+<li><strong>人员变动时轮换。</strong>撤销立即生效；先创建新密钥、更新配置，再撤销旧密钥。</li>
+<li><strong>多人共用余额用团队。</strong>成员各自持有团队密钥，费用从团队余额扣除，不需要共享账号或传递密钥。见<a href="/api/docs/guides/teams/">团队</a>。</li>
+</ul>
+
+<h2 id="retries">重试与退避</h2>
+<p>先判断错误能不能重试。NexusVAI 用响应头告诉你：</p>
+<ul>
+<li>带 <code>Retry-After</code> 的错误可以重试，按它给出的秒数等待。</li>
+<li>带 <code>x-should-retry: false</code> 的错误是终态，重试不会成功。</li>
+</ul>
+<table>
+<thead><tr><th>错误</th><th>怎么处理</th></tr></thead>
+<tbody>
+<tr><td><strong>可以重试：</strong><code>429 rate_limit_exceeded</code>、<code>429 upstream_rate_limit</code>、<code>5xx</code>（如 <code>upstream_error</code>、<code>service_unavailable</code>）</td><td>有 <code>Retry-After</code> 就按它等待；没有就用指数退避，并加入随机抖动。</td></tr>
+<tr><td><strong>终态，不要重试：</strong><code>402 insufficient_balance</code>、<code>429 free_plan_exhausted</code>、<code>429 key_token_quota_exhausted</code>、<code>429 key_request_quota_exhausted</code>、<code>429 request_too_large</code></td><td>响应带 <code>x-should-retry: false</code>。充值、换用其他密钥或修改请求。</td></tr>
+<tr><td><strong>请求有误，不要重试：</strong>其他 <code>400</code>、<code>401</code>、<code>403</code>、<code>404</code>、<code>413</code></td><td>修正请求后再发。</td></tr>
+</tbody>
+</table>
+<p>官方 OpenAI 与 Anthropic SDK 会自动重试 429 和 5xx，并遵守 <code>Retry-After</code> 与 <code>x-should-retry</code>。你只需要按业务调整重试次数和超时：</p>
+<code-tabs title="配置 SDK 的重试与超时">
+<pre data-lang="python" data-label="Python">client = OpenAI(
+    base_url="https://cn.nexusvai.xyz/v1",
+    api_key=os.environ["CANCRI_API_KEY"],
+    max_retries=4,
+    timeout=200.0,  # 秒，略长于网关的 180 秒等待上限
+)</pre>
+<pre data-lang="javascript" data-label="Node.js">const client = new OpenAI({
+  baseURL: "https://cn.nexusvai.xyz/v1",
+  apiKey: process.env.CANCRI_API_KEY,
+  maxRetries: 4,
+  timeout: 200_000, // 毫秒，略长于网关的 180 秒等待上限
+});</pre>
+</code-tabs>
+<p>不用 SDK 时，可以照下面的思路自己实现：</p>
+<pre data-lang="python" data-title="手动重试">import os, random, time
+import requests
+
+URL = "https://cn.nexusvai.xyz/v1/chat/completions"
+HEADERS = {"Authorization": f"Bearer {os.environ['CANCRI_API_KEY']}"}
+
+def create_with_retry(payload, max_attempts=5):
+    for attempt in range(max_attempts):
+        resp = requests.post(URL, json=payload, headers=HEADERS, timeout=200)
+        if resp.status_code < 400:
+            return resp.json()
+        retryable = resp.status_code == 429 or resp.status_code >= 500
+        final = resp.headers.get("x-should-retry") == "false"
+        if not retryable or final or attempt == max_attempts - 1:
+            resp.raise_for_status()
+        retry_after = resp.headers.get("Retry-After")
+        time.sleep(float(retry_after) if retry_after else min(2 ** attempt, 30) + random.random())</pre>
+
+<h2 id="timeouts">设置超时</h2>
+<p>网关等待模型开始响应的上限是 180 秒。非流式请求要等整段内容生成完毕才会返回，所以必须在 180 秒内完成，否则返回 <code>504</code>（<code>error.code</code> 为 <code>upstream_error</code>）。</p>
+<ul>
+<li>输出较长、或使用高推理强度时，改用流式输出。</li>
+<li>非流式请求的客户端超时设得比 180 秒略长，避免客户端先断开。</li>
+<li>给 <code>max_tokens</code> 设一个符合业务的上限，既缩短最坏情况下的耗时，也减少 TPM 预占。</li>
+</ul>
+
+<h2 id="streaming">处理流式输出</h2>
+<p>流式输出能更早给用户反馈，也不受上面非流式耗时的约束。上线前确认你的代码处理了这几种情况：</p>
+<ul>
+<li><strong>结尾的 usage chunk。</strong>Chat Completions 的每个流在结尾都有一个 <code>choices</code> 为空、带 <code>usage</code> 的 chunk。</li>
+<li><strong>心跳行。</strong>模型长时间思考时，流里会出现 <code>: keep-alive</code> 注释行。</li>
+<li><strong>流内错误。</strong>生成中途失败时，流的末尾会出现错误块。<code>model_temporary_failure</code> 不计费，可以按 <code>retry_after_seconds</code> 重试；<code>stream_incomplete_billed</code> 已按实际产生的 token 计费，重试会产生一次新的计费请求，先确认是否需要。见<a href="/api/docs/guides/error-codes/#stream-errors">流式输出中的错误</a>。</li>
+<li><strong>主动取消也会计费。</strong>请求已经发给模型后断开连接，已经产生的 token（至少是输入部分）仍会计费。见<a href="/api/docs/guides/billing/#what-gets-charged">哪些情况会扣费</a>。</li>
+</ul>
+
+<h2 id="fallback-models">准备备用模型</h2>
+<p>NexusVAI 不提供 SLA。单个模型暂时繁忙或不可用时，会返回 <code>upstream_rate_limit</code>、<code>upstream_auth_error</code> 或 <code>upstream_error</code>。这类错误与你的密钥、余额和档位无关，换一个模型通常就能成功：</p>
+<pre data-lang="python" data-title="按顺序尝试备用模型">from openai import APIStatusError
+
+MODELS = ["gpt-6-astra", "deepseek-v4-flash"]
+MODEL_ERRORS = {"upstream_rate_limit", "upstream_auth_error", "upstream_error"}
+
+def create_with_fallback(messages):
+    last_error = None
+    for model in MODELS:
+        try:
+            return client.chat.completions.create(model=model, messages=messages)
+        except APIStatusError as e:
+            if e.code not in MODEL_ERRORS:
+                raise
+            last_error = e
+    raise last_error</pre>
+<p>备用模型的能力和价格可能不同，选型时在<a href="/api/docs/models/">模型</a>页对比上下文长度、工具调用支持与单价。</p>
+
+<h2 id="monitoring">监控余额与用量</h2>
+<ul>
+<li><strong>定期查询余额。</strong><code>GET /v1/balance</code> 不计费、不占用 RPM 与 TPM，每个账户每分钟最多 30 次。余额低于阈值时告警，避免请求开始返回 <code>402 insufficient_balance</code>。</li>
+<li><strong>核对每次调用的费用。</strong><code>recent_usage</code> 给出当前密钥最近的调用记录和每次的 <code>cost</code>（单位：元）。</li>
+<li><strong>记录 token 用量。</strong>每个响应的 <code>usage</code> 字段给出这次请求的 token 数，可以按功能或用户汇总。</li>
+<li><strong>留意速率限制余量。</strong>响应头 <code>x-ratelimit-remaining-requests</code> 与 <code>x-ratelimit-remaining-tokens</code> 告诉你还剩多少额度，见<a href="/api/docs/guides/rate-limits/#headers">响应头</a>。</li>
+</ul>
+<pre data-lang="python" data-title="余额告警">import os
+import requests
+
+resp = requests.get(
+    "https://cn.nexusvai.xyz/v1/balance",
+    headers={"Authorization": f"Bearer {os.environ['CANCRI_API_KEY']}"},
+    params={"limit": 0},  # 只查余额，不返回调用记录
+    timeout=10,
+)
+resp.raise_for_status()
+data = resp.json()
+if data["balance"] < 50:
+    print(f"余额不足：¥{data['balance']:.2f}，欠费 ¥{data['debt']:.2f}")</pre>
+<p>控制台的<a href="/api/console/usage/">用量</a>页可以查看最近 30 天的调用与消费。</p>
+
+<h2 id="checklist">上线检查清单</h2>
+<ul>
+<li>密钥只在服务端，按环境拆分，并限制了可用的模型分组。</li>
+<li>对 429 和 5xx 做了带退避的重试，对 <code>x-should-retry: false</code> 不重试。</li>
+<li>非流式请求的客户端超时略长于 180 秒；长输出改用流式。</li>
+<li>流式代码处理了空 <code>choices</code> 的 usage chunk 和流内错误。</li>
+<li>为关键路径准备了备用模型。</li>
+<li>设置了余额告警，并按需<a href="/api/console/billing/">充值</a>以保持足够的速率限制档位。</li>
+</ul>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/error-codes/" title="错误码" icon="bolt">每个错误码的含义、是否可重试与处理方式。</card>
+<card href="/api/docs/guides/rate-limits/" title="速率限制" icon="cube">档位、令牌桶计量与响应头。</card>
+<card href="/api/docs/guides/billing/" title="计费与余额" icon="bolt">预扣与结算、提示缓存和充值。</card>
+</cards>

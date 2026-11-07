@@ -1,0 +1,375 @@
+/* API 参考（/api/reference/*）的端点页：OpenAI Developers 参考页的双栏骨架。
+ * 结构类名来自 api/assets/oai/primitives.css（stldocs-method / _body_1btwc_* / _property_mjoyi_* …）、
+ * header.css（_Badge_10t5o_1、_Button_6dmow_1、_SegmentedControl_16x8u_*）与 inline.css（code-sample、_root_1v3qb_1）。
+ * 这里只补三类东西：
+ *   1. OpenAI 挂在 html[data-api-reference] 上的变量（我们的 <html> 没有这个属性），改挂到 .ref-root；
+ *   2. ApiReferencePage.css 里少量页面级规则（面包屑、声明行字体、渲染区宽度）——不整份引入那 280 KB；
+ *   3. 我们自己的小部件：必填/可选标记、示例切换、示例列高度、移动端边距。 */
+
+/* ── 1. 变量（原样搬自 ApiReferencePage.css 的 html[data-api-reference]）── */
+.ref-root {
+  --stl-typography-font: var(--font-sans);
+  --stl-typography-font-mono: var(--font-mono);
+  --stl-color-background: var(--white, #fff);
+  --stl-color-foreground: var(--color-text-emphasis);
+  --stl-color-foreground-reduced: var(--color-text);
+  --stl-color-foreground-muted: var(--color-text-secondary);
+  --stl-color-muted-background: var(--color-surface-secondary);
+  --stl-color-border: var(--color-border);
+  --stl-color-green-foreground: var(--color-text-success);
+  --stl-color-blue-foreground: var(--color-text-info);
+  --stl-color-orange-foreground: var(--color-text-warning);
+  --stl-color-purple-foreground: var(--purple-600);
+  --stldocs-syntax-color-green: var(--stl-color-green-foreground);
+  --stldocs-syntax-color-orange: var(--stl-color-orange-foreground);
+  --stldocs-syntax-color-blue: var(--stl-color-blue-foreground);
+  --stldocs-expander-margin-shift: 24px;
+  --stldocs-content-width: 100%;
+  --ref-snippet-max: min(26rem, calc(100vh - 22rem));
+  --ref-response-max: min(22rem, calc(100vh - 26rem));
+  font-family: var(--stl-typography-font);
+  color: var(--stl-color-foreground);
+  letter-spacing: -0.01em;
+}
+:where([data-theme="dark"]) .ref-root {
+  --stl-color-background: var(--black, #000);
+  --stl-color-purple-foreground: var(--purple-300);
+}
+
+/* ── 2. 渲染区（.reference-renderer：最宽 1540px，左右 3.5rem）── */
+.ref-renderer {
+  width: 100%;
+  min-width: 0;
+  max-width: 1540px;
+  margin-inline: auto;
+  padding: 2rem 3.5rem 3vh;
+}
+.ref-root [id] {
+  scroll-margin-top: var(--docs-scroll-offset, 110px);
+}
+
+/* 面包屑 + 「复制页面」一行 */
+.ref-root .stl-page-nav-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.ref-root ._breadcrumbs_8beoj_1 {
+  --breadcrumb-color: var(--color-text-secondary);
+  --breadcrumb-hover-color: var(--color-text-emphasis);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ref-root ._item_8beoj_9 {
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+.ref-root ._link_8beoj_15,
+.ref-root ._label_8beoj_16 {
+  color: var(--breadcrumb-color);
+  font-size: var(--font-text-sm-size);
+  line-height: 150%;
+  text-decoration: none;
+}
+.ref-root ._link_8beoj_15:hover {
+  color: var(--breadcrumb-hover-color);
+  text-decoration: underline;
+}
+.ref-root ._separator_8beoj_28 {
+  width: 1rem;
+  min-width: 1rem;
+  height: 1.5rem;
+  color: var(--color-text-tertiary);
+  margin: 0;
+}
+
+/* 标题与路由 */
+.ref-root .stldocs-method-title {
+  font-size: var(--font-heading-2xl-size, 30px);
+}
+.ref-root .stldocs-method-route ._Badge_10t5o_1 {
+  text-transform: uppercase;
+}
+
+/* ── 3. 参数声明行（ApiReferencePage.css 的 .stldocs-root 字体规则）── */
+.ref-root .stldocs-property-declaration,
+.ref-root .stldocs-type {
+  font-family: var(--stl-typography-font-mono);
+}
+.ref-root .stldocs-property-declaration .stldocs-text-identifier {
+  font-family: var(--stl-typography-font-mono);
+  color: var(--stl-color-foreground);
+  font-size: 1em;
+  line-height: 1.6;
+}
+.ref-root .stldocs-property-declaration .stldocs-type-propertyname .stldocs-text-identifier {
+  font-family: var(--stl-typography-font);
+  font-weight: 600;
+}
+.ref-root .stldocs-property-declaration .stldocs-text-punctuation,
+.ref-root .stldocs-property-declaration .stldocs-type-plain,
+.ref-root .stldocs-property-declaration .stldocs-type-array {
+  font-family: var(--stl-typography-font);
+  color: var(--stl-color-foreground-reduced);
+}
+.ref-root .stldocs-property-declaration .stldocs-literal-string {
+  font-family: var(--stl-typography-font-mono);
+  font-size: 0.9em;
+  color: var(--stldocs-syntax-color-green);
+}
+.ref-root .stldocs-property-declaration .stldocs-literal-numeric {
+  font-family: var(--stl-typography-font-mono);
+  font-size: 0.9em;
+  color: var(--stldocs-syntax-color-orange);
+}
+/* 必填 / 可选 / 默认值：跟在类型后面的小字 */
+.ref-root .ref-flag {
+  margin-left: 0.5rem;
+  font-family: var(--stl-typography-font);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.ref-root .ref-flag[data-flag="required"] {
+  color: var(--color-text-warning);
+}
+.ref-root .ref-flag[data-flag="optional"] {
+  color: var(--color-text-tertiary);
+  font-weight: 400;
+}
+.ref-root .ref-default {
+  margin-left: 0.5rem;
+  font-family: var(--stl-typography-font);
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+/* 参数说明里的正文 */
+.ref-root .stldocs-property-description p,
+.ref-root .stldocs-property-description ul {
+  margin: 0.25rem 0 0;
+}
+.ref-root .stldocs-property-description ul {
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+.ref-root .stldocs-property-description li + li {
+  margin-top: 0.125rem;
+}
+.ref-root .stldocs-property-annotation {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-text-sm-size);
+  margin-top: 0.5rem;
+}
+
+/* 展开箭头：OpenAI 用内联 SVG，这里用遮罩画同一个 chevron，省掉每个参数一份 SVG */
+.ref-root ._icon_mjoyi_143::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-text-tertiary);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M8.293 4.293a1 1 0 0 1 1.414 0l7 7a1 1 0 0 1 0 1.414l-7 7a1 1 0 0 1-1.414-1.414L14.586 12 8.293 5.707a1 1 0 0 1 0-1.414Z'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M8.293 4.293a1 1 0 0 1 1.414 0l7 7a1 1 0 0 1 0 1.414l-7 7a1 1 0 0 1-1.414-1.414L14.586 12 8.293 5.707a1 1 0 0 1 0-1.414Z'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ref-root ._disclosure_mjoyi_138[open] > ._summary_mjoyi_12 > ._icon_mjoyi_143::before {
+  transform: rotate(90deg);
+}
+.ref-root ._summary_mjoyi_12 {
+  list-style: none;
+}
+.ref-root ._summary_mjoyi_12::-webkit-details-marker {
+  display: none;
+}
+.ref-root ._summary_mjoyi_12:hover .stldocs-text-identifier {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 分区标题右侧的「展开 / 收起」 */
+.ref-root ._sectionTitle_1btwc_54 {
+  margin: 0;
+  line-height: 1.5rem;
+}
+.ref-root ._sectionTitle_1btwc_54 .ref-section-note {
+  font-size: var(--font-text-sm-size);
+  color: var(--color-text-tertiary);
+}
+.ref-root [data-reference-property-toggle] [hidden] {
+  display: none;
+}
+
+/* 参数的深链按钮（由 reference.js 补上，悬停时出现） */
+.ref-root ._deepLink_mjoyi_221 svg {
+  width: 1em;
+  height: 1em;
+}
+
+/* 分区标题下的导语与分区末尾的补充说明 */
+.ref-root .ref-section-lead,
+.ref-root .ref-section-foot {
+  margin: 0;
+  font-size: var(--font-text-sm-size);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+.ref-root .ref-section-foot {
+  margin-top: 0.25rem;
+}
+
+/* 端点说明的正文排版（不在 .prose 里，按文档正文的字号补齐） */
+.ref-root .ref-prose {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+.ref-root .ref-prose > * + * {
+  margin-top: 0.75rem;
+}
+.ref-root .ref-prose ul,
+.ref-root .ref-prose ol {
+  padding-left: 1.25rem;
+}
+.ref-root .ref-prose ul {
+  list-style: disc;
+}
+.ref-root .ref-prose ol {
+  list-style: decimal;
+}
+.ref-root .ref-prose li + li {
+  margin-top: 0.25rem;
+}
+.ref-root .ref-prose a,
+.ref-root .ref-section-lead a,
+.ref-root .ref-section-foot a,
+.ref-root .stldocs-property-description a {
+  color: var(--color-text-emphasis);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in oklab, currentColor 35%, transparent);
+}
+.ref-root .ref-prose a:hover,
+.ref-root .ref-section-lead a:hover,
+.ref-root .ref-section-foot a:hover,
+.ref-root .stldocs-property-description a:hover {
+  text-decoration-color: currentColor;
+}
+.ref-root .ref-prose code,
+.ref-root .ref-section-lead code,
+.ref-root .ref-section-foot code,
+.ref-root .stldocs-property-description code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--color-text-emphasis) 5%, transparent);
+  color: var(--color-text-emphasis);
+  overflow-wrap: anywhere;
+}
+.ref-root .ref-prose strong {
+  font-weight: 600;
+  color: var(--color-text-emphasis);
+}
+.ref-root .ref-prose ._Notice_d6ijw_1 {
+  margin-top: 1rem;
+}
+
+/* ── 4. 右侧示例列 ── */
+.ref-root .stldocs-method-example .code-sample,
+.ref-root .stldocs-method-response-column .code-sample {
+  margin: 0;
+}
+.ref-root .stldocs-snippet > * + *,
+.ref-root .stldocs-snippet-multi-pane > * + * {
+  margin-top: 12px;
+}
+.ref-root .stldocs-method-example .code-block {
+  max-height: var(--ref-snippet-max);
+  overflow: auto;
+}
+.ref-root .stldocs-method-example .ref-response .code-block {
+  max-height: var(--ref-response-max);
+}
+/* SSE 示例每行是一整段 JSON：折行显示，去掉对不齐的行号 */
+.ref-root .ref-wrap .syntax-highlighter-line-numbers {
+  display: none;
+}
+.ref-root .ref-wrap pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* 双栏时（≥1280px）响应示例跟在请求示例下面；单栏时改到参数后面的「返回示例」里 */
+.ref-root .stldocs-method-example .ref-response {
+  display: none;
+}
+@media (width >= 1280px) {
+  .ref-root .stldocs-method-double-pane .stldocs-method-example .ref-response {
+    display: block;
+  }
+}
+
+/* 请求示例标题前的 HTTP 方法小标 */
+.ref-root .ref-snippet-head ._title_1czwd_42::before {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  margin-right: 8px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font: 600 10px/18px var(--font-mono);
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+}
+.ref-root .ref-snippet-head[data-method="POST"] ._title_1czwd_42::before {
+  content: "POST";
+  color: var(--color-text-info-soft, #0169cc);
+  background: var(--color-background-info-soft-alpha, rgba(2, 133, 255, 0.12));
+}
+.ref-root .ref-snippet-head[data-method="GET"] ._title_1czwd_42::before {
+  content: "GET";
+  color: var(--color-text-success-soft, #008635);
+  background: var(--color-background-success-soft-alpha, rgba(0, 162, 64, 0.12));
+}
+.ref-root .ref-snippet-head[data-method="WS"] ._title_1czwd_42::before {
+  content: "WS";
+  color: var(--color-text-discovery-soft, #7a3ad8);
+  background: var(--color-background-discovery-soft-alpha, rgba(146, 79, 247, 0.12));
+}
+
+/* 示例切换（默认 / 流式 …）：OpenAI 的 SegmentedControl，滑块位置由 reference.js 计算 */
+.ref-root .stldocs-snippet-multi > ._root_1v3qb_1 {
+  margin-bottom: 12px;
+}
+.ref-root .stldocs-snippet-multi ._SegmentedControl_16x8u_1 {
+  max-width: 100%;
+}
+.ref-root .stldocs-snippet-multi ._SegmentedControlThumb_16x8u_226 {
+  transition: transform 0.2s ease, width 0.2s ease;
+}
+.ref-root .stldocs-snippet-multi-pane[hidden] {
+  display: none;
+}
+
+/* ── 5. 窄屏（<50rem，与 OpenAI 同一断点）── */
+@media (width < 50rem) {
+  .ref-renderer {
+    padding-inline: 1rem;
+  }
+  .ref-root .stl-page-nav-container {
+    padding-inline: 1rem;
+  }
+  .ref-root {
+    --ref-snippet-max: 24rem;
+  }
+}
+@media (width < 1024px) {
+  .ref-renderer {
+    padding-top: 1.5rem;
+  }
+}

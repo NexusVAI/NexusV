@@ -21,8 +21,9 @@
       document.documentElement.getAttribute("data-login-url");
     if (custom) return custom;
     var p = (location.pathname || "").replace(/\\/g, "/");
-    // 用绝对 URL 解析，避免页面 <base href> 把相对登录地址错解到上层目录
-    if (/\/api\//.test(p)) return new URL("../index.html", location.href).href;
+    // 用绝对 URL 解析，避免页面 <base href> 把相对登录地址错解到上层目录。
+    // /api/... 与 /chat/api/... 都回聊天页登录：控制台在 /api/console/<页>/，相对 ../ 会落到 API 区。
+    if (/\/api(\/|$)/.test(p)) return new URL("/chat/", location.href).href;
     return new URL("index.html", location.href).href;
   }
 

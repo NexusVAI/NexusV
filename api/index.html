@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; media-src 'self' https:; connect-src 'self' https://chat.nexusvai.xyz https://cn.nexusvai.xyz; frame-src https://player.vimeo.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self';" />
+<title>NexusVAI Developers — 用前沿模型构建</title>
+<meta name="description" content="NexusVAI API：一个端点、一把密钥，接入前沿模型，兼容 OpenAI 与 Anthropic 协议。" />
+<link rel="canonical" href="https://www.nexusvai.xyz/api/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="NexusVAI Developers" />
+<meta property="og:title" content="NexusVAI Developers — 用前沿模型构建" />
+<meta property="og:description" content="NexusVAI API：一个端点、一把密钥，接入前沿模型，兼容 OpenAI 与 Anthropic 协议。" />
+<meta property="og:url" content="https://www.nexusvai.xyz/api/" />
+<meta property="og:image" content="https://www.nexusvai.xyz/Logo/nexusvai-og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<script src="/api/assets/theme.js?v=20261107f"></script>
+<style>@layer theme, base, components, utilities;</style>
+<link rel="stylesheet" href="/api/assets/oai/header.css?v=20261107f" />
+<link rel="stylesheet" href="/api/assets/oai/inline.css?v=20261107f" />
+<link rel="stylesheet" href="/api/assets/oai/pages.css?v=20261107f" />
+<link rel="stylesheet" href="/api/assets/home.css?v=20261107f" />
+<link rel="stylesheet" href="/fonts/gf/newsreader-notosanssc.css?v=20261107f" />
+<link rel="stylesheet" href="/api/assets/fonts.css?v=20261107f" />
+<link rel="stylesheet" href="/chat/api/oai-community.css?v=20261107f" />
+<link rel="stylesheet" href="/api/assets/api.css?v=20261107f" />
+</head>
+<body class="overflow-x-hidden" data-api-layout="home">
+<!-- 由 api/_src/build.mjs 从 api/_src/pages/index.html 生成，勿直接修改：改源文件后运行 node api/_src/build.mjs -->
+<header id="header" class="fixed top-0 w-full h-16 z-50 bg-white dark:bg-black border-b border-primary-surface"><div class="flex h-full items-center px-4 md:px-8 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-6"><a href="/api/" class="api-logo order-1 ml-0 flex min-h-11 min-w-11 items-center justify-center font-semibold lg:col-start-1 lg:row-start-1 lg:-ml-2 lg:justify-self-start"><img src="/chat/assets/oai.logo/nexusvai_developers_wordmark.svg" alt="NexusVAI Developers" class="h-6 w-auto" height="24" /></a><div class="order-2 ml-auto flex shrink-0 items-center gap-4 md:gap-3 lg:col-start-3 lg:row-start-1 lg:ml-0 lg:justify-end lg:justify-self-end lg:gap-5"><button type="button" data-header-search-button aria-controls="header-search-overlay" aria-expanded="false" class="order-1 hidden min-w-52 items-center justify-between gap-3 rounded-full border border-primary-surface bg-surface px-4 py-2 text-sm text-secondary transition-colors hover:bg-primary-soft-alpha hover:text-default 2xl:flex"><span class="truncate">开始搜索</span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4 shrink-0"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.875 4.5C7.35418 4.5 4.5 7.35418 4.5 10.875C4.5 14.3958 7.35418 17.25 10.875 17.25C14.3958 17.25 17.25 14.3958 17.25 10.875C17.25 7.35418 14.3958 4.5 10.875 4.5ZM2.5 10.875C2.5 6.24962 6.24962 2.5 10.875 2.5C15.5004 2.5 19.25 6.24962 19.25 10.875C19.25 12.8273 18.582 14.6236 17.462 16.0478L21.2071 19.7929C21.5976 20.1834 21.5976 20.8166 21.2071 21.2071C20.8166 21.5976 20.1834 21.5976 19.7929 21.2071L16.0478 17.462C14.6236 18.582 12.8273 19.25 10.875 19.25C6.24962 19.25 2.5 15.5004 2.5 10.875Z" fill="currentColor"></path></svg></button><div class="order-2 hidden lg:flex"><div class="flex items-center gap-2"><a href="/api/console/" class="_Button_6dmow_1 not-prose !h-9 !w-9 justify-center !px-0 min-[1000px]:!w-auto min-[1000px]:!px-4" data-color="primary" data-variant="solid" data-pill="" data-size="md"><span class="_ButtonInner_6dmow_4"><span class="sr-only min-[1000px]:not-sr-only">控制台</span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="shrink-0" data-external-link-indicator="persistent"><path fill-rule="evenodd" d="M16.243 6.757a1 1 0 0 1 1 1v7.072a1 1 0 0 1-2 0v-4.657L8.464 16.95a1 1 0 0 1-1.414-1.414l6.778-6.779H9.172a1 1 0 0 1 0-2h7.07Z" clip-rule="evenodd"></path></svg></span></a></div></div><details data-theme-picker name="theme-picker" class="relative shrink-0 order-4 hidden lg:block"><summary id="header-theme-button" role="button" aria-label="选择主题" title="选择主题" aria-controls="header-theme-button-choices" class="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-full text-secondary transition-colors hover:bg-primary-soft-alpha hover:text-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-surface [&amp;::-webkit-details-marker]:hidden"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="block dark:hidden w-4 h-4" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 1C12.5523 1 13 1.44772 13 2V4C13 4.55228 12.5523 5 12 5C11.4477 5 11 4.55228 11 4V2C11 1.44772 11.4477 1 12 1ZM4.22183 4.22183C4.61235 3.8313 5.24551 3.8313 5.63604 4.22183L7.05025 5.63604C7.44078 6.02656 7.44078 6.65973 7.05025 7.05025C6.65973 7.44078 6.02656 7.44078 5.63604 7.05025L4.22183 5.63604C3.8313 5.24551 3.8313 4.61235 4.22183 4.22183ZM19.7782 4.22183C20.1687 4.61235 20.1687 5.24551 19.7782 5.63604L18.364 7.05025C17.9734 7.44078 17.3403 7.44078 16.9497 7.05025C16.5592 6.65973 16.5592 6.02656 16.9497 5.63604L18.364 4.22183C18.7545 3.8313 19.3876 3.8313 19.7782 4.22183ZM12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9ZM7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12ZM1 12C1 11.4477 1.44772 11 2 11H4C4.55228 11 5 11.4477 5 12C5 12.5523 4.55228 13 4 13H2C1.44772 13 1 12.5523 1 12ZM19 12C19 11.4477 19.4477 11 20 11H22C22.5523 11 23 11.4477 23 12C23 12.5523 22.5523 13 22 13H20C19.4477 13 19 12.5523 19 12ZM7.05025 16.9497C7.44078 17.3403 7.44078 17.9734 7.05025 18.364L5.63604 19.7782C5.24551 20.1687 4.61235 20.1687 4.22183 19.7782C3.8313 19.3876 3.8313 18.7545 4.22183 18.364L5.63604 16.9497C6.02656 16.5592 6.65973 16.5592 7.05025 16.9497ZM16.9497 16.9497C17.3403 16.5592 17.9734 16.5592 18.364 16.9497L19.7782 18.364C20.1687 18.7545 20.1687 19.3876 19.7782 19.7782C19.3877 20.1687 18.7545 20.1687 18.364 19.7782L16.9497 18.364C16.5592 17.9734 16.5592 17.3403 16.9497 16.9497ZM12 19C12.5523 19 13 19.4477 13 20V22C13 22.5523 12.5523 23 12 23C11.4477 23 11 22.5523 11 22V20C11 19.4477 11.4477 19 12 19Z" fill="currentColor"></path></svg><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="hidden dark:block w-4 h-4" aria-hidden="true"><path d="M12.7836 2.47048C12.9676 2.76512 12.9855 3.13415 12.8309 3.44525C12.2994 4.51497 12 5.7211 12 7.00001C12 11.4183 15.5817 15 20 15L20.0575 14.9998C20.4049 14.9974 20.7287 15.1754 20.9127 15.47C21.0968 15.7647 21.1147 16.1337 20.9601 16.4448C19.325 19.7352 15.9279 22 12 22C6.47715 22 2 17.5229 2 12C2 6.50107 6.43841 2.03886 11.9284 2.00027C12.2758 1.99783 12.5995 2.17584 12.7836 2.47048ZM10.4099 4.15803C6.75344 4.8954 4 8.12619 4 12C4 16.4183 7.58172 20 12 20C14.587 20 16.8886 18.7721 18.3516 16.8648C13.6131 16.0789 10 11.9614 10 7.00001C10 6.01361 10.1431 5.05953 10.4099 4.15803Z" fill="currentColor"></path></svg></summary><fieldset id="header-theme-button-choices" class="absolute right-0 top-full z-50 mt-2 min-w-44 rounded-xl border border-primary-surface bg-surface p-1 shadow-lg"><legend class="sr-only">主题</legend><label class="flex min-h-11 cursor-pointer items-center justify-between gap-4 rounded-lg px-3 text-sm text-default hover:bg-primary-soft-alpha has-focus-visible:outline has-focus-visible:outline-2 has-focus-visible:outline-primary-surface">浅色<input type="radio" name="header-theme-button-preference" value="light" data-theme-preference class="h-4 w-4 appearance-auto accent-current" /></label><label class="flex min-h-11 cursor-pointer items-center justify-between gap-4 rounded-lg px-3 text-sm text-default hover:bg-primary-soft-alpha has-focus-visible:outline has-focus-visible:outline-2 has-focus-visible:outline-primary-surface">深色<input type="radio" name="header-theme-button-preference" value="dark" data-theme-preference class="h-4 w-4 appearance-auto accent-current" /></label><label class="flex min-h-11 cursor-pointer items-center justify-between gap-4 rounded-lg px-3 text-sm text-default hover:bg-primary-soft-alpha has-focus-visible:outline has-focus-visible:outline-2 has-focus-visible:outline-primary-surface">跟随系统<input type="radio" name="header-theme-button-preference" value="system" data-theme-preference class="h-4 w-4 appearance-auto accent-current" /></label></fieldset></details><button type="button" data-header-search-button aria-label="搜索文档" aria-controls="header-search-overlay" aria-expanded="false" class="order-5 inline-flex h-11 w-11 items-center justify-center rounded-full text-secondary transition-colors hover:bg-primary-soft-alpha hover:text-default md:inline-flex 2xl:hidden"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-secondary hover:text-default transition-colors"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.875 4.5C7.35418 4.5 4.5 7.35418 4.5 10.875C4.5 14.3958 7.35418 17.25 10.875 17.25C14.3958 17.25 17.25 14.3958 17.25 10.875C17.25 7.35418 14.3958 4.5 10.875 4.5ZM2.5 10.875C2.5 6.24962 6.24962 2.5 10.875 2.5C15.5004 2.5 19.25 6.24962 19.25 10.875C19.25 12.8273 18.582 14.6236 17.462 16.0478L21.2071 19.7929C21.5976 20.1834 21.5976 20.8166 21.2071 21.2071C20.8166 21.5976 20.1834 21.5976 19.7929 21.2071L16.0478 17.462C14.6236 18.582 12.8273 19.25 10.875 19.25C6.24962 19.25 2.5 15.5004 2.5 10.875Z" fill="currentColor"></path></svg></button><button id="header-drawer-button" type="button" aria-label="打开菜单" aria-controls="drawer" aria-expanded="false" class="order-6 relative right-1 inline-flex h-11 w-11 items-center justify-center rounded-full text-secondary transition-colors hover:bg-primary-soft-alpha hover:text-default md:right-0 lg:hidden"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-secondary hover:text-default transition-colors"><path d="M3 8a1 1 0 0 1 1-1h16a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Zm0 8a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Z"></path></svg></button></div><nav class="order-3 hidden min-w-0 items-center justify-center gap-1 lg:col-start-2 lg:row-start-1 lg:flex" aria-label="主导航"><div class="group relative shrink-0"><a href="/api/" class="flex items-center gap-1 text-sm py-1 px-2.5 rounded-md text-default bg-primary-soft" aria-current="page">首页</a></div><div class="group relative shrink-0"><a href="/api/docs/" class="flex items-center gap-1 text-sm py-1 px-2.5 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha" aria-haspopup="menu">API<svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"><path fill-rule="evenodd" d="M4.293 8.293a1 1 0 0 1 1.414 0L12 14.586l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414Z" clip-rule="evenodd"></path></svg></a><div class="invisible opacity-0 absolute left-0 top-full z-50 mt-2 min-w-full w-max transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-has-focus-visible:visible group-has-focus-visible:opacity-100 before:content-[''] before:absolute before:-top-2 before:left-0 before:right-0 before:h-2" role="menu"><div class="overflow-hidden rounded-md border border-primary-surface bg-surface shadow-md ring-1 ring-black/5 dark:ring-white/10"><div><a role="menuitem" href="/api/docs/" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha dark:hover:bg-alpha-10 hover:text-default"><div class="flex flex-col gap-1"><div class="flex items-center gap-1.5 font-medium">概览</div><div class="text-sm text-secondary">开始使用 NexusVAI API</div></div></a><a role="menuitem" href="/api/docs/models/" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha dark:hover:bg-alpha-10 hover:text-default"><div class="flex flex-col gap-1"><div class="flex items-center gap-1.5 font-medium">模型</div><div class="text-sm text-secondary">浏览模型，比较能力与价格</div></div></a><a role="menuitem" href="/api/docs/guides/chat-completions/" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha dark:hover:bg-alpha-10 hover:text-default"><div class="flex flex-col gap-1"><div class="flex items-center gap-1.5 font-medium">协议</div><div class="text-sm text-secondary">兼容 OpenAI 与 Anthropic 的接口</div></div></a><a role="menuitem" href="/api/docs/guides/coding-tools/" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha dark:hover:bg-alpha-10 hover:text-default"><div class="flex flex-col gap-1"><div class="flex items-center gap-1.5 font-medium">编程工具</div><div class="text-sm text-secondary">在 Codex、Claude Code、Cursor 中接入</div></div></a><a role="menuitem" href="/api/docs/guides/realtime/" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha dark:hover:bg-alpha-10 hover:text-default"><div class="flex flex-col gap-1"><div class="flex items-center gap-1.5 font-medium">实时语音</div><div class="text-sm text-secondary">用 GPT-Live 构建实时语音体验</div></div></a><a role="menuitem" href="/api/docs/guides/production-best-practices/" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha dark:hover:bg-alpha-10 hover:text-default"><div class="flex flex-col gap-1"><div class="flex items-center gap-1.5 font-medium">生产部署</div><div class="text-sm text-secondary">计费、限速、错误处理与团队协作</div></div></a><a role="menuitem" href="/api/reference/" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha dark:hover:bg-alpha-10 hover:text-default"><div class="flex flex-col gap-1"><div class="flex items-center gap-1.5 font-medium">API 参考</div><div class="text-sm text-secondary">端点、参数与响应</div></div></a></div></div></div></div><div class="group relative shrink-0"><a href="/chat/" class="flex items-center gap-1 text-sm py-1 px-2.5 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha" aria-haspopup="menu">产品<svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"><path fill-rule="evenodd" d="M4.293 8.293a1 1 0 0 1 1.414 0L12 14.586l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414Z" clip-rule="evenodd"></path></svg></a><div class="invisible opacity-0 absolute left-0 top-full z-50 mt-2 min-w-full w-max transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-has-focus-visible:visible group-has-focus-visible:opacity-100 before:content-[''] before:absolute before:-top-2 before:left-0 before:right-0 before:h-2" role="menu"><div class="overflow-hidden rounded-md border border-primary-surface bg-surface shadow-md ring-1 ring-black/5 dark:ring-white/10"><div><a role="menuitem" href="/chat/" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha dark:hover:bg-alpha-10 hover:text-default"><div class="flex flex-col gap-1"><div class="flex items-center gap-1.5 font-medium">NexusV 对话</div><div class="text-sm text-secondary">在网页上与前沿模型对话</div></div></a><a role="menuitem" href="/cancricode/" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha dark:hover:bg-alpha-10 hover:text-default"><div class="flex flex-col gap-1"><div class="flex items-center gap-1.5 font-medium">Cancri Code</div><div class="text-sm text-secondary">读懂整个项目、在云端动手的编程智能体</div></div></a><a role="menuitem" href="/chat/pricing.html" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha dark:hover:bg-alpha-10 hover:text-default"><div class="flex flex-col gap-1"><div class="flex items-center gap-1.5 font-medium">订阅与定价</div><div class="text-sm text-secondary">对话订阅套餐与按量计费</div></div></a><a role="menuitem" href="/api/console/" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha dark:hover:bg-alpha-10 hover:text-default"><div class="flex flex-col gap-1"><div class="flex items-center gap-1.5 font-medium">控制台</div><div class="text-sm text-secondary">管理 API 密钥、用量与账单</div></div></a></div></div></div></div><div class="group relative shrink-0"><a href="/api/docs/faq/" class="flex items-center gap-1 text-sm py-1 px-2.5 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha" aria-haspopup="menu">资源<svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"><path fill-rule="evenodd" d="M4.293 8.293a1 1 0 0 1 1.414 0L12 14.586l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414Z" clip-rule="evenodd"></path></svg></a><div class="invisible opacity-0 absolute left-0 top-full z-50 mt-2 min-w-full w-max transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-has-focus-visible:visible group-has-focus-visible:opacity-100 before:content-[''] before:absolute before:-top-2 before:left-0 before:right-0 before:h-2" role="menu"><div class="overflow-hidden rounded-md border border-primary-surface bg-surface shadow-md ring-1 ring-black/5 dark:ring-white/10"><div><a role="menuitem" href="/api/docs/faq/" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha dark:hover:bg-alpha-10 hover:text-default"><div class="flex flex-col gap-1"><div class="flex items-center gap-1.5 font-medium">常见问题</div><div class="text-sm text-secondary">接入时最常遇到的问题</div></div></a><a role="menuitem" href="/api/#community" data-community-open class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha dark:hover:bg-alpha-10 hover:text-default"><div class="flex flex-col gap-1"><div class="flex items-center gap-1.5 font-medium">社区</div><div class="text-sm text-secondary">加入 QQ 交流群，关注 B 站与小红书</div></div></a><a role="menuitem" href="/api/contact/" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha dark:hover:bg-alpha-10 hover:text-default"><div class="flex flex-col gap-1"><div class="flex items-center gap-1.5 font-medium">联系我们</div><div class="text-sm text-secondary">商务合作、发票与工单</div></div></a></div></div></div></div></nav></div></header>
+<div id="header-search-overlay" role="dialog" aria-modal="true" aria-labelledby="header-search-title" aria-hidden="true" data-open="false" class="fixed inset-0 z-[60] hidden items-start justify-center px-4 pt-20 pb-10 md:px-6 md:pt-24"><div class="absolute inset-0 bg-black/35 backdrop-blur-xs transition-opacity dark:bg-black/70" data-header-search-dismiss=""></div><div class="relative z-10 w-full max-w-4xl overflow-hidden rounded-[28px] bg-surface shadow-[0_36px_120px_-48px_rgba(15,23,42,0.55)] ring-1 ring-black/10 dark:ring-white/10" data-header-search-panel=""><div data-header-search-body="" class="p-0"><h2 id="header-search-title" class="sr-only">搜索文档</h2><div class="relative flex min-h-0 flex-1 flex-col"><button type="button" data-header-search-close="" aria-label="关闭搜索" class="absolute right-5 top-7 z-20 inline-flex h-8 w-8 shrink-0 appearance-none items-center justify-center rounded-md border-0 bg-transparent p-0 leading-none text-tertiary shadow-none transition-colors hover:text-default focus-visible:outline-none focus-visible:ring-0 md:right-7"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="h-[18px] w-[18px] shrink-0"><path fill-rule="evenodd" d="M5.636 5.636a1 1 0 0 1 1.414 0l4.95 4.95 4.95-4.95a1 1 0 0 1 1.414 1.414L13.414 12l4.95 4.95a1 1 0 0 1-1.414 1.414L12 13.414l-4.95 4.95a1 1 0 0 1-1.414-1.414l4.95-4.95-4.95-4.95a1 1 0 0 1 0-1.414Z" clip-rule="evenodd"></path></svg></button><div id="header-site-search" class="pagefind-header-ui pagefind-desktop-ui oai-site-search-overlay _root_1wztd_1"><div class="flex h-full min-h-0 flex-col gap-0"><div class="shrink-0 border-b border-primary-surface px-4 py-4 md:px-6 md:py-5"><label class="sr-only" for="header-site-search-input">搜索文档</label><input id="header-site-search-input" type="text" placeholder="开始搜索" autocomplete="off" spellcheck="false" data-site-search-input="true" class="w-full outline-none transition-colors rounded-none border-0 bg-transparent py-0 pl-0 pr-14 text-[18px] leading-tight text-default placeholder:text-tertiary focus:ring-0 md:text-[18px]" value="" /></div><div class="flex min-h-0 flex-1 flex-col gap-4 px-4 py-4 md:px-6 md:py-5 api-search-scroll"><div data-site-search-empty-state="true" class="flex flex-col gap-4"><section class="_emptySection_1wztd_68" data-site-search-suggestions="true"><h3 class="_emptyHeading_1wztd_74">推荐搜索</h3><div class="flex flex-wrap gap-2"><button type="button" class="_emptyChip_1wztd_81" data-search-query-button="true" data-search-query="快速开始">快速开始</button><button type="button" class="_emptyChip_1wztd_81" data-search-query-button="true" data-search-query="API 密钥">API 密钥</button><button type="button" class="_emptyChip_1wztd_81" data-search-query-button="true" data-search-query="Claude Code">Claude Code</button><button type="button" class="_emptyChip_1wztd_81" data-search-query-button="true" data-search-query="速率限制">速率限制</button><button type="button" class="_emptyChip_1wztd_81" data-search-query-button="true" data-search-query="错误码">错误码</button></div></section></div><div data-site-search-results hidden class="flex flex-col gap-1"></div></div></div></div></div></div></div></div>
+<div id="drawer" class="fixed inset-0 z-40 flex flex-col bg-surface transform translate-x-full transition-transform duration-300 lg:hidden" aria-label="移动端导航"><div class="flex flex-col h-full w-full"><div class="px-6 pt-6 w-full mt-16"><div class="flex items-center gap-2"><nav class="min-w-0 flex-1 flex items-center gap-1 overflow-x-auto pb-2 -mx-1 px-1 sm:gap-2" role="tablist" aria-label="站点分区"><a href="/api/" role="tab" data-selected="true" aria-selected="true" class="min-h-11 shrink-0 scroll-mx-2 rounded-full border border-primary-surface px-3 py-1.5 text-xs text-secondary transition-colors duration-150 data-[selected=true]:bg-primary-soft data-[selected=true]:text-default hover:bg-primary-soft-alpha hover:text-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-surface sm:px-3.5 sm:text-sm inline-flex items-center">首页</a><a href="/api/docs/" role="tab" data-selected="false" aria-selected="false" class="min-h-11 shrink-0 scroll-mx-2 rounded-full border border-primary-surface px-3 py-1.5 text-xs text-secondary transition-colors duration-150 data-[selected=true]:bg-primary-soft data-[selected=true]:text-default hover:bg-primary-soft-alpha hover:text-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-surface sm:px-3.5 sm:text-sm inline-flex items-center">API</a><a href="/chat/" role="tab" data-selected="false" aria-selected="false" class="min-h-11 shrink-0 scroll-mx-2 rounded-full border border-primary-surface px-3 py-1.5 text-xs text-secondary transition-colors duration-150 data-[selected=true]:bg-primary-soft data-[selected=true]:text-default hover:bg-primary-soft-alpha hover:text-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-surface sm:px-3.5 sm:text-sm inline-flex items-center">产品</a><a href="/api/docs/faq/" role="tab" data-selected="false" aria-selected="false" class="min-h-11 shrink-0 scroll-mx-2 rounded-full border border-primary-surface px-3 py-1.5 text-xs text-secondary transition-colors duration-150 data-[selected=true]:bg-primary-soft data-[selected=true]:text-default hover:bg-primary-soft-alpha hover:text-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-surface sm:px-3.5 sm:text-sm inline-flex items-center">资源</a></nav><div class="mb-2 flex shrink-0 items-center gap-1"><details data-theme-picker name="theme-picker" class="relative shrink-0"><summary id="drawer-theme-button" role="button" aria-label="选择主题" title="选择主题" aria-controls="drawer-theme-button-choices" class="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-full text-secondary transition-colors hover:bg-primary-soft-alpha hover:text-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-surface [&amp;::-webkit-details-marker]:hidden"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="block dark:hidden w-4 h-4" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 1C12.5523 1 13 1.44772 13 2V4C13 4.55228 12.5523 5 12 5C11.4477 5 11 4.55228 11 4V2C11 1.44772 11.4477 1 12 1ZM4.22183 4.22183C4.61235 3.8313 5.24551 3.8313 5.63604 4.22183L7.05025 5.63604C7.44078 6.02656 7.44078 6.65973 7.05025 7.05025C6.65973 7.44078 6.02656 7.44078 5.63604 7.05025L4.22183 5.63604C3.8313 5.24551 3.8313 4.61235 4.22183 4.22183ZM19.7782 4.22183C20.1687 4.61235 20.1687 5.24551 19.7782 5.63604L18.364 7.05025C17.9734 7.44078 17.3403 7.44078 16.9497 7.05025C16.5592 6.65973 16.5592 6.02656 16.9497 5.63604L18.364 4.22183C18.7545 3.8313 19.3876 3.8313 19.7782 4.22183ZM12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9ZM7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12ZM1 12C1 11.4477 1.44772 11 2 11H4C4.55228 11 5 11.4477 5 12C5 12.5523 4.55228 13 4 13H2C1.44772 13 1 12.5523 1 12ZM19 12C19 11.4477 19.4477 11 20 11H22C22.5523 11 23 11.4477 23 12C23 12.5523 22.5523 13 22 13H20C19.4477 13 19 12.5523 19 12ZM7.05025 16.9497C7.44078 17.3403 7.44078 17.9734 7.05025 18.364L5.63604 19.7782C5.24551 20.1687 4.61235 20.1687 4.22183 19.7782C3.8313 19.3876 3.8313 18.7545 4.22183 18.364L5.63604 16.9497C6.02656 16.5592 6.65973 16.5592 7.05025 16.9497ZM16.9497 16.9497C17.3403 16.5592 17.9734 16.5592 18.364 16.9497L19.7782 18.364C20.1687 18.7545 20.1687 19.3876 19.7782 19.7782C19.3877 20.1687 18.7545 20.1687 18.364 19.7782L16.9497 18.364C16.5592 17.9734 16.5592 17.3403 16.9497 16.9497ZM12 19C12.5523 19 13 19.4477 13 20V22C13 22.5523 12.5523 23 12 23C11.4477 23 11 22.5523 11 22V20C11 19.4477 11.4477 19 12 19Z" fill="currentColor"></path></svg><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="hidden dark:block w-4 h-4" aria-hidden="true"><path d="M12.7836 2.47048C12.9676 2.76512 12.9855 3.13415 12.8309 3.44525C12.2994 4.51497 12 5.7211 12 7.00001C12 11.4183 15.5817 15 20 15L20.0575 14.9998C20.4049 14.9974 20.7287 15.1754 20.9127 15.47C21.0968 15.7647 21.1147 16.1337 20.9601 16.4448C19.325 19.7352 15.9279 22 12 22C6.47715 22 2 17.5229 2 12C2 6.50107 6.43841 2.03886 11.9284 2.00027C12.2758 1.99783 12.5995 2.17584 12.7836 2.47048ZM10.4099 4.15803C6.75344 4.8954 4 8.12619 4 12C4 16.4183 7.58172 20 12 20C14.587 20 16.8886 18.7721 18.3516 16.8648C13.6131 16.0789 10 11.9614 10 7.00001C10 6.01361 10.1431 5.05953 10.4099 4.15803Z" fill="currentColor"></path></svg></summary><fieldset id="drawer-theme-button-choices" class="absolute right-0 top-full z-50 mt-2 min-w-44 rounded-xl border border-primary-surface bg-surface p-1 shadow-lg"><legend class="sr-only">主题</legend><label class="flex min-h-11 cursor-pointer items-center justify-between gap-4 rounded-lg px-3 text-sm text-default hover:bg-primary-soft-alpha has-focus-visible:outline has-focus-visible:outline-2 has-focus-visible:outline-primary-surface">浅色<input type="radio" name="drawer-theme-button-preference" value="light" data-theme-preference class="h-4 w-4 appearance-auto accent-current" /></label><label class="flex min-h-11 cursor-pointer items-center justify-between gap-4 rounded-lg px-3 text-sm text-default hover:bg-primary-soft-alpha has-focus-visible:outline has-focus-visible:outline-2 has-focus-visible:outline-primary-surface">深色<input type="radio" name="drawer-theme-button-preference" value="dark" data-theme-preference class="h-4 w-4 appearance-auto accent-current" /></label><label class="flex min-h-11 cursor-pointer items-center justify-between gap-4 rounded-lg px-3 text-sm text-default hover:bg-primary-soft-alpha has-focus-visible:outline has-focus-visible:outline-2 has-focus-visible:outline-primary-surface">跟随系统<input type="radio" name="drawer-theme-button-preference" value="system" data-theme-preference class="h-4 w-4 appearance-auto accent-current" /></label></fieldset></details></div></div></div><div class="flex-1 w-full overflow-y-auto px-6 py-4 flex flex-col gap-6" data-mobile-nav-panels=""><button type="button" data-header-search-button aria-controls="header-search-overlay" aria-expanded="false" class="flex w-full items-center justify-between gap-3 rounded-full border border-primary-surface bg-surface px-4 py-2 text-sm text-secondary">开始搜索<svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4 shrink-0"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.875 4.5C7.35418 4.5 4.5 7.35418 4.5 10.875C4.5 14.3958 7.35418 17.25 10.875 17.25C14.3958 17.25 17.25 14.3958 17.25 10.875C17.25 7.35418 14.3958 4.5 10.875 4.5ZM2.5 10.875C2.5 6.24962 6.24962 2.5 10.875 2.5C15.5004 2.5 19.25 6.24962 19.25 10.875C19.25 12.8273 18.582 14.6236 17.462 16.0478L21.2071 19.7929C21.5976 20.1834 21.5976 20.8166 21.2071 21.2071C20.8166 21.5976 20.1834 21.5976 19.7929 21.2071L16.0478 17.462C14.6236 18.582 12.8273 19.25 10.875 19.25C6.24962 19.25 2.5 15.5004 2.5 10.875Z" fill="currentColor"></path></svg></button><div data-mobile-context-options class="flex flex-col gap-1"><button type="button" class="w-full rounded-lg px-3 py-2 text-left text-sm font-normal text-secondary transition-colors hover:bg-primary-ghost-hover hover:text-default data-[selected=true]:bg-primary-ghost-active data-[selected=true]:text-default" data-mobile-context-option="overview" data-selected="true">概览</button><button type="button" class="w-full rounded-lg px-3 py-2 text-left text-sm font-normal text-secondary transition-colors hover:bg-primary-ghost-hover hover:text-default data-[selected=true]:bg-primary-ghost-active data-[selected=true]:text-default" data-mobile-context-option="models" data-selected="false">模型</button><button type="button" class="w-full rounded-lg px-3 py-2 text-left text-sm font-normal text-secondary transition-colors hover:bg-primary-ghost-hover hover:text-default data-[selected=true]:bg-primary-ghost-active data-[selected=true]:text-default" data-mobile-context-option="protocols" data-selected="false">协议</button><button type="button" class="w-full rounded-lg px-3 py-2 text-left text-sm font-normal text-secondary transition-colors hover:bg-primary-ghost-hover hover:text-default data-[selected=true]:bg-primary-ghost-active data-[selected=true]:text-default" data-mobile-context-option="coding" data-selected="false">编程工具</button><button type="button" class="w-full rounded-lg px-3 py-2 text-left text-sm font-normal text-secondary transition-colors hover:bg-primary-ghost-hover hover:text-default data-[selected=true]:bg-primary-ghost-active data-[selected=true]:text-default" data-mobile-context-option="realtime" data-selected="false">实时语音</button><button type="button" class="w-full rounded-lg px-3 py-2 text-left text-sm font-normal text-secondary transition-colors hover:bg-primary-ghost-hover hover:text-default data-[selected=true]:bg-primary-ghost-active data-[selected=true]:text-default" data-mobile-context-option="production" data-selected="false">生产部署</button><button type="button" class="w-full rounded-lg px-3 py-2 text-left text-sm font-normal text-secondary transition-colors hover:bg-primary-ghost-hover hover:text-default data-[selected=true]:bg-primary-ghost-active data-[selected=true]:text-default" data-mobile-context-option="reference" data-selected="false">API 参考</button></div><div data-mobile-nav-variant-content data-variant-id="overview" class="flex flex-col gap-6"><div class="flex flex-col gap-3"><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">概览</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">开始使用</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/quickstart/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">快速开始</a></li><li><a href="/api/docs/guides/authentication/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">认证与 API 密钥</a></li><li><a href="/api/docs/libraries/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">SDK 与兼容性</a></li><li><a href="/api/docs/guides/migration/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">从其他平台迁移</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">核心概念</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/guides/conventions/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">使用约定</a></li><li><a href="/api/docs/guides/free-tier/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">免费模型与免费额度</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">资源</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/faq/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">常见问题</a></li></ul></div></div><div data-mobile-nav-variant-content data-variant-id="models" hidden class="flex flex-col gap-6"><div class="flex flex-col gap-3"><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/models/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">模型目录</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">选择模型</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/pricing/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">价格</a></li><li><a href="/api/docs/guides/model-selection/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">模型选择</a></li></ul></div></div><div data-mobile-nav-variant-content data-variant-id="protocols" hidden class="flex flex-col gap-6"><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">文本生成</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/guides/chat-completions/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">Chat Completions</a></li><li><a href="/api/docs/guides/responses/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">Responses</a></li><li><a href="/api/docs/guides/messages/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">Messages（Anthropic）</a></li></ul></div></div><div data-mobile-nav-variant-content data-variant-id="coding" hidden class="flex flex-col gap-6"><div class="flex flex-col gap-3"><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/guides/coding-tools/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">概览</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">命令行智能体</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/guides/codex-cli/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">Codex CLI</a></li><li><a href="/api/docs/guides/claude-code/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">Claude Code</a></li><li><a href="/api/docs/guides/opencode/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">OpenCode</a></li><li><a href="/api/docs/guides/openclaw/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">OpenClaw</a></li><li><a href="/api/docs/guides/aider/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">Aider</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">编辑器与 IDE</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/guides/cursor/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">Cursor</a></li><li><a href="/api/docs/guides/cline/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">Cline</a></li><li><a href="/api/docs/guides/continue/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">Continue</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">桌面客户端</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/guides/cherry-studio/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">Cherry Studio</a></li><li><a href="/api/docs/guides/chatbox/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">Chatbox</a></li><li><a href="/api/docs/guides/lobechat/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">LobeChat</a></li><li><a href="/api/docs/guides/sillytavern/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">SillyTavern</a></li><li><a href="/api/docs/guides/cc-switch/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">CC Switch</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">排查</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/guides/client-faq/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">客户端常见问题</a></li></ul></div></div><div data-mobile-nav-variant-content data-variant-id="realtime" hidden class="flex flex-col gap-6"><div class="flex flex-col gap-3"><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/guides/realtime/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">GPT-Live 概览</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">构建</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/guides/realtime-connect/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">连接与认证</a></li><li><a href="/api/docs/guides/realtime-sessions/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">会话与后端模式</a></li><li><a href="/api/docs/guides/realtime-events/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">事件参考</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">运行</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/guides/realtime-billing/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">计费与限制</a></li><li><a href="/api/docs/guides/realtime-errors/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">错误与排查</a></li></ul></div></div><div data-mobile-nav-variant-content data-variant-id="production" hidden class="flex flex-col gap-6"><div class="flex flex-col gap-3"><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/guides/production-best-practices/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">生产最佳实践</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">成本与用量</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/guides/billing/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">计费与余额</a></li><li><a href="/api/docs/guides/usage/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">查询余额与用量</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">可靠性</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/guides/rate-limits/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">速率限制</a></li><li><a href="/api/docs/guides/error-codes/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">错误码</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">组织</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/docs/guides/teams/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">团队</a></li></ul></div></div><div data-mobile-nav-variant-content data-variant-id="reference" hidden class="flex flex-col gap-6"><div class="flex flex-col gap-3"><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/reference/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">概览</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">文本生成</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/reference/chat-completions/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">Chat Completions</a></li><li><a href="/api/reference/responses/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">Responses</a></li><li><a href="/api/reference/messages/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">Messages</a></li><li><a href="/api/reference/count-tokens/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">计算输入 token</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">实时语音</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/reference/realtime/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">实时语音会话</a></li></ul></div><div class="flex flex-col gap-3"><h3 class="text-xs tracking-wide text-secondary">账户与模型</h3><ul class="flex flex-col gap-1 text-sm text-default w-full"><li><a href="/api/reference/models/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">列出模型</a></li><li><a href="/api/reference/balance/" data-mobile-nav-link class="px-3 py-1.5 rounded-lg transition-colors block hover:text-default hover:bg-primary-ghost-hover">查询余额与用量</a></li></ul></div></div></div><div class="w-full px-6 py-6 border-t border-primary-surface" data-mobile-nav-footer=""><div class="flex flex-col gap-5"><div class="flex items-center gap-2 w-full gap-3"><a href="/api/console/" class="_Button_6dmow_1 not-prose w-full justify-center" data-color="primary" data-variant="solid" data-pill="" data-size="md"><span class="_ButtonInner_6dmow_4"><span class="">控制台</span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="shrink-0" data-external-link-indicator="persistent"><path fill-rule="evenodd" d="M16.243 6.757a1 1 0 0 1 1 1v7.072a1 1 0 0 1-2 0v-4.657L8.464 16.95a1 1 0 0 1-1.414-1.414l6.778-6.779H9.172a1 1 0 0 1 0-2h7.07Z" clip-rule="evenodd"></path></svg></span></a></div></div></div></div></div>
+<div data-docs-agent-page="" class="min-h-dvh"><div class="flex" style="padding-top: var(--docs-header-offset)"><main class="min-w-0 flex-1" id="main"><div>
+  <div class="mx-auto w-full max-w-6xl pb-4 pt-0 md:px-6 lg:px-10">
+    <section class="px-4 pb-6 pt-0 text-center md:px-0">
+      <div class="pt-6 md:pt-8">
+        <div class="sr-only">
+          <header class="flex flex-col not-prose gap-1 pt-20 items-center text-center">
+            <div class="contents">
+              <div class="flex min-w-0 flex-wrap items-center gap-3">
+                <h1 class="heading-2xl md:heading-2xl">NexusVAI 开发者平台</h1>
+              </div>
+            </div>
+            <p class="mx-auto max-w-xl text-md md:text-lg text-secondary leading-relaxed mb-20">用 NexusVAI API 构建所需的文档与资源。</p>
+          </header>
+        </div>
+        <section
+          data-devday-banner=""
+          data-devday-mode="launch"
+          class="devday-banner relative mb-6 overflow-hidden rounded-xl bg-black px-6 py-8 text-left text-white dark:overflow-visible dark:px-0 md:px-10 md:py-10 md:dark:px-0"
+          aria-labelledby="home-hero-title"
+          data-astro-cid-bkecleup=""
+        >
+          <div class="devday-copy relative z-10" data-astro-cid-bkecleup="">
+            <h2 id="home-hero-title" data-astro-cid-bkecleup="">
+              <span class="sr-only" data-astro-cid-bkecleup="">NexusVAI Developers</span>
+              <span class="devday-wordmark" aria-hidden="true" data-astro-cid-bkecleup="">
+                <picture data-astro-cid-bkecleup="">
+                  <img src="/api/assets/img/home/nexusvai_developers_boil.svg" width="1600" height="185" alt="" fetchpriority="high" data-astro-cid-bkecleup="" />
+                </picture>
+              </span>
+            </h2>
+            <p class="mt-7 text-base leading-relaxed text-white/80" data-astro-cid-bkecleup="">一个端点、一把密钥，接入前沿模型。兼容 OpenAI 与 Anthropic 协议。</p>
+            <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-4" data-astro-cid-bkecleup="">
+              <div class="devday-button-frame relative inline-flex" data-astro-cid-bkecleup="">
+                <a
+                  class="devday-button relative z-10 inline-flex min-h-11 items-center gap-2 bg-white px-5 py-3 text-sm font-medium text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-white"
+                  href="/api/docs/quickstart/"
+                  data-astro-cid-bkecleup=""
+                ><span data-astro-cid-bkecleup="">开始构建</span></a>
+                <span class="devday-dot devday-dot-tl" aria-hidden="true" data-astro-cid-bkecleup=""></span>
+                <span class="devday-dot devday-dot-tr" aria-hidden="true" data-astro-cid-bkecleup=""></span>
+                <span class="devday-dot devday-dot-br" aria-hidden="true" data-astro-cid-bkecleup=""></span>
+                <span class="devday-dot devday-dot-bl" aria-hidden="true" data-astro-cid-bkecleup=""></span>
+              </div>
+              <a
+                class="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-white underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                href="/api/docs/models/"
+                data-astro-cid-bkecleup=""
+              >
+                浏览模型
+                <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="h-4 w-4" data-astro-cid-bkecleup="true"><path fill-rule="evenodd" d="M18.707 12.707a1 1 0 0 0 0-1.414l-5-5a1 1 0 1 0-1.414 1.414L15.586 11H6a1 1 0 1 0 0 2h9.586l-3.293 3.293a1 1 0 0 0 1.414 1.414l5-5Z" clip-rule="evenodd"></path></svg>
+              </a>
+            </div>
+          </div>
+          <div class="devday-character absolute z-20" aria-hidden="true" data-astro-cid-bkecleup="">
+            <div class="_agent_zckbo_1 home-crab-agent">
+              <div class="_actor_zckbo_27">
+                <div class="_head_zckbo_28">
+                  <cancri-crab class="home-crab" state="idle"></cancri-crab>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="grid gap-4 min-[868px]:grid-cols-2">
+        <section class="not-prose w-full rounded-lg border border-default bg-surface p-5 text-left transition-colors" data-astro-cid-6dxqfa7l="">
+          <div class="grid gap-6 md:items-stretch md:gap-8 md:grid-cols-1" data-astro-cid-6dxqfa7l="">
+            <div class="order-1 flex min-w-0 items-start gap-4 md:h-full" data-astro-cid-6dxqfa7l="">
+              <span class="mt-1 flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl md:h-14 md:w-14" data-astro-cid-6dxqfa7l="">
+                <img src="/api/assets/img/home/model-opus5.webp" alt="" width="112" height="112" loading="lazy" decoding="async" class="h-full w-full object-cover" data-astro-cid-6dxqfa7l="" />
+              </span>
+              <div class="flex min-w-0 flex-1 flex-col pt-0.5 md:h-full md:mr-6" data-astro-cid-6dxqfa7l="">
+                <div data-astro-cid-6dxqfa7l="">
+                  <h2 class="text-lg font-semibold leading-snug text-default md:text-xl" data-astro-cid-6dxqfa7l="">Claude Opus 5.5</h2>
+                  <p class="mt-2 text-base leading-7 text-secondary max-w-none" data-astro-cid-6dxqfa7l="">Anthropic 的旗舰模型。可以通过 Messages 协议在 Claude Code 中使用，也可以用 OpenAI SDK 调用。</p>
+                  <p class="mt-1 text-sm text-tertiary" data-home-model-meta="claude-opus-5.5" hidden></p>
+                </div>
+                <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3" data-astro-cid-6dxqfa7l="">
+                  <a
+                    href="/api/docs/models/detail/?model=claude-opus-5.5"
+                    class="inline-flex items-center gap-1 self-start text-sm font-semibold text-default transition-colors hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-surface"
+                    data-astro-cid-6dxqfa7l=""
+                  >
+                    <span data-astro-cid-6dxqfa7l="">了解 Claude Opus 5.5</span>
+                    <svg width="1em" height="1em" viewBox="3 3 18 18" fill="currentColor" data-external-link-indicator="persistent" class="h-4 w-4" data-astro-cid-6dxqfa7l="true"><path fill-rule="evenodd" d="M16.243 6.757a1 1 0 0 1 1 1v7.072a1 1 0 0 1-2 0v-4.657L8.464 16.95a1 1 0 0 1-1.414-1.414l6.778-6.779H9.172a1 1 0 0 1 0-2h7.07Z" clip-rule="evenodd"></path></svg>
+                  </a>
+                  <a
+                    href="/api/docs/models/"
+                    class="inline-flex items-center gap-1 self-start text-sm font-semibold text-secondary transition-colors hover:text-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-surface"
+                    data-astro-cid-6dxqfa7l=""
+                  >
+                    <span data-astro-cid-6dxqfa7l="">浏览模型目录</span>
+                    <svg width="1em" height="1em" viewBox="3 3 18 18" fill="currentColor" data-external-link-indicator="persistent" class="h-4 w-4" data-astro-cid-6dxqfa7l="true"><path fill-rule="evenodd" d="M16.243 6.757a1 1 0 0 1 1 1v7.072a1 1 0 0 1-2 0v-4.657L8.464 16.95a1 1 0 0 1-1.414-1.414l6.778-6.779H9.172a1 1 0 0 1 0-2h7.07Z" clip-rule="evenodd"></path></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="not-prose w-full rounded-lg border border-default bg-surface p-5 text-left transition-colors" data-astro-cid-6dxqfa7l="">
+          <div class="grid gap-6 md:items-stretch md:gap-8 md:grid-cols-1" data-astro-cid-6dxqfa7l="">
+            <div class="order-1 flex min-w-0 items-start gap-4 md:h-full" data-astro-cid-6dxqfa7l="">
+              <span class="mt-1 flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl md:h-14 md:w-14" data-astro-cid-6dxqfa7l="">
+                <img src="/api/assets/img/home/model-astra.webp" alt="" width="112" height="112" loading="lazy" decoding="async" class="h-full w-full object-cover" data-astro-cid-6dxqfa7l="" />
+              </span>
+              <div class="flex min-w-0 flex-1 flex-col pt-0.5 md:h-full md:mr-6" data-astro-cid-6dxqfa7l="">
+                <div data-astro-cid-6dxqfa7l="">
+                  <h2 class="text-lg font-semibold leading-snug text-default md:text-xl" data-astro-cid-6dxqfa7l="">GPT-6 Astra</h2>
+                  <p class="mt-2 text-base leading-7 text-secondary max-w-none" data-astro-cid-6dxqfa7l="">OpenAI 的旗舰模型，Codex CLI 推荐使用。支持 Responses 与 Chat Completions 协议。</p>
+                  <p class="mt-1 text-sm text-tertiary" data-home-model-meta="gpt-6-astra" hidden></p>
+                </div>
+                <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3" data-astro-cid-6dxqfa7l="">
+                  <a
+                    href="/api/docs/models/detail/?model=gpt-6-astra"
+                    class="inline-flex items-center gap-1 self-start text-sm font-semibold text-default transition-colors hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-surface"
+                    data-astro-cid-6dxqfa7l=""
+                  >
+                    <span data-astro-cid-6dxqfa7l="">了解 GPT-6 Astra</span>
+                    <svg width="1em" height="1em" viewBox="3 3 18 18" fill="currentColor" data-external-link-indicator="persistent" class="h-4 w-4" data-astro-cid-6dxqfa7l="true"><path fill-rule="evenodd" d="M16.243 6.757a1 1 0 0 1 1 1v7.072a1 1 0 0 1-2 0v-4.657L8.464 16.95a1 1 0 0 1-1.414-1.414l6.778-6.779H9.172a1 1 0 0 1 0-2h7.07Z" clip-rule="evenodd"></path></svg>
+                  </a>
+                  <a
+                    href="/api/docs/guides/codex-cli/"
+                    class="inline-flex items-center gap-1 self-start text-sm font-semibold text-secondary transition-colors hover:text-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-surface"
+                    data-astro-cid-6dxqfa7l=""
+                  >
+                    <span data-astro-cid-6dxqfa7l="">在 Codex CLI 中使用</span>
+                    <svg width="1em" height="1em" viewBox="3 3 18 18" fill="currentColor" data-external-link-indicator="persistent" class="h-4 w-4" data-astro-cid-6dxqfa7l="true"><path fill-rule="evenodd" d="M16.243 6.757a1 1 0 0 1 1 1v7.072a1 1 0 0 1-2 0v-4.657L8.464 16.95a1 1 0 0 1-1.414-1.414l6.778-6.779H9.172a1 1 0 0 1 0-2h7.07Z" clip-rule="evenodd"></path></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+    <section class="grid gap-6 px-4 md:grid-cols-3 md:px-0 mb-16">
+      <a href="/api/docs/" class="group relative h-[200px] md:h-[260px] overflow-hidden rounded-md bg-surface-secondary p-6 transition duration-500 md:p-8">
+        <div class="absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100" style="background-image: url(&quot;/api/assets/img/home/product-api.webp&quot;); background-size: cover; background-position: center"></div>
+        <div class="absolute inset-0 bg-black/10 opacity-0 transition duration-500 group-hover:opacity-100"></div>
+        <div class="relative z-10 flex h-full justify-between flex-col gap-6">
+          <div class="text-default transition group-hover:text-white">
+            <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="h-5 w-5 md:h-6 md:w-6"><path d="M4.94845 4.68299C5.32822 4.24896 5.87687 4 6.4536 4H17.5461C18.1228 4 18.6714 4.24896 19.0512 4.68299L22.5512 8.68299C23.6827 9.97616 22.7644 12 21.0461 12H2.9536C1.23528 12 0.316926 9.97616 1.44845 8.68299L4.94845 4.68299ZM17.5461 6L6.4536 6L2.9536 10H21.0461L17.5461 6ZM1.99983 15C1.99983 14.4477 2.44755 14 2.99983 14H20.9998C21.5521 14 21.9998 14.4477 21.9998 15C21.9998 15.5523 21.5521 16 20.9998 16H2.99983C2.44755 16 1.99983 15.5523 1.99983 15ZM2.99983 19C2.99983 18.4477 3.44755 18 3.99983 18H19.9998C20.5521 18 20.9998 18.4477 20.9998 19C20.9998 19.5523 20.5521 20 19.9998 20H3.99983C3.44755 20 2.99983 19.5523 2.99983 19Z" fill="currentColor"></path></svg>
+          </div>
+          <div class="flex flex-col gap-3">
+            <div>
+              <h3 class="text-2xl font-medium text-default transition group-hover:text-white">API 平台</h3>
+              <p class="mt-2 text-base text-secondary transition group-hover:text-white">用一个 API 密钥调用 GPT、Claude、Gemini、DeepSeek 等模型。</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      <a href="/cancricode/" class="group relative h-[200px] md:h-[260px] overflow-hidden rounded-md bg-surface-secondary p-6 transition duration-500 md:p-8">
+        <div class="absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100" style="background-image: url(&quot;/api/assets/img/home/product-code.webp&quot;); background-size: cover; background-position: center"></div>
+        <div class="absolute inset-0 bg-black/10 opacity-0 transition duration-500 group-hover:opacity-100"></div>
+        <div class="relative z-10 flex h-full justify-between flex-col gap-6">
+          <div class="text-default transition group-hover:text-white">
+            <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-5 w-5 md:h-6 md:w-6"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 4.5l-3 15"></path></svg>
+          </div>
+          <div class="flex flex-col gap-3">
+            <div>
+              <h3 class="text-2xl font-medium text-default transition group-hover:text-white">Cancri Code</h3>
+              <p class="mt-2 text-base text-secondary transition group-hover:text-white">读懂整个项目，在云端沙箱里动手，验证之后再交付的编程智能体。</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      <a href="/chat/" class="group relative h-[200px] md:h-[260px] overflow-hidden rounded-md bg-surface-secondary p-6 transition duration-500 md:p-8">
+        <div class="absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100" style="background-image: url(&quot;/api/assets/img/home/product-chat.webp&quot;); background-size: cover; background-position: center"></div>
+        <div class="absolute inset-0 bg-black/10 opacity-0 transition duration-500 group-hover:opacity-100"></div>
+        <div class="relative z-10 flex h-full justify-between flex-col gap-6">
+          <div class="text-default transition group-hover:text-white">
+            <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="h-5 w-5 md:h-6 md:w-6"><path d="M12 4.5C7.5271 4.5 4 7.91095 4 12C4 13.6958 4.5996 15.263 5.62036 16.5254C5.80473 16.7534 5.87973 17.0509 5.82551 17.339C5.72928 17.8505 5.60336 18.3503 5.45668 18.8401C6.08722 18.743 6.69878 18.6098 7.2983 18.4395C7.54758 18.3687 7.81461 18.3975 8.04312 18.5197C9.20727 19.1423 10.5566 19.5 12 19.5C16.4729 19.5 20 16.0891 20 12C20 7.91095 16.4729 4.5 12 4.5ZM2 12C2 6.70021 6.53177 2.5 12 2.5C17.4682 2.5 22 6.70021 22 12C22 17.2998 17.4682 21.5 12 21.5C10.3694 21.5 8.82593 21.1286 7.46141 20.4675C6.36717 20.7507 5.2423 20.9253 4.06155 20.9981C3.72191 21.019 3.39493 20.8658 3.19366 20.5915C2.9924 20.3171 2.94448 19.9592 3.06647 19.6415C3.35663 18.8859 3.6004 18.1448 3.77047 17.399C2.65693 15.8695 2 14.0088 2 12Z" fill="currentColor"></path></svg>
+          </div>
+          <div class="flex flex-col gap-3">
+            <div>
+              <h3 class="text-2xl font-medium text-default transition group-hover:text-white">NexusV 对话</h3>
+              <p class="mt-2 text-base text-secondary transition group-hover:text-white">在一个界面里使用多家厂商的前沿模型，帮你写作、编程、分析与创作。</p>
+            </div>
+          </div>
+        </div>
+      </a>
+    </section>
+    <section class="grid gap-4 px-4 pb-8 md:px-0 md:pb-10 min-[868px]:grid-cols-2">
+      <article class="group not-prose grid grid-cols-[minmax(0,1fr)_112px] sm:grid-cols-[minmax(0,1fr)_140px] md:grid-cols-[minmax(0,1fr)_164px] lg:grid-cols-[minmax(0,1fr)_minmax(220px,0.82fr)] items-stretch gap-4 overflow-hidden rounded-lg p-5 text-left">
+        <div class="min-w-0 md:flex md:h-full md:flex-col md:justify-between">
+          <div>
+            <h2 class="text-base font-semibold leading-snug text-default md:text-lg">编程工具接入</h2>
+            <p class="mt-2 max-w-sm text-sm leading-5 text-secondary">在 Claude Code、Codex CLI、Cursor、Cline 等工具中使用 NexusVAI：配置 Base URL 与 API 密钥即可。</p>
+          </div>
+          <div class="mt-4 md:mt-0">
+            <div class="not-prose flex justify-start">
+              <a href="/api/docs/guides/coding-tools/" class="_Button_6dmow_1 not-prose group" data-color="primary" data-variant="solid" data-pill="" data-size="lg"><span class="_ButtonInner_6dmow_4">
+                  查看接入指南
+                  <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5"><path fill-rule="evenodd" d="M18.707 12.707a1 1 0 0 0 0-1.414l-5-5a1 1 0 1 0-1.414 1.414L15.586 11H6a1 1 0 1 0 0 2h9.586l-3.293 3.293a1 1 0 0 0 1.414 1.414l5-5Z" clip-rule="evenodd"></path></svg></span></a>
+            </div>
+          </div>
+        </div>
+        <div class="relative flex h-full min-w-0 items-center justify-center overflow-hidden rounded-md bg-surface-tertiary min-h-28 sm:min-h-[140px] md:min-h-[164px] lg:aspect-square lg:h-auto">
+          <picture class="block h-full w-full">
+            <img src="/api/assets/img/home/promo-coding.webp" width="480" height="480" alt="" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
+          </picture>
+          <div class="home-illo" aria-hidden="true">
+            <div class="home-illo__stage">
+              <div class="home-illo__window home-illo__glass">
+                <div class="home-illo__dots"><i></i><i></i><i></i></div>
+                <div class="home-illo__row home-illo__row--a"><b></b><span></span></div>
+                <div class="home-illo__row home-illo__row--b"><b></b><span></span></div>
+                <div class="home-illo__row home-illo__row--c"><b></b><span></span></div>
+              </div>
+              <div class="home-illo__chip home-illo__glass"><i></i>cn.nexusvai.xyz</div>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="group not-prose grid grid-cols-[minmax(0,1fr)_112px] sm:grid-cols-[minmax(0,1fr)_140px] md:grid-cols-[minmax(0,1fr)_164px] lg:grid-cols-[minmax(0,1fr)_minmax(220px,0.82fr)] items-stretch gap-4 overflow-hidden rounded-lg p-5 text-left">
+        <div class="min-w-0 md:flex md:h-full md:flex-col md:justify-between">
+          <div>
+            <h2 class="text-base font-semibold leading-snug text-default md:text-lg">实时语音 GPT-Live</h2>
+            <p class="mt-2 max-w-sm text-sm leading-5 text-secondary">通过 WebSocket 接入 gpt-live-1：边听边说，并返回双向转写。事件格式与 OpenAI Live 协议一致。</p>
+          </div>
+          <div class="mt-4 md:mt-0">
+            <div class="not-prose flex justify-start">
+              <a href="/api/docs/guides/realtime/" class="_Button_6dmow_1 not-prose group" data-color="primary" data-variant="solid" data-pill="" data-size="lg"><span class="_ButtonInner_6dmow_4">
+                  了解 GPT-Live
+                  <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5"><path fill-rule="evenodd" d="M18.707 12.707a1 1 0 0 0 0-1.414l-5-5a1 1 0 1 0-1.414 1.414L15.586 11H6a1 1 0 1 0 0 2h9.586l-3.293 3.293a1 1 0 0 0 1.414 1.414l5-5Z" clip-rule="evenodd"></path></svg></span></a>
+            </div>
+          </div>
+        </div>
+        <div class="relative flex h-full min-w-0 items-center justify-center overflow-hidden rounded-md bg-surface-tertiary min-h-28 sm:min-h-[140px] md:min-h-[164px] lg:aspect-square lg:h-auto">
+          <picture class="block h-full w-full">
+            <img src="/api/assets/img/home/promo-realtime.webp" width="480" height="480" alt="" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
+          </picture>
+          <div class="home-illo" aria-hidden="true">
+            <div class="home-illo__stage">
+              <div class="home-illo__voice home-illo__glass">
+                <span class="home-illo__mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg></span>
+                <span class="home-illo__wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+              </div>
+              <div class="home-illo__chip home-illo__glass"><i></i>gpt-live-1</div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+    <section class="pt-4 pb-12 md:pt-14 md:pb-0 flex flex-col gap-8">
+      <div class="items-center justify-between px-4 md:px-0"><h2 class="heading-md">精选</h2></div>
+      <div class="px-4 md:px-0">
+        <section class="not-prose w-full rounded-lg border border-default bg-surface p-5 text-left transition-colors" data-astro-cid-6dxqfa7l="">
+          <div class="grid gap-6 md:items-stretch md:gap-8 md:grid-cols-1" data-astro-cid-6dxqfa7l="">
+            <div class="order-1 flex min-w-0 items-start gap-4 md:h-full" data-astro-cid-6dxqfa7l="">
+              <span class="relative mt-1 flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl text-white md:h-14 md:w-14" data-astro-cid-6dxqfa7l="">
+                <img src="/api/assets/img/home/icon-migrate.webp" alt="" width="112" height="112" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover" data-astro-cid-6dxqfa7l="" />
+                <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="relative h-6 w-6"><path d="M4 8h15m-4-4 4 4-4 4M20 16H5m4-4-4 4 4 4"></path></svg>
+              </span>
+              <div class="flex min-w-0 flex-1 flex-col pt-0.5 md:h-full md:mr-6" data-astro-cid-6dxqfa7l="">
+                <div data-astro-cid-6dxqfa7l="">
+                  <h2 class="text-lg font-semibold leading-snug text-default md:text-xl" data-astro-cid-6dxqfa7l="">从 OpenAI 或其他兼容服务迁移</h2>
+                  <p class="mt-2 text-base leading-7 text-secondary max-w-2xl" data-astro-cid-6dxqfa7l="">通常不需要改业务代码：替换 Base URL、API 密钥和模型 ID，现有的 SDK 与工具就能继续使用。</p>
+                </div>
+                <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3" data-astro-cid-6dxqfa7l="">
+                  <a
+                    href="/api/docs/guides/migration/"
+                    class="inline-flex items-center gap-1 self-start text-sm font-semibold text-default transition-colors hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-surface"
+                    data-astro-cid-6dxqfa7l=""
+                  >
+                    <span data-astro-cid-6dxqfa7l="">阅读迁移指南</span>
+                    <svg width="1em" height="1em" viewBox="3 3 18 18" fill="currentColor" data-external-link-indicator="persistent" class="h-4 w-4" data-astro-cid-6dxqfa7l="true"><path fill-rule="evenodd" d="M16.243 6.757a1 1 0 0 1 1 1v7.072a1 1 0 0 1-2 0v-4.657L8.464 16.95a1 1 0 0 1-1.414-1.414l6.778-6.779H9.172a1 1 0 0 1 0-2h7.07Z" clip-rule="evenodd"></path></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-start" data-featured-container="">
+        <article class="group flex flex-col md:sticky md:top-24" data-featured-sticky="">
+          <div
+            class="relative aspect-video w-full overflow-hidden bg-gray-900 md:rounded-md"
+            data-featured-primary-image=""
+            data-featured-video=""
+            data-video-src="/Logo/CancriCode3-Intro.mp4"
+            data-video-title="Cancri Code 3：见识一下你的软件工程师"
+          >
+            <div class="h-full w-full" data-featured-video-frame="">
+              <button
+                type="button"
+                aria-label="播放视频：Cancri Code 3：见识一下你的软件工程师"
+                class="group/video absolute inset-0 block h-full w-full overflow-hidden text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
+                data-featured-video-play=""
+              >
+                <img src="/api/assets/img/home/featured-cc3.webp" alt="Cancri Code 3" width="978" height="550" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-500 group-hover/video:scale-[1.02]" />
+                <span class="absolute inset-0 bg-black/0 transition-colors group-hover/video:bg-black/5"></span>
+                <span class="absolute inset-0 flex items-center justify-center">
+                  <span class="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-default shadow-sm transition-transform group-hover/video:scale-105">
+                    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="h-6 w-6 translate-x-0.5"><path fill-rule="evenodd" d="M7 7.638v8.724c0 1.294 1.464 2.075 2.577 1.376l6.94-4.363a1.615 1.615 0 0 0 0-2.75l-6.94-4.363C8.464 5.562 7 6.344 7 7.638Z" clip-rule="evenodd"></path></svg>
+                  </span>
+                </span>
+              </button>
+            </div>
+          </div>
+          <div class="mt-6 flex flex-col gap-2 px-4 md:px-0">
+            <h3 class="heading-md md:heading-lg font-medium leading-tight">Cancri Code 3：见识一下你的软件工程师</h3>
+            <div class="text-sm font-medium text-secondary">2026 年 9 月 26 日</div>
+          </div>
+        </article>
+        <div class="flex flex-col gap-6 px-4 mt-8 md:mt-0 md:px-0 md:flex-none">
+          <a href="/api/docs/models/" class="group flex flex-col gap-3">
+            <div class="relative aspect-[1.55/1] w-full flex-none overflow-hidden rounded-md bg-gray-100 md:aspect-square md:w-[240px] dark:bg-gray-800">
+              <img src="/api/assets/img/home/tile-models.webp" alt="" width="480" height="480" loading="lazy" class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.01]" data-featured-secondary-image="" />
+              <div class="absolute inset-0 flex items-center justify-center">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.24)]"><path fill-rule="evenodd" d="M12.5 3.444a1 1 0 0 0-1 0l-6.253 3.61 6.768 3.807 6.955-3.682-6.47-3.735Zm7.16 5.632L13 12.602v7.666l6.16-3.556a1 1 0 0 0 .5-.867V9.076ZM11 20.268v-7.683L4.34 8.839v7.006a1 1 0 0 0 .5.867L11 20.268Zm-.5-18.557a3 3 0 0 1 3 0l6.66 3.846a3 3 0 0 1 1.5 2.598v7.69a3 3 0 0 1-1.5 2.598L13.5 22.29a3 3 0 0 1-3 0l-6.66-3.846a3 3 0 0 1-1.5-2.598v-7.69a3 3 0 0 1 1.5-2.598L10.5 1.71Z" clip-rule="evenodd"></path></svg>
+              </div>
+            </div>
+            <h4 class="min-h-12 text-base font-medium text-default line-clamp-2 md:min-h-0">模型目录</h4>
+          </a>
+          <a href="/api/docs/pricing/" class="group flex flex-col gap-3">
+            <div class="relative aspect-[1.55/1] w-full flex-none overflow-hidden rounded-md bg-gray-100 md:aspect-square md:w-[240px] dark:bg-gray-800">
+              <img src="/api/assets/img/home/tile-pricing.webp" alt="" width="480" height="480" loading="lazy" class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.01]" data-featured-secondary-image="" />
+              <div class="absolute inset-0 flex items-center justify-center">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.24)]"><circle cx="12" cy="12" r="9"></circle><path d="m9 7.5 3 4 3-4M12 11.5V17M9.5 12.5h5M9.5 15h5"></path></svg>
+              </div>
+            </div>
+            <h4 class="min-h-12 text-base font-medium text-default line-clamp-2 md:min-h-0">价格</h4>
+          </a>
+          <a href="/api/docs/guides/teams/" class="group flex flex-col gap-3">
+            <div class="relative aspect-[1.55/1] w-full flex-none overflow-hidden rounded-md bg-gray-100 md:aspect-square md:w-[240px] dark:bg-gray-800">
+              <img src="/api/assets/img/home/tile-teams.webp" alt="" width="480" height="480" loading="lazy" class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.01]" data-featured-secondary-image="" />
+              <div class="absolute inset-0 flex items-center justify-center">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.24)]"><path fill-rule="evenodd" d="M10.5 8.5a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM12 5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM3 9.5a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm1-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm16 2a1 1 0 1 0 0 2 1 1 0 0 0 0-2Zm-3 1a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM8 18c0-.974.438-1.684 1.142-2.185C9.876 15.293 10.911 15 12 15c1.09 0 2.124.293 2.858.815.704.5 1.142 1.21 1.142 2.185a1 1 0 1 0 2 0c0-1.692-.812-2.982-1.983-3.815C14.876 13.373 13.411 13 12 13c-1.41 0-2.876.373-4.017 1.185C6.812 15.018 6 16.308 6 18a1 1 0 1 0 2 0Zm-3.016-3.675a1 1 0 0 1-.809 1.16C2.79 15.732 2 16.486 2 17.5a1 1 0 1 1-2 0c0-2.41 1.978-3.655 3.825-3.985a1 1 0 0 1 1.16.81Zm14.84 1.16a1 1 0 1 1 .351-1.97C22.022 13.845 24 15.09 24 17.5a1 1 0 1 1-2 0c0-1.014-.79-1.768-2.175-2.015Z" clip-rule="evenodd"></path></svg>
+              </div>
+            </div>
+            <h4 class="min-h-12 text-base font-medium text-default line-clamp-2 md:min-h-0">团队</h4>
+          </a>
+        </div>
+      </div>
+    </section>
+    <section class="pt-4 md:pt-12 px-4 md:px-0">
+      <div class="mb-8 flex items-center justify-between">
+        <h2 class="heading-md">研究与动态</h2>
+        <a href="/#latest-news" class="inline-flex items-center gap-2 text-sm text-secondary hover:text-default"> 查看全部 </a>
+      </div>
+      <div class="flex w-full flex-col gap-8">
+        <a href="/article.html?id=cancri25flash" class="group flex w-full min-w-0 flex-col items-start gap-3 rounded-md sm:flex-row sm:gap-6">
+          <div class="relative aspect-video w-full flex-none overflow-hidden rounded-md bg-surface-secondary sm:aspect-auto sm:h-32 sm:w-52 md:h-36 md:w-64">
+            <img src="/api/assets/img/home/post-cancri25flash.webp" alt="Cancri 2.5 Flash 预览版" width="512" height="288" loading="lazy" class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
+          </div>
+          <div class="flex w-full min-w-0 flex-1 flex-col justify-between sm:min-h-32 sm:w-auto md:min-h-36">
+            <div>
+              <h3 class="text-lg font-medium text-default sm:line-clamp-1 md:text-xl">隆重推出 Cancri 2.5 Flash 预览版</h3>
+              <p class="mt-2 max-w-3xl text-base leading-6 text-secondary line-clamp-2">一个 0.44B、从零训练的小模型：换上数字逐位切分的词表，再完成约 70 亿 token 的增量预训练。</p>
+            </div>
+            <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-secondary"><span>2026 年 9 月 25 日</span> <span>产品</span></div>
+          </div>
+        </a>
+        <a href="/article.html?id=cancriV1" class="group flex w-full min-w-0 flex-col items-start gap-3 rounded-md sm:flex-row sm:gap-6">
+          <div class="relative aspect-video w-full flex-none overflow-hidden rounded-md bg-surface-secondary sm:aspect-auto sm:h-32 sm:w-52 md:h-36 md:w-64">
+            <img src="/api/assets/img/home/post-cancriv1.webp" alt="黑板中继" width="512" height="288" loading="lazy" class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
+          </div>
+          <div class="flex w-full min-w-0 flex-1 flex-col justify-between sm:min-h-32 sm:w-auto md:min-h-36">
+            <div>
+              <h3 class="text-lg font-medium text-default sm:line-clamp-1 md:text-xl">黑板中继：通过压缩隐状态“手传”实现的小型语言模型协作</h3>
+              <p class="mt-2 max-w-3xl text-base leading-6 text-secondary line-clamp-2">让多个亚十亿参数的专家不通过文本，而是通过一个固定大小的压缩隐状态“黑板”相互协作。</p>
+            </div>
+            <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-secondary"><span>2026 年 7 月 9 日</span> <span>研究</span></div>
+          </div>
+        </a>
+        <a href="/article.html?id=hero" class="group flex w-full min-w-0 flex-col items-start gap-3 rounded-md sm:flex-row sm:gap-6">
+          <div class="relative aspect-video w-full flex-none overflow-hidden rounded-md bg-surface-secondary sm:aspect-auto sm:h-32 sm:w-52 md:h-36 md:w-64">
+            <img src="/api/assets/img/home/post-tr0524.webp" alt="技术报告 0524" width="512" height="288" loading="lazy" class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
+          </div>
+          <div class="flex w-full min-w-0 flex-1 flex-col justify-between sm:min-h-32 sm:w-auto md:min-h-36">
+            <div>
+              <h3 class="text-lg font-medium text-default sm:line-clamp-1 md:text-xl">技术报告 0524：堵住 SSE 流式取消的成本漏洞</h3>
+              <p class="mt-2 max-w-3xl text-base leading-6 text-secondary line-clamp-2">我们在网关中关闭的一个 P0 级成本规避漏洞：中途断开流式连接，曾经可以逃避为已生成的 token 付费。</p>
+            </div>
+            <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-secondary"><span>2026 年 5 月 24 日</span> <span>技术</span></div>
+          </div>
+        </a>
+      </div>
+    </section>
+  </div>
+</div>
+<div class="home-help w-full max-w-6xl pb-4 md:px-6 lg:px-10 mx-auto my-12">
+  <section class="pt-4 md:pt-16" aria-labelledby="home-help-title">
+    <h2 id="home-help-title" class="sr-only">获取帮助</h2>
+    <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-4 lg:gap-16">
+      <a href="/api/docs/" class="group flex flex-col items-center text-center">
+        <div class="flex items-center justify-center text-default transition-colors duration-200 group-hover:text-secondary">
+          <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="h-6 w-6 md:h-7 md:w-7"><path fill-rule="evenodd" d="M4 5a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-2a1 1 0 1 1 0-2v-2a1 1 0 1 1 0-2V9a1 1 0 0 1 0-2V5Zm2 4a1 1 0 0 0 0-2V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-2a1 1 0 1 0 0-2v-2a1 1 0 1 0 0-2V9Zm3-1a1 1 0 0 1 1-1h4a1 1 0 1 1 0 2h-4a1 1 0 0 1-1-1Zm0 4a1 1 0 0 1 1-1h4a1 1 0 1 1 0 2h-4a1 1 0 0 1-1-1Z" clip-rule="evenodd"></path></svg>
+        </div>
+        <p class="mt-3 text-base font-semibold text-default">文档</p>
+        <p class="mt-2 text-sm text-secondary">指南、代码示例与 API 参考</p>
+      </a>
+      <a href="/api/docs/faq/" class="group flex flex-col items-center text-center">
+        <div class="flex items-center justify-center text-default transition-colors duration-200 group-hover:text-secondary">
+          <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="h-6 w-6 md:h-7 md:w-7"><path d="M5.68014 7.09436L7.8284 9.24261C7.30488 10.033 7 10.9809 7 12C7 13.0191 7.30488 13.967 7.8284 14.7574L5.68014 16.9056C4.62708 15.551 4 13.8487 4 12C4 10.1513 4.62708 8.44904 5.68014 7.09436ZM4.25786 5.67028C2.84669 7.3943 2 9.59827 2 12C2 14.4017 2.84669 16.6057 4.25786 18.3297C3.90274 18.7223 3.91442 19.3286 4.29289 19.7071C4.67137 20.0856 5.27774 20.0973 5.67028 19.7421C7.3943 21.1533 9.59827 22 12 22C14.4017 22 16.6057 21.1533 18.3297 19.7421C18.7223 20.0973 19.3286 20.0856 19.7071 19.7071C20.0856 19.3286 20.0973 18.7223 19.7421 18.3297C21.1533 16.6057 22 14.4017 22 12C22 9.59827 21.1533 7.3943 19.7421 5.67028C20.0973 5.27774 20.0856 4.67137 19.7071 4.29289C19.3286 3.91442 18.7223 3.90274 18.3297 4.25786C16.6057 2.84669 14.4017 2 12 2C9.59827 2 7.3943 2.84669 5.67028 4.25786C5.27774 3.90274 4.67137 3.91442 4.29289 4.29289C3.91442 4.67137 3.90274 5.27774 4.25786 5.67028ZM7.09436 5.68014C8.44904 4.62708 10.1513 4 12 4C13.8487 4 15.551 4.62708 16.9056 5.68014L14.7574 7.8284C13.967 7.30488 13.0191 7 12 7C10.9809 7 10.033 7.30488 9.24261 7.8284L7.09436 5.68014ZM18.3199 7.09436C19.3729 8.44904 20 10.1513 20 12C20 13.8487 19.3729 15.551 18.3199 16.9056L16.1716 14.7574C16.6951 13.967 17 13.0191 17 12C17 10.9809 16.6951 10.033 16.1716 9.24261L18.3199 7.09436ZM16.9056 18.3199C15.551 19.3729 13.8487 20 12 20C10.1513 20 8.44904 19.3729 7.09436 18.3199L9.24261 16.1716C10.033 16.6951 10.9809 17 12 17C13.0191 17 13.967 16.6951 14.7574 16.1716L16.9056 18.3199ZM12 9C13.6569 9 15 10.3431 15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9Z" fill="currentColor"></path></svg>
+        </div>
+        <p class="mt-3 text-base font-semibold text-default">常见问题</p>
+        <p class="mt-2 text-sm text-secondary">接入、计费与账户的常见问题</p>
+      </a>
+      <a href="/api/contact/" class="group flex flex-col items-center text-center">
+        <div class="flex items-center justify-center text-default transition-colors duration-200 group-hover:text-secondary">
+          <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-6 w-6 md:h-7 md:w-7"><rect x="3" y="5" width="18" height="14" rx="3"></rect><path d="m7 9 5 3.5L17 9"></path></svg>
+        </div>
+        <p class="mt-3 text-base font-semibold text-default">联系我们</p>
+        <p class="mt-2 text-sm text-secondary">商务合作、发票与工单</p>
+      </a>
+      <a href="/api/#community" data-community-open class="group flex flex-col items-center text-center">
+        <div class="flex items-center justify-center text-default transition-colors duration-200 group-hover:text-secondary">
+          <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="h-6 w-6 md:h-7 md:w-7"><path fill-rule="evenodd" d="M10.5 8.5a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM12 5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM3 9.5a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm1-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm16 2a1 1 0 1 0 0 2 1 1 0 0 0 0-2Zm-3 1a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM8 18c0-.974.438-1.684 1.142-2.185C9.876 15.293 10.911 15 12 15c1.09 0 2.124.293 2.858.815.704.5 1.142 1.21 1.142 2.185a1 1 0 1 0 2 0c0-1.692-.812-2.982-1.983-3.815C14.876 13.373 13.411 13 12 13c-1.41 0-2.876.373-4.017 1.185C6.812 15.018 6 16.308 6 18a1 1 0 1 0 2 0Zm-3.016-3.675a1 1 0 0 1-.809 1.16C2.79 15.732 2 16.486 2 17.5a1 1 0 1 1-2 0c0-2.41 1.978-3.655 3.825-3.985a1 1 0 0 1 1.16.81Zm14.84 1.16a1 1 0 1 1 .351-1.97C22.022 13.845 24 15.09 24 17.5a1 1 0 1 1-2 0c0-1.014-.79-1.768-2.175-2.015Z" clip-rule="evenodd"></path></svg>
+        </div>
+        <p class="mt-3 text-base font-semibold text-default">社区</p>
+        <p class="mt-2 text-sm text-secondary">加入 QQ 交流群，关注 B 站与小红书</p>
+      </a>
+    </div>
+  </section>
+</div>
+<div data-page-next-prev=""></div>
+</main></div></div>
+<div data-community-mount data-asset-base="/chat/assets/community/"></div>
+<script src="/chat/api/oai-community.js?v=20261107f" defer></script>
+<script src="/api/assets/shell.js?v=20261107f" defer></script>
+<script src="/api/assets/home.js?v=20261107f" defer></script>
+<script src="/api/assets/home-title.js?v=20261107f" defer></script>
+<script src="/api/assets/cancri-crab.js?v=20261107f" defer></script>
+</body>
+</html>

@@ -29,8 +29,8 @@
     },
     primary: {
       label: "即刻使用 →",
-      hrefChat: "./api_models.html#cancri-free-section",
-      hrefApi: "chat/api_models.html#cancri-free-section",
+      hrefChat: "/api/docs/models/#cancri-free-section",
+      hrefApi: "/api/docs/models/#cancri-free-section",
     },
     secondary: { label: "稍后再说" },
   });

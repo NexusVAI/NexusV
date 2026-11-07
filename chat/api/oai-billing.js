@@ -133,7 +133,7 @@
   // 2026-09-09 起替代爱发电 + 自建 checkout；**2026-09-18 起从 16688 换成链动小铺**
   // （运营方在 16688 的店铺已关停）。
   // ⚠️ 同一串还写在三处，换店铺时四处一起改：
-  //      · chat/api/billing.html 的几个 <a>（静态锚点，不依赖 JS 也能点）
+  //      · api/console/billing/index.html 的几个 <a>（静态锚点，不依赖 JS 也能点；chat/api/billing.html 已是跳转桩）
   //      · chat/pricing.html 三张套餐卡（那边是按套餐深链到具体商品页）
   //      · cf-gateway/src/chat-gateway.ported.ts 的 handleSubmitPaymentOrder → shop_url
   var SHOP_URL = "https://wzyp.cn/shop/2ZSEX6O0";

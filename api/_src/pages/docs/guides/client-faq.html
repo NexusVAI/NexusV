@@ -1,0 +1,62 @@
+---
+title: 客户端常见问题
+description: 排查编程工具和聊天客户端接入时常见的 Base URL、模型 ID、密钥、缓存与维护问题。
+tab: coding
+---
+<p>大多数接入问题出在三项配置上：Base URL、API 密钥和模型 ID。先按下面的错误信息对号入座；拿不准请求有没有到达 NexusVAI 时，用 <a href="/api/docs/guides/coding-tools/#verify"><code>GET /v1/balance</code></a> 查看这个 Key 最近的调用记录。</p>
+
+<h2 id="base-url-errors">Base URL 填写错误</h2>
+<p>OpenAI 兼容的工具填 <code>https://cn.nexusvai.xyz/v1</code>，Anthropic 兼容的工具（Claude Code、Anthropic SDK、OpenClaw 的 <code>anthropic-messages</code>）填 <code>https://cn.nexusvai.xyz</code>。填错时会看到：</p>
+<table>
+<thead><tr><th>错误</th><th>原因</th><th>解决方法</th></tr></thead>
+<tbody>
+<tr><td><code>421 relay_path_not_supported</code></td><td>请求路径不在 <code>/v1/</code> 下，通常是 OpenAI 兼容工具的 Base URL 少了末尾的 <code>/v1</code>。</td><td>改成 <code>https://cn.nexusvai.xyz/v1</code>。</td></tr>
+<tr><td><code>404</code>，消息为 <code>Not found: /v1/v1/…</code></td><td>Base URL 多了一个 <code>/v1</code>，常见于 Anthropic 兼容工具。</td><td>Anthropic 兼容工具改成 <code>https://cn.nexusvai.xyz</code>。</td></tr>
+<tr><td><code>426 websocket_required</code></td><td>用 <code>cn.nexusvai.xyz</code> 连接实时语音。</td><td>实时语音改用 <code>chat.nexusvai.xyz</code>，见<a href="/api/docs/guides/realtime-connect/">连接与认证</a>。</td></tr>
+</tbody>
+</table>
+
+<h2 id="model-not-found">模型不存在</h2>
+<p>OpenAI 兼容端点返回 <code>404 model_not_found</code>；Anthropic 兼容的 <code>/v1/messages</code> 返回 <code>404</code>，<code>type</code> 为 <code>not_found_error</code>。两者的消息都是 <code>The model '…' does not exist.</code>。</p>
+<ul>
+<li>模型 ID 必须与 <code>GET /v1/models</code> 的返回值完全一致，包括大小写和连字符。</li>
+<li>部分客户端会自动改写模型名。遇到这种情况，在模型设置中手动填入 NexusVAI 的模型 ID，例如 <code>gpt-6-astra</code>、<code>claude-opus-5.5</code>。</li>
+<li>模型厂商带日期的原始版本号（例如 <code>claude-3-5-sonnet-20241022</code>）和其他服务的别名不可用。</li>
+</ul>
+
+<h2 id="invalid-key">API 密钥无效</h2>
+<p>返回 <code>401 invalid_api_key</code> 时，按以下几点检查：</p>
+<ul>
+<li>Key 必须以 <code>cancri_sk_</code> 开头，在<a href="/api/console/keys/">控制台</a>创建。</li>
+<li>网页登录的会话、Cookie 或登录令牌不能代替 API 密钥。</li>
+<li>命令行工具从环境变量读取 Key 时，变量必须在启动工具的同一个终端里生效。</li>
+<li>已撤销的 Key 无法恢复，请创建新 Key。</li>
+</ul>
+
+<h2 id="prompt-caching">提示缓存</h2>
+<p>NexusVAI 支持提示缓存。缓存命中（cache read）的输入 token 按该模型的缓存价格计费，通常为输入价格的 1 折，按每个请求的实际命中量结算。各模型的价格见<a href="/api/docs/pricing/">价格</a>。</p>
+<p>第三方检测工具显示「无缓存」，通常有两个原因：</p>
+<ul>
+<li><strong>字段格式不同。</strong>部分工具按 NewAPI、Sub2API 等服务的响应格式或日志字段判断缓存。NexusVAI 的字段位置和命名不同，工具读不到时会显示「无缓存」，但缓存仍然生效。</li>
+<li><strong>没有满足命中条件。</strong>缓存命中要求请求前缀完全一致、长度达到模型的最低要求，而且缓存只保留几分钟（Anthropic 默认约 5 分钟）。单次请求或前缀不断变化的检测请求不会命中。</li>
+</ul>
+<p>出于安全考虑，响应的 <code>usage</code> 不返回每个请求的缓存命中 token 数。缓存折扣已经计入每次调用的扣费，可以用 <code>GET /v1/balance</code> 返回的 <code>cost</code> 或控制台的用量页核对。Anthropic 协议请求中的 <code>cache_control</code> 不生效，前缀缓存按实际命中自动计费。</p>
+
+<h2 id="api-paused">API 暂停服务</h2>
+<p>API 暂停服务期间（例如维护），<code>GET /v1/models</code> 仍可读取模型列表，其他接口返回 <code>503 api_paused</code> 并带 <code>Retry-After</code> 头。更换 Key 或客户端都无法解除，请等待恢复。</p>
+
+<h2 id="free-vs-paid">免费账户与已充值账户</h2>
+<p>未充值、也没有套餐的账户处于 Tier 0：60 RPM、2,000,000 TPM，免费模型还受免费额度限制（每个账户每 24 小时滚动窗口 1 亿 token）。累计充值达到 ¥10 或开通套餐后，档位提升，免费模型不再受免费额度限制。详见<a href="/api/docs/guides/rate-limits/">速率限制</a>。</p>
+
+<h2 id="images-videos">图像与视频生成</h2>
+<p>API 不提供图像与视频生成。<code>/v1/images/generations</code> 与 <code>/v1/videos/generations</code> 只对网页版开放，使用 <code>cancri_sk_</code> 开头的 Key 调用会返回 <code>403 endpoint_disabled</code>。</p>
+
+<h2 id="leaked-key">API 密钥泄露</h2>
+<p>立即在<a href="/api/console/keys/">控制台的 API 密钥页</a>撤销这个 Key，然后创建新 Key，并更新所有客户端的配置。撤销立即生效，已撤销的 Key 无法恢复。</p>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/error-codes/" title="错误码">HTTP 接口的完整错误码列表。</card>
+<card href="/api/docs/guides/rate-limits/" title="速率限制" icon="cube">各档位的 RPM、TPM 与升档方式。</card>
+<card href="/api/docs/guides/coding-tools/" title="编程工具概览">按协议填写 Base URL，并验证请求是否到达 NexusVAI。</card>
+</cards>

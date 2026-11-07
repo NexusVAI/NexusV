@@ -26,11 +26,11 @@
       });
     }
 
-    // 2. 顶部分段控件：API 按量充值 → api/billing.html
+    // 2. 顶部分段控件：API 按量充值 → /api/console/billing/
     var apiSeg = document.querySelector('button[aria-label="API 按量充值"]');
     if (apiSeg) {
       apiSeg.addEventListener("click", function () {
-        location.href = "api/billing.html";
+        location.href = "/api/console/billing/";
       });
     }
   });

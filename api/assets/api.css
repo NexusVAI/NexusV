@@ -1,0 +1,143 @@
+/* Our layer on top of the vendored OpenAI Developers CSS (api/assets/oai/*). Keep it small:
+ * anything that is "theirs" should come from the vendored files, not be re-implemented here. */
+
+/* Logo: the NexusVAI Developers wordmark is white; flip it for the light header. */
+.api-logo img {
+  filter: invert(1);
+}
+html.dark .api-logo img {
+  filter: none;
+}
+
+/* ── Community button: sits where OpenAI's "Ask AI" pill sits, looks like it ── */
+.cancri-community {
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 50;
+}
+.cancri-community .cancri-community__trigger {
+  width: auto;
+  height: 44px;
+  flex-direction: row;
+  gap: 6px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 9999px !important;
+  clip-path: none !important;
+  box-shadow: 0 16px 48px -18px rgba(15, 23, 42, 0.45);
+  font-size: 14px;
+  font-weight: 500;
+}
+.cancri-community .cancri-community__trigger svg {
+  width: 16px;
+  height: 16px;
+}
+.cancri-community .cancri-community__trigger span {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+.cancri-community .cancri-community__trigger:focus-visible {
+  outline: 2px solid var(--color-ring, #0169cc);
+  outline-offset: 2px;
+}
+.cancri-community .cancri-community__panel {
+  right: 0;
+  bottom: 100%;
+  padding: 0 0 12px;
+}
+#drawer.open ~ .cancri-community {
+  display: none;
+}
+@media print {
+  .cancri-community {
+    display: none;
+  }
+}
+
+/* ── Code samples: native <select> laid over OpenAI's Select trigger ── */
+.api-code-lang {
+  position: relative;
+  margin-left: auto;
+}
+.api-code-lang select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.api-code-lang:focus-within ._SelectControl_x887o_1 {
+  outline: 2px solid var(--color-ring, #0169cc);
+  outline-offset: 1px;
+}
+.api-copy-icon {
+  display: inline-flex;
+}
+.api-copy-icon[hidden] {
+  display: none;
+}
+.page-copy-action[data-copied] .page-copy-action__icon--copy {
+  display: none;
+}
+.page-copy-action:not([data-copied]) .page-copy-action__icon--check {
+  display: none;
+}
+
+/* ── Search results ── */
+.api-search-scroll {
+  max-height: min(60vh, calc(100vh - 16rem));
+  overflow-y: auto;
+}
+._hit_1wztd_5.api-hit-active {
+  background: var(--color-background-primary-soft-alpha);
+}
+
+/* ── Sidebar method badges (API 参考) ── */
+a.api-has-method {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.api-method-badge {
+  flex: none;
+  min-width: 38px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font: 600 10px/16px var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+.api-method-badge[data-color="success"] {
+  color: #008635;
+  background: color-mix(in oklab, #00a240 12%, transparent);
+}
+.api-method-badge[data-color="info"] {
+  color: #0169cc;
+  background: color-mix(in oklab, #0285ff 12%, transparent);
+}
+.api-method-badge[data-color="warning"] {
+  color: #b25000;
+  background: color-mix(in oklab, #fb6a22 14%, transparent);
+}
+.api-method-badge[data-color="danger"] {
+  color: #d31f1f;
+  background: color-mix(in oklab, #fa423e 12%, transparent);
+}
+.api-method-badge[data-color="discovery"] {
+  color: #7a3ad8;
+  background: color-mix(in oklab, #924ff7 12%, transparent);
+}
+html.dark .api-method-badge[data-color="success"] { color: #40c977; }
+html.dark .api-method-badge[data-color="info"] { color: #59adff; }
+html.dark .api-method-badge[data-color="warning"] { color: #ff9e6c; }
+html.dark .api-method-badge[data-color="danger"] { color: #ff6764; }
+html.dark .api-method-badge[data-color="discovery"] { color: #ad7bf9; }
+
+/* ── Link cards in articles ── */
+.api-cards {
+  display: flex;
+  flex-direction: column;
+  margin: 1rem 0 1.5rem;
+}

@@ -1,0 +1,51 @@
+---
+title: Cline
+description: 在 Cline 中选择 OpenAI Compatible provider，让这个 VS Code 编程智能体使用 NexusVAI 的模型。
+tab: coding
+---
+<p><a href="https://github.com/cline/cline">Cline</a> 是 VS Code 的开源 AI 编程扩展。选择 <strong>OpenAI Compatible</strong> provider 并填入 NexusVAI 的地址和 API 密钥，就能在 Cline 的对话和 Agent 任务中使用 NexusVAI 的模型。</p>
+
+<h2 id="prerequisites">前提条件</h2>
+<ul>
+<li>已在 VS Code 中安装 Cline 扩展。</li>
+<li>一个 NexusVAI API 密钥，可以在<a href="/api/console/keys/">控制台</a>创建。</li>
+<li>要使用的模型 ID，例如 <code>gpt-6-astra</code> 或 <code>claude-opus-5.5</code>。</li>
+</ul>
+
+<h2 id="configure">配置 provider</h2>
+<ol>
+<li>在 VS Code 侧边栏打开 Cline，点击右上角的 <strong>设置</strong>（齿轮图标）。</li>
+<li><strong>API Provider</strong> 选择 <strong>OpenAI Compatible</strong>。</li>
+<li>按下表填写，然后保存。</li>
+</ol>
+<table>
+<thead><tr><th>设置项</th><th>值</th></tr></thead>
+<tbody>
+<tr><td>Base URL</td><td><code>https://cn.nexusvai.xyz/v1</code></td></tr>
+<tr><td>API Key</td><td><code>cancri_sk_...</code></td></tr>
+<tr><td>Model ID</td><td>NexusVAI 模型 ID，例如 <code>gpt-6-astra</code>、<code>claude-opus-5.5</code></td></tr>
+</tbody>
+</table>
+
+<h2 id="verify">验证配置</h2>
+<p>保存后点击 <strong>Verify</strong>，或给 Cline 发一条简短的消息，确认 Base URL、Key 和模型 ID 都有效。要确认请求确实到达 NexusVAI，查询这个 Key 最近的调用：</p>
+<pre data-lang="bash" data-title="确认请求已到达 NexusVAI">curl "https://cn.nexusvai.xyz/v1/balance?limit=5" \
+  -H "Authorization: Bearer cancri_sk_..."</pre>
+<p>字段说明见<a href="/api/docs/guides/coding-tools/#verify">验证请求是否到达 NexusVAI</a>。</p>
+
+<h2 id="troubleshooting">排查问题</h2>
+<table>
+<thead><tr><th>现象</th><th>可能的原因</th><th>解决方法</th></tr></thead>
+<tbody>
+<tr><td><code>404 model_not_found</code></td><td>Model ID 与 <code>GET /v1/models</code> 不一致。</td><td>改成列表中的 id，注意大小写和连字符。</td></tr>
+<tr><td><code>421 relay_path_not_supported</code></td><td>Base URL 少了末尾的 <code>/v1</code>。</td><td>填 <code>https://cn.nexusvai.xyz/v1</code>。</td></tr>
+<tr><td><code>401 invalid_api_key</code></td><td>Key 填错或已撤销。</td><td>在控制台确认 Key 状态。</td></tr>
+</tbody>
+</table>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/models/" title="浏览模型">比较各模型的能力与价格。</card>
+<card href="/api/docs/guides/continue/" title="Continue" icon="cube">另一款支持 VS Code 与 JetBrains 的编程扩展。</card>
+<card href="/api/docs/guides/client-faq/" title="客户端常见问题">模型 ID、缓存与维护相关的排查。</card>
+</cards>

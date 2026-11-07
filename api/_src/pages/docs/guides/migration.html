@@ -1,0 +1,94 @@
+---
+title: 从其他平台迁移
+description: 从 OpenAI、Anthropic 或其他 OpenAI 兼容服务切换到 NexusVAI，通常只需改 Base URL、密钥和模型 ID。
+---
+<p>NexusVAI 兼容 OpenAI 与 Anthropic 的请求格式，所以从 OpenAI 官方、Anthropic 官方、One API / New API 或其他兼容服务迁移时，一般不需要改业务代码。这篇指南列出需要替换的三项配置、迁移后要检查的地方，以及与原平台的差异。</p>
+
+<h2 id="what-to-change">需要替换的配置</h2>
+<ol>
+<li><strong>Base URL。</strong>OpenAI 协议的 SDK 和工具填 <code>https://cn.nexusvai.xyz/v1</code>；Anthropic 协议的 SDK 和工具（Anthropic SDK、Claude Code）填 <code>https://cn.nexusvai.xyz</code>，不带 <code>/v1</code>。</li>
+<li><strong>API 密钥。</strong>换成以 <code>cancri_sk_</code> 开头的 NexusVAI 密钥，在<a href="/api/console/keys/">控制台</a>创建，无需审核。</li>
+<li><strong>模型 ID。</strong>换成 NexusVAI 的模型 ID，取值见<a href="/api/docs/models/">模型</a>或 <code>GET /v1/models</code>。不要沿用原平台的型号快照（如 <code>gpt-4o</code>、<code>claude-3-5-sonnet-20241022</code>）或其他服务的自定义别名。</li>
+</ol>
+<p>请求体不用改：OpenAI 兼容客户端照常发送 <code>model</code>、<code>messages</code> 等字段，Anthropic 兼容客户端照常发送 <code>model</code>、<code>max_tokens</code>、<code>messages</code>。</p>
+<callout type="warning"><p><strong>只能使用 API 密钥。</strong>网页登录会话不能代替 <code>cancri_sk_</code> 密钥。不要把浏览器 Cookie 或登录令牌填进客户端。</p></callout>
+
+<h2 id="config-mapping">配置对照</h2>
+<p>在客户端里找到「Base URL」「API Host」或「OpenAI API Base」之类的字段，按下表替换：</p>
+<table>
+<thead><tr><th>原配置</th><th>NexusVAI 配置</th></tr></thead>
+<tbody>
+<tr><td>OpenAI 官方 <code>https://api.openai.com/v1</code></td><td>Base URL 改为 <code>https://cn.nexusvai.xyz/v1</code>；密钥改为 <code>cancri_sk_...</code>；模型改为 NexusVAI 模型 ID，如 <code>gpt-6-astra</code></td></tr>
+<tr><td>One API / New API 等 OpenAI 兼容服务</td><td>把整个地址替换为 <code>https://cn.nexusvai.xyz/v1</code>；密钥与模型 ID 同上</td></tr>
+<tr><td>Anthropic 官方 <code>https://api.anthropic.com</code></td><td>Base URL 改为 <code>https://cn.nexusvai.xyz</code>（不带 <code>/v1</code>）；模型改为如 <code>claude-sonnet-5.5</code></td></tr>
+<tr><td>环境变量 <code>OPENAI_BASE_URL</code> / <code>ANTHROPIC_BASE_URL</code></td><td>Codex、Claude Code、Aider 等命令行工具优先读取环境变量，按上面的地址设置即可</td></tr>
+</tbody>
+</table>
+
+<h2 id="code-changes">代码改动示例</h2>
+<p>以官方 SDK 为例，只有创建客户端的几行需要改：</p>
+<code-tabs title="切换客户端配置">
+<pre data-lang="python" data-label="OpenAI SDK">import os
+from openai import OpenAI
+
+# 之前：client = OpenAI()
+client = OpenAI(
+    base_url="https://cn.nexusvai.xyz/v1",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+
+response = client.chat.completions.create(
+    model="gpt-6-astra",  # 之前：gpt-4o
+    messages=[{"role": "user", "content": "你好"}],
+)</pre>
+<pre data-lang="python" data-label="Anthropic SDK">import os
+from anthropic import Anthropic
+
+# 之前：client = Anthropic()
+client = Anthropic(
+    base_url="https://cn.nexusvai.xyz",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+
+message = client.messages.create(
+    model="claude-sonnet-5.5",  # 换成 NexusVAI 模型 ID
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "你好"}],
+)</pre>
+</code-tabs>
+
+<h2 id="tools-and-ides">在编程工具与 IDE 中配置</h2>
+<p>常见工具都提供自定义 Base URL 的入口：</p>
+<ul>
+<li><strong>Cursor</strong>：Settings → Models → Override OpenAI Base URL。</li>
+<li><strong>Cline、Continue</strong>：扩展设置中的 OpenAI Compatible 选项，或 Continue 的配置文件。</li>
+<li><strong>Cherry Studio、Chatbox、LobeChat、SillyTavern</strong>：提供商选择 OpenAI 兼容。</li>
+<li><strong>Claude Code、Codex CLI、Aider、OpenCode、OpenClaw</strong>：通过环境变量或配置文件设置。</li>
+</ul>
+<p>逐个工具的步骤见<a href="/api/docs/guides/coding-tools/">编程工具</a>。</p>
+<callout type="info"><p>部分 IDE（如 Cursor）的 Agent 与行内补全可能走厂商自己的服务，自定义 Base URL 通常只对对话生效。如果某个功能仍在请求原来的地址，可以改用命令行智能体或编辑器扩展。</p></callout>
+
+<h2 id="differences">与原平台的差异</h2>
+<ul>
+<li><strong>托管工具与文件。</strong>不支持 OpenAI 的托管工具（网页搜索、文件检索、代码解释器、computer use）、文件与向量库；自定义函数工具可以使用，部分模型支持。</li>
+<li><strong>Responses 没有服务端状态。</strong><code>previous_response_id</code>、<code>store</code> 不生效，多轮对话需要每次带上完整历史。见 <a href="/api/docs/guides/responses/">Responses 指南</a>。</li>
+<li><strong>Messages 的思考内容。</strong>模型的推理内容以普通 <code>text</code> 块返回，不会出现带签名的 <code>thinking</code> 块；<code>cache_control</code> 不生效。见 <a href="/api/docs/guides/messages/">Messages 指南</a>。</li>
+<li><strong>usage 只给计数。</strong>响应中的 <code>usage</code> 不包含缓存命中的 token 数；缓存折扣已体现在扣费里。</li>
+<li><strong>图像与视频生成不对 API 开放。</strong>调用 <code>/v1/images/generations</code> 或 <code>/v1/videos/generations</code> 返回 <code>403 endpoint_disabled</code>。</li>
+<li><strong>速率限制按账户计算。</strong>网页、桌面端、Bot 与 API 共用一组 RPM 和 TPM，见<a href="/api/docs/guides/rate-limits/">速率限制</a>。</li>
+</ul>
+
+<h2 id="checklist">迁移后检查</h2>
+<ol>
+<li>调用 <code>GET /v1/balance</code>（不计费），确认 Base URL 与密钥有效。</li>
+<li>用一个模型 ID 发送最短的请求，确认返回 200 且带有 <code>usage</code>。</li>
+<li>如果你的应用用到流式输出或工具调用，分别测试一次，确认请求发往 NexusVAI。</li>
+<li>遇到 <code>401 invalid_api_key</code>、<code>404 model_not_found</code> 或 <code>403 endpoint_disabled</code> 时，对照<a href="/api/docs/guides/error-codes/">错误码</a>排查。</li>
+</ol>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/conventions/" title="使用约定" icon="bolt">接入前需要知道的几条约定与功能边界。</card>
+<card href="/api/docs/libraries/" title="SDK 与兼容性" icon="cube">官方 SDK、框架与工具的配置方式。</card>
+<card href="/api/docs/models/" title="浏览模型" icon="bolt">找到替换原型号的 NexusVAI 模型 ID。</card>
+</cards>

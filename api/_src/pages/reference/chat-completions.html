@@ -1,0 +1,666 @@
+---
+title: 创建对话补全
+fullTitle: 创建对话补全（Chat Completions）| NexusVAI Developers
+description: 为一组对话消息生成模型回复。兼容 OpenAI Chat Completions 协议，支持流式输出与工具调用。
+layout: wide
+tab: reference
+transform: true
+css: /api/assets/oai/primitives.css, /api/assets/reference.css
+js: /api/assets/reference.js
+---
+<div class="ref-root">
+<div class="ref-renderer">
+
+<div class="stl-page-nav-container">
+<nav aria-label="面包屑" class="_breadcrumbs_8beoj_1"><div class="_item_8beoj_9"><a class="_link_8beoj_15" href="/api/reference/">API 参考</a></div><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="_separator_8beoj_28"><path fill-rule="evenodd" d="M8.293 4.293a1 1 0 0 1 1.414 0l7 7a1 1 0 0 1 0 1.414l-7 7a1 1 0 0 1-1.414-1.414L14.586 12 8.293 5.707a1 1 0 0 1 0-1.414Z" clip-rule="evenodd"></path></svg><div class="_item_8beoj_9"><span class="_label_8beoj_16">文本生成</span></div></nav>
+<button type="button" class="page-copy-action" data-page-copy-action="" data-astro-cid-zl22b5wc=""><span class="page-copy-action__icon page-copy-action__icon--copy" aria-hidden="true" data-astro-cid-zl22b5wc=""><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2V4Zm2 2h4a2 2 0 0 1 2 2v6h2V4h-8v2ZM6 8v12h8V8H6Z" clip-rule="evenodd"></path></svg></span><span class="page-copy-action__icon page-copy-action__icon--check" aria-hidden="true" data-astro-cid-zl22b5wc=""><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M18.063 5.674a1 1 0 0 1 .263 1.39l-7.5 11a1 1 0 0 1-1.533.143l-4.5-4.5a1 1 0 1 1 1.414-1.414l3.647 3.647 6.82-10.003a1 1 0 0 1 1.39-.263Z" clip-rule="evenodd"></path></svg></span><span data-page-copy-label="" data-astro-cid-zl22b5wc="">复制页面</span></button>
+</div>
+
+<div class="stldocs-method _method_1btwc_3 stldocs-method-double-pane">
+<div class="stldocs-method-header _header_1yhgz_1 _pageHeader_1yhgz_20">
+<h1 class="stldocs-method-title text-emphasis heading-2xl">创建对话补全</h1>
+<div class="stldocs-method-route _route_1yhgz_28"><div class="_Badge_10t5o_1 not-content font-mono shrink-0" data-color="info" data-size="sm" data-variant="soft"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.243 6.757a1 1 0 0 1 1 1v7.072a1 1 0 0 1-2 0v-4.657L8.464 16.95a1 1 0 0 1-1.414-1.414l6.778-6.779H9.172a1 1 0 0 1 0-2h7.07Z" clip-rule="evenodd"></path></svg><span>POST</span></div><span class="stldocs-method-route-endpoint _endpoint_1yhgz_35">/v1/chat/completions</span></div>
+</div>
+
+<div class="stldocs-method-body _body_1btwc_10" id="mainContent">
+<div class="stldocs-method-content-column _contentColumn_1btwc_16">
+
+<div class="stldocs-method-description _description_1btwc_20"><div class="ref-prose">
+<p>为一组对话消息生成一条模型回复。请求与响应遵循 OpenAI Chat Completions 协议，官方 <code>openai</code> SDK 把 Base URL 指向 <code>https://cn.nexusvai.xyz/v1</code> 即可调用。用法见 <a href="/api/docs/guides/chat-completions/">Chat Completions 指南</a>。</p>
+<p>网关会校验并解析 <code>model</code>，在你没有设置输出上限时补上模型的默认上限，其余字段原样转发给模型。响应返回前会整理成标准格式：只保留 OpenAI 定义的字段，<code>id</code> 与工具调用 ID 由 NexusVAI 生成。</p>
+<p>返回一个 <a href="#returns">chat.completion</a> 对象；设置 <code>stream: true</code> 时返回 <a href="#streaming">chat.completion.chunk</a> 事件流。</p>
+</div></div>
+
+<div class="stldocs-method-info _info_1btwc_39">
+
+<div class="_section_1btwc_47" id="headers">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>请求头</span></h5>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="headers"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="header-authorization">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">Authorization</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>Bearer cancri_sk_…</code>。也可以改用 <code>x-api-key: cancri_sk_…</code>，见<a href="/api/reference/#authentication">认证</a>。</p></div>
+</div></div>
+</div></div>
+</div>
+
+<div class="_section_1btwc_47" id="body">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>请求体</span><button type="button" class="_Button_6dmow_1 ml-auto appearance-none border-0 bg-transparent" data-color="secondary" data-variant="ghost" data-size="sm" aria-expanded="false" data-reference-property-toggle="body"><span class="_ButtonInner_6dmow_4"><span data-reference-expand-label="true"><span class="inline-flex items-center gap-1"><span>展开</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0V8h-3a1 1 0 0 1-1-1Zm-5 5a1 1 0 0 1 1 1v3h3a1 1 0 1 1 0 2H7a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1Z" clip-rule="evenodd"></path></svg></span></span><span data-reference-collapse-label="true" hidden=""><span class="inline-flex items-center gap-1"><span>收起</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 14a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-3H6a1 1 0 0 1-1-1Zm9-9a1 1 0 0 1 1 1v3h3a1 1 0 1 1 0 2h-4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"></path></svg></span></span></span></button></h5>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="body"><div class="stldocs-properties _properties_mjoyi_119">
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-model">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">model</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>要使用的模型 ID，取值见 <a href="/api/reference/models/">GET /v1/models</a> 或<a href="/api/docs/models/">模型目录</a>。模型不存在或已停用时返回 <code>404 model_not_found</code>；只在桌面端开放的模型返回 <code>403 model_ide_only</code>。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4">
+<details class="stldocs-expander _disclosure_mjoyi_138">
+<summary class="stldocs-expander-summary _summary_mjoyi_12"><span class="stldocs-expander-summary-icon _icon_mjoyi_143" aria-hidden="true"></span><div class="stldocs-expander-summary-content _summaryContent_mjoyi_12"><div class="stldocs-property-info _info_mjoyi_16" id="body-messages">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">messages</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>到目前为止的对话消息，按时间顺序排列。请求体没有 <code>messages</code> 而带有 Responses 风格的 <code>input</code> 时，网关会先把 <code>input</code> 转换成 <code>messages</code>，响应仍是 Chat Completions 格式。</p></div>
+</div></div></summary>
+<div class="stldocs-expander-content _disclosureContent_mjoyi_189"><div class="stldocs-property-children _children_mjoyi_192"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-messages-role">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">role</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>消息作者：<code>system</code>、<code>user</code>、<code>assistant</code> 或 <code>tool</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-messages-content">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">content</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string or array</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>消息内容。可以是字符串，也可以是内容块数组：<code>{"type": "text", "text": "…"}</code> 或 <code>{"type": "image_url", "image_url": {"url": "…"}}</code>（图片 URL 或 <code>data:</code> URL）。图片只在支持视觉输入的模型上可用，只接受文本的模型会返回 <code>400 image_input_unsupported</code>。助手消息只包含工具调用时可以为 <code>null</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-messages-tool_calls">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">tool_calls</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>助手消息中模型此前发起的工具调用，按上一轮响应原样回传。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-messages-tool_call_id">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">tool_call_id</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>role</code> 为 <code>tool</code> 时必填：这条结果对应的工具调用 <code>id</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-messages-name">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">name</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>参与者名称，按 OpenAI 规范原样转发。</p></div>
+</div></div>
+</div></div></div>
+</details>
+</div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-stream">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">stream</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">boolean</span></span><span class="ref-flag" data-flag="optional">可选</span><span class="ref-default">默认 false</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>设为 <code>true</code> 时以 Server-Sent Events 返回增量结果，见<a href="#streaming">流式输出</a>。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-stream_options">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">stream_options</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>流式选项。流式请求的 <code>include_usage</code> 总会被设为 <code>true</code>，所以最后一个数据块一定携带 <code>usage</code>。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-max_tokens">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">max_tokens</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">integer</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>本次最多生成的 token 数，必须是非负数。<code>max_tokens</code> 与 <code>max_completion_tokens</code> 都没有设置时，网关按模型目录补上 <code>max_tokens</code>，取值与 <a href="/api/reference/models/">GET /v1/models</a> 返回的 <code>max_output_tokens</code> 相同。这个值也用于预占本次请求的 TPM。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-max_completion_tokens">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">max_completion_tokens</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">integer</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>OpenAI 的新字段名，原样转发。设置后网关不再补 <code>max_tokens</code>。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-temperature">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">temperature</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">number</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>采样温度，必须是非负数，越高输出越随机。取值范围与默认值以模型为准（OpenAI 规范为 0–2）。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-top_p">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">top_p</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">number</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>核采样阈值，必须是非负数。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4">
+<details class="stldocs-expander _disclosure_mjoyi_138">
+<summary class="stldocs-expander-summary _summary_mjoyi_12"><span class="stldocs-expander-summary-icon _icon_mjoyi_143" aria-hidden="true"></span><div class="stldocs-expander-summary-content _summaryContent_mjoyi_12"><div class="stldocs-property-info _info_mjoyi_16" id="body-tools">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">tools</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>模型可以调用的函数工具，是否支持以模型为准。Responses 风格的工具（扁平的 <code>{"type": "function", "name": …}</code>，或 <code>shell</code>、<code>apply_patch</code> 等类型）会先被转换成下面的标准形式；网关不执行任何工具，调用结果需要你在下一轮请求中回传。</p></div>
+</div></div></summary>
+<div class="stldocs-expander-content _disclosureContent_mjoyi_189"><div class="stldocs-property-children _children_mjoyi_192"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-tools-type">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">type</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">"function"</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4">
+<details class="stldocs-expander _disclosure_mjoyi_138">
+<summary class="stldocs-expander-summary _summary_mjoyi_12"><span class="stldocs-expander-summary-icon _icon_mjoyi_143" aria-hidden="true"></span><div class="stldocs-expander-summary-content _summaryContent_mjoyi_12"><div class="stldocs-property-info _info_mjoyi_16" id="body-tools-function">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">function</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>函数定义。</p></div>
+</div></div></summary>
+<div class="stldocs-expander-content _disclosureContent_mjoyi_189"><div class="stldocs-property-children _children_mjoyi_192"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-tools-function-name">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">name</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>函数名。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-tools-function-description">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">description</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>函数用途，模型据此决定何时调用。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-tools-function-parameters">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">parameters</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>描述参数的 JSON Schema。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-tools-function-strict">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">strict</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">boolean</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>要求参数严格符合 Schema，原样转发，是否生效以模型为准。</p></div>
+</div></div>
+</div></div></div>
+</details>
+</div>
+</div></div></div>
+</details>
+</div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-tool_choice">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">tool_choice</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string or object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>"none"</code>、<code>"auto"</code>、<code>"required"</code>，或 <code>{"type": "function", "function": {"name": "…"}}</code> 指定某个函数。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-parallel_tool_calls">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">parallel_tool_calls</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">boolean</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>是否允许一次返回多个工具调用，原样转发。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-response_format">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">response_format</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>结构化输出：<code>{"type": "json_object"}</code> 或 <code>{"type": "json_schema", "json_schema": {…}}</code>。原样转发，是否支持以模型为准。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-stop">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">stop</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string or array</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>停止序列，原样转发。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-reasoning_effort">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">reasoning_effort</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>推理强度。GPT 系列模型（ID 含 <code>gpt-</code>）只接受 <code>none</code>、<code>low</code>、<code>medium</code>、<code>high</code>、<code>xhigh</code>、<code>max</code>，其他值返回 <code>400 invalid_request_parameter</code>；其他模型原样转发。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-service_tier">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">service_tier</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>只接受 <code>"auto"</code> 或 <code>"default"</code>（也可以省略），且不会转发给模型；其他值返回 <code>400 invalid_request_parameter</code>。</p></div>
+</div></div>
+
+</div></div>
+<p class="ref-section-foot">其他 Chat Completions 字段（如 <code>n</code>、<code>seed</code>、<code>frequency_penalty</code>、<code>presence_penalty</code>、<code>logprobs</code>、<code>user</code>）原样转发，是否生效取决于所选模型。</p>
+</div>
+
+<div class="_section_1btwc_47" id="returns">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>返回</span><button type="button" class="_Button_6dmow_1 ml-auto appearance-none border-0 bg-transparent" data-color="secondary" data-variant="ghost" data-size="sm" aria-expanded="false" data-reference-property-toggle="returns"><span class="_ButtonInner_6dmow_4"><span data-reference-expand-label="true"><span class="inline-flex items-center gap-1"><span>展开</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0V8h-3a1 1 0 0 1-1-1Zm-5 5a1 1 0 0 1 1 1v3h3a1 1 0 1 1 0 2H7a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1Z" clip-rule="evenodd"></path></svg></span></span><span data-reference-collapse-label="true" hidden=""><span class="inline-flex items-center gap-1"><span>收起</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 14a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-3H6a1 1 0 0 1-1-1Zm9-9a1 1 0 0 1 1 1v3h3a1 1 0 1 1 0 2h-4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"></path></svg></span></span></span></button></h5>
+<div class="stldocs-method-returns _properties_1btwc_61" data-stldocs-property-group="returns"><div class="stldocs-properties _properties_mjoyi_119">
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-id">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">id</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>本次补全的 ID，格式为 <code>chatcmpl-</code> 加 24 位十六进制字符，由 NexusVAI 生成。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-object">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">object</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">"chat.completion"</span></span></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-created">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">created</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">integer</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>创建时间，Unix 时间戳（秒）。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-model">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">model</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>生成回复的模型 ID，始终是 <code>GET /v1/models</code> 中的公开 ID。</p></div>
+</div></div>
+
+<div class="stldocs-property _property_mjoyi_4">
+<details class="stldocs-expander _disclosure_mjoyi_138">
+<summary class="stldocs-expander-summary _summary_mjoyi_12"><span class="stldocs-expander-summary-icon _icon_mjoyi_143" aria-hidden="true"></span><div class="stldocs-expander-summary-content _summaryContent_mjoyi_12"><div class="stldocs-property-info _info_mjoyi_16" id="returns-choices">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">choices</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>生成的回复。设置了 <code>n</code> 且模型支持时可能有多条。</p></div>
+</div></div></summary>
+<div class="stldocs-expander-content _disclosureContent_mjoyi_189"><div class="stldocs-property-children _children_mjoyi_192"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-choices-index">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">index</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">integer</span></span></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4">
+<details class="stldocs-expander _disclosure_mjoyi_138">
+<summary class="stldocs-expander-summary _summary_mjoyi_12"><span class="stldocs-expander-summary-icon _icon_mjoyi_143" aria-hidden="true"></span><div class="stldocs-expander-summary-content _summaryContent_mjoyi_12"><div class="stldocs-property-info _info_mjoyi_16" id="returns-choices-message">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">message</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>模型生成的消息。</p></div>
+</div></div></summary>
+<div class="stldocs-expander-content _disclosureContent_mjoyi_189"><div class="stldocs-property-children _children_mjoyi_192"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-choices-message-role">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">role</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">"assistant"</span></span></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-choices-message-content">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">content</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string or null</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>回复文本。只有工具调用时为 <code>null</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-choices-message-reasoning_content">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">reasoning_content</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>部分模型返回的思考内容，只在模型提供时出现。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-choices-message-tool_calls">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">tool_calls</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>模型发起的工具调用。每项包含 <code>id</code>（<code>call_cx</code> 开头，由 NexusVAI 改写）、<code>type</code>（<code>"function"</code>）与 <code>function</code>（<code>name</code>，以及 JSON 字符串形式的 <code>arguments</code>）。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-choices-message-refusal">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">refusal</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string or null</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>模型拒绝回答时的说明，只在模型提供时出现。</p></div>
+</div></div>
+</div></div></div>
+</details>
+</div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-choices-finish_reason">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">finish_reason</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>停止原因，例如 <code>stop</code>（自然结束或命中停止序列）、<code>length</code>（达到输出上限）、<code>tool_calls</code>（发起了工具调用）。取值来自模型。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-choices-logprobs">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">logprobs</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object or null</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>请求了 <code>logprobs</code> 且模型支持时返回。</p></div>
+</div></div>
+</div></div></div>
+</details>
+</div>
+
+<div class="stldocs-property _property_mjoyi_4">
+<details class="stldocs-expander _disclosure_mjoyi_138">
+<summary class="stldocs-expander-summary _summary_mjoyi_12"><span class="stldocs-expander-summary-icon _icon_mjoyi_143" aria-hidden="true"></span><div class="stldocs-expander-summary-content _summaryContent_mjoyi_12"><div class="stldocs-property-info _info_mjoyi_16" id="returns-usage">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">usage</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>本次请求的 token 用量。不返回缓存命中明细（<code>prompt_tokens_details</code>）；缓存折扣已计入扣费，可在 <a href="/api/reference/balance/">GET /v1/balance</a> 的 <code>cost</code> 中核对。</p></div>
+</div></div></summary>
+<div class="stldocs-expander-content _disclosureContent_mjoyi_189"><div class="stldocs-property-children _children_mjoyi_192"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-usage-prompt_tokens">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">prompt_tokens</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">integer</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>输入 token 数。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-usage-completion_tokens">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">completion_tokens</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">integer</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>输出 token 数。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-usage-total_tokens">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">total_tokens</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">integer</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>输入与输出之和。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-usage-completion_tokens_details">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">completion_tokens_details</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>只包含 <code>reasoning_tokens</code>（思考消耗的 token 数），仅在模型提供时返回。</p></div>
+</div></div>
+</div></div></div>
+</details>
+</div>
+
+</div></div>
+<p class="ref-section-foot">模型返回的其他字段（如 <code>system_fingerprint</code>、<code>service_tier</code>）会被移除。</p>
+</div>
+
+<div class="_section_1btwc_47" id="streaming">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>流式输出</span><button type="button" class="_Button_6dmow_1 ml-auto appearance-none border-0 bg-transparent" data-color="secondary" data-variant="ghost" data-size="sm" aria-expanded="false" data-reference-property-toggle="stream"><span class="_ButtonInner_6dmow_4"><span data-reference-expand-label="true"><span class="inline-flex items-center gap-1"><span>展开</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0V8h-3a1 1 0 0 1-1-1Zm-5 5a1 1 0 0 1 1 1v3h3a1 1 0 1 1 0 2H7a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1Z" clip-rule="evenodd"></path></svg></span></span><span data-reference-collapse-label="true" hidden=""><span class="inline-flex items-center gap-1"><span>收起</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 14a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-3H6a1 1 0 0 1-1-1Zm9-9a1 1 0 0 1 1 1v3h3a1 1 0 1 1 0 2h-4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"></path></svg></span></span></span></button></h5>
+<p class="ref-section-lead">每个事件是一行 <code>data: &lt;JSON&gt;</code>，流以 <code>data: [DONE]</code> 结束。模型思考较久时流中会出现 <code>: keep-alive</code> 注释行，按 SSE 规范忽略即可。数据块的字段如下。</p>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="stream"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="stream-object">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">object</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">"chat.completion.chunk"</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>同一次请求的所有数据块使用同一个 <code>id</code>，<code>model</code> 同样是公开模型 ID。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4">
+<details class="stldocs-expander _disclosure_mjoyi_138">
+<summary class="stldocs-expander-summary _summary_mjoyi_12"><span class="stldocs-expander-summary-icon _icon_mjoyi_143" aria-hidden="true"></span><div class="stldocs-expander-summary-content _summaryContent_mjoyi_12"><div class="stldocs-property-info _info_mjoyi_16" id="stream-choices">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">choices</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>增量内容。</p></div>
+</div></div></summary>
+<div class="stldocs-expander-content _disclosureContent_mjoyi_189"><div class="stldocs-property-children _children_mjoyi_192"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="stream-choices-delta">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">delta</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>本块新增的 <code>role</code>、<code>content</code>、<code>reasoning_content</code> 或 <code>tool_calls</code>。工具调用的 <code>arguments</code> 分多块给出，按 <code>index</code> 拼接。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="stream-choices-finish_reason">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">finish_reason</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string or null</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>在最后一个内容块中给出，其余为 <code>null</code>。</p></div>
+</div></div>
+</div></div></div>
+</details>
+</div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="stream-usage">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">usage</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>只出现在 <code>[DONE]</code> 之前的最后一个数据块，此时 <code>choices</code> 为空数组。字段与非流式响应的 <a href="#returns-usage">usage</a> 相同。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4">
+<details class="stldocs-expander _disclosure_mjoyi_138">
+<summary class="stldocs-expander-summary _summary_mjoyi_12"><span class="stldocs-expander-summary-icon _icon_mjoyi_143" aria-hidden="true"></span><div class="stldocs-expander-summary-content _summaryContent_mjoyi_12"><div class="stldocs-property-info _info_mjoyi_16" id="stream-error">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">error</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>流开始后才发生的错误。HTTP 状态码已是 200，所以错误以带 <code>error</code> 字段的数据块返回，紧跟一个 <code>data: [DONE]</code>。</p></div>
+</div></div></summary>
+<div class="stldocs-expander-content _disclosureContent_mjoyi_189"><div class="stldocs-property-children _children_mjoyi_192"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="stream-error-code">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">code</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><ul><li><code>model_temporary_failure</code>：模型暂时繁忙，没有产生内容，本次不计费。可在 <code>retry_after_seconds</code>（30）秒后重试，或换用其他模型。</li><li><code>stream_incomplete_billed</code>：回复不完整，已按实际产生的 token 计费，<code>billed</code> 为 <code>true</code>。重试会产生一次新的计费请求。</li><li><code>upstream_stream_interrupted</code>：连接在回复中途断开，回答不完整。</li></ul></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="stream-error-message">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">message</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>可展示给用户的说明（中文）。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="stream-error-type">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">type</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">"api_error"</span></span></div>
+</div></div>
+</div></div></div>
+</details>
+</div>
+</div></div>
+<p class="ref-section-foot">流式请求中途断开连接（例如用户按下停止）不会撤销计费：网关仍按已发送的输入和已生成的输出结算。</p>
+</div>
+
+<div class="_section_1btwc_47" id="errors">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>常见错误</span></h5>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="errors"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-model_not_found">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">model_not_found</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">404</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>模型不存在、已下架或已停用。用 <code>GET /v1/models</code> 核对 ID，大小写与连字符必须完全一致。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-invalid_request_parameter">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">invalid_request_parameter</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">400</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p><code>service_tier</code> 或 <code>reasoning_effort</code> 的取值不被接受（<code>error.param</code> 指出字段），或 <code>max_tokens</code>、<code>temperature</code>、<code>top_p</code> 为负数。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-model_not_in_whitelist">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">model_not_in_whitelist</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">403</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>密钥设置了模型白名单（或绑定了模型分组，此时为 <code>model_not_in_group</code>），所选模型不在其中。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-insufficient_balance">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">insufficient_balance</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">402</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>余额不足以支付本次请求的预估费用。响应带 <code>x-should-retry: false</code>，充值后再试。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-rate_limit_exceeded">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">rate_limit_exceeded</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">429</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>超出账户或密钥的 RPM / TPM。按 <code>Retry-After</code> 等待后重试。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-upstream_error">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">upstream_error</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">4xx / 5xx</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>模型暂时不可用、超时或返回了无效响应，与你的密钥和余额无关。稍后重试或换用其他模型。</p></div>
+</div></div>
+</div></div>
+<p class="ref-section-foot">完整列表与重试建议见<a href="/api/reference/#errors">错误</a>。</p>
+</div>
+
+</div>
+</div>
+
+<div class="stldocs-method-example _example_1btwc_28 not-content">
+<div class="stldocs-snippet-multi" data-ref-examples>
+<div class="_root_1v3qb_1"><div role="radiogroup" class="_SegmentedControl_16x8u_1 _options_1v3qb_8" data-size="xl" aria-label="请求示例"><div class="_SegmentedControlThumb_16x8u_226" data-ref-thumb></div><button type="button" role="radio" aria-checked="true" data-state="on" class="_SegmentedControlOption_16x8u_142" data-ref-example="0"><span class="relative">默认</span></button><button type="button" role="radio" aria-checked="false" data-state="off" tabindex="-1" class="_SegmentedControlOption_16x8u_142" data-ref-example="1"><span class="relative">流式输出</span></button><button type="button" role="radio" aria-checked="false" data-state="off" tabindex="-1" class="_SegmentedControlOption_16x8u_142" data-ref-example="2"><span class="relative">工具调用</span></button></div></div>
+<div class="stldocs-snippet-multi-content">
+
+<div class="stldocs-snippet-multi-pane" data-ref-pane="0">
+<div class="ref-snippet-head" data-method="POST">
+<code-tabs title="创建对话补全">
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $CANCRI_API_KEY" \
+  -d '{
+    "model": "deepseek-v4-flash",
+    "messages": [
+      {"role": "system", "content": "你是一个简洁的助手。"},
+      {"role": "user", "content": "用一句话解释什么是 RLS。"}
+    ]
+  }'</pre>
+<pre data-lang="python" data-label="Python">import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://cn.nexusvai.xyz/v1",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+
+completion = client.chat.completions.create(
+    model="deepseek-v4-flash",
+    messages=[
+        {"role": "system", "content": "你是一个简洁的助手。"},
+        {"role": "user", "content": "用一句话解释什么是 RLS。"},
+    ],
+)
+print(completion.choices[0].message.content)</pre>
+<pre data-lang="javascript" data-label="Node.js">import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://cn.nexusvai.xyz/v1",
+  apiKey: process.env.CANCRI_API_KEY,
+});
+
+const completion = await client.chat.completions.create({
+  model: "deepseek-v4-flash",
+  messages: [
+    { role: "system", content: "你是一个简洁的助手。" },
+    { role: "user", content: "用一句话解释什么是 RLS。" },
+  ],
+});
+console.log(completion.choices[0].message.content);</pre>
+</code-tabs>
+</div>
+<div class="ref-response">
+<pre data-lang="json" data-title="响应示例">{
+  "id": "chatcmpl-8f3b2c1a9d7e4f6b0a5c3e21",
+  "object": "chat.completion",
+  "created": 1794045600,
+  "model": "deepseek-v4-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "RLS（行级安全）按行控制谁能读写表中的数据。"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 24,
+    "completion_tokens": 18,
+    "total_tokens": 42
+  }
+}</pre>
+</div>
+</div>
+
+<div class="stldocs-snippet-multi-pane" data-ref-pane="1" hidden>
+<div class="ref-snippet-head" data-method="POST">
+<code-tabs title="流式输出">
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/chat/completions \
+  -N \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $CANCRI_API_KEY" \
+  -d '{
+    "model": "deepseek-v4-flash",
+    "messages": [{"role": "user", "content": "你好"}],
+    "stream": true
+  }'</pre>
+<pre data-lang="python" data-label="Python">import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://cn.nexusvai.xyz/v1",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+
+stream = client.chat.completions.create(
+    model="deepseek-v4-flash",
+    messages=[{"role": "user", "content": "你好"}],
+    stream=True,
+)
+for chunk in stream:
+    if chunk.choices:
+        print(chunk.choices[0].delta.content or "", end="", flush=True)</pre>
+<pre data-lang="javascript" data-label="Node.js">import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://cn.nexusvai.xyz/v1",
+  apiKey: process.env.CANCRI_API_KEY,
+});
+
+const stream = await client.chat.completions.create({
+  model: "deepseek-v4-flash",
+  messages: [{ role: "user", content: "你好" }],
+  stream: true,
+});
+for await (const chunk of stream) {
+  process.stdout.write(chunk.choices[0]?.delta?.content || "");
+}</pre>
+</code-tabs>
+</div>
+<div class="ref-response ref-wrap">
+<pre data-lang="text" data-title="响应示例">data: {"id":"chatcmpl-8f3b2c1a9d7e4f6b0a5c3e21","object":"chat.completion.chunk","created":1794045600,"model":"deepseek-v4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-8f3b2c1a9d7e4f6b0a5c3e21","object":"chat.completion.chunk","created":1794045600,"model":"deepseek-v4-flash","choices":[{"index":0,"delta":{"content":"你好！有什么可以帮你？"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-8f3b2c1a9d7e4f6b0a5c3e21","object":"chat.completion.chunk","created":1794045600,"model":"deepseek-v4-flash","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: {"id":"chatcmpl-8f3b2c1a9d7e4f6b0a5c3e21","object":"chat.completion.chunk","created":1794045600,"model":"deepseek-v4-flash","choices":[],"usage":{"prompt_tokens":9,"completion_tokens":8,"total_tokens":17}}
+
+data: [DONE]</pre>
+</div>
+</div>
+
+<div class="stldocs-snippet-multi-pane" data-ref-pane="2" hidden>
+<div class="ref-snippet-head" data-method="POST">
+<code-tabs title="工具调用">
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $CANCRI_API_KEY" \
+  -d '{
+    "model": "deepseek-v4-flash",
+    "messages": [{"role": "user", "content": "上海现在天气怎么样？"}],
+    "tools": [{
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "查询城市的实时天气",
+        "parameters": {
+          "type": "object",
+          "properties": {"city": {"type": "string"}},
+          "required": ["city"]
+        }
+      }
+    }],
+    "tool_choice": "auto"
+  }'</pre>
+<pre data-lang="python" data-label="Python">import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://cn.nexusvai.xyz/v1",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+
+tools = [{
+    "type": "function",
+    "function": {
+        "name": "get_weather",
+        "description": "查询城市的实时天气",
+        "parameters": {
+            "type": "object",
+            "properties": {"city": {"type": "string"}},
+            "required": ["city"],
+        },
+    },
+}]
+
+completion = client.chat.completions.create(
+    model="deepseek-v4-flash",
+    messages=[{"role": "user", "content": "上海现在天气怎么样？"}],
+    tools=tools,
+    tool_choice="auto",
+)
+print(completion.choices[0].message.tool_calls)</pre>
+<pre data-lang="javascript" data-label="Node.js">import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://cn.nexusvai.xyz/v1",
+  apiKey: process.env.CANCRI_API_KEY,
+});
+
+const tools = [{
+  type: "function",
+  function: {
+    name: "get_weather",
+    description: "查询城市的实时天气",
+    parameters: {
+      type: "object",
+      properties: { city: { type: "string" } },
+      required: ["city"],
+    },
+  },
+}];
+
+const completion = await client.chat.completions.create({
+  model: "deepseek-v4-flash",
+  messages: [{ role: "user", content: "上海现在天气怎么样？" }],
+  tools,
+  tool_choice: "auto",
+});
+console.log(completion.choices[0].message.tool_calls);</pre>
+</code-tabs>
+</div>
+<div class="ref-response">
+<pre data-lang="json" data-title="响应示例">{
+  "id": "chatcmpl-2c7e9a4b1f8d3e6a5b0c9d14",
+  "object": "chat.completion",
+  "created": 1794045600,
+  "model": "deepseek-v4-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_cx3f9a1c2e7b5d4f8a6c0e2b19",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \"上海\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 82,
+    "completion_tokens": 17,
+    "total_tokens": 99
+  }
+}</pre>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<div class="stldocs-method-response-column _responses_1btwc_72">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>返回示例</span></h5>
+<pre data-lang="json" data-title="响应示例">{
+  "id": "chatcmpl-8f3b2c1a9d7e4f6b0a5c3e21",
+  "object": "chat.completion",
+  "created": 1794045600,
+  "model": "deepseek-v4-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "RLS（行级安全）按行控制谁能读写表中的数据。"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 24,
+    "completion_tokens": 18,
+    "total_tokens": 42
+  }
+}</pre>
+</div>
+
+</div>
+</div>
+
+</div>
+</div>

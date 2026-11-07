@@ -15,8 +15,8 @@
   var KILL_KEY = "cancri_fable5_launch_off";
   function resolvePricingUrl() {
     var p = String(window.location.pathname || "");
-    if (/\/chat\/api\//.test(p) || /\/api\/index\.html$/i.test(p)) {
-      return "../pricing.html";
+    if (/\/chat\/api\//.test(p) || /^\/api(\/|$)/i.test(p) || /\/api\/index\.html$/i.test(p)) {
+      return "/chat/pricing.html";
     }
     return "./pricing.html";
   }
@@ -32,8 +32,8 @@
 
   function resolveVideoSrc() {
     var p = String(window.location.pathname || "");
-    if (/\/chat\/api\//.test(p) || /\/api\/index\.html$/i.test(p)) {
-      return "../../Logo/model-launch-login-hero-aca82d76.mp4";
+    if (/\/chat\/api\//.test(p) || /^\/api(\/|$)/i.test(p) || /\/api\/index\.html$/i.test(p)) {
+      return "/Logo/model-launch-login-hero-aca82d76.mp4";
     }
     return "../Logo/model-launch-login-hero-aca82d76.mp4";
   }
@@ -41,7 +41,7 @@
   function detectSurface() {
     var p = String(window.location.pathname || "");
     if (/api_models\.html$/i.test(p) || p.indexOf("api_models") >= 0) return "api";
-    if (/\/chat\/api\//.test(p) || /\/api\/index\.html$/i.test(p)) return "api";
+    if (/\/chat\/api\//.test(p) || /^\/api(\/|$)/i.test(p) || /\/api\/index\.html$/i.test(p)) return "api";
     return "chat";
   }
 

@@ -1,0 +1,44 @@
+/* Fonts for /api pages — the same families as the Cancri Code desktop app (cancri-code/src/styles.css):
+ * Latin and digits in Anthropic Sans, Chinese in Noto Sans SC, code in Cascadia Code.
+ * Anthropic Sans is the woff2 the chat site already serves (/chat/assets/fonts/, variable 300–800).
+ * Noto Sans SC comes from the self-hosted subsets in /fonts/gf/ (linked before this file). Those are static
+ * 400/500/600 — the app's 7.8 MB variable file is too heavy for a web page — so regular Chinese renders at 400
+ * here, where the app uses 350. Never put system-ui before the CJK names, or Windows locks onto YaHei. */
+@font-face {
+  font-family: "Anthropic Sans";
+  src: url("/chat/assets/fonts/anthropic-sans.woff2") format("woff2");
+  font-weight: 300 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Anthropic Sans";
+  src: url("/chat/assets/fonts/anthropic-sans-italic.woff2") format("woff2");
+  font-weight: 300 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  --font-cjk: "Noto Sans SC", "Noto Sans CJK SC", "Microsoft YaHei", "Microsoft YaHei UI", "PingFang SC", "Hiragino Sans GB";
+  --font-sans-api: "Anthropic Sans", "Segoe UI Variable Text", "Segoe UI", var(--font-cjk), system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono-api: "Cascadia Code", "Cascadia Mono", "SF Mono", Menlo, Consolas, var(--font-cjk), "Sarasa Mono SC", monospace;
+
+  /* The vendored OpenAI CSS reads all of these. */
+  --font-sans: var(--font-sans-api) !important;
+  --default-font-family: var(--font-sans-api) !important;
+  --font-mono: var(--font-mono-api) !important;
+  --default-mono-font-family: var(--font-mono-api) !important;
+  --monospace: var(--font-mono-api) !important;
+}
+
+html,
+body {
+  font-family: var(--font-sans-api) !important;
+}
+
+/* The app's body-text weight (--fw-prose: 370). Chinese stays at 400, the lightest web subset. */
+.prose-content {
+  font-weight: 370;
+}

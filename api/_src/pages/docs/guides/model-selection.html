@@ -1,0 +1,69 @@
+---
+title: 模型选择
+description: 根据任务、价格、上下文长度和能力挑选模型，并随时在代码里切换。
+tab: models
+---
+<p>NexusVAI API 用同一个 Base URL 和同一把 API 密钥提供所有模型，换模型只需修改请求中的 <code>model</code>。这一页介绍挑选模型时要看的几项信息：价格、上下文长度、能力标记和分组，以及如何用 API 列出可用的模型。</p>
+
+<h2 id="start">从旗舰模型开始</h2>
+<p>还不确定用哪个模型时，先从<a href="/api/docs/models/#flagship">模型目录</a>里的旗舰模型开始，用你自己的提示词和数据实际测一测，再根据效果、速度和费用调整。需要控制成本，可以先试「高性价比」分组里的模型，或者从<a href="/api/docs/models/#free-models">免费模型</a>开始。</p>
+
+<h2 id="pricing">比较价格</h2>
+<p>每个模型单独定价，价格以人民币计，完整列表见<a href="/api/docs/pricing/">价格</a>页，单个模型的价格见它的详情页。</p>
+<table>
+<thead><tr><th>计费方式</th><th>怎么算</th></tr></thead>
+<tbody>
+<tr><td>按 token</td><td>输入与输出分别按每百万 token 计价。命中缓存的输入 token 按输入价格的 1 折计费。</td></tr>
+<tr><td>按次</td><td>每次成功的请求按固定价格扣费一次，与 token 数量无关。</td></tr>
+<tr><td>免费</td><td>不扣余额，调用计入免费额度，并受速率限制约束。</td></tr>
+</tbody>
+</table>
+<p>扣费以响应中的 <code>usage</code> 为准，返回 4xx 或 5xx 的失败请求不扣费。免费额度的规则见<a href="/api/docs/guides/free-tier/">免费模型与免费额度</a>。</p>
+
+<h2 id="context">上下文窗口与最大输出</h2>
+<p>模型卡片和详情页列出两个长度：<strong>上下文窗口</strong>是一次请求最多可以输入的 token 数，<strong>最大输出</strong>是一次响应最多生成的 token 数。处理长文档、长对话或带大量工具定义的请求时，选上下文窗口更大的模型。</p>
+
+<h2 id="capabilities">看能力标记</h2>
+<p>模型目录为每个模型标出下面两项能力，详情页的「模态」与「特性」也按它们显示：</p>
+<table>
+<thead><tr><th>标记</th><th>含义</th></tr></thead>
+<tbody>
+<tr><td>图像输入</td><td>可以在消息中附带图片。没有这个标记的模型，请只发送文本。</td></tr>
+<tr><td>思考模式</td><td>模型带有思考（推理）能力。</td></tr>
+</tbody>
+</table>
+<p>通过 API，所有模型都输出文本。图像与视频生成只对网页版开放，用 API 密钥调用 <code>/v1/images/generations</code> 或 <code>/v1/videos/generations</code> 会返回 <code>403 endpoint_disabled</code>。</p>
+
+<h2 id="groups">分组：同一模型的多条线路</h2>
+<p>部分模型有多个分组，例如「标准」「Promo」或「按次」。每个分组都是一个独立的 Model ID，价格与配额可能不同。模型目录把它们合并成一张卡片，点击卡片上的分组即可查看对应的 Model ID 和价格；价格页的「全部分组」会列出每一个分组。</p>
+<callout type="info"><p>分组区分的是 Model ID，不是 API 密钥。同一把密钥可以调用所有分组，只要把对应的 Model ID 填进请求。</p></callout>
+
+<h2 id="list-models">用 API 列出模型</h2>
+<p>调用 <code>GET /v1/models</code> 获取当前可用的 Model ID，返回 OpenAI 兼容的列表：</p>
+<code-tabs title="列出模型">
+<pre data-lang="python" data-label="Python">import os
+from openai import OpenAI
+
+client = OpenAI(base_url="https://cn.nexusvai.xyz/v1", api_key=os.environ.get("CANCRI_API_KEY"))
+
+for model in client.models.list():
+    print(model.id)</pre>
+<pre data-lang="javascript" data-label="Node.js">import OpenAI from "openai";
+
+const client = new OpenAI({ baseURL: "https://cn.nexusvai.xyz/v1", apiKey: process.env.CANCRI_API_KEY });
+
+for await (const model of client.models.list()) {
+  console.log(model.id);
+}</pre>
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/models \
+  -H "Authorization: Bearer $CANCRI_API_KEY"</pre>
+</code-tabs>
+<p>每个条目包含 <code>id</code>、<code>object</code>、<code>created</code>、<code>owned_by</code>，部分条目还带 <code>max_output_tokens</code>；Anthropic 客户端（例如 Claude Code）收到的是 Anthropic 格式的列表。价格与能力标记不在这个接口里，请以模型目录和价格页为准。</p>
+<callout type="warning"><p>请求里的 Model ID 必须与列表返回值完全一致，包括大小写与连字符。有的客户端会自动改写模型名，这时请在客户端的模型设置里手动填写。</p></callout>
+
+<h2 id="next">下一步</h2>
+<cards>
+<card href="/api/docs/models/" title="浏览模型目录" icon="cube">查看旗舰模型、免费模型与全部模型。</card>
+<card href="/api/docs/pricing/" title="比较价格">按厂商查看每个 Model ID 的价格。</card>
+<card href="/api/docs/guides/rate-limits/" title="了解速率限制">所有模型共用账户的 RPM 与 TPM 限额。</card>
+</cards>

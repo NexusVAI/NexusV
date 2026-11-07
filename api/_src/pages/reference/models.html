@@ -1,0 +1,245 @@
+---
+title: 列出模型
+fullTitle: 列出模型（GET /v1/models）| NexusVAI Developers
+description: 列出当前可以通过 API 调用的模型 ID，返回 OpenAI 兼容格式；Anthropic 客户端会收到 Anthropic 格式。
+layout: wide
+tab: reference
+transform: true
+css: /api/assets/oai/primitives.css, /api/assets/reference.css
+js: /api/assets/reference.js
+---
+<div class="ref-root">
+<div class="ref-renderer">
+
+<div class="stl-page-nav-container">
+<nav aria-label="面包屑" class="_breadcrumbs_8beoj_1"><div class="_item_8beoj_9"><a class="_link_8beoj_15" href="/api/reference/">API 参考</a></div><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="_separator_8beoj_28"><path fill-rule="evenodd" d="M8.293 4.293a1 1 0 0 1 1.414 0l7 7a1 1 0 0 1 0 1.414l-7 7a1 1 0 0 1-1.414-1.414L14.586 12 8.293 5.707a1 1 0 0 1 0-1.414Z" clip-rule="evenodd"></path></svg><div class="_item_8beoj_9"><span class="_label_8beoj_16">账户与模型</span></div></nav>
+<button type="button" class="page-copy-action" data-page-copy-action="" data-astro-cid-zl22b5wc=""><span class="page-copy-action__icon page-copy-action__icon--copy" aria-hidden="true" data-astro-cid-zl22b5wc=""><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2V4Zm2 2h4a2 2 0 0 1 2 2v6h2V4h-8v2ZM6 8v12h8V8H6Z" clip-rule="evenodd"></path></svg></span><span class="page-copy-action__icon page-copy-action__icon--check" aria-hidden="true" data-astro-cid-zl22b5wc=""><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M18.063 5.674a1 1 0 0 1 .263 1.39l-7.5 11a1 1 0 0 1-1.533.143l-4.5-4.5a1 1 0 1 1 1.414-1.414l3.647 3.647 6.82-10.003a1 1 0 0 1 1.39-.263Z" clip-rule="evenodd"></path></svg></span><span data-page-copy-label="" data-astro-cid-zl22b5wc="">复制页面</span></button>
+</div>
+
+<div class="stldocs-method _method_1btwc_3 stldocs-method-double-pane">
+<div class="stldocs-method-header _header_1yhgz_1 _pageHeader_1yhgz_20">
+<h1 class="stldocs-method-title text-emphasis heading-2xl">列出模型</h1>
+<div class="stldocs-method-route _route_1yhgz_28"><div class="_Badge_10t5o_1 not-content font-mono shrink-0" data-color="success" data-size="sm" data-variant="soft"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="rotate-180" aria-hidden="true"><path fill-rule="evenodd" d="M16.243 6.757a1 1 0 0 1 1 1v7.072a1 1 0 0 1-2 0v-4.657L8.464 16.95a1 1 0 0 1-1.414-1.414l6.778-6.779H9.172a1 1 0 0 1 0-2h7.07Z" clip-rule="evenodd"></path></svg><span>GET</span></div><span class="stldocs-method-route-endpoint _endpoint_1yhgz_35">/v1/models</span></div>
+</div>
+
+<div class="stldocs-method-body _body_1btwc_10" id="mainContent">
+<div class="stldocs-method-content-column _contentColumn_1btwc_16">
+
+<div class="stldocs-method-description _description_1btwc_20"><div class="ref-prose">
+<p>列出当前可以通过 API 调用的模型。返回的 <code>id</code> 就是请求中 <code>model</code> 的取值，三个文本生成端点共用这一份列表。模型的价格、上下文长度与能力见<a href="/api/docs/models/">模型目录</a>。</p>
+<p>这个端点不校验密钥、不计费。列表只包含 API 可用的文本模型；图像与视频模型、只在桌面端开放的模型不在其中。</p>
+<callout type="info"><p><code>GET /v1/models</code> 能返回结果，不代表推理接口可用：API 维护期间（<code>503 api_paused</code>）它仍可读取。要确认密钥有效，请调用 <a href="/api/reference/balance/">GET /v1/balance</a>。</p></callout>
+</div></div>
+
+<div class="stldocs-method-info _info_1btwc_39">
+
+<div class="_section_1btwc_47" id="headers">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>请求头</span></h5>
+<div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="headers"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="header-authorization">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">Authorization</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>可以照常携带，网关不会校验。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="header-anthropic-version">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">anthropic-version</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span><span class="ref-flag" data-flag="optional">可选</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>带上这个请求头（或 <code>User-Agent</code> 中含 <code>anthropic</code> / <code>claude</code>）时返回 <a href="#returns-anthropic">Anthropic 格式</a>。Anthropic SDK 与 Claude Code 会自动带上。</p></div>
+</div></div>
+</div></div>
+</div>
+
+<div class="_section_1btwc_47" id="returns">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>返回</span><button type="button" class="_Button_6dmow_1 ml-auto appearance-none border-0 bg-transparent" data-color="secondary" data-variant="ghost" data-size="sm" aria-expanded="false" data-reference-property-toggle="returns"><span class="_ButtonInner_6dmow_4"><span data-reference-expand-label="true"><span class="inline-flex items-center gap-1"><span>展开</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0V8h-3a1 1 0 0 1-1-1Zm-5 5a1 1 0 0 1 1 1v3h3a1 1 0 1 1 0 2H7a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1Z" clip-rule="evenodd"></path></svg></span></span><span data-reference-collapse-label="true" hidden=""><span class="inline-flex items-center gap-1"><span>收起</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 14a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-3H6a1 1 0 0 1-1-1Zm9-9a1 1 0 0 1 1 1v3h3a1 1 0 1 1 0 2h-4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"></path></svg></span></span></span></button></h5>
+<div class="stldocs-method-returns _properties_1btwc_61" data-stldocs-property-group="returns"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-object">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">object</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">"list"</span></span></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4">
+<details class="stldocs-expander _disclosure_mjoyi_138">
+<summary class="stldocs-expander-summary _summary_mjoyi_12"><span class="stldocs-expander-summary-icon _icon_mjoyi_143" aria-hidden="true"></span><div class="stldocs-expander-summary-content _summaryContent_mjoyi_12"><div class="stldocs-property-info _info_mjoyi_16" id="returns-data">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">data</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>可用的模型，一次全部返回，没有分页。</p></div>
+</div></div></summary>
+<div class="stldocs-expander-content _disclosureContent_mjoyi_189"><div class="stldocs-property-children _children_mjoyi_192"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-data-id">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">id</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>模型 ID，大小写与连字符必须原样使用。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-data-object">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">object</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">"model"</span></span></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-data-created">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">created</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">integer</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>固定值，不代表模型的发布或上架时间。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-data-owned_by">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">owned_by</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>通常为 <code>cancri</code>。不要用它判断模型厂商。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="returns-data-max_output_tokens">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">max_output_tokens</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">integer</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>NexusVAI 扩展字段：该模型单次输出的上限。请求没有设置输出上限时，网关按这个值补上 <code>max_tokens</code>。目录中没有这个数时省略。</p></div>
+</div></div>
+</div></div></div>
+</details>
+</div>
+</div></div>
+</div>
+
+<div class="_section_1btwc_47" id="returns-anthropic">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>返回（Anthropic 格式）</span></h5>
+<div class="stldocs-method-returns _properties_1btwc_61" data-stldocs-property-group="returns-anthropic"><div class="stldocs-properties _properties_mjoyi_119">
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="anthropic-data">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">data</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>每项包含 <code>type: "model"</code>、<code>id</code>、<code>display_name</code>（与 <code>id</code> 相同）与 <code>created_at</code>（ISO 8601 时间，同样是固定值）。不包含 <code>max_output_tokens</code>。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="anthropic-has_more">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">has_more</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">boolean</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>始终为 <code>false</code>。分页参数（<code>limit</code>、<code>before_id</code>、<code>after_id</code>）会被忽略。</p></div>
+</div></div>
+<div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="anthropic-first_id">
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">first_id</span></span><span class="stldocs-text-punctuation"> / </span><span class="stldocs-text-identifier">last_id</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-plain">string or null</span></span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>列表中第一个与最后一个模型的 ID。</p></div>
+</div></div>
+</div></div>
+<p class="ref-section-foot">目录中的模型会上下架，列表可能要几分钟后才反映变化。<code>GET /v1/models/{id}</code> 不存在，会返回 <code>404</code>。</p>
+</div>
+
+</div>
+</div>
+
+<div class="stldocs-method-example _example_1btwc_28 not-content">
+<div class="stldocs-snippet-multi" data-ref-examples>
+<div class="_root_1v3qb_1"><div role="radiogroup" class="_SegmentedControl_16x8u_1 _options_1v3qb_8" data-size="xl" aria-label="请求示例"><div class="_SegmentedControlThumb_16x8u_226" data-ref-thumb></div><button type="button" role="radio" aria-checked="true" data-state="on" class="_SegmentedControlOption_16x8u_142" data-ref-example="0"><span class="relative">OpenAI 格式</span></button><button type="button" role="radio" aria-checked="false" data-state="off" tabindex="-1" class="_SegmentedControlOption_16x8u_142" data-ref-example="1"><span class="relative">Anthropic 格式</span></button></div></div>
+<div class="stldocs-snippet-multi-content">
+
+<div class="stldocs-snippet-multi-pane" data-ref-pane="0">
+<div class="ref-snippet-head" data-method="GET">
+<code-tabs title="列出模型">
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/models</pre>
+<pre data-lang="python" data-label="Python">import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://cn.nexusvai.xyz/v1",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+
+for model in client.models.list():
+    print(model.id)</pre>
+<pre data-lang="javascript" data-label="Node.js">import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://cn.nexusvai.xyz/v1",
+  apiKey: process.env.CANCRI_API_KEY,
+});
+
+for await (const model of client.models.list()) {
+  console.log(model.id);
+}</pre>
+</code-tabs>
+</div>
+<div class="ref-response">
+<pre data-lang="json" data-title="响应示例">{
+  "object": "list",
+  "data": [
+    {
+      "id": "deepseek-v4-flash",
+      "object": "model",
+      "created": 1740000000,
+      "owned_by": "cancri",
+      "max_output_tokens": 32000
+    },
+    {
+      "id": "gpt-6-astra",
+      "object": "model",
+      "created": 1740000000,
+      "owned_by": "cancri",
+      "max_output_tokens": 32000
+    }
+  ]
+}</pre>
+</div>
+</div>
+
+<div class="stldocs-snippet-multi-pane" data-ref-pane="1" hidden>
+<div class="ref-snippet-head" data-method="GET">
+<code-tabs title="列出模型（Anthropic 格式）">
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/models \
+  -H "anthropic-version: 2023-06-01"</pre>
+<pre data-lang="python" data-label="Python">import os
+from anthropic import Anthropic
+
+client = Anthropic(
+    base_url="https://cn.nexusvai.xyz",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+
+for model in client.models.list():
+    print(model.id)</pre>
+<pre data-lang="javascript" data-label="Node.js">import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  baseURL: "https://cn.nexusvai.xyz",
+  apiKey: process.env.CANCRI_API_KEY,
+});
+
+for await (const model of client.models.list()) {
+  console.log(model.id);
+}</pre>
+</code-tabs>
+</div>
+<div class="ref-response">
+<pre data-lang="json" data-title="响应示例">{
+  "data": [
+    {
+      "type": "model",
+      "id": "deepseek-v4-flash",
+      "display_name": "deepseek-v4-flash",
+      "created_at": "2025-02-19T21:20:00.000Z"
+    },
+    {
+      "type": "model",
+      "id": "claude-sonnet-5.5",
+      "display_name": "claude-sonnet-5.5",
+      "created_at": "2025-02-19T21:20:00.000Z"
+    }
+  ],
+  "has_more": false,
+  "first_id": "deepseek-v4-flash",
+  "last_id": "claude-sonnet-5.5"
+}</pre>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<div class="stldocs-method-response-column _responses_1btwc_72">
+<h5 class="_sectionTitle_1btwc_54 text-base text-secondary font-normal"><span>返回示例</span></h5>
+<pre data-lang="json" data-title="响应示例">{
+  "object": "list",
+  "data": [
+    {
+      "id": "deepseek-v4-flash",
+      "object": "model",
+      "created": 1740000000,
+      "owned_by": "cancri",
+      "max_output_tokens": 32000
+    },
+    {
+      "id": "gpt-6-astra",
+      "object": "model",
+      "created": 1740000000,
+      "owned_by": "cancri",
+      "max_output_tokens": 32000
+    }
+  ]
+}</pre>
+</div>
+
+</div>
+</div>
+
+</div>
+</div>

@@ -70,7 +70,7 @@
                 <li>Use the Service for activities that violate export controls, economic sanctions, anti-money laundering, counter-terrorism financing or other laws and regulations, or provide services to sanctioned countries, regions, entities or individuals;</li>
                 <li>Generate, transmit or store illegal or harmful content involving terrorism, violence, pornography, gambling, drugs, cults, ethnic hatred, disinformation, etc.;</li>
                 <li>Infringe the copyrights, trademark rights, patent rights, portrait rights, privacy rights, trade secrets or other lawful rights and interests of others;</li>
-                <li>Use automated scripts, crawlers, robots or unofficial clients to access the Service’s web or desktop clients (including simulating web requests, scraping internal endpoints or reusing login sessions); programmatic calls made through the open API with your own valid API Key, and the third-party tools listed in the <a href="chat/api_docs_detail.html#intro">API Documentation</a>, are not restricted by this item;</li>
+                <li>Use automated scripts, crawlers, robots or unofficial clients to access the Service’s web or desktop clients (including simulating web requests, scraping internal endpoints or reusing login sessions); programmatic calls made through the open API with your own valid API Key, and the third-party tools listed in the <a href="/api/docs/">API Documentation</a>, are not restricted by this item;</li>
                 <li>Circumvent, bypass, interfere with or disrupt the Service’s access control, quota limits, verification codes, rate limits or security mechanisms;</li>
                 <li>Carry out denial-of-service attacks, injection attacks, vulnerability probing, reverse engineering, decompilation, disassembly or other destructive acts against the Service;</li>
                 <li>Register or use an account by deception, forgery or impersonation of another person;</li>
@@ -107,10 +107,10 @@
             <ol>
                 <li>We do not guarantee that any model will remain continuously available or online; the model list, model names, parameters, billing standards and multipliers may be adjusted at any time;</li>
                 <li>Upstream model service providers may take models offline, impose rate limits, change policies or adjust prices at any time, causing calls to fail, time out, return errors or be rejected;</li>
-                <li>The API compatibility provided by us is as described in the <a href="chat/api_docs_detail.html#intro">API Documentation</a>; we do not guarantee it is 100% consistent with the latest upstream version;</li>
+                <li>The API compatibility provided by us is as described in the <a href="/api/docs/">API Documentation</a>; we do not guarantee it is 100% consistent with the latest upstream version;</li>
                 <li>Retry, timeout and retry strategies do not guarantee that every call will succeed;</li>
                 <li>API Keys (prefixed with <code>cancri_sk_</code>) are for your personal use only; a Team Key may be used only by the team member who created it. No key may be shared, rented, sold, or embedded in public repositories or clients;</li>
-                <li>There is an upper limit on the number of active API Keys each account may hold at the same time, as displayed in the <a href="chat/api/keys.html">API Key console</a>;</li>
+                <li>There is an upper limit on the number of active API Keys each account may hold at the same time, as displayed in the <a href="/api/console/keys/">API Key console</a>;</li>
                 <li>Pay-as-you-go API top-ups are credited to an independent wallet, completely isolated from Chat/IDE plan quotas.</li>
             </ol>
 
@@ -127,7 +127,7 @@
 
             <h2 id="s8">8. Payment, Subscription and Refund</h2>
             <h3>8.1 Billing Method</h3>
-            <p>The Service offers a Free tier, monthly subscription tiers (Go / Plus / Pro), one-time top-up packages (if available), and pay-as-you-go API top-ups for developers. Specific tiers, prices, quotas, model multipliers, overflow rules and error codes are as displayed on the <a href="chat/pricing.html">purchase page</a>, the <a href="chat/api_models.html">model gallery</a> and the <a href="chat/api_docs_detail.html#intro">API documentation</a> at the relevant time.</p>
+            <p>The Service offers a Free tier, monthly subscription tiers (Go / Plus / Pro), one-time top-up packages (if available), and pay-as-you-go API top-ups for developers. Specific tiers, prices, quotas, model multipliers, overflow rules and error codes are as displayed on the <a href="chat/pricing.html">purchase page</a>, the <a href="/api/docs/models/">model gallery</a> and the <a href="/api/docs/">API documentation</a> at the relevant time.</p>
             <p>The Chat/IDE monthly quota pool and the API wallet are independent and not interchangeable. Monthly subscription quotas reset each billing cycle; unused portions generally do not carry over to the next cycle; monthly subscriptions do not auto-renew and must be manually repurchased after expiry; after the plan quota is exhausted, pay-as-you-go overflow may apply, with specific overflow discounts and rules as displayed on the purchase page. Free quotas, limited-time benefits and trial features are entitlements provided at the Operator's discretion and may be adjusted, suspended or revoked at any time; they do not constitute a commitment to continued availability.</p>
 
             <h3>8.2 Payment and Activation</h3>
@@ -294,7 +294,7 @@
             <h2 id="p5">5. Processing and Sharing</h2>
             <h3>5.1 Model Service Providers</h3>
             <p>To provide chat or generation services, your input (text, images, files, prompts, etc.) will be forwarded in real time to the model service provider you select. Such providers have their own independent privacy policies and terms of service, and act as independent personal information controllers for the data they receive; the Service only acts as a transmission channel, forwarding data between you and that provider, and does not control its subsequent processing. We are not directly responsible for their processing behavior.</p>
-            <p>Depending on the model you select, your input may be forwarded to different domestic or overseas model service providers. The available models and their brands/providers are as shown in real time on the <a href="chat/api_models.html">model gallery</a> and are subject to those providers’ then-current privacy policies and terms. This Policy does not endorse or guarantee any upstream provider’s processing.</p>
+            <p>Depending on the model you select, your input may be forwarded to different domestic or overseas model service providers. The available models and their brands/providers are as shown in real time on the <a href="/api/docs/models/">model gallery</a> and are subject to those providers’ then-current privacy policies and terms. This Policy does not endorse or guarantee any upstream provider’s processing.</p>
 
             <h3>5.2 Infrastructure and Communication Service Providers</h3>
             <p>We may entrust the following categories of third parties to process part of your information:</p>

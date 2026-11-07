@@ -1,0 +1,85 @@
+---
+title: 认证与 API 密钥
+description: 用 API 密钥认证每个请求，并为每把密钥设置合适的权限与限额。
+---
+<p>NexusVAI API 用 API 密钥认证请求。每个请求都要带上一把以 <code>cancri_sk_</code> 开头的密钥；同一把密钥可以调用 OpenAI 协议和 Anthropic 协议的全部端点。</p>
+
+<h2 id="authentication-headers">在请求中携带密钥</h2>
+<p>以下两种请求头任选其一：</p>
+<table>
+<thead><tr><th>请求头</th><th>写法</th><th>常见用法</th></tr></thead>
+<tbody>
+<tr><td><code>Authorization</code></td><td><code>Bearer cancri_sk_...</code></td><td>OpenAI SDK、大多数 OpenAI 兼容工具</td></tr>
+<tr><td><code>x-api-key</code></td><td><code>cancri_sk_...</code></td><td>Anthropic SDK、Claude Code</td></tr>
+</tbody>
+</table>
+<code-tabs title="两种认证方式">
+<pre data-lang="bash" data-label="Authorization">curl https://cn.nexusvai.xyz/v1/balance \
+  -H "Authorization: Bearer $CANCRI_API_KEY"</pre>
+<pre data-lang="bash" data-label="x-api-key">curl https://cn.nexusvai.xyz/v1/balance \
+  -H "x-api-key: $CANCRI_API_KEY"</pre>
+</code-tabs>
+<p>两个请求头同时出现时，以 <code>Authorization</code> 为准。使用官方 SDK 时只需把密钥传给 <code>api_key</code>（或 <code>apiKey</code>），SDK 会选择正确的请求头。</p>
+
+<h2 id="key-format">密钥格式</h2>
+<p>密钥由前缀 <code>cancri_sk_</code>（10 个字符）和 48 个 base64url 字符组成，总长 58 个字符。后 48 位只包含 <code>A-Z</code>、<code>a-z</code>、<code>0-9</code>、<code>-</code> 和 <code>_</code>，没有 <code>+</code>、<code>/</code> 或 <code>=</code>。</p>
+<p>在客户端校验格式时，可以使用这个正则表达式：</p>
+<pre data-lang="text" data-title="密钥格式">^cancri_sk_[A-Za-z0-9_-]{48}$</pre>
+<p>不以 <code>cancri_sk_</code> 开头的值会直接返回 <code>401 invalid_api_key</code>。</p>
+
+<h2 id="manage-keys">创建与管理密钥</h2>
+<p>在控制台的 <a href="/api/console/keys/">API 密钥</a>页创建、查看和撤销密钥。</p>
+<ul>
+<li><strong>完整密钥只显示一次。</strong>创建后立即复制保存；之后页面只显示前缀，无法找回完整密钥。</li>
+<li><strong>每个账户最多 5 把有效密钥。</strong>达到上限后，先撤销旧密钥再创建。团队密钥另计，不占个人名额，见<a href="/api/docs/guides/teams/">团队</a>。</li>
+<li><strong>每个账户每小时最多创建 10 把密钥。</strong></li>
+<li><strong>撤销立即生效，且不可恢复。</strong>已撤销的密钥会返回 <code>401 invalid_api_key</code>。</li>
+</ul>
+<callout type="info"><p>速率限制按账户计算，多建几把密钥不会提高限额。见<a href="/api/docs/guides/rate-limits/">速率限制</a>。</p></callout>
+
+<h3 id="key-restrictions">密钥级限制</h3>
+<p>创建密钥时可以指定一个<strong>模型分组</strong>，这把密钥就只能调用该分组内的模型。把不同的应用或环境分到不同的密钥上，一把密钥出问题时影响范围最小。</p>
+<p>密钥上还可能带有以下限制。触发时的响应如下：</p>
+<table>
+<thead><tr><th>限制</th><th>说明</th><th>触发时的响应</th></tr></thead>
+<tbody>
+<tr><td>模型分组</td><td>只允许调用指定分组内的模型</td><td><code>403 model_not_in_group</code></td></tr>
+<tr><td>模型白名单</td><td>最多 50 个模型 ID，按 ID 精确匹配</td><td><code>403 model_not_in_whitelist</code></td></tr>
+<tr><td>累计 token 上限</td><td>这把密钥累计可用的 token 总数</td><td><code>429 key_token_quota_exhausted</code></td></tr>
+<tr><td>累计请求数上限</td><td>这把密钥累计可发的请求总数</td><td><code>429 key_request_quota_exhausted</code></td></tr>
+<tr><td>RPM 上限</td><td>1–600，只能比账户档位更严</td><td><code>429 rate_limit_exceeded</code>，<code>error.scope</code> 为 <code>key</code></td></tr>
+</tbody>
+</table>
+<p>累计上限不会自动重置。用 <a href="/api/docs/guides/usage/"><code>GET /v1/balance</code></a> 可以查看当前密钥的已用量和剩余量；上限用完后，请改用其他密钥或创建一把新密钥。</p>
+
+<h2 id="key-scope">密钥的适用范围</h2>
+<p><code>cancri_sk_</code> 密钥只能调用 <code>/v1/*</code> 接口。网页版对话、账户设置与订单使用登录会话，不接受 API 密钥；反过来，浏览器的登录 Cookie 或登录令牌也不能代替 API 密钥。</p>
+<p>账户被限制使用时，该账户名下的全部密钥都会返回 <code>403 account_suspended</code>。</p>
+
+<h2 id="key-safety">保护你的密钥</h2>
+<p>任何拿到密钥的人都能以你的名义调用 API、消耗你的余额，并通过 <code>GET /v1/balance</code> 看到账户余额。</p>
+<ul>
+<li><strong>只在服务端使用密钥。</strong>把密钥放在服务端的环境变量或密钥管理服务中，从你自己的后端发起请求。API 的跨域访问只对 NexusVAI 自己的网站开放，第三方网页在浏览器里直接调用会被浏览器拦截。</li>
+<li><strong>不要提交到代码仓库。</strong>不要把密钥写进源码、配置文件或公开的 Issue 与日志。</li>
+<li><strong>一个用途一把密钥。</strong>按应用或环境分开创建，并按需设置上面的限制，便于单独撤销。</li>
+<li><strong>发现泄露立即撤销。</strong>在 API 密钥页撤销该密钥，创建新密钥并更新配置。</li>
+</ul>
+
+<h2 id="auth-errors">认证错误</h2>
+<table>
+<thead><tr><th>HTTP</th><th><code>error.code</code></th><th>原因与处理</th></tr></thead>
+<tbody>
+<tr><td>401</td><td><code>invalid_api_key</code></td><td>缺少密钥、格式错误、密钥不存在或已撤销。检查请求头与密钥本身，不要重试。</td></tr>
+<tr><td>403</td><td><code>account_suspended</code></td><td>账户已被限制使用。如果你认为有误，请<a href="/api/contact/">联系我们</a>。</td></tr>
+<tr><td>429</td><td><code>auth_rate_limited</code></td><td>同一 IP（IPv6 按 /64 网段计算）在短时间内多次使用不存在的密钥：每分钟超过 20 次或每小时超过 100 次。按 <code>Retry-After</code> 等待，并修正客户端里的密钥配置。</td></tr>
+<tr><td>503</td><td><code>service_unavailable</code></td><td>认证服务暂时不可用，与你的密钥无关。稍后重试。</td></tr>
+</tbody>
+</table>
+<p>完整列表见<a href="/api/docs/guides/error-codes/">错误码</a>。</p>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/quickstart/" title="快速开始" icon="bolt">用新密钥完成第一次调用。</card>
+<card href="/api/docs/guides/usage/" title="查询余额与用量" icon="cube">查看当前密钥的已用量与最近的调用记录。</card>
+<card href="/api/docs/guides/teams/" title="团队" icon="bolt">多人共用一份余额，各自持有团队密钥。</card>
+</cards>

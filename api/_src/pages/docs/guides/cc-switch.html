@@ -1,0 +1,51 @@
+---
+title: CC Switch
+description: 在 CC Switch 中添加 NexusVAI provider，为 Claude Code、Codex 等编程工具统一切换 Base URL 和 API 密钥。
+tab: coding
+---
+<p><a href="https://ccswitch.io">CC Switch</a> 是一款统一管理 AI 编程命令行工具（Claude Code、Codex、OpenCode、OpenClaw 等）的桌面客户端，可以为不同工具注入不同的 Base URL 和 API 密钥。</p>
+
+<h2 id="prerequisites">前提条件</h2>
+<ul>
+<li>已安装 CC Switch，以及要切换的编程工具。</li>
+<li>一个 NexusVAI API 密钥，可以在<a href="/api/console/keys/">控制台</a>创建。</li>
+</ul>
+
+<h2 id="configure">添加 provider</h2>
+<ol>
+<li>打开 CC Switch，进入 <strong>Settings → Providers</strong>。</li>
+<li>点击 <strong>Add Custom Provider</strong>。</li>
+<li>按目标工具填写 Base URL 和 API Key（见下表）。</li>
+<li>点击 <strong>Test Connection</strong>。</li>
+<li>启用这个 provider。</li>
+</ol>
+<table>
+<thead><tr><th>目标工具</th><th>Base URL</th></tr></thead>
+<tbody>
+<tr><td>Claude Code 等 Anthropic 协议工具</td><td><code>https://cn.nexusvai.xyz</code>（末尾不要带 <code>/v1</code>）</td></tr>
+<tr><td>Codex、OpenCode 等 OpenAI 兼容工具</td><td><code>https://cn.nexusvai.xyz/v1</code></td></tr>
+</tbody>
+</table>
+<p>API Key 都填 <code>cancri_sk_...</code>。</p>
+
+<h2 id="verify">验证配置</h2>
+<p><strong>Test Connection</strong> 通常只请求 <code>/v1/models</code>。能拉取模型列表，不代表推理请求可用。启用 provider 后，分别用 Claude Code 或 Codex 发送一个最短的请求，再查询这个 Key 最近的调用，确认请求发到了 NexusVAI：</p>
+<pre data-lang="bash" data-title="确认请求已到达 NexusVAI">curl "https://cn.nexusvai.xyz/v1/balance?limit=5" \
+  -H "Authorization: Bearer cancri_sk_..."</pre>
+<p>字段说明见<a href="/api/docs/guides/coding-tools/#verify">验证请求是否到达 NexusVAI</a>。</p>
+
+<h2 id="troubleshooting">排查问题</h2>
+<table>
+<thead><tr><th>现象</th><th>可能的原因</th><th>解决方法</th></tr></thead>
+<tbody>
+<tr><td>Test Connection 成功，但 Claude Code 请求 404</td><td>给 Anthropic 协议工具填了带 <code>/v1</code> 的地址，请求变成 <code>/v1/v1/messages</code>。</td><td>改成 <code>https://cn.nexusvai.xyz</code>。</td></tr>
+<tr><td>Codex 请求返回 <code>421 relay_path_not_supported</code></td><td>给 OpenAI 兼容工具填的地址少了 <code>/v1</code>。</td><td>改成 <code>https://cn.nexusvai.xyz/v1</code>。</td></tr>
+<tr><td>切换后请求仍发往原来的服务</td><td>provider 没有启用，或工具没有重新启动。</td><td>启用 provider 后重启对应的工具。</td></tr>
+</tbody>
+</table>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/claude-code/" title="Claude Code">手动配置 Claude Code 的环境变量。</card>
+<card href="/api/docs/guides/codex-cli/" title="Codex CLI" icon="cube">手动配置 Codex CLI 的 provider。</card>
+</cards>

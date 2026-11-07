@@ -1,0 +1,242 @@
+---
+title: Responses
+description: 用 OpenAI Responses 协议调用模型，适合 Codex CLI 等默认使用该协议的客户端。
+---
+<p><code>POST /v1/responses</code> 兼容 OpenAI Responses 协议。Codex CLI 等客户端默认使用它；用 OpenAI 官方 SDK 时调用 <code>client.responses.create</code>。可用模型与 Chat Completions 相同。完整的参数与响应结构见 <a href="/api/reference/responses/">API 参考</a>。</p>
+<p>与 Chat Completions 相比，主要是字段名不同：<code>input</code> 对应 <code>messages</code>，<code>instructions</code> 对应 system 消息，<code>max_output_tokens</code> 对应 <code>max_tokens</code>。</p>
+<p>Codex CLI 默认使用这个协议（配置项 <code>wire_api = "responses"</code>），接入步骤见<a href="/api/docs/guides/coding-tools/">编程工具</a>。</p>
+
+<h2 id="basic-request">生成回复</h2>
+<code-tabs title="生成回复">
+<pre data-lang="python" data-label="Python">import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://cn.nexusvai.xyz/v1",
+    api_key=os.environ["CANCRI_API_KEY"],
+)
+
+response = client.responses.create(
+    model="gpt-6-astra",
+    instructions="你是一个简洁的助手。",
+    input="用一句话解释什么是行级安全。",
+    max_output_tokens=256,
+)
+print(response.output_text)</pre>
+<pre data-lang="javascript" data-label="Node.js">import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://cn.nexusvai.xyz/v1",
+  apiKey: process.env.CANCRI_API_KEY,
+});
+
+const response = await client.responses.create({
+  model: "gpt-6-astra",
+  instructions: "你是一个简洁的助手。",
+  input: "用一句话解释什么是行级安全。",
+  max_output_tokens: 256,
+});
+console.log(response.output_text);</pre>
+<pre data-lang="bash" data-label="cURL">curl https://cn.nexusvai.xyz/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $CANCRI_API_KEY" \
+  -d '{
+    "model": "gpt-6-astra",
+    "instructions": "你是一个简洁的助手。",
+    "input": "用一句话解释什么是行级安全。",
+    "max_output_tokens": 256
+  }'</pre>
+</code-tabs>
+<p>模型生成的内容在 <code>output</code> 数组里：</p>
+<pre data-lang="json" data-title="响应">{
+  "id": "resp_...",
+  "object": "response",
+  "created_at": 1762480000,
+  "model": "gpt-6-astra",
+  "status": "completed",
+  "output": [
+    {
+      "id": "msg_...",
+      "type": "message",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        { "type": "output_text", "text": "行级安全是一种按行控制谁能读写数据的数据库策略。", "annotations": [] }
+      ]
+    }
+  ],
+  "usage": { "input_tokens": 28, "output_tokens": 19, "total_tokens": 47 }
+}</pre>
+<callout type="info"><p><code>output</code> 里可能不止一项：模型公开推理过程时，<code>message</code> 前面会先有一个 <code>reasoning</code> 项；调用工具时会有工具调用项。不要假设文本一定在 <code>output[0].content[0].text</code>，用 SDK 提供的 <code>output_text</code> 汇总文本更稳妥。</p></callout>
+<p><code>status</code> 为 <code>incomplete</code> 时，说明回答被输出上限截断，可以调大 <code>max_output_tokens</code>。</p>
+
+<h2 id="input">输入格式</h2>
+<p><code>input</code> 可以是一个字符串（等同于一条用户消息），也可以是消息项组成的数组：</p>
+<pre data-lang="json" data-title="消息项数组">{
+  "model": "gpt-6-astra",
+  "instructions": "你是一个简洁的助手。",
+  "input": [
+    { "role": "user", "content": "推荐一本入门编程的书。" },
+    { "role": "assistant", "content": "《Python 编程：从入门到实践》。" },
+    {
+      "type": "message",
+      "role": "user",
+      "content": [{ "type": "input_text", "text": "它适合完全没有基础的人吗？" }]
+    }
+  ]
+}</pre>
+<ul>
+<li>消息项的 <code>content</code> 可以是字符串，也可以是内容块数组。支持 <code>input_text</code>、<code>output_text</code> 和 <code>input_image</code>（<code>image_url</code> 传图片 URL 或 base64 data URL）。</li>
+<li><code>instructions</code> 会作为系统提示放在所有输入之前。</li>
+<li>工具调用往返使用 <code>function_call</code> 与 <code>function_call_output</code> 项，见<a href="#tools">工具</a>。</li>
+<li>输入里的 <code>reasoning</code> 项会被忽略。</li>
+</ul>
+
+<h2 id="multi-turn">多轮对话</h2>
+<p>NexusVAI 不在服务端保存对话状态。<code>previous_response_id</code>、<code>store</code> 等字段不生效，要进行多轮对话，每次都把完整历史放进 <code>input</code>：</p>
+<pre data-lang="python" data-title="多轮对话">history = [{"role": "user", "content": "推荐一本入门编程的书。"}]
+first = client.responses.create(model="gpt-6-astra", input=history)
+
+history.append({"role": "assistant", "content": first.output_text})
+history.append({"role": "user", "content": "它适合完全没有基础的人吗？"})
+second = client.responses.create(model="gpt-6-astra", input=history)
+print(second.output_text)</pre>
+<callout type="warning"><p>只传 <code>previous_response_id</code> 而不带历史时，请求不会报错，但模型看不到之前的对话。</p></callout>
+
+<h2 id="streaming">流式输出</h2>
+<p>设置 <code>stream: true</code>，响应以 Responses 事件流返回。每个事件的数据都带 <code>type</code> 和递增的 <code>sequence_number</code>：</p>
+<code-tabs title="流式输出">
+<pre data-lang="python" data-label="Python">stream = client.responses.create(
+    model="gpt-6-astra",
+    input="写一首关于秋天的四行诗。",
+    stream=True,
+)
+for event in stream:
+    if event.type == "response.output_text.delta":
+        print(event.delta, end="", flush=True)</pre>
+<pre data-lang="javascript" data-label="Node.js">const stream = await client.responses.create({
+  model: "gpt-6-astra",
+  input: "写一首关于秋天的四行诗。",
+  stream: true,
+});
+for await (const event of stream) {
+  if (event.type === "response.output_text.delta") process.stdout.write(event.delta);
+}</pre>
+</code-tabs>
+<table>
+<thead><tr><th>事件</th><th>含义</th></tr></thead>
+<tbody>
+<tr><td><code>response.created</code></td><td>响应开始，<code>status</code> 为 <code>in_progress</code>。</td></tr>
+<tr><td><code>response.output_item.added</code> / <code>response.output_item.done</code></td><td>一个输出项（消息、推理或工具调用）开始与结束。</td></tr>
+<tr><td><code>response.content_part.added</code> / <code>response.content_part.done</code></td><td>消息中的一个内容块开始与结束。</td></tr>
+<tr><td><code>response.output_text.delta</code> / <code>response.output_text.done</code></td><td>增量文本与完整文本。</td></tr>
+<tr><td><code>response.reasoning_summary_text.delta</code> / <code>.done</code></td><td>模型公开的推理文本。</td></tr>
+<tr><td><code>response.function_call_arguments.delta</code> / <code>.done</code></td><td>函数调用参数的增量与完整值。</td></tr>
+<tr><td><code>response.completed</code></td><td>响应完成，附带最终的 <code>output</code> 与 <code>usage</code>。</td></tr>
+<tr><td><code>response.incomplete</code> / <code>response.failed</code></td><td>响应被截断或生成失败，原因见<a href="/api/docs/guides/error-codes/#stream-errors">流式输出中的错误</a>。</td></tr>
+</tbody>
+</table>
+
+<h2 id="reasoning">推理强度</h2>
+<p>用 <code>reasoning.effort</code> 调整推理模型思考的深度：</p>
+<pre data-lang="python" data-title="调整推理强度">response = client.responses.create(
+    model="gpt-6-astra",
+    reasoning={"effort": "high"},
+    input="证明根号 2 是无理数。",
+)
+print(response.output_text)</pre>
+<ul>
+<li>可选值为 <code>none</code>、<code>minimal</code>、<code>low</code>、<code>medium</code>、<code>high</code>、<code>xhigh</code>、<code>max</code>。<code>minimal</code> 按 <code>low</code> 处理，<code>none</code> 表示不设置。GPT 系列模型收到其他值时返回 <code>400 invalid_request_parameter</code>。</li>
+<li>推理强度只会传给已验证支持该参数的模型（主要是 GPT 系列）；其他模型会忽略这个字段，使用默认行为。</li>
+<li>模型公开的推理文本以 <code>reasoning</code> 输出项返回，内容在 <code>summary</code> 的 <code>summary_text</code> 块中。</li>
+</ul>
+
+<h2 id="structured-output">结构化输出</h2>
+<p>用 <code>text.format</code> 要求模型按 JSON Schema 输出。网关会把它转换为 Chat Completions 的 <code>response_format</code> 交给模型，是否严格遵守 Schema 取决于模型：</p>
+<pre data-lang="json" data-title="text.format">{
+  "model": "gpt-6-astra",
+  "input": "提取这句话中的人名和城市：小王上周去了杭州。",
+  "text": {
+    "format": {
+      "type": "json_schema",
+      "name": "extraction",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "city": { "type": "string" }
+        },
+        "required": ["name", "city"],
+        "additionalProperties": false
+      }
+    }
+  }
+}</pre>
+<p>也可以使用 <code>{"type": "json_object"}</code>。<code>text.verbosity</code> 不生效。</p>
+
+<h2 id="tools">工具</h2>
+<p>在 <code>tools</code> 中定义 <code>type: "function"</code> 的函数工具。模型调用工具时，<code>output</code> 中会出现 <code>function_call</code> 项；你执行函数后，把结果作为 <code>function_call_output</code> 项连同历史一起发回：</p>
+<pre data-lang="python" data-title="函数调用往返">import json
+
+tools = [{
+    "type": "function",
+    "name": "get_weather",
+    "description": "查询指定城市的当前天气",
+    "parameters": {
+        "type": "object",
+        "properties": {"city": {"type": "string"}},
+        "required": ["city"],
+    },
+}]
+history = [{"role": "user", "content": "北京现在天气怎么样？"}]
+
+response = client.responses.create(model="gpt-6-astra", input=history, tools=tools)
+for item in response.output:
+    if item.type == "function_call":
+        args = json.loads(item.arguments)
+        result = {"city": args["city"], "weather": "晴", "temperature_c": 18}  # 换成你的实现
+        history.append({"type": "function_call", "call_id": item.call_id,
+                        "name": item.name, "arguments": item.arguments})
+        history.append({"type": "function_call_output", "call_id": item.call_id,
+                        "output": json.dumps(result, ensure_ascii=False)})
+
+final = client.responses.create(model="gpt-6-astra", input=history, tools=tools)
+print(final.output_text)</pre>
+<ul>
+<li><strong>本地工具。</strong>Codex 使用的 <code>shell</code>、<code>local_shell</code>、<code>apply_patch</code> 和 <code>custom</code> 工具会正确传给模型，模型的调用以对应的输出项返回，由客户端在本地执行。</li>
+<li><strong>托管工具。</strong>NexusVAI 不在服务端执行 <code>web_search</code>、<code>file_search</code>、<code>code_interpreter</code>、<code>computer_use_preview</code>、<code>mcp</code>、<code>image_generation</code> 等托管工具。传入这些工具时，模型可能发起相应的调用，但需要你的客户端自己处理。</li>
+</ul>
+
+<h2 id="parameters">支持的参数</h2>
+<p>网关只读取下表中的字段，其他字段会被忽略。完整说明见 <a href="/api/reference/responses/">API 参考</a>。</p>
+<table>
+<thead><tr><th>参数</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>model</code></td><td>必填。NexusVAI 模型 ID。</td></tr>
+<tr><td><code>input</code></td><td>必填。字符串或输入项数组。</td></tr>
+<tr><td><code>instructions</code></td><td>系统提示。</td></tr>
+<tr><td><code>max_output_tokens</code></td><td>输出 token 上限，也接受 <code>max_tokens</code>。省略时按该模型的最大输出 token 数。也用于预占 TPM，见<a href="/api/docs/guides/rate-limits/#metering">速率限制</a>。</td></tr>
+<tr><td><code>temperature</code>、<code>top_p</code></td><td>采样参数，必须是非负数。</td></tr>
+<tr><td><code>stream</code></td><td>为 <code>true</code> 时以事件流返回。</td></tr>
+<tr><td><code>tools</code>、<code>tool_choice</code>、<code>parallel_tool_calls</code></td><td>工具定义与选择策略。</td></tr>
+<tr><td><code>reasoning.effort</code></td><td>推理强度，见<a href="#reasoning">推理强度</a>。</td></tr>
+<tr><td><code>text.format</code></td><td>结构化输出，见<a href="#structured-output">结构化输出</a>。</td></tr>
+<tr><td><code>service_tier</code></td><td>只接受省略、<code>"auto"</code> 或 <code>"default"</code>，其他值返回 <code>400</code>。</td></tr>
+</tbody>
+</table>
+
+<h2 id="differences">与 OpenAI 的差异</h2>
+<ul>
+<li>没有服务端状态：<code>previous_response_id</code>、<code>store</code>、<code>background</code>、<code>conversation</code> 不生效。</li>
+<li>不执行托管工具，也不支持文件检索与向量库。</li>
+<li><code>usage</code> 只包含 <code>input_tokens</code>、<code>output_tokens</code>、<code>total_tokens</code>。</li>
+<li>错误使用 OpenAI 的错误格式，见<a href="/api/docs/guides/error-codes/">错误码</a>。</li>
+</ul>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/reference/responses/" title="Responses API 参考" icon="cube">完整的请求参数、输出项与事件结构。</card>
+<card href="/api/docs/guides/coding-tools/" title="编程工具" icon="bolt">在 Codex CLI 中使用 Responses 协议。</card>
+<card href="/api/docs/guides/chat-completions/" title="Chat Completions" icon="bolt">支持的客户端最多的 OpenAI 协议。</card>
+</cards>

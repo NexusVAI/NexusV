@@ -1,0 +1,87 @@
+---
+title: 编程工具
+description: 在 Codex、Claude Code、Cursor 等编程工具和聊天客户端中使用 NexusVAI 的模型。
+tab: coding
+---
+<p>任何允许自定义 Base URL、API 密钥和模型 ID 的工具，都可以接入 NexusVAI。NexusVAI 同时兼容 OpenAI 的 Chat Completions、Responses 和 Anthropic 的 Messages 协议，所以命令行智能体、编辑器扩展和桌面客户端通常只需要改三项配置，不用改代码。</p>
+
+<h2 id="supported-tools">支持的工具</h2>
+<p>下表列出已有接入指南的工具、它们使用的协议，以及 Base URL 应该怎么填。</p>
+<table>
+<thead><tr><th>工具</th><th>类型</th><th>协议</th><th>Base URL</th></tr></thead>
+<tbody>
+<tr><td><a href="/api/docs/guides/codex-cli/">Codex CLI</a></td><td>命令行智能体</td><td>Responses</td><td>带 <code>/v1</code></td></tr>
+<tr><td><a href="/api/docs/guides/claude-code/">Claude Code</a></td><td>命令行智能体</td><td>Anthropic Messages</td><td>不带 <code>/v1</code></td></tr>
+<tr><td><a href="/api/docs/guides/opencode/">OpenCode</a></td><td>命令行智能体</td><td>Chat Completions（默认），也可用 Responses</td><td>带 <code>/v1</code></td></tr>
+<tr><td><a href="/api/docs/guides/openclaw/">OpenClaw</a></td><td>命令行智能体</td><td>Anthropic Messages 或 Responses</td><td>Messages 不带 <code>/v1</code>；Responses 带 <code>/v1</code></td></tr>
+<tr><td><a href="/api/docs/guides/aider/">Aider</a></td><td>命令行智能体</td><td>OpenAI 兼容（经 LiteLLM）</td><td>带 <code>/v1</code></td></tr>
+<tr><td><a href="/api/docs/guides/cursor/">Cursor</a></td><td>编辑器</td><td>OpenAI 兼容</td><td>带 <code>/v1</code></td></tr>
+<tr><td><a href="/api/docs/guides/cline/">Cline</a></td><td>VS Code 扩展</td><td>OpenAI 兼容</td><td>带 <code>/v1</code></td></tr>
+<tr><td><a href="/api/docs/guides/continue/">Continue</a></td><td>VS Code / JetBrains 扩展</td><td>OpenAI 兼容</td><td>带 <code>/v1</code></td></tr>
+<tr><td><a href="/api/docs/guides/cherry-studio/">Cherry Studio</a></td><td>桌面客户端</td><td>OpenAI 兼容</td><td>带 <code>/v1</code></td></tr>
+<tr><td><a href="/api/docs/guides/chatbox/">Chatbox</a></td><td>桌面客户端</td><td>OpenAI 兼容</td><td>带 <code>/v1</code></td></tr>
+<tr><td><a href="/api/docs/guides/lobechat/">LobeChat</a></td><td>聊天应用</td><td>OpenAI 兼容</td><td>带 <code>/v1</code></td></tr>
+<tr><td><a href="/api/docs/guides/sillytavern/">SillyTavern</a></td><td>聊天前端</td><td>Chat Completions</td><td>带 <code>/v1</code></td></tr>
+<tr><td><a href="/api/docs/guides/cc-switch/">CC Switch</a></td><td>多工具配置管理</td><td>取决于目标工具</td><td>按目标工具填写</td></tr>
+</tbody>
+</table>
+<callout type="info"><p>部分编辑器（例如 Cursor）的 Agent、行内补全等功能可能仍然使用厂商自己的服务，自定义 Base URL 通常只对对话生效。需要完整的编程智能体时，优先选择 Claude Code、Codex CLI、Cline 或 Continue。</p></callout>
+
+<h2 id="base-url">填写 Base URL</h2>
+<p>客户端会在 Base URL 后面自动拼接端点路径，所以要按协议填写：</p>
+<table>
+<thead><tr><th>协议</th><th>Base URL</th><th>客户端实际请求</th></tr></thead>
+<tbody>
+<tr><td>OpenAI 兼容（Chat Completions、Responses）</td><td><code>https://cn.nexusvai.xyz/v1</code></td><td><code>/v1/chat/completions</code>、<code>/v1/responses</code>、<code>/v1/models</code></td></tr>
+<tr><td>Anthropic Messages</td><td><code>https://cn.nexusvai.xyz</code></td><td><code>/v1/messages</code>、<code>/v1/messages/count_tokens</code>、<code>/v1/models</code></td></tr>
+</tbody>
+</table>
+<callout type="warning"><p><strong>Anthropic 兼容的工具不要在 Base URL 末尾加 <code>/v1</code>。</strong>Claude Code、Anthropic SDK 和 OpenClaw 会自己拼接 <code>/v1/messages</code>，填成 <code>https://cn.nexusvai.xyz/v1</code> 会请求 <code>/v1/v1/messages</code>，返回 404。</p></callout>
+<p>如果你的网络访问 <code>cn.nexusvai.xyz</code> 不稳定，可以改用 <code>https://chat.nexusvai.xyz/functions/v1/api-gateway</code>：OpenAI 兼容工具在末尾加 <code>/v1</code>，Anthropic 兼容工具不加。两个地址的 Key、模型 ID、请求格式和计费完全相同。</p>
+
+<h2 id="api-key">设置 API 密钥</h2>
+<p>在<a href="/api/console/keys/">控制台</a>创建一个以 <code>cancri_sk_</code> 开头的 API 密钥。命令行工具通常从环境变量读取 Key，建议保存在环境变量里，而不是写进项目文件：</p>
+<code-tabs title="设置环境变量">
+<pre data-lang="bash" data-label="macOS / Linux"># 当前终端生效；写进 ~/.zshrc 或 ~/.bashrc 可长期生效
+export CANCRI_API_KEY="cancri_sk_..."</pre>
+<pre data-lang="powershell" data-label="Windows PowerShell"># 当前窗口生效
+$env:CANCRI_API_KEY = "cancri_sk_..."
+# 长期生效（对之后新开的终端有效）
+setx CANCRI_API_KEY "cancri_sk_..."</pre>
+</code-tabs>
+<p>网页登录的会话和 Cookie 不能代替 API 密钥。认证方式的完整说明见<a href="/api/docs/guides/authentication/">认证与 API 密钥</a>。</p>
+
+<h2 id="choose-model">选择模型</h2>
+<p>三种协议共用同一份模型列表：Claude Code 也可以调用非 Claude 模型，Codex CLI 也可以调用 Claude 模型，前提是客户端允许你手动填写模型 ID。列出当前可用的模型：</p>
+<pre data-lang="bash" data-title="列出模型">curl https://cn.nexusvai.xyz/v1/models \
+  -H "Authorization: Bearer $CANCRI_API_KEY"</pre>
+<ul>
+<li>模型 ID 必须与 <code>GET /v1/models</code> 返回的 <code>id</code> 完全一致，包括大小写和连字符。</li>
+<li>不要使用模型厂商的原始版本号（例如 <code>claude-3-5-sonnet-20241022</code>），也不要沿用其他服务的型号或别名（例如 <code>gpt-4o</code>）。</li>
+<li>本节指南的示例使用 <code>gpt-6-astra</code>（Codex CLI 推荐的编码模型）和 <code>claude-opus-5.5</code>，你可以换成列表中的任意模型。</li>
+</ul>
+<p>各模型的能力和价格见<a href="/api/docs/models/">模型</a>与<a href="/api/docs/pricing/">价格</a>。</p>
+
+<h2 id="verify">验证请求是否到达 NexusVAI</h2>
+<p>配置完成后，先在工具里发一条简短的消息，再查询这个 Key 最近的调用记录。<code>GET /v1/balance</code> 不计费：</p>
+<pre data-lang="bash" data-title="查询余额与最近的调用">curl "https://cn.nexusvai.xyz/v1/balance?limit=5" \
+  -H "Authorization: Bearer $CANCRI_API_KEY"</pre>
+<p>返回 <code>200</code> 说明 Base URL 和 Key 都有效。如果 <code>recent_usage.data</code> 里出现了刚才的请求，说明工具确实把请求发到了 NexusVAI：</p>
+<table>
+<thead><tr><th>字段</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>balance</code></td><td>账户余额（元）。网页与所有 Key 共用同一个余额。</td></tr>
+<tr><td><code>recent_usage.data[].model</code></td><td>请求使用的模型 ID。</td></tr>
+<tr><td><code>recent_usage.data[].prompt_tokens</code>、<code>completion_tokens</code></td><td>输入和输出 token 数。</td></tr>
+<tr><td><code>recent_usage.data[].status_code</code></td><td>请求的 HTTP 状态码。</td></tr>
+<tr><td><code>recent_usage.data[].cost</code></td><td>这次请求的实际扣费（元）。</td></tr>
+</tbody>
+</table>
+<p><code>limit</code> 取 0–100，默认 20。记录只包含当前这个 Key 的调用。</p>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/codex-cli/" title="接入 Codex CLI">用 Responses 协议在终端里运行编程智能体。</card>
+<card href="/api/docs/guides/claude-code/" title="接入 Claude Code" icon="cube">两个环境变量即可切换到 NexusVAI。</card>
+<card href="/api/docs/guides/client-faq/" title="客户端常见问题">Base URL、模型 ID、缓存与维护相关的排查。</card>
+</cards>

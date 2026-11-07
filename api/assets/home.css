@@ -1,0 +1,203 @@
+/* /api/ home page. Layout and components come from the vendored OpenAI CSS (header.css + pages.css);
+ * this file only adds what is ours: the hero decoration, the promo-tile illustrations and the video player. */
+
+/* ── Hero ── */
+/* The hero wordmark (img/home/nexusvai_developers_boil.svg) is cropped to OpenAI's box ratio 1144:132,
+ * so it needs no padding to keep the hero the same height. */
+
+/* Cancri Code's pixel crab in the slot of OpenAI's DevDay agent. The agent box, actor and head (rotated −12°
+ * around the face centre) are OpenAI's own classes; the crab takes the round face's place: OpenAI's face is a
+ * 100-unit circle at (40, 32) in the 190×166 agent box. The crab's body (x 0–144, y 0–108 in its
+ * "-12 -30 168 150" viewBox) is scaled to the face width and centred on the face centre (90, 82). */
+.home-crab-agent {
+  cursor: default;
+}
+.home-crab {
+  position: absolute;
+  left: 16.6667%;
+  top: 14.257%;
+  width: 61.4035%;
+}
+
+/* Phones: the wordmark is one line (OpenAI's is stacked), so give it the full width and put the crab above it. */
+@media (width <= 639px) {
+  [data-devday-banner] {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+  [data-devday-banner] .devday-wordmark[data-astro-cid-bkecleup] {
+    width: 100%;
+  }
+  [data-devday-banner] .devday-character[data-astro-cid-bkecleup] {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    width: 124px;
+    margin: -10px 0 18px -10px;
+    transform: none;
+  }
+}
+
+/* ── Promo tiles: glass illustration over the gradient photo ── */
+.home-illo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  container-type: inline-size;
+}
+.home-illo__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7cqw;
+  width: 100%;
+  transition: transform 0.3s;
+}
+.group:hover .home-illo__stage {
+  transform: scale(1.02);
+}
+.home-illo__glass {
+  border: 1px solid rgb(255 255 255 / 0.55);
+  background: rgb(255 255 255 / 0.24);
+  box-shadow: 0 12px 32px -14px rgb(30 27 75 / 0.45);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.home-illo__window {
+  width: 66cqw;
+  padding: 5cqw 6cqw 6.5cqw;
+  border-radius: 5cqw;
+}
+.home-illo__dots {
+  display: flex;
+  gap: 2cqw;
+  margin-bottom: 5.5cqw;
+}
+.home-illo__dots i {
+  width: 2.4cqw;
+  height: 2.4cqw;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.85);
+}
+.home-illo__row {
+  display: flex;
+  align-items: center;
+  gap: 3cqw;
+}
+.home-illo__row + .home-illo__row {
+  margin-top: 4.2cqw;
+}
+.home-illo__row b {
+  flex: none;
+  width: 3.8cqw;
+  height: 3.8cqw;
+  border: 1.5px solid rgb(255 255 255 / 0.9);
+  border-radius: 1.1cqw;
+}
+.home-illo__row span {
+  height: 2.2cqw;
+  border-radius: 2cqw;
+  background: rgb(255 255 255 / 0.9);
+}
+.home-illo__row--a span { width: 70%; }
+.home-illo__row--b span { width: 52%; }
+.home-illo__row--c span { width: 62%; }
+.home-illo__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.4cqw;
+  padding: 2.6cqw 4.6cqw;
+  border-radius: 999px;
+  color: #fff;
+  font: 500 4.8cqw/1.2 "SF Mono", "SFMono-Regular", ui-monospace, consolas, "liberation mono", menlo, monospace;
+  white-space: nowrap;
+}
+.home-illo__chip i {
+  width: 2.4cqw;
+  height: 2.4cqw;
+  border-radius: 50%;
+  background: #00ab44;
+  box-shadow: 0 0 0 1cqw rgb(0 171 68 / 0.25);
+}
+.home-illo__voice {
+  display: flex;
+  align-items: center;
+  gap: 4.5cqw;
+  padding: 3.2cqw 6cqw 3.2cqw 3.2cqw;
+  border-radius: 999px;
+}
+.home-illo__mic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 13cqw;
+  height: 13cqw;
+  border-radius: 50%;
+  background: #fff;
+  color: #6d3fd9;
+}
+.home-illo__mic svg {
+  width: 6.4cqw;
+  height: 6.4cqw;
+}
+.home-illo__wave {
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
+  height: 13cqw;
+}
+.home-illo__wave i {
+  width: 2cqw;
+  border-radius: 2cqw;
+  background: #fff;
+  animation: home-wave 1.3s ease-in-out infinite;
+}
+.home-illo__wave i:nth-child(1) { height: 34%; animation-delay: -1.1s; }
+.home-illo__wave i:nth-child(2) { height: 68%; animation-delay: -0.4s; }
+.home-illo__wave i:nth-child(3) { height: 100%; animation-delay: -0.9s; }
+.home-illo__wave i:nth-child(4) { height: 56%; animation-delay: -0.2s; }
+.home-illo__wave i:nth-child(5) { height: 84%; animation-delay: -0.7s; }
+.home-illo__wave i:nth-child(6) { height: 46%; animation-delay: -1.2s; }
+.home-illo__wave i:nth-child(7) { height: 28%; animation-delay: -0.5s; }
+@keyframes home-wave {
+  0%,
+  100% {
+    transform: scaleY(0.5);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* Phones: keep the last help item clear of the floating community button. */
+@media (width <= 767px) {
+  .home-help {
+    padding-bottom: 56px;
+  }
+}
+
+/* ── Featured video: the player that replaces the thumbnail on click ── */
+.home-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  object-fit: contain;
+}
+/* OpenAI's play icon is text-default, which turns light-on-white in dark mode. */
+html.dark [data-featured-video-play] .bg-white\/90 {
+  color: #0d0d0d;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-illo__wave i {
+    animation: none;
+  }
+  .home-illo__stage {
+    transition: none;
+  }
+}

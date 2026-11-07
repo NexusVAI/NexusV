@@ -1,0 +1,107 @@
+---
+title: 速率限制
+description: 速率限制按账户计算，只有 RPM 和 TPM 两项，档位由累计充值或套餐决定。
+---
+<p>速率限制按<strong>账户</strong>生效：同一账户的网页、桌面端、Bot 与 API 调用共用一组限额，增加密钥不会提高限额。团队密钥使用团队自己的限额，见<a href="/api/docs/guides/teams/">团队</a>。</p>
+<p>限额只有两项：</p>
+<ul>
+<li><strong>RPM</strong>：每分钟请求数。</li>
+<li><strong>TPM</strong>：每分钟 token 数，输入与输出合计。</li>
+</ul>
+<p>不限制同时进行的请求数，也没有按小时或按天计的请求数与 token 上限。免费模型的总用量另受<a href="/api/docs/guides/free-tier/">免费额度</a>限制。</p>
+
+<h2 id="tiers">档位</h2>
+<p>档位由累计充值决定：</p>
+<table>
+<thead><tr><th>档位</th><th>累计充值</th><th>RPM</th><th>TPM</th></tr></thead>
+<tbody>
+<tr><td>Tier 0</td><td>¥0</td><td>60</td><td>2,000,000</td></tr>
+<tr><td>Tier 1</td><td>≥ ¥10</td><td>120</td><td>2,000,000</td></tr>
+<tr><td>Tier 2</td><td>≥ ¥30</td><td>500</td><td>3,000,000</td></tr>
+<tr><td>Tier 3</td><td>≥ ¥80</td><td>5,000</td><td>3,000,000</td></tr>
+<tr><td>Tier 4</td><td>≥ ¥300</td><td>5,000</td><td>4,000,000</td></tr>
+<tr><td>Tier 5</td><td>≥ ¥1,000</td><td>10,000</td><td>5,000,000</td></tr>
+</tbody>
+</table>
+<ul>
+<li>有效套餐有对应的保底档位：Go 为 Tier 1，Plus 为 Tier 2，Pro 为 Tier 3。套餐档位与累计充值档位取较高者。</li>
+<li>代金券与赠送额度不计入累计充值。</li>
+<li>档位提升通常在 1 分钟内生效，无需更换密钥。</li>
+<li>团队按累计划转到团队余额的金额定档，不继承成员的套餐或充值。</li>
+</ul>
+<p>充值见控制台的<a href="/api/console/billing/">账单</a>页。</p>
+
+<h2 id="metering">计量方式</h2>
+<p>RPM 和 TPM 都是令牌桶：容量等于每分钟的限额，按时间连续回填，而不是在整分钟清零。所以短时间内最多可以用满一分钟的额度，之后按回填速度继续。</p>
+<ul>
+<li><strong>开始时预占。</strong>每个请求开始时消耗 1 个 RPM，并按「预估输入 token + 输出上限」预占 TPM。输出上限就是 <code>max_tokens</code>（Responses 为 <code>max_output_tokens</code>）；没设置时按该模型的最大输出 token 数预占。</li>
+<li><strong>结束后多退少补。</strong>响应结束后按实际用量结算 TPM，多占的部分退回。</li>
+<li><strong>允许短暂超出。</strong>只要账户还有剩余 TPM，请求就会被接受，所以单次大请求可以让余量暂时变成负数，之后由回填补足。</li>
+<li><strong>单次请求过大。</strong>单次请求的预占量超过本档 TPM 的 4 倍时，返回 <code>429 request_too_large</code>。</li>
+<li><strong>失败的请求也计入 RPM。</strong>已经通过限速检查的请求，即使后来失败，也消耗 RPM。</li>
+</ul>
+<callout type="info"><p>给 <code>max_tokens</code> 设一个贴近实际需要的值，能减少 TPM 预占，让同一档位承载更多并发请求。实际扣费只按真实用量计算。</p></callout>
+
+<h2 id="key-rpm">密钥级 RPM</h2>
+<p>如果密钥设置了 RPM 上限，它只能比账户限额更严：实际生效的是两者中较小的一个。超出密钥级上限时返回 <code>429 rate_limit_exceeded</code>，<code>error.scope</code> 为 <code>key</code>。</p>
+
+<h2 id="headers">响应头</h2>
+<p>OpenAI 协议端点（<code>/v1/chat/completions</code>、<code>/v1/responses</code>）返回以下响应头：</p>
+<table>
+<thead><tr><th>响应头</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>x-ratelimit-limit-requests</code></td><td>RPM 上限</td></tr>
+<tr><td><code>x-ratelimit-remaining-requests</code></td><td>剩余的请求数</td></tr>
+<tr><td><code>x-ratelimit-reset-requests</code></td><td>请求额度恢复到上限所需的时间</td></tr>
+<tr><td><code>x-ratelimit-limit-tokens</code></td><td>TPM 上限</td></tr>
+<tr><td><code>x-ratelimit-remaining-tokens</code></td><td>剩余的 token 数</td></tr>
+<tr><td><code>x-ratelimit-reset-tokens</code></td><td>token 额度恢复到上限所需的时间</td></tr>
+</tbody>
+</table>
+<p>reset 的值是时长，如 <code>1s</code>、<code>6m0s</code>。</p>
+<p>Anthropic 协议端点（<code>/v1/messages</code>）返回 <code>anthropic-ratelimit-requests-limit</code>、<code>anthropic-ratelimit-requests-remaining</code>、<code>anthropic-ratelimit-requests-reset</code>，以及对应的 <code>anthropic-ratelimit-tokens-limit</code>、<code>anthropic-ratelimit-tokens-remaining</code>、<code>anthropic-ratelimit-tokens-reset</code>。reset 的值是 RFC 3339 时间；剩余 token 数向下取整到千位。</p>
+<p>请求数相关的响应头取当前最严的一层（账户或密钥）。</p>
+
+<h2 id="handling-429">处理 429 错误</h2>
+<table>
+<thead><tr><th><code>error.code</code></th><th>含义</th><th>处理方法</th></tr></thead>
+<tbody>
+<tr><td><code>rate_limit_exceeded</code></td><td>超出 RPM 或 TPM。<code>error.limit</code> 为 <code>requests</code> 或 <code>tokens</code>，<code>error.scope</code> 为 <code>account</code> 或 <code>key</code>，<code>error.tier</code> 是当前档位。</td><td>按 <code>Retry-After</code> 等待后重试。</td></tr>
+<tr><td><code>request_too_large</code></td><td>单次请求的预占量超过本档 TPM 的 4 倍。</td><td>不可重试。缩短上下文或调低 <code>max_tokens</code>。</td></tr>
+<tr><td><code>free_plan_exhausted</code></td><td>免费额度已用完，<code>error.resets_at</code> 给出重置时间。</td><td>不可重试。等待重置，或累计充值达到 ¥10、开通套餐。</td></tr>
+<tr><td><code>key_token_quota_exhausted</code><br><code>key_request_quota_exhausted</code></td><td>这把密钥的累计 token 或累计请求数上限已用完。</td><td>不可重试。改用其他密钥。</td></tr>
+<tr><td><code>upstream_rate_limit</code></td><td>所选模型暂时繁忙，与你的账户限额无关。</td><td>稍后重试或换模型。</td></tr>
+<tr><td><code>auth_rate_limited</code></td><td>同一 IP 短时间内多次使用不存在的密钥。</td><td>按 <code>Retry-After</code> 等待，并修正密钥配置。</td></tr>
+</tbody>
+</table>
+<pre data-lang="json" data-title="429 rate_limit_exceeded">{
+  "error": {
+    "type": "rate_limit_error",
+    "message": "Rate limit reached for requests per minute (RPM): limit 60. Please try again in 1s.",
+    "code": "rate_limit_exceeded",
+    "limit": "requests",
+    "scope": "account",
+    "tier": 0
+  }
+}</pre>
+<p>上表中不可重试的错误，以及 <code>402 insufficient_balance</code>，响应都带 <code>x-should-retry: false</code>，不带 <code>Retry-After</code>，官方 SDK 不会自动重试它们。重试建议见<a href="/api/docs/guides/error-codes/#retries">重试</a>。</p>
+
+<h2 id="other-limits">其他限制</h2>
+<table>
+<thead><tr><th>项目</th><th>限制</th></tr></thead>
+<tbody>
+<tr><td>免费模型</td><td>每个账户每 24 小时 1 亿 token，见<a href="/api/docs/guides/free-tier/">免费额度</a></td></tr>
+<tr><td><code>GET /v1/balance</code></td><td>每个账户每分钟 30 次，不计入 RPM 与 TPM</td></tr>
+<tr><td><code>POST /v1/messages/count_tokens</code></td><td>每把密钥每分钟 600 次，不计入 RPM 与 TPM</td></tr>
+<tr><td>使用不存在的密钥</td><td>每个 IP（IPv6 按 /64 网段）每分钟 20 次、每小时 100 次</td></tr>
+<tr><td>请求体大小</td><td>10 MB</td></tr>
+<tr><td>API 密钥</td><td>每个账户最多 5 把有效密钥，每小时最多创建 10 把</td></tr>
+</tbody>
+</table>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/error-codes/" title="错误码" icon="bolt">全部错误码与重试建议。</card>
+<card href="/api/docs/guides/billing/" title="计费与余额" icon="cube">充值、预扣与结算。</card>
+<card href="/api/docs/guides/production-best-practices/" title="生产最佳实践" icon="bolt">在生产环境中处理限流与重试。</card>
+</cards>

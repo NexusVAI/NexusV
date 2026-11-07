@@ -1,0 +1,58 @@
+---
+title: Continue
+description: 在 Continue 的 config.yaml 中把 OpenAI provider 指向 NexusVAI，用于 VS Code 和 JetBrains。
+tab: coding
+---
+<p><a href="https://continue.dev">Continue</a> 是支持 VS Code 和 JetBrains 的开源 AI 编程扩展。在 <code>config.yaml</code> 中添加一个使用 OpenAI provider 的模型，把 <code>apiBase</code> 指向 NexusVAI 即可。</p>
+
+<h2 id="prerequisites">前提条件</h2>
+<ul>
+<li>已在 VS Code 或 JetBrains 中安装 Continue 扩展。</li>
+<li>一个 NexusVAI API 密钥，可以在<a href="/api/console/keys/">控制台</a>创建。</li>
+<li>要使用的模型 ID，例如 <code>gpt-6-astra</code>。</li>
+</ul>
+
+<h2 id="configure">添加模型</h2>
+<p>打开 Continue 侧边栏的 <strong>Settings</strong>，编辑 <code>config.yaml</code>（也可以直接打开 <code>~/.continue/config.yaml</code>），在 <code>models</code> 数组中追加一项：</p>
+<pre data-lang="yaml" data-title="config.yaml">models:
+  - name: NexusVAI GPT-6 Astra
+    provider: openai
+    model: gpt-6-astra
+    apiBase: https://cn.nexusvai.xyz/v1
+    apiKey: cancri_sk_...</pre>
+<table>
+<thead><tr><th>字段</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>name</code></td><td>在模型下拉列表中显示的名称。</td></tr>
+<tr><td><code>provider</code></td><td><code>openai</code>。</td></tr>
+<tr><td><code>model</code></td><td>NexusVAI 模型 ID，必须与 <code>GET /v1/models</code> 返回的一致。</td></tr>
+<tr><td><code>apiBase</code></td><td><code>https://cn.nexusvai.xyz/v1</code>。</td></tr>
+<tr><td><code>apiKey</code></td><td>你的 API 密钥。</td></tr>
+</tbody>
+</table>
+<p>要添加更多模型，在 <code>models</code> 下按同样的格式再加几项，只改 <code>name</code> 和 <code>model</code>。</p>
+<callout type="info"><p>Continue 的 Agent 模式要求模型声明支持工具调用。如果自定义模型没有出现 Agent 选项，请按 Continue 官方文档为它补充 <code>capabilities</code>。</p></callout>
+
+<h2 id="verify">验证配置</h2>
+<p>保存后，在模型下拉列表中选择刚添加的模型，分别试一次对话和 Agent 的工具调用。然后查询这个 Key 最近的调用：</p>
+<pre data-lang="bash" data-title="确认请求已到达 NexusVAI">curl "https://cn.nexusvai.xyz/v1/balance?limit=5" \
+  -H "Authorization: Bearer cancri_sk_..."</pre>
+<p>字段说明见<a href="/api/docs/guides/coding-tools/#verify">验证请求是否到达 NexusVAI</a>。</p>
+
+<h2 id="troubleshooting">排查问题</h2>
+<table>
+<thead><tr><th>现象</th><th>可能的原因</th><th>解决方法</th></tr></thead>
+<tbody>
+<tr><td>模型下拉列表里没有新模型</td><td><code>config.yaml</code> 缩进或格式有误。</td><td>检查 YAML 缩进，确认这一项位于 <code>models</code> 数组下。</td></tr>
+<tr><td>没有 Agent 选项</td><td>模型没有声明工具调用能力。</td><td>按 Continue 文档补充 <code>capabilities</code>。</td></tr>
+<tr><td><code>404 model_not_found</code></td><td><code>model</code> 不在 <code>GET /v1/models</code> 的列表中。</td><td>改成列表中的 id。</td></tr>
+<tr><td><code>421 relay_path_not_supported</code></td><td><code>apiBase</code> 少了末尾的 <code>/v1</code>。</td><td>填 <code>https://cn.nexusvai.xyz/v1</code>。</td></tr>
+</tbody>
+</table>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/chat-completions/" title="Chat Completions 协议">了解工具调用等参数的支持情况。</card>
+<card href="/api/docs/models/" title="浏览模型" icon="cube">为对话和 Agent 挑选合适的模型。</card>
+<card href="/api/docs/guides/client-faq/" title="客户端常见问题">模型 ID、缓存与维护相关的排查。</card>
+</cards>

@@ -1,0 +1,72 @@
+---
+title: Codex CLI
+description: 在 config.toml 中添加一个自定义 provider，让 Codex CLI 通过 Responses 协议使用 NexusVAI 的模型。
+tab: coding
+---
+<p>Codex CLI 是 OpenAI 的终端编程智能体，默认使用 Responses API。你只需要在 <code>~/.codex/config.toml</code> 里添加一个指向 NexusVAI 的 provider，再把 API 密钥放进环境变量。</p>
+
+<h2 id="prerequisites">前提条件</h2>
+<ul>
+<li>已安装 Codex CLI。</li>
+<li>一个 NexusVAI API 密钥，可以在<a href="/api/console/keys/">控制台</a>创建。</li>
+<li>一个模型 ID。编码任务推荐 <code>gpt-6-astra</code>，也可以用 <code>GET /v1/models</code> 中的其他模型。</li>
+</ul>
+
+<h2 id="configure">添加 provider</h2>
+<p>编辑 <code>~/.codex/config.toml</code>（没有就新建），加入以下内容：</p>
+<pre data-lang="toml" data-title="~/.codex/config.toml">model = "gpt-6-astra"
+model_provider = "cancri"
+
+[model_providers.cancri]
+name = "NexusVAI"
+base_url = "https://cn.nexusvai.xyz/v1"
+wire_api = "responses"
+env_key = "CANCRI_API_KEY"</pre>
+<table>
+<thead><tr><th>字段</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>model</code></td><td>默认使用的模型 ID，必须与 <code>GET /v1/models</code> 返回的一致。</td></tr>
+<tr><td><code>model_provider</code></td><td>使用哪个 provider。必须与下面 <code>[model_providers.&lt;id&gt;]</code> 中的 id 相同。</td></tr>
+<tr><td><code>name</code></td><td>显示名称，可以随意填写。</td></tr>
+<tr><td><code>base_url</code></td><td><code>https://cn.nexusvai.xyz/v1</code>，以 <code>/v1</code> 结尾。</td></tr>
+<tr><td><code>wire_api</code></td><td><code>"responses"</code>，使用 Responses 协议。</td></tr>
+<tr><td><code>env_key</code></td><td>保存 API 密钥的环境变量名。</td></tr>
+</tbody>
+</table>
+<callout type="warning"><p>provider id 可以自定义（示例为 <code>cancri</code>），但必须与 <code>model_provider</code> 一致，否则 Codex 仍会把请求发往默认的 provider。不要修改内置的 <code>[model_providers.openai]</code>。</p></callout>
+
+<h2 id="run">设置密钥并启动</h2>
+<code-tabs title="启动 Codex CLI">
+<pre data-lang="bash" data-label="macOS / Linux">export CANCRI_API_KEY="cancri_sk_..."
+codex</pre>
+<pre data-lang="powershell" data-label="Windows PowerShell">$env:CANCRI_API_KEY = "cancri_sk_..."
+codex</pre>
+</code-tabs>
+<p>环境变量要在启动 <code>codex</code> 的同一个终端里生效。长期保存的方法见<a href="/api/docs/guides/coding-tools/#api-key">设置 API 密钥</a>。</p>
+<p>Codex 的 shell、apply_patch 等本地工具会被转换成模型能调用的函数，命令和文件修改仍由 Codex 在你的电脑上执行，所以 Agent 模式可以照常使用。</p>
+
+<h2 id="verify">验证配置</h2>
+<p>在 Codex 中发送一条简短的指令，例如「列出当前目录的文件」。然后查询这个 Key 最近的调用：</p>
+<pre data-lang="bash" data-title="确认请求已到达 NexusVAI">curl "https://cn.nexusvai.xyz/v1/balance?limit=5" \
+  -H "Authorization: Bearer $CANCRI_API_KEY"</pre>
+<p><code>recent_usage.data</code> 的第一条应该是刚才的请求，<code>model</code> 为 <code>gpt-6-astra</code>。字段说明见<a href="/api/docs/guides/coding-tools/#verify">验证请求是否到达 NexusVAI</a>。</p>
+
+<h2 id="troubleshooting">排查问题</h2>
+<table>
+<thead><tr><th>现象</th><th>可能的原因</th><th>解决方法</th></tr></thead>
+<tbody>
+<tr><td><code>401 invalid_api_key</code></td><td>启动 Codex 的终端里没有设置 <code>CANCRI_API_KEY</code>，或 <code>env_key</code> 写的变量名不一致。</td><td>在同一个终端里 <code>echo $CANCRI_API_KEY</code> 确认，再重新启动 <code>codex</code>。</td></tr>
+<tr><td><code>404 model_not_found</code></td><td><code>model</code> 不在 <code>GET /v1/models</code> 的列表里。</td><td>改成列表中的 id，注意大小写和连字符。</td></tr>
+<tr><td>请求没有出现在 <code>/v1/balance</code> 的记录里</td><td><code>model_provider</code> 与 provider id 不一致，请求发往了其他服务。</td><td>检查两处 id 是否相同。</td></tr>
+<tr><td><code>421 relay_path_not_supported</code></td><td><code>base_url</code> 少了末尾的 <code>/v1</code>。</td><td>填 <code>https://cn.nexusvai.xyz/v1</code>。</td></tr>
+<tr><td><code>404</code>，消息为 <code>Not found: /v1/v1/responses</code></td><td><code>base_url</code> 多写了一个 <code>/v1</code>。</td><td>填 <code>https://cn.nexusvai.xyz/v1</code>。</td></tr>
+</tbody>
+</table>
+<p>更多问题见<a href="/api/docs/guides/client-faq/">客户端常见问题</a>。</p>
+
+<h2 id="next-steps">下一步</h2>
+<cards>
+<card href="/api/docs/guides/responses/" title="Responses 协议">了解 Codex 使用的 /v1/responses 端点支持哪些字段。</card>
+<card href="/api/docs/models/" title="浏览模型" icon="cube">比较各模型的能力与价格，为 Codex 挑选模型。</card>
+<card href="/api/docs/guides/cc-switch/" title="CC Switch">在多个编程工具之间统一管理 Base URL 与 Key。</card>
+</cards>
