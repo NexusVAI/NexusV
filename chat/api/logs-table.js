@@ -7,7 +7,7 @@
       columns: ["时间", "模型 / 状态", "缓存命中率", "输入 / 输出", "首字 / 耗时", "成本", "参数", "速度", "请求 IP", "密钥昵称"],
       caption: "API 请求日志", read: "缓存读取", write: "缓存写入", cache: "缓存", unknown: "未记录",
       unavailable: "未提供", success: "成功", failure: "失败", stream: "流式", nonstream: "非流",
-      effort: "推理强度", first: "首字", duration: "耗时", cost: "实际扣费（人民币）",
+      effort: "推理强度", defaultEffort: "默认", first: "首字", duration: "耗时", cost: "实际扣费（人民币）",
       cacheHint: "缓存命中率 = 缓存读取 token / 输入 token；不包含缓存写入",
       timingHint: "首字：请求开始至首个正文 token；耗时：请求开始至结束",
       streamSpeed: "输出 token /（总耗时 − 首字时间）", nonstreamSpeed: "输出 token / 总耗时（非流请求平均吞吐）",
@@ -18,7 +18,7 @@
       columns: ["Time", "Model / Status", "Cache hit", "Input / Output", "TTFT / Duration", "Cost", "Parameters", "Speed", "Request IP", "Key nickname"],
       caption: "API request logs", read: "Cache read", write: "Cache write", cache: "Cache", unknown: "Not recorded",
       unavailable: "Not available", success: "Success", failure: "Failed", stream: "Stream", nonstream: "Non-stream",
-      effort: "Reasoning effort", first: "TTFT", duration: "Duration", cost: "Actual charge (CNY)",
+      effort: "Reasoning effort", defaultEffort: "Default", first: "TTFT", duration: "Duration", cost: "Actual charge (CNY)",
       cacheHint: "Cache hit = cache-read tokens / input tokens; cache writes are excluded",
       timingHint: "TTFT: request start to first content token; duration: request start to completion",
       streamSpeed: "Output tokens / (duration − TTFT)", nonstreamSpeed: "Output tokens / duration (non-stream average throughput)",
@@ -79,7 +79,7 @@
     if (r.stream === true && latency !== null && ttft !== null && latency > ttft && output > 0) {
       speed = output / ((latency - ttft) / 1000);
       speedHint = copy.streamSpeed;
-    } else if (r.stream === false && latency > 0 && output > 0) {
+    } else if ((r.stream === false || (r.stream === true && ttft !== null && latency === ttft)) && latency > 0 && output > 0) {
       speed = output / (latency / 1000);
       speedHint = copy.nonstreamSpeed;
     }
@@ -93,7 +93,7 @@
     var effort = Object.prototype.hasOwnProperty.call(EFFORT, effortId) ? EFFORT[effortId] : null;
     var params = effort
       ? '<span class="cnc-log-effort" data-effort="' + effortId + '" data-tone="' + effort[1] + '" title="' + esc(copy.effort) + '">' + effort[0] + '</span>'
-      : missing(copy);
+      : r.timing_version === 2 ? '<span class="cnc-log-effort" data-tone="gray">' + esc(copy.defaultEffort) + '</span>' : missing(copy);
     var mode = typeof r.stream === "boolean" ? esc(r.stream ? copy.stream : copy.nonstream) : missing(copy);
     var date = r.created_at ? new Date(r.created_at) : null;
     var validDate = date && isFinite(date.getTime());

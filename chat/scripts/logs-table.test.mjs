@@ -89,6 +89,25 @@ test("stream and non-stream requests use explicit mode and labeled speed calcula
   assert.doesNotMatch(render({ stream: true, ttft_ms: 9000 }), /128\.6|Infinity|NaN/);
 });
 
+test("one-chunk streams retain average throughput instead of dividing by zero", () => {
+  const html = render({ ttft_ms: 8140, latency_ms: 8140, stream: true });
+  assert.match(html, /115\.6/);
+  assert.match(html, /平均吞吐/);
+  assert.doesNotMatch(html, /Infinity|NaN/);
+});
+
+test("new requests with no explicit reasoning setting show default, not none", () => {
+  const html = render({ timing_version: 2, reasoning_effort: null });
+  assert.match(html, /默认/);
+  assert.doesNotMatch(html, /data-effort="none"/);
+});
+
+test("raw input totals exclude pricing multipliers in the cache denominator", () => {
+  const html = render({ tokens_in: 950, input_tokens_total: 900, tokens_cached: 600 });
+  assert.match(html, /66\.7%/);
+  assert.match(html, />900</);
+});
+
 test("TTFT is the first content token, never inferred from total duration", () => {
   const html = render({ ttft_ms: null, latency_ms: 3100 });
   assert.match(html, /3\.10 s/);
