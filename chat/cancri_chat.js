@@ -358,6 +358,18 @@
 			"creditPerUse": 10
 		},
 		{
+			"id": "gpt-image-2.6-web",
+			"name": "GPT-image-2.6",
+			"brand": "OpenAI",
+			"kind": "image",
+			"vision": false,
+			"thinking": false,
+			"tools": false,
+			"costTier": "normal",
+			"customMultiplier": 100,
+			"creditPerUse": 10
+		},
+		{
 			"id": "doubao-1.5-pro",
 			"name": "Doubao 1.5 Pro",
 			"brand": "Doubao",
@@ -2811,6 +2823,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		"gpt-image-2-all": 0,
 		"gpt-image-2": 0,
 		"gpt-image-2-5-sunburst": 0,
+		"gpt-image-2.6-web": 0,
 		"claude-opus-4-8": 2e5,
 		"claude-opus-4-8-special": 2e5,
 		"claude-opus-4-7-special": 2e5,
@@ -2854,6 +2867,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 	var HYPHENATED_DISPLAY_NAME_IDS = new Set([
 		"gpt-image-2",
 		"gpt-image-2-5-sunburst",
+		"gpt-image-2.6-web",
 		"deepseek-ocr-2",
 		"glm-4-9b-0414",
 		"deepseek-r1-distill-qwen-14b",
@@ -11803,7 +11817,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 	async function generateImageFromPrompt(prompt, imageModel, attachments = []) {
 		const value = String(prompt || "").trim();
 		if (!value || state.isImageGenerating) return;
-		const isOpenAIImage = imageModel === "grok-imagine-image" || imageModel === "gpt-image-2-all" || imageModel === "gpt-image-2" || imageModel === "gpt-image-2-5-sunburst" || imageModel === "doubao-seedream-4-5" || imageModel === "z-image-turbo";
+		const isOpenAIImage = imageModel === "grok-imagine-image" || imageModel === "gpt-image-2-all" || imageModel === "gpt-image-2" || imageModel === "gpt-image-2-5-sunburst" || imageModel === "gpt-image-2.6-web" || imageModel === "doubao-seedream-4-5" || imageModel === "z-image-turbo";
 		const imageSize = "1024x1024";
 		const controller = new AbortController();
 		state.activeRequestController = controller;
