@@ -1,0 +1,247 @@
+/* Scoped to the expanded request log table; the rest of the console keeps its existing layout. */
+body[data-console-page="logs"] {
+  --log-green: #15804f;
+  --log-yellow: #a66b00;
+  --log-red: #d5444d;
+  --log-muted: #777d84;
+  --log-soft: #f7f8f9;
+  --log-rule: #e9ebee;
+}
+:root[data-theme="dark"] body[data-console-page="logs"] {
+  --log-green: #58c894;
+  --log-yellow: #e4b44f;
+  --log-red: #f18087;
+  --log-muted: #92979e;
+  --log-soft: #17191b;
+  --log-rule: #282b2e;
+}
+body[data-console-page="logs"] .yaYrI,
+body[data-console-page="logs"] .Nn3YT,
+body[data-console-page="logs"] .-Kn9p,
+body[data-console-page="logs"] .kayFL,
+body[data-console-page="logs"] .cnc-logs-panel {
+  min-width: 0;
+  max-width: 100%;
+}
+body[data-console-page="logs"] .cnc-logs-host {
+  padding: 0 24px 28px;
+}
+#cnc-logs-list:has(.cnc-log-table--detail) {
+  overflow: visible;
+}
+.cnc-log-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+  border-top: 1px solid var(--log-rule);
+}
+.cnc-log-scroll:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.cnc-log-table.cnc-log-table--detail {
+  min-width: 1132px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.cnc-log-table.cnc-log-table--detail th {
+  height: 44px;
+  padding: 10px 10px;
+  color: var(--secondary-text);
+  border-bottom: 1px solid var(--log-rule);
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--log-soft);
+}
+.cnc-log-table.cnc-log-table--detail td {
+  height: 76px;
+  padding: 13px 10px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--log-rule);
+  overflow-wrap: anywhere;
+}
+.cnc-log-table--detail th:first-child,
+.cnc-log-table--detail td:first-child {
+  padding-left: 12px;
+}
+.cnc-log-table--detail th:last-child,
+.cnc-log-table--detail td:last-child {
+  padding-right: 12px;
+}
+.cnc-log-table.cnc-log-table--detail tbody tr:hover td {
+  background: var(--log-soft);
+}
+.cnc-log-primary {
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.cnc-log-secondary {
+  margin-top: 5px;
+  color: var(--log-muted);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.cnc-log-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+}
+.cnc-log-model {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  letter-spacing: -0.015em;
+}
+.cnc-log-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: -0.03em;
+}
+.cnc-log-result {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cnc-log-table--detail .cnc-log-status {
+  min-width: 30px;
+  padding: 0 5px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 16px;
+}
+.cnc-log-table--detail .cnc-log-status[data-ok="1"] {
+  color: var(--log-green);
+  background: color-mix(in srgb, var(--log-green) 10%, transparent);
+}
+.cnc-log-table--detail .cnc-log-status[data-ok="0"] {
+  color: var(--log-red);
+  background: color-mix(in srgb, var(--log-red) 11%, transparent);
+}
+.cnc-log-hit {
+  width: 66px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cnc-log-hit[data-cache-tone="green"],
+.cnc-log-effort[data-tone="green"] { color: var(--log-green); }
+.cnc-log-hit[data-cache-tone="yellow"],
+.cnc-log-effort[data-tone="yellow"] { color: var(--log-yellow); }
+.cnc-log-hit[data-cache-tone="red"],
+.cnc-log-effort[data-tone="red"] { color: var(--log-red); }
+.cnc-log-effort[data-tone="gray"] { color: var(--log-muted); }
+.cnc-log-hit__value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.cnc-log-hit__track {
+  display: block;
+  height: 3px;
+  border-radius: 3px;
+  background: color-mix(in srgb, currentColor 13%, transparent);
+  overflow: hidden;
+}
+.cnc-log-hit__track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+}
+.cnc-log-separator { color: var(--log-muted); padding: 0 2px; }
+.cnc-log-cache-detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+}
+.cnc-log-cache-detail > span:first-child {
+  font-family: var(--font-main);
+  letter-spacing: 0;
+}
+.cnc-log-cache-read,
+.cnc-log-cache-write { cursor: help; }
+.cnc-log-effort {
+  display: inline-flex;
+  align-items: center;
+  min-height: 21px;
+  padding: 0 7px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 19px;
+}
+.cnc-log-mode {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.cnc-log-mode-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.7;
+}
+.cnc-log-ip {
+  font-size: 11px;
+  line-height: 1.6;
+}
+.cnc-log-key {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.cnc-log-missing { color: var(--log-muted); }
+.cnc-log-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  margin-left: 4px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--font-main);
+  font-size: 8px;
+  line-height: 1;
+  vertical-align: 1px;
+  opacity: 0.65;
+  cursor: help;
+}
+.cnc-log-table-note {
+  padding: 15px 0 0;
+  color: var(--log-muted);
+  font-size: 11px;
+  line-height: 1.8;
+}
+.cnc-log-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 767px) {
+  body[data-console-page="logs"] .cnc-logs-host { padding: 0 16px 24px; }
+  .cnc-log-table.cnc-log-table--detail { min-width: 1132px; }
+  .cnc-log-table-note { max-width: 320px; }
+}

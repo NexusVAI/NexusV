@@ -2318,15 +2318,8 @@
   }
 
   // ── 日志页 ────────────────────────────────────────────────────────────
-  // 筛选维度全部来自 api_my_usage 已下发的列（model / tokens_in / tokens_out /
-  // status_code / created_at），**零后端改动**。
-  //
-  // ⛔ 故意没做的两项，别再当 TODO 捡起来做假数据：
-  //   「按消费排序」—— api_usage 表根本没有金额列，真实扣费在 wallet_ledger，
-  //     而该表只有 admin_list_credit_ledger 能读。同 applySpendPlaceholder 的
-  //     铁律：金额宁可显示 —，不许用 token 数折算冒充。
-  //   「按延迟 / 首字排序」—— 延迟和 TTFT 任何表都没记过，网关也不写。
-  //   要做就得先给 api_usage 加列 + 改网关写入 + 按 模型运维总纲 §6 部署。
+  // 筛选沿用 api_my_usage 的基础字段；金额只读其 charged_micro 实扣值。
+  // 详细表格由 logs-table.js 渲染。尚未下发的遥测显示 —，不推算费用或首字时间。
   var LOG_FILTER_DEFAULTS = {
     range: "all", // all | today | 24h | 7d | 30d | days
     rangeDays: 14,
@@ -2467,6 +2460,15 @@
 
     if (!rows.length) {
       list.innerHTML = '<div class="cnc-keys-empty">' + esc(t("logNoMatch")) + "</div>";
+      return;
+    }
+
+    if (window.CancriLogsTable) {
+      list.innerHTML = window.CancriLogsTable.render(rows.slice(0, LOG_ROW_CAP), { lang: LANG }) +
+        (rows.length > LOG_ROW_CAP
+          ? '<div class="cnc-keys-empty">' +
+            esc(t("resultsOf").replace("{n}", LOG_ROW_CAP).replace("{total}", rows.length)) + "</div>"
+          : "");
       return;
     }
 
