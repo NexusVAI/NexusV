@@ -260,6 +260,7 @@ function lastUserMessageText(messages) {
     "gpt-image-2-all": 0,
     "gpt-image-2": 0,
     "gpt-image-2-5-sunburst": 0,
+    "gpt-image-2.6-web": 0,
     "claude-opus-4-8": 200000,
     "claude-opus-4-8-special": 200000,
     "claude-opus-4-7-special": 200000,
@@ -305,6 +306,8 @@ function lastUserMessageText(messages) {
   const HYPHENATED_DISPLAY_NAME_IDS = new Set([
     "gpt-image-2",
     "gpt-image-2-5-sunburst",
+    // 2026-11-08: GPT-image-2.6（新画图线，取代 2.5）
+    "gpt-image-2.6-web",
     // 2026-09-14: aiping 四模型 —— 连字符是官方型号名的一部分（DeepSeek-OCR-2 等），
     // 不让「连字符→空格」规整吃掉。
     "deepseek-ocr-2",
@@ -13178,6 +13181,7 @@ function lastUserMessageText(messages) {
       imageModel === "gpt-image-2-all" ||
       imageModel === "gpt-image-2" ||
       imageModel === "gpt-image-2-5-sunburst" ||
+      imageModel === "gpt-image-2.6-web" ||
       imageModel === "doubao-seedream-4-5" ||
       imageModel === "z-image-turbo";
     // 图片工作台下线后没有尺寸选择器了，固定 1024x1024
