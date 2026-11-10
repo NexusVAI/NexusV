@@ -9,7 +9,20 @@
     top: 0; width: 100%; z-index: 1000;
     background: var(--nav-bg);
     font-family: var(--font-main);
-    transition: background 0.3s;
+    transition: background 0.3s, transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.35s;
+    will-change: transform;
+}
+
+/* 滚动收起（由 js/navbar-autohide.js 切换） */
+.navbar.navbar--hidden {
+    transform: translateY(-100%);
+    visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .navbar {
+        transition: background 0.3s;
+    }
 }
 
 .navbar-inner {

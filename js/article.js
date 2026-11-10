@@ -1453,6 +1453,29 @@ const articleData = {
             ]
         }
     },
+    cancriAlpha: {
+        overlay: '',
+        layout: 'launch',
+        media: { type: 'image', src: 'Logo/Cancri-a-0.8b.png', alt: 'Cancri α' },
+        zh: {
+            title: '向您介绍Cancri α',
+            date: '2026年11月9日',
+            category: '产品',
+            readTime: '12 分钟阅读',
+            paragraphs: [
+                '今天我们推出Cancri α，一个0.8B模型，它只做一件事：读取对话的第一条消息，并为该对话生成一个标题。在我们的测试中，它是这一任务上最强的小型开源模型，并且在若干基准上已经接近、在部分指标上甚至超过通过API提供的大得多的模型。'
+            ]
+        },
+        en: {
+            title: 'Introducing Cancri α',
+            date: 'November 9, 2026',
+            category: 'Product',
+            readTime: '12 min read',
+            paragraphs: [
+                'Today we are introducing Cancri α, a 0.8B model that does exactly one thing: it reads the first message of a conversation and gives that conversation a title. In our tests it is the strongest small open model at this task, and on several benchmarks it is already close to — and in places ahead of — far larger models served over API.'
+            ]
+        }
+    },
     cancriBot: {
         overlay: '',
         layout: 'launch',
@@ -1500,7 +1523,7 @@ const articleData = {
         }
     },
     cancriCode3: {
-        overlay: 'Cancri Code 3',
+        overlay: '',
         layout: 'launch',
         media: { type: 'image', src: 'Logo/CancriCode3-0.webp', alt: 'Cancri Code 3' },
         zh: {
@@ -3472,12 +3495,12 @@ function initIndexPage() {
     if (!heroCard && !scrollableList && !newsGrid && !featureStrip) return;
 
     function renderIndex(lang) {
-        // Scrollable List (cancriBot first, then cancri25flash, cancriV1)
+        // Scrollable List (cancriBot first, then cancri25flash, cancriCode3)
         // sentienceV52mens 已撤下首页，入口只留在顶栏超级菜单（js/menu.js）。
         if (scrollableList) {
             scrollableList.innerHTML = '';
-            const listIds = ['cancriBot', 'cancri25flash', 'cancriV1'];
-            const linkTargets = ['cancriBot', 'cancri25flash', 'cancriV1'];
+            const listIds = ['cancriBot', 'cancri25flash', 'cancriCode3'];
+            const linkTargets = ['cancriBot', 'cancri25flash', 'cancriCode3'];
             
             listIds.forEach((id, index) => {
                  const item = articleData[id];

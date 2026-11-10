@@ -97,13 +97,13 @@ function bindGlobalToggles() {
 
 async function initPageContent() {
     if (isArticlePage()) {
-        if (!window.initArticlePage) await loadScriptOnce('js/article.js?v=20261013-cancribot');
+        if (!window.initArticlePage) await loadScriptOnce('js/article.js?v=20261109-alpha');
         if (window.initArticlePage) window.initArticlePage();
         return;
     }
 
     if (isIndexPage()) {
-        if (!window.initIndexPage) await loadScriptOnce('js/article.js?v=20261013-cancribot');
+        if (!window.initIndexPage) await loadScriptOnce('js/article.js?v=20261109-alpha');
         if (window.initIndexPage) window.initIndexPage();
     }
 }

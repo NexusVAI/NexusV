@@ -10,10 +10,10 @@ const translations = {
         'nav.community': '加入交流群 <span class="arrow-icon">↗</span>',
         'search.placeholder': '关于 NexusV',
         'hero.overlay': 'Cancri Code 3',
-        'hero.title': 'Cancri Code 3：见识一下你的软件工程师',
+        'hero.title': '向您介绍Cancri α',
         'hero.author': 'Cancri Code 团队',
         'hero.category': '产品',
-        'hero.time': '18 分钟阅读',
+        'hero.time': '12 分钟阅读',
 
         // AI Hero
         'ai.hero.title': '有什么可以帮你的？',
@@ -249,10 +249,10 @@ const translations = {
         'nav.community': 'Join Community <span class="arrow-icon">↗</span>',
         'search.placeholder': 'About NexusV',
         'hero.overlay': 'Cancri Code 3',
-        'hero.title': 'Cancri Code 3: Meet Your Software Engineer',
+        'hero.title': 'Introducing Cancri α',
         'hero.author': 'Cancri Code Team',
         'hero.category': 'Product',
-        'hero.time': '18 min read',
+        'hero.time': '12 min read',
 
         // AI Hero
         'ai.hero.title': 'How can I help?',
