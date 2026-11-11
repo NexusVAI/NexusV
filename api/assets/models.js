@@ -29,7 +29,7 @@
     "claude-opus-4-6-thinking",
     "claude-opus-5",
     "claude-opus-5-5-kiro",
-    "claude-fable-5-1",
+    "claude-fable-5-2",
     "deepseek-v4-pro",
   ];
   // Members that get their own flagship card instead of folding onto the group's card.

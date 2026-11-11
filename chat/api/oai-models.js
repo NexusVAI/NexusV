@@ -64,9 +64,8 @@
     // 2026-10-08: 按运营方要求，Kiro 分组在旗舰区单独成卡（见 FEATURED_STANDALONE）。
     "claude-opus-5-5-kiro",
     // 2026-10-02: Claude Sonnet 5.5 上架（prorisehub，¥1 / ¥5）；2026-10-23 改挂 codexsss，移到本名单首部。
-    // 2026-09-02: Claude Fable 5.1 上架，钉进旗舰区。它**不分组**（group_id 为空），
-    // 所以这里钉的就是它自己的卡 id，不会被折叠到 claude-fable-5 那张卡上。
-    "claude-fable-5-1",
+    // 2026-11-10: Claude Fable 5.2 上架，作为旗舰卡展示。
+    "claude-fable-5-2",
     "deepseek-v4-pro",
     // 2026-09-02: gemini-3.7-flash 换成 gemini-3.8-flash-high（prorisehub 新线，
     // 上游实测 1.98s vs 3.7 的 6.2s）。3.7 只是撤出旗舰区，**没有下架**，
