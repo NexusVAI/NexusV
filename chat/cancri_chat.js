@@ -3021,7 +3021,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 	var UI_PREFS_STORAGE_KEY = "cancri_ui_prefs";
 	var SESSION_NAV_STORAGE_KEY = "cancri_session_nav_v1";
 	var MODEL_TELEMETRY_STORAGE_KEY = "cancri_model_telemetry";
-	var MODEL_TELEMETRY_CACHE_VERSION = 7;
+	var MODEL_TELEMETRY_CACHE_VERSION = 8;
 	var rateLimitInfo = {
 		userLimit: null,
 		userRemaining: null,
@@ -3687,16 +3687,9 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		});
 	}
 	function applyBackendModelBlock(payload, modelId = currentModel) {
-		if (!payload || ![
-			"model_temporarily_unavailable",
-			"model_unavailable",
-			"model_temporary_failure",
-			"model_quota_exceeded",
-			"model_free_hour_limit"
-		].includes(payload.code)) return false;
+		if (!payload || payload.code !== "model_free_hour_limit") return false;
 		const retryAfter = Number(payload.retryAfter || payload.retry_after_seconds);
-		const isTransient = payload.code === "model_temporary_failure";
-		setModelQuotaLock(modelId, Date.now() + (Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1e3 : isTransient ? 60 * 1e3 : MODEL_LOCK_DURATION_MS), payload.code === "model_quota_exceeded" ? "provider_quota" : payload.code === "model_free_hour_limit" ? "quota" : "unavailable");
+		setModelQuotaLock(modelId, Date.now() + (Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1e3 : MODEL_LOCK_DURATION_MS), "quota");
 		updateModelDropdownIndicators();
 		persistModelTelemetryCache();
 		return true;
@@ -3783,7 +3776,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		const isProviderQuotaError = PROVIDER_QUOTA_ERROR_CODES.has(backendCode);
 		const isUserQuotaError = USER_QUOTA_ERROR_CODES.has(backendCode);
 		const hasTopupBalance = quotaState.topupBalance !== null && quotaState.topupBalance > 0;
-		const shouldApplyQuotaLock = responseStatus === 429 && (!backendCode || isProviderQuotaError || isUserQuotaError);
+		const shouldApplyQuotaLock = responseStatus === 429 && (isUserQuotaError || backendCode === "model_free_hour_limit");
 		const userLimit = parseHeaderInteger(headers.get("x-cancri-user-limit") || headers.get("X-Cancri-User-Limit"));
 		const userRemaining = parseHeaderInteger(headers.get("x-cancri-user-remaining") || headers.get("X-Cancri-User-Remaining"));
 		const modelLimit = parseHeaderInteger(headers.get("x-cancri-model-limit") || headers.get("X-Cancri-Model-Limit"));
@@ -6805,6 +6798,8 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 	}
 	var currentChatId = null;
 	var chatHistoryList = [];
+	var chatHistoryListVersion = null;
+	var chatHistoryListVersionEpoch = -1;
 	var chatRowVersions = /* @__PURE__ */ new Map();
 	var chatRowRedirects = /* @__PURE__ */ new Map();
 	var chatRowWriteChains = /* @__PURE__ */ new Map();
@@ -6854,11 +6849,13 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		};
 		const next = [summary, ...readCachedChatHistoryList().filter((item) => item?.id !== summary.id)];
 		chatHistoryList = next;
+		chatHistoryListVersion = null;
 		writeCachedChatHistoryList(next);
 	}
 	function removeCachedChatSummary(chatId) {
 		const next = readCachedChatHistoryList().filter((item) => item?.id !== chatId);
 		chatHistoryList = next;
+		chatHistoryListVersion = null;
 		writeCachedChatHistoryList(next);
 	}
 	function getChatHistoryBucket(chat) {
@@ -8031,10 +8028,15 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 	async function loadChatHistoryList({ quiet = false } = {}) {
 		const epoch = authSessionEpoch;
 		try {
+			const knownVersion = chatHistoryListVersionEpoch === epoch && chatHistoryList.length ? chatHistoryListVersion : null;
 			const response = await proxyFetch(EDGE_FUNCTION_URL, {
 				method: "POST",
 				headers: await proxyHeaders(),
-				body: JSON.stringify({
+				body: JSON.stringify(knownVersion ? {
+					endpoint: "chat_history",
+					action: "list",
+					list_version: knownVersion
+				} : {
 					endpoint: "chat_history",
 					action: "list"
 				})
@@ -8043,9 +8045,12 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 				const msg = await readProxyFailureMessage(response);
 				throw new Error(msg || "加载聊天记录列表失败");
 			}
-			const { data } = await response.json();
+			const payload = await response.json();
 			if (epoch !== authSessionEpoch) return [];
-			chatHistoryList = data || [];
+			if (payload?.unchanged === true && knownVersion && payload.list_version === knownVersion) return chatHistoryList;
+			chatHistoryList = payload?.data || [];
+			chatHistoryListVersion = typeof payload?.list_version === "string" ? payload.list_version : null;
+			chatHistoryListVersionEpoch = epoch;
 			writeCachedChatHistoryList(chatHistoryList);
 			return chatHistoryList;
 		} catch (error) {
