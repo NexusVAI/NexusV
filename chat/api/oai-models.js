@@ -117,6 +117,9 @@
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
+    // 2026-11-13: devingw 免费 promo 线（自建 devin-gateway → Windsurf Cascade），钉免费区首位。
+    "swe-2",
+    "swe-2-flash",
     // 2026-09-28: api.gemai.cc [free] 池三条免费线曾钉在免费区首位；2026-10-01 按运营方
     // 指令全部下架（deepseek-v4-pro-0813-free / qwen-3.8-max / glm-5.3-fp8-free），
     // DB enabled=false + proxy 墓碑，条目删除。⛔ 免费线也别放进 FEATURED_ORDER。

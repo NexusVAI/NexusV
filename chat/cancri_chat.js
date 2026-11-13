@@ -913,6 +913,28 @@
 			"tools": true,
 			"costTier": "normal",
 			"lineLabel": "prorisehub"
+		},
+		{
+			"id": "swe-2",
+			"name": "SWE-2",
+			"brand": "Devin",
+			"kind": "chat",
+			"vision": true,
+			"thinking": true,
+			"tools": false,
+			"costTier": "free",
+			"lineLabel": "devingw"
+		},
+		{
+			"id": "swe-2-flash",
+			"name": "SWE-2 Flash",
+			"brand": "Devin",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": false,
+			"costTier": "free",
+			"lineLabel": "devingw"
 		}
 	];
 	//#endregion
@@ -4922,7 +4944,8 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		"Baichuan": "./baichuan-color.svg",
 		"Tencent": "./yuanbao-color.svg",
 		"小米 MiMo": "./xiaomimimo-color.svg",
-		"Nex": "./NEX_logo.svg"
+		"Nex": "./NEX_logo.svg",
+		"Devin": "./devin-color.svg"
 	};
 	var MODEL_ICON_OVERRIDE = {
 		"doubao-seedance-2-0-260128": "./jimeng-color.svg",
@@ -4930,7 +4953,9 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		"kat-coder-pro-v2": "./kwaikat.svg",
 		"cancriv1-0.1b": "../Logo/Cancri1.jpg",
 		"nex-n2-pro-welfare": "./NEX_logo.svg",
-		"hunyuan-mt-7b": "./yuanbao-color.svg"
+		"hunyuan-mt-7b": "./yuanbao-color.svg",
+		"swe-2": "./devin-color.svg",
+		"swe-2-flash": "./devin-color.svg"
 	};
 	var THEME_ADAPTIVE_ICON_BRANDS = new Set([
 		"OpenAI",

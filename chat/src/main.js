@@ -584,7 +584,8 @@ function lastUserMessageText(messages) {
   const UI_PREFS_STORAGE_KEY = "cancri_ui_prefs";
   const SESSION_NAV_STORAGE_KEY = "cancri_session_nav_v1";
   const MODEL_TELEMETRY_STORAGE_KEY = "cancri_model_telemetry";
-  const MODEL_TELEMETRY_CACHE_VERSION = 7;
+  // 2026-11-12 7→8：作废浏览器里已存的「上游故障锁」（最长 1 小时），部署后立即解锁。
+  const MODEL_TELEMETRY_CACHE_VERSION = 8;
   
   // 共享额度信息
   let rateLimitInfo = {
@@ -1517,43 +1518,19 @@ function lastUserMessageText(messages) {
   }
   
   function applyBackendModelBlock(payload, modelId = currentModel) {
-    if (
-      !payload ||
-      ![
-        "model_temporarily_unavailable",
-        "model_unavailable",
-        "model_temporary_failure",
-        "model_quota_exceeded",
-        "model_free_hour_limit",
-      ].includes(payload.code)
-    )
-      return false;
+    // 2026-11-12 按运营方要求：上游故障（model_unavailable / model_temporary_failure /
+    // model_quota_exceeded / 已删除的 proxy 熔断 model_temporarily_unavailable）
+    // 不再在浏览器里锁模型。旧逻辑上游 429 / 401 一次就本地锁 1 小时、刷新都解不开，
+    // 而上游往往几秒就恢复。是否可用一律以服务端本次响应为准，
+    // 只保留真实额度规则 model_free_hour_limit 的锁。
+    if (!payload || payload.code !== "model_free_hour_limit") return false;
     const retryAfter = Number(payload.retryAfter || payload.retry_after_seconds);
-    // 2026-05-18 修复：`model_temporary_failure` 是 modelscope-proxy
-    // `classifyByStatus` 对 5xx / 408 / 504 / 网络超时这类**瞬时**故障的默认归
-    // 类（单条上游 503 就触发）。之前不论 code 一律 fallback 到 1 小时锁，
-    // 导致 freeapi.dgbmc.top 之类的中转商打个嗝（例如 claude-opus-4-6 在
-    // 09:58 UTC 收到一次 503）就把模型锁 1h、用户必须等到下小时才能再用，
-    // 明显错配——上游通常几十秒内自愈。这里给瞬时码一个短窗口（默认 60s，
-    // 上游可通过 retry_after_seconds 覆盖）防快速点击重发；其它 code
-    // （401/403 → key 死、429 → 配额满、free_hour_limit → 风控）保持原 1h
-    // 锁，避免反复打已坏的上游。
-    const isTransient = payload.code === "model_temporary_failure";
-    const transientFallbackMs = 60 * 1000;
     const until =
       Date.now() +
       (Number.isFinite(retryAfter) && retryAfter > 0
         ? retryAfter * 1000
-        : isTransient
-          ? transientFallbackMs
-          : MODEL_LOCK_DURATION_MS);
-    const reason =
-      payload.code === "model_quota_exceeded"
-        ? "provider_quota"
-        : payload.code === "model_free_hour_limit"
-          ? "quota"
-        : "unavailable";
-    setModelQuotaLock(modelId, until, reason);
+        : MODEL_LOCK_DURATION_MS);
+    setModelQuotaLock(modelId, until, "quota");
     updateModelDropdownIndicators();
     persistModelTelemetryCache();
     return true;
@@ -1697,9 +1674,11 @@ function lastUserMessageText(messages) {
     const isProviderQuotaError = PROVIDER_QUOTA_ERROR_CODES.has(backendCode);
     const isUserQuotaError = USER_QUOTA_ERROR_CODES.has(backendCode);
     const hasTopupBalance = quotaState.topupBalance !== null && quotaState.topupBalance > 0;
+    // 2026-11-12：上游线路 429（model_quota_exceeded）和不带 code 的 429 不再锁模型 ——
+    // 那是线路一时繁忙，不是用户额度。真实额度耗尽另有 remaining<=0 响应头分支兜着。
     const shouldApplyQuotaLock =
       responseStatus === 429 &&
-      (!backendCode || isProviderQuotaError || isUserQuotaError);
+      (isUserQuotaError || backendCode === "model_free_hour_limit");
   
     const userLimit = parseHeaderInteger(
       headers.get("x-cancri-user-limit") || headers.get("X-Cancri-User-Limit"),
@@ -3612,6 +3591,7 @@ function lastUserMessageText(messages) {
     "Tencent": "./yuanbao-color.svg",
     "小米 MiMo": "./xiaomimimo-color.svg",
     "Nex": "./NEX_logo.svg",
+    "Devin": "./devin-color.svg",
   };
   
   // 2026-05-17 加入：per-model id 覆盖表。优先级高于 BRAND_ICON_MAP。
@@ -3626,6 +3606,9 @@ function lastUserMessageText(messages) {
     "cancriv1-0.1b": "../Logo/Cancri1.jpg",
     "nex-n2-pro-welfare": "./NEX_logo.svg",
     "hunyuan-mt-7b": "./yuanbao-color.svg",
+    // 2026-11-13: devingw 免费 promo 线 → Devin 图标（防品牌字段漂移回落到 OpenAI 默认）。
+    "swe-2": "./devin-color.svg",
+    "swe-2-flash": "./devin-color.svg",
   };
 
   const THEME_ADAPTIVE_ICON_BRANDS = new Set(["OpenAI", "Clawto", "Cancri"]);
@@ -6259,6 +6242,9 @@ function lastUserMessageText(messages) {
   // 聊天记录管理
   let currentChatId = null;
   let chatHistoryList = [];
+  // 条件轮询版本号，用法见 loadChatHistoryList。
+  let chatHistoryListVersion = null;
+  let chatHistoryListVersionEpoch = -1;
 
   // ── chat_history 行版本 / 冲突分叉 / 写串行化 ─────────────────────
   // chatRowVersions: 每行最后一次被本端确认过的 updated_at（毫秒 ISO）。
@@ -6338,6 +6324,7 @@ function lastUserMessageText(messages) {
       ...readCachedChatHistoryList().filter((item) => item?.id !== summary.id),
     ];
     chatHistoryList = next;
+    chatHistoryListVersion = null;
     writeCachedChatHistoryList(next);
   }
   
@@ -6346,6 +6333,7 @@ function lastUserMessageText(messages) {
       (item) => item?.id !== chatId,
     );
     chatHistoryList = next;
+    chatHistoryListVersion = null;
     writeCachedChatHistoryList(next);
   }
   
@@ -7897,13 +7885,24 @@ function lastUserMessageText(messages) {
     );
   }
 
+  // 2026-11-12：条件轮询（网关 list_version）。只在同一次登录（authSessionEpoch）内复用，
+  // 且本地一旦乐观改过列表（upsert / removeCachedChatSummary）就作废 —— 否则服务端没写成时
+  // 「未变」会把本地的乐观状态一直留着，而改动前下一次轮询就会把它纠正。
+  // 定义在 chatHistoryList 旁边。
+
   async function loadChatHistoryList({ quiet = false } = {}) {
     const epoch = authSessionEpoch;
     try {
+      const knownVersion =
+        chatHistoryListVersionEpoch === epoch && chatHistoryList.length ? chatHistoryListVersion : null;
       const response = await proxyFetch(EDGE_FUNCTION_URL, {
         method: "POST",
         headers: await proxyHeaders(),
-        body: JSON.stringify({ endpoint: "chat_history", action: "list" }),
+        body: JSON.stringify(
+          knownVersion
+            ? { endpoint: "chat_history", action: "list", list_version: knownVersion }
+            : { endpoint: "chat_history", action: "list" },
+        ),
       });
 
       if (!response.ok) {
@@ -7911,9 +7910,14 @@ function lastUserMessageText(messages) {
         throw new Error(msg || "加载聊天记录列表失败");
       }
   
-      const { data } = await response.json();
+      const payload = await response.json();
       if (epoch !== authSessionEpoch) return [];
-      chatHistoryList = data || [];
+      if (payload?.unchanged === true && knownVersion && payload.list_version === knownVersion) {
+        return chatHistoryList;
+      }
+      chatHistoryList = payload?.data || [];
+      chatHistoryListVersion = typeof payload?.list_version === "string" ? payload.list_version : null;
+      chatHistoryListVersionEpoch = epoch;
       writeCachedChatHistoryList(chatHistoryList);
       return chatHistoryList;
     } catch (error) {

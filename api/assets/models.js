@@ -54,6 +54,9 @@
   // Free section: these first, then every other free-tier line in catalog order. Never folded,
   // otherwise a free line would turn into its paid group card.
   var FREE_ORDER = [
+    // 2026-11-13: devingw 免费 promo 线（Devin 网关 → Windsurf Cascade）。
+    "swe-2",
+    "swe-2-flash",
     "kimi-k3-fp8-block-free",
     "claude-sonnet-5-free",
     "glm-5.3-flash-free",
@@ -93,6 +96,7 @@
     Clawto: "/chat/openai.svg", Microsoft: "/chat/microsoft-color.svg", IBM: "/chat/ibm.svg",
     Cohere: "/chat/cohere-color.svg", Baichuan: "/chat/baichuan-color.svg", Tencent: "/chat/yuanbao-color.svg",
     "小米 MiMo": "/chat/xiaomimimo-color.svg", Nex: "/chat/NEX_logo.svg", Cancri: "/Logo/Cancri1.jpg",
+    Devin: "/chat/devin-color.svg",
   };
   // Black single-colour files that flip in dark mode (chat/cancri_logo_theme.js MONO_ICON_FILES).
   var MONO_ICON = { "openai.svg": 1, "kwaikat.svg": 1, "cursor.svg": 1, "ibm.svg": 1, "grok.svg": 1, "xiaomimimo-color.svg": 1, "moonshot.svg": 1 };
