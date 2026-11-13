@@ -935,6 +935,28 @@
 			"tools": false,
 			"costTier": "free",
 			"lineLabel": "devingw"
+		},
+		{
+			"id": "gpt-6-astra-bps",
+			"name": "GPT-6 Astra BPS",
+			"brand": "OpenAI",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": false,
+			"costTier": "normal",
+			"lineLabel": "codexbps"
+		},
+		{
+			"id": "gpt-6.1-sol-bps",
+			"name": "GPT-6.1 Sol BPS",
+			"brand": "OpenAI",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": false,
+			"costTier": "normal",
+			"lineLabel": "codexbps"
 		}
 	];
 	//#endregion
