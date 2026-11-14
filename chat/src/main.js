@@ -3301,6 +3301,17 @@ function lastUserMessageText(messages) {
     // 公开 catalog，老用户存的选择平移到新线，避免掉回默认免费模型）。
     "gpt-6-astra-bps": "gpt-6-astra-codex",
     "gpt-6.1-sol-bps": "gpt-6.1-sol-codex",
+    // 2026-11-14: prorisehub / prorisehub-us 全线下架，老用户存的选择落到默认。
+    "gpt-6-astra": DEFAULT_MODEL_ID,
+    "gpt-6.1-terra": DEFAULT_MODEL_ID,
+    "grok-4.7": DEFAULT_MODEL_ID,
+    "gemini-3.8-flash-high": DEFAULT_MODEL_ID,
+    "gemini-3-flash-preview": DEFAULT_MODEL_ID,
+    "gpt-image-2": DEFAULT_MODEL_ID,
+    "claude-opus-4-6": DEFAULT_MODEL_ID,
+    "glm-5.2-ide": DEFAULT_MODEL_ID,
+    "gpt-6-astra-pro": DEFAULT_MODEL_ID,
+    "minimax-m3-ide": DEFAULT_MODEL_ID,
     // 2026-05-13 审查：catalog/registry 已用 grok-4.20-0309 取代 grok-4.3
   };
   // 模型排序优先级（数值越小越靠前）。所有 ID 必须存在于 MODEL_CATALOG，否则
