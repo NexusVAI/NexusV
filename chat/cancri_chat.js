@@ -1986,11 +1986,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		"claude-opus-4-6-thinking",
 		"deepseek-v4-flash"
 	];
-	var MODEL_MENU_CURRENT_IDS = [
-		"gpt-6-sol",
-		"gpt-6-sol-plus",
-		"gpt-6-sol-xhigh"
-	];
+	var MODEL_MENU_CURRENT_IDS = ["gpt-6-sol", "gpt-6-sol-plus"];
 	var MODEL_MENU_OLDER_IDS = [];
 	var LINE_QUALIFIER_WORDS = new Set([
 		"thinking",

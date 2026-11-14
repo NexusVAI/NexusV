@@ -70,13 +70,12 @@ describe("classifyModelMenuLayers", () => {
       { id: "gpt-6.1-sol", displayName: "GPT-6.1 Sol" },
       { id: "gpt-6-sol", displayName: "GPT-6 Sol" },
       { id: "gpt-6-sol-plus", displayName: "GPT-6 Sol Plus" },
-      { id: "gpt-6-sol-xhigh", displayName: "GPT-6 Sol XHigh" },
       { id: "gpt-5.6-sol", displayName: "GPT-5.6 Sol" },
       { id: "pro-gpt-5.6-sol", displayName: "GPT-5.6 Sol Pro" },
     ];
     const r = classifyModelMenuLayers(models, ["gpt-6.1-sol"]);
     expect(ids(r.recommended)).toEqual(["gpt-6.1-sol"]);
-    expect(ids(r.other)).toEqual(["gpt-6-sol", "gpt-6-sol-plus", "gpt-6-sol-xhigh"]);
+    expect(ids(r.other)).toEqual(["gpt-6-sol", "gpt-6-sol-plus"]);
     expect(ids(r.older)).toEqual(["gpt-5.6-sol", "pro-gpt-5.6-sol"]);
   });
 

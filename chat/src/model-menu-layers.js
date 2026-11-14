@@ -25,10 +25,10 @@ export const MODEL_MENU_RECOMMENDED_IDS = [
 
 // 人工钉死「不算过时」：自动规则判错时在这里加（填 catalog id）。
 export const MODEL_MENU_CURRENT_IDS = [
-  // GPT 6 Sol 一家（标准 / Plus / XHigh）与 6.1 Sol 并行在售，见 模型运维总纲 §3.10 / §3.12。
+  // GPT 6 Sol 一家（标准 / Plus）与 6.1 Sol 并行在售，见 模型运维总纲 §3.10 / §3.12。
+  // 2026-11-14: gpt-6-sol-xhigh 随 XHigh 普惠分组整体下架，移出本钉死表。
   "gpt-6-sol",
   "gpt-6-sol-plus",
-  "gpt-6-sol-xhigh",
 ];
 
 // 人工钉死「较早」：自动规则看不出来、但运营上已是上一代的模型。
