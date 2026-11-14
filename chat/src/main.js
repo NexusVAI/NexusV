@@ -3297,6 +3297,10 @@ function lastUserMessageText(messages) {
     "mimo-v2-pro": DEFAULT_MODEL_ID,
     // 2026-06-02: gpt-4 下线。
     "gpt-4": DEFAULT_MODEL_ID,
+    // 2026-11-14: codexbps「测试号池」两线 canonical -bps → -codex（老 id 已不在
+    // 公开 catalog，老用户存的选择平移到新线，避免掉回默认免费模型）。
+    "gpt-6-astra-bps": "gpt-6-astra-codex",
+    "gpt-6.1-sol-bps": "gpt-6.1-sol-codex",
     // 2026-05-13 审查：catalog/registry 已用 grok-4.20-0309 取代 grok-4.3
   };
   // 模型排序优先级（数值越小越靠前）。所有 ID 必须存在于 MODEL_CATALOG，否则

@@ -95,8 +95,9 @@ export const MODEL_CATALOG_FALLBACK = [
   {"id":"claude-sonnet-5-5","name":"Claude Sonnet 5.5","brand":"Anthropic","kind":"chat","vision":true,"thinking":false,"tools":true,"costTier":"normal","lineLabel":"prorisehub"},
   {"id":"swe-2","name":"SWE-2","brand":"Devin","kind":"chat","vision":true,"thinking":true,"tools":false,"costTier":"free","lineLabel":"devingw"},
   {"id":"swe-2-flash","name":"SWE-2 Flash","brand":"Devin","kind":"chat","vision":false,"thinking":true,"tools":false,"costTier":"free","lineLabel":"devingw"},
-  // 2026-11-13: codexbps「测试号池」BPS/Excel 付费线（bps-local @ VPS）。API-only（ide=false），
-  // BPS 不接客户端 tools ⇒ tools:false；effort 封顶 high；multimodal 未实测不声明。
-  {"id":"gpt-6-astra-bps","name":"GPT-6 Astra BPS","brand":"OpenAI","kind":"chat","vision":false,"thinking":true,"tools":false,"costTier":"normal","lineLabel":"codexbps"},
-  {"id":"gpt-6.1-sol-bps","name":"GPT-6.1 Sol BPS","brand":"OpenAI","kind":"chat","vision":false,"thinking":true,"tools":false,"costTier":"normal","lineLabel":"codexbps"}
+  // 2026-11-13: codexbps「测试号池」BPS/Excel 付费线（bps-local @ VPS）。
+  // 2026-11-14: canonical -bps → -codex（老 -bps id 退役别名保活，兜底目录只收在售行）。
+  // BPS 不接客户端 tools ⇒ tools:false；multimodal 未实测不声明。
+  {"id":"gpt-6-astra-codex","name":"GPT-6 Astra Codex","brand":"OpenAI","kind":"chat","vision":false,"thinking":true,"tools":false,"costTier":"normal","lineLabel":"codexbps"},
+  {"id":"gpt-6.1-sol-codex","name":"GPT-6.1 Sol Codex","brand":"OpenAI","kind":"chat","vision":false,"thinking":true,"tools":false,"costTier":"normal","lineLabel":"codexbps"}
 ];

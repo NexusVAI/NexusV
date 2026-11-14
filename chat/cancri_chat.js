@@ -937,8 +937,8 @@
 			"lineLabel": "devingw"
 		},
 		{
-			"id": "gpt-6-astra-bps",
-			"name": "GPT-6 Astra BPS",
+			"id": "gpt-6-astra-codex",
+			"name": "GPT-6 Astra Codex",
 			"brand": "OpenAI",
 			"kind": "chat",
 			"vision": false,
@@ -948,8 +948,8 @@
 			"lineLabel": "codexbps"
 		},
 		{
-			"id": "gpt-6.1-sol-bps",
-			"name": "GPT-6.1 Sol BPS",
+			"id": "gpt-6.1-sol-codex",
+			"name": "GPT-6.1 Sol Codex",
 			"brand": "OpenAI",
 			"kind": "chat",
 			"vision": false,
@@ -4760,7 +4760,9 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		"mimo-v2.5-pro": DEFAULT_MODEL_ID,
 		"mimo-v2.5": DEFAULT_MODEL_ID,
 		"mimo-v2-pro": DEFAULT_MODEL_ID,
-		"gpt-4": DEFAULT_MODEL_ID
+		"gpt-4": DEFAULT_MODEL_ID,
+		"gpt-6-astra-bps": "gpt-6-astra-codex",
+		"gpt-6.1-sol-bps": "gpt-6.1-sol-codex"
 	};
 	new Map([
 		"claude-opus-4-8",
