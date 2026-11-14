@@ -22,7 +22,9 @@
     "kimi-k3.1-pro",
     "gemini-4-argon",
     "gpt-6.1-sol",
-    "gpt-6-astra",
+    // 2026-11-14: Astra 组标准/Pro 分组两条 prorisehub 线下架，组卡代表变为
+    // pro5x（组内幸存最低 rank）。钉代表 id，卡名仍是「GPT-6 Astra」。
+    "gpt-6-astra-pro5x",
     "gpt-6-sol",
     "glm-5.3",
     "deepseek-v4.1-flash",

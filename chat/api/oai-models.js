@@ -51,7 +51,9 @@
     // 2026-09-05: GPT-6 Astra 上架，钉到旗舰区首位。普通分组与 Pro 分组同 group_id
     // （DB model_catalog.group_id='gpt-6-astra'）折叠成一张卡，代表是 gpt-6-astra，
     // 所以这里只钉代表 id —— 再钉 Pro 那条会被 seenTop 去重，属多余。
-    "gpt-6-astra",
+    // 2026-11-14: 标准(-astra)/Pro 分组(-pro) 两条 prorisehub 线下架，组内幸存
+    // 最低 rank 的 pro5x 成为折叠卡代表，钉新代表 id，卡名仍是「GPT-6 Astra」。
+    "gpt-6-astra-pro5x",
     "gpt-6-sol",
     // 2026-09-28: 移除 MiMo V2.6 Pro / glm-5.3 —— 两条随 api.tokenrouter.com 上游整体退役。
     // ⛔ 别把免费线钉进本名单（会从免费区「掉」到旗舰区）。
