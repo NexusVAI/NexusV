@@ -22,17 +22,22 @@
     "kimi-k3.1-pro",
     "gemini-4-argon",
     "gpt-6.1-sol",
+    "gpt-6.2-astra",
+    "gpt-6.2-sol",
     // 2026-11-14: Astra 组标准/Pro 分组两条 prorisehub 线下架，组卡代表变为
     // pro5x（组内幸存最低 rank）。钉代表 id，卡名仍是「GPT-6 Astra」。
     "gpt-6-astra-pro5x",
-    "gpt-6-sol",
     "glm-5.3",
     "deepseek-v4.1-flash",
-    "claude-opus-4-6-thinking",
     "claude-opus-5",
     "claude-opus-5-5-kiro",
     "claude-fable-5-2",
     "deepseek-v4-pro",
+    "glm-5.3-flash",
+    "glm-5.3-flashx",
+    "mimo-v2.6-pro",
+    "qwen3.8-max-0902",
+    "minimax-m3.1-flash",
   ];
   // Members that get their own flagship card instead of folding onto the group's card.
   var FEATURED_STANDALONE = { "claude-opus-5-5-kiro": true };

@@ -8,7 +8,7 @@
   var root = document.querySelector('[data-models-page="catalog"]');
   if (!M || !root) return;
 
-  var FLAGSHIP_LIMIT = 12;
+  var FLAGSHIP_LIMIT = 24;
   var esc = M.esc;
   var ROW = "flex min-h-12 items-start justify-between gap-x-4 gap-y-2 py-3 text-sm text-emphasis";
   var MORE_ROW = "flex min-h-12 flex-wrap items-start justify-between gap-x-4 gap-y-2 py-3 text-sm text-emphasis";
