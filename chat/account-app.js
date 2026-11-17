@@ -128,7 +128,7 @@ function bindNav() {
 async function loadAccount() {
     const session = await getSession();
     if (!session || !session.user) {
-        location.href = "./index.html";
+        location.href = "./index.html?next=" + encodeURIComponent(location.pathname + location.search + location.hash);
         return;
     }
     const user = session.user;

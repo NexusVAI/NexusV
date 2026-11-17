@@ -3264,7 +3264,7 @@
           (document.body && document.body.getAttribute("data-login-url")) ||
           "/chat/";
         if (window.PlatformAuth) PlatformAuth.redirectToLogin();
-        else window.location.replace(login);
+        else window.location.replace(login + "?next=" + encodeURIComponent(location.pathname + location.search + location.hash));
         return;
       }
       revealL10n();

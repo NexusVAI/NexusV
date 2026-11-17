@@ -33,6 +33,34 @@
 		return "";
 	}
 	//#endregion
+	//#region src/utils/login-return.js
+	var LOGIN_RETURN_PARAM = "next";
+	function normalizePath(pathname) {
+		return pathname.replace(/\/index(\.html)?$/i, "/").replace(/\.html$/i, "");
+	}
+	/** 返回可跳转的 path+search+hash；不可用（空、跨域、就是当前页）返回 null。 */
+	function resolveLoginReturnTarget(raw, currentHref) {
+		if (typeof raw !== "string" || !raw) return null;
+		if (raw[0] !== "/" || raw[1] === "/" || raw[1] === "\\") return null;
+		let current;
+		let target;
+		try {
+			current = new URL(currentHref);
+			target = new URL(raw, current.origin);
+		} catch {
+			return null;
+		}
+		if (target.origin !== current.origin) return null;
+		if (normalizePath(target.pathname) === normalizePath(current.pathname) && !target.search && !target.hash) return null;
+		return target.pathname + target.search + target.hash;
+	}
+	/** 去掉地址栏里的 next 参数后的地址（path+search+hash）。 */
+	function stripLoginReturnParam(currentHref) {
+		const url = new URL(currentHref);
+		url.searchParams.delete(LOGIN_RETURN_PARAM);
+		return url.pathname + url.search + url.hash;
+	}
+	//#endregion
 	//#region src/utils/image.js
 	function openAiB64JsonToDataUrl(b64Json) {
 		const b64 = String(b64Json || "").trim();
@@ -6506,6 +6534,37 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		if (overlay) overlay.scrollTop = 0;
 		initSessionNavRestore();
 	}
+	var LOGIN_RETURN_GUARD_KEY = "cancri_login_return_guard";
+	var loginReturnHandled = false;
+	function followLoginReturn() {
+		if (loginReturnHandled) return false;
+		let raw = null;
+		try {
+			raw = new URLSearchParams(window.location.search).get(LOGIN_RETURN_PARAM);
+		} catch (_e) {
+			return false;
+		}
+		if (raw === null) return false;
+		loginReturnHandled = true;
+		const target = resolveLoginReturnTarget(raw, window.location.href);
+		let looped = false;
+		if (target) try {
+			const prev = JSON.parse(sessionStorage.getItem(LOGIN_RETURN_GUARD_KEY) || "null");
+			looped = Boolean(prev && prev.target === target && Date.now() - prev.at < 15e3);
+			sessionStorage.setItem(LOGIN_RETURN_GUARD_KEY, JSON.stringify({
+				target,
+				at: Date.now()
+			}));
+		} catch (_e) {}
+		if (target && !looped) {
+			window.location.replace(target);
+			return true;
+		}
+		try {
+			window.history.replaceState(window.history.state, "", stripLoginReturnParam(window.location.href));
+		} catch (_e) {}
+		return false;
+	}
 	function updateAccountInfo(user) {
 		if (!user) return;
 		const userId = String(user.id || "");
@@ -6681,6 +6740,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 					if (recovered?.user) data = { session: recovered };
 				}
 				if (data?.session?.user) {
+					if (followLoginReturn()) return;
 					updateAccountInfo(data.session.user);
 					hideAuthOverlay();
 					authSessionPromise = Promise.resolve(data.session);
@@ -6720,6 +6780,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 					} catch (_e) {}
 				},
 				onSession: (session) => {
+					if (followLoginReturn()) return;
 					authSessionPromise = Promise.resolve(session);
 					updateAccountInfo(session.user);
 					hideAuthOverlay();
@@ -6741,6 +6802,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		syncAuthLoginExperience();
 		getSupabaseClient().auth.onAuthStateChange((event, session) => {
 			if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
+				if (event === "SIGNED_IN" && followLoginReturn()) return;
 				authSessionPromise = Promise.resolve(session);
 				updateAccountInfo(session.user);
 				hideAuthOverlay();

@@ -27,9 +27,21 @@
     return new URL("index.html", location.href).href;
   }
 
+  // 登录页（聊天页）登录成功后按 ?next= 回到这里，而不是停在聊天页。
+  function withReturnTo(loginUrl) {
+    try {
+      var u = new URL(loginUrl, location.href);
+      if (u.origin !== location.origin) return loginUrl;
+      u.searchParams.set("next", location.pathname + location.search + location.hash);
+      return u.href;
+    } catch (_e) {
+      return loginUrl;
+    }
+  }
+
   function redirectToLogin() {
     if (LOCAL_PREVIEW) return;
-    win.location.replace(resolveLoginUrl());
+    win.location.replace(withReturnTo(resolveLoginUrl()));
   }
 
   function hide(elOrId) {

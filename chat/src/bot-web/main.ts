@@ -154,7 +154,8 @@ function signedOut(stage: HTMLElement): void {
   const box = el("div", "bw-signin");
   box.innerHTML = `<div class="bw-signin-card"><div class="bw-signin-title">登录后使用 Bot</div><p>Bot 在云端运行，手机、网页和 Cancri Code 桌面端共用同一套 Bot 和聊天记录。</p></div>`;
   const go = el("a", "bw-signin-btn", "去登录");
-  go.href = CHAT_HOME;
+  // 登录在聊天页完成，?next= 让它登录后回到 Bot 页（含 #会话）。
+  go.href = `${CHAT_HOME}?next=${encodeURIComponent(location.pathname + location.search + location.hash)}`;
   box.querySelector(".bw-signin-card")!.append(go);
   stage.append(box);
 }

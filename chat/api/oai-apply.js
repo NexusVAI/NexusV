@@ -55,7 +55,7 @@
   }
 
   function redirectToLogin() {
-    location.replace(LOGIN_URL);
+    location.replace(LOGIN_URL + "?next=" + encodeURIComponent(location.pathname + location.search + location.hash));
   }
 
   function showAuthError(text) {

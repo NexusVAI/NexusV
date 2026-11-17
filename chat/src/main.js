@@ -1,4 +1,9 @@
 import { safeUrl, safeMediaUrl } from "./utils/url.js";
+import {
+  LOGIN_RETURN_PARAM,
+  resolveLoginReturnTarget,
+  stripLoginReturnParam,
+} from "./utils/login-return.js";
 import { openAiB64JsonToDataUrl } from "./utils/image.js";
 import { escapeHtml } from "./utils/html.js";
 import { MODEL_CATALOG_FALLBACK } from "./data/model-catalog-fallback.js";
@@ -5770,6 +5775,44 @@ function lastUserMessageText(messages) {
     if (overlay) overlay.scrollTop = 0;
     void initSessionNavRestore();
   }
+
+  // 其它页面（API 控制台、联系我们、Bot、活动页…）未登录时把人送到 /chat/?next=<原地址>，
+  // 拿到真实会话后回到那里。只在有登录会话的分支调用（分享链接 / 本地预览不走这里）。
+  // 防循环：目标页若在 15 秒内又把人送回来（例如它读会话超时），就留在聊天页。
+  const LOGIN_RETURN_GUARD_KEY = "cancri_login_return_guard";
+  let loginReturnHandled = false;
+  function followLoginReturn() {
+    if (loginReturnHandled) return false;
+    let raw = null;
+    try {
+      raw = new URLSearchParams(window.location.search).get(LOGIN_RETURN_PARAM);
+    } catch (_e) {
+      return false;
+    }
+    if (raw === null) return false;
+    loginReturnHandled = true;
+    const target = resolveLoginReturnTarget(raw, window.location.href);
+    let looped = false;
+    if (target) {
+      try {
+        const prev = JSON.parse(sessionStorage.getItem(LOGIN_RETURN_GUARD_KEY) || "null");
+        looped = Boolean(prev && prev.target === target && Date.now() - prev.at < 15000);
+        sessionStorage.setItem(LOGIN_RETURN_GUARD_KEY, JSON.stringify({ target, at: Date.now() }));
+      } catch (_e) {
+        /* 隐私模式：没有防循环记录也照样跳 */
+      }
+    }
+    if (target && !looped) {
+      window.location.replace(target);
+      return true;
+    }
+    try {
+      window.history.replaceState(window.history.state, "", stripLoginReturnParam(window.location.href));
+    } catch (_e) {
+      /* ignore */
+    }
+    return false;
+  }
   
   function updateAccountInfo(user) {
     if (!user) return;
@@ -6033,6 +6076,7 @@ function lastUserMessageText(messages) {
           if (recovered?.user) data = { session: recovered };
         }
         if (data?.session?.user) {
+          if (followLoginReturn()) return;
           updateAccountInfo(data.session.user);
           hideAuthOverlay();
           authSessionPromise = Promise.resolve(data.session);
@@ -6076,6 +6120,7 @@ function lastUserMessageText(messages) {
           }
         },
         onSession: (session) => {
+          if (followLoginReturn()) return;
           authSessionPromise = Promise.resolve(session);
           updateAccountInfo(session.user);
           hideAuthOverlay();
@@ -6109,6 +6154,7 @@ function lastUserMessageText(messages) {
         (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") &&
         session?.user
       ) {
+        if (event === "SIGNED_IN" && followLoginReturn()) return;
         authSessionPromise = Promise.resolve(session);
         updateAccountInfo(session.user);
         hideAuthOverlay();

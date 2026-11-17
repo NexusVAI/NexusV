@@ -225,7 +225,9 @@
     if (errKind === "not_logged_in") {
       panel.innerHTML =
         '<p class="cp-support-msg">登录后从下方 <strong>48 支参赛队</strong> 中选主队，<strong>选定后不可更改</strong>。</p>' +
-        '<a class="celebrate-btn celebrate-btn--primary" href="./index.html">去登录 / 工作台</a>';
+        '<a class="celebrate-btn celebrate-btn--primary" href="./index.html?next=' +
+        encodeURIComponent(location.pathname + location.search + location.hash) +
+        '">去登录 / 工作台</a>';
       return;
     }
 
@@ -374,7 +376,8 @@
         })
           .then(function (result) {
             if (result.error === "not_logged_in") {
-              window.location.href = "./index.html";
+              window.location.href =
+                "./index.html?next=" + encodeURIComponent(location.pathname + location.search + location.hash);
               return;
             }
             var data = result.data;
