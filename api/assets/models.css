@@ -73,12 +73,6 @@
   height: 16px;
   width: 55%;
 }
-.models-skel-icon {
-  flex: none;
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-}
 
 /* ── 近 24 小时状态条（数据：chat-gateway model_health，按小时 24 格） ── */
 .models-uptime {
@@ -343,9 +337,6 @@ html.dark .models-brand-logo img[data-mono] {
 .models-stretched:focus-visible {
   outline: 2px solid var(--color-ring, #0169cc);
   outline-offset: 2px;
-}
-.models-row:hover .models-row-inner {
-  background-color: var(--color-background-primary-soft);
 }
 
 /* 厂商筛选条 */

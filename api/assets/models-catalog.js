@@ -16,7 +16,7 @@
   var MORE_CLOSED = "max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-in-out [&>*+*]:border-t [&>*+*]:border-default";
   var MORE_OPEN = "max-h-[360px] overflow-hidden opacity-100 transition-all duration-300 ease-in-out [&>*+*]:border-t [&>*+*]:border-default";
   // GPT-Live is not in the catalog (realtime only); it is listed by hand under 实时语音.
-  var LIVE_MODEL = { id: "gpt-live-1", brand: "OpenAI" };
+  var LIVE_MODEL = { id: "gpt-live-1", displayName: "GPT-Live 1", brand: "OpenAI" };
 
   var cat = null;
   var healthReady = false;
@@ -107,8 +107,10 @@
     html += priceRows(st.priceFrom, st.tag);
     html += row("近 24 小时", '<div class="flex justify-end" data-uptime-slot>' + M.uptimeHtml(healthReady ? M.bestHourly(st.healthIds) : null) + "</div>");
     var maxOut = M.compactTokens(st.shown.maxOutputTokens);
+    // 全部模型 has no 查看更多 button of its own (one button would sit far below most of its groups),
+    // so its cards always show the full spec list.
     html +=
-      '<div class="' + (expanded[section] ? MORE_OPEN : MORE_CLOSED) + '" data-card-more>' +
+      '<div class="' + (section === "all" || expanded[section] ? MORE_OPEN : MORE_CLOSED) + '" data-card-more>' +
       moreRow("上下文窗口", esc(M.compactTokens(st.shown.maxInputTokens) || "—")) +
       moreRow("最大输出", esc(maxOut ? maxOut + " tokens" : "—")) +
       moreRow("能力", esc(capabilities(st.shown))) +
@@ -116,50 +118,51 @@
     return html;
   }
 
-  function bigCard(card, section) {
+  // opts: { anchor } puts id="model-<id>" on the card so #model-<id> links land on it (全部模型 only —
+  // flagship cards already carry data-flagship and a duplicate id would break getElementById);
+  // { desc, href, specs } override the catalog-derived text for hand-listed models (GPT-Live).
+  function bigCard(card, section, opts) {
+    opts = opts || {};
     var id = M.modelId(card);
     var name = card.displayName || id;
-    var desc = M.description(card);
+    var desc = opts.desc != null ? opts.desc : M.description(card);
     var mark = M.wordmark(name);
     var badges = (section === "free" ? M.badge("免费", "success") : "") + (card.available === false ? M.badge("暂不可用", "warning") : "");
     // The whole top (cover, name, description) opens the model; a stretched link keeps the vendor logo clickable.
     return (
-      '<div class="flex flex-col text-emphasis" data-card="' + esc(id) + '" data-card-section="' + section + '" data-model-id="' + esc(id) + '"' +
-      (section === "flagship" ? ' data-flagship="' + esc(id) + '"' : "") + ">" +
+      '<div class="flex flex-col text-emphasis' + (opts.anchor ? " models-anchor" : "") + '" data-card="' + esc(id) + '" data-card-section="' + section + '" data-model-id="' + esc(id) + '"' +
+      (section === "flagship" ? ' data-flagship="' + esc(id) + '"' : "") +
+      (opts.anchor ? ' id="model-' + esc(id) + '"' : "") + ">" +
       '<div class="relative flex flex-col text-emphasis">' +
-      '<a href="' + esc(M.detailUrl(id)) + '" class="models-stretched" data-card-link aria-label="' + esc(name) + '"></a>' +
+      '<a href="' + esc(opts.href || M.detailUrl(id)) + '" class="models-stretched" data-card-link aria-label="' + esc(name) + '"></a>' +
       '<div class="h-[180px] w-full"><div aria-hidden="true" class="cancri-thumb flex h-full w-full flex-1 flex-row items-center justify-center gap-4 rounded-lg [container-type:inline-size]" style="' + M.coverStyle(id) + '">' +
       '<span class="models-wordmark w-full px-[9%] text-left leading-none font-semibold tracking-tight whitespace-nowrap text-white text-[clamp(2rem,18cqw,5rem)]"' + M.wordmarkAttrs(mark) + ">" + esc(mark) + "</span></div></div>" +
       '<div class="mt-5 flex flex-col gap-1"><div class="flex items-center gap-1.5 text-base font-semibold text-emphasis">' + M.brandLogo(card) + "<span>" + esc(name) + "</span>" + badges + "</div>" +
       (desc ? '<div class="text-sm text-secondary">' + esc(desc) + "</div>" : "") +
       "</div></div>" +
-      '<div class="mt-8"><div class="flex flex-col gap-4"><div class="_SectionContent_1tiej_1" data-card-specs>' + specsHtml(card, section) + "</div></div></div></div>"
+      '<div class="mt-8"><div class="flex flex-col gap-4"><div class="_SectionContent_1tiej_1" data-card-specs>' + (opts.specs || specsHtml(card, section)) + "</div></div></div></div>"
     );
   }
 
-  function rowHtml(m, href, name, badges, desc, meta, anchor) {
-    var id = M.modelId(m);
-    return (
-      '<div class="models-row relative flex h-full flex-col gap-4 text-emphasis' + (anchor ? ' models-anchor" id="model-' + esc(id) : "") + '" data-model-id="' + esc(id) + '">' +
-      '<a href="' + esc(href) + '" class="models-stretched" aria-label="' + esc(name) + '"></a>' +
-      '<div class="models-row-inner group flex h-full w-full cursor-pointer flex-row items-start gap-4 rounded-lg p-2">' +
-      '<div class="cancri-thumb flex shrink-0 overflow-hidden rounded-lg w-12 h-12" style="' + M.coverStyle(id) + '"></div>' +
-      '<div class="flex min-w-0 flex-col"><div class="flex items-center gap-2">' + M.brandLogo(m) + '<div class="font-semibold">' + esc(name) + "</div>" + badges + "</div>" +
-      (desc ? '<div class="text-sm text-secondary">' + esc(desc) + "</div>" : "") +
-      '<div class="mt-0.5 text-xs text-tertiary">' + esc(meta) + "</div></div></div></div>"
-    );
+  // 全部模型 uses the same card as 旗舰模型 / 免费模型: one card per group, the group's lines are the
+  // clickable 分组 row inside it (specsHtml), never separate cards of their own. Only the vendor
+  // sections carry id="model-<id>": a model can also sit under 高性价比, and two ids would collide.
+  function allCard(card, anchor) {
+    return bigCard(card, "all", { anchor: anchor });
   }
 
-  function rowItem(m, anchor) {
-    var id = M.modelId(m);
-    var gi = m.groupInfo;
-    var price = M.priceText(M.cheapestMember(m)) + (gi && gi.variants.length > 1 ? " · " + gi.variants.length + " 个分组" : "");
-    var badges = (M.isFree(m) ? M.badge("免费", "success") : "") + (m.available === false ? M.badge("暂不可用", "warning") : "");
-    return rowHtml(m, M.detailUrl(id), m.displayName || id, badges, M.description(m), price, anchor);
-  }
-
-  function liveItem() {
-    return rowHtml(LIVE_MODEL, "/api/docs/guides/realtime/", "GPT-Live 1", "", "边听边说的全双工实时语音，通过 WebSocket 接入，不能用 Chat Completions 调用。", "gpt-live-1 · 按秒计费，后端另计", false);
+  // GPT-Live is not in the catalog, so its spec list is written by hand instead of derived from a model.
+  function liveCard() {
+    var id = LIVE_MODEL.id;
+    var specs =
+      row("Model ID", '<div class="flex items-center justify-end gap-1">' + M.copyButton(id, "复制 Model ID") + '<span class="' + CHIP + ' models-id-chip font-mono">' + esc(id) + "</span></div>") +
+      row("价格", esc("按秒计费，后端另计")) +
+      row("接入方式", esc("WebSocket"));
+    return bigCard(LIVE_MODEL, "all", {
+      href: "/api/docs/guides/realtime/",
+      desc: "边听边说的全双工实时语音，通过 WebSocket 接入，不能用 Chat Completions 调用。",
+      specs: specs,
+    });
   }
 
   // Shown above 旗舰模型 while a vendor filter is on.
@@ -197,13 +200,13 @@
     (brand ? brandBar : root).scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function groupBlock(id, title, sub, items) {
+  // Heading above the grid, not beside it: cards need the full width to keep the flagship card's shape.
+  function groupBlock(id, title, sub, cards) {
     return (
-      '<div><div id="' + esc(id) + '" class="models-anchor flex scroll-mt-24 flex-col gap-4 py-4 md:flex-row md:items-start md:justify-between">' +
-      '<div class="flex min-w-[220px] max-w-[320px] flex-col gap-1 md:w-[320px] md:min-w-[320px] md:max-w-[320px] md:flex-none md:pr-6">' +
+      '<div><div id="' + esc(id) + '" class="models-anchor flex scroll-mt-24 flex-col gap-1 pt-4 pb-6">' +
       '<div class="text-base font-semibold text-emphasis">' + esc(title) + '</div><div class="text-sm text-secondary">' + esc(sub) + "</div></div>" +
-      '<div class="-mx-2 grid min-w-0 flex-1 grid-cols-1 gap-2 md:grid-cols-2">' + items + "</div></div>" +
-      '<div class="h-px w-full bg-primary-soft"></div></div>'
+      '<div class="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-x-8 xl:grid-cols-4">' + cards + "</div>" +
+      '<div class="mt-8 h-px w-full bg-primary-soft"></div></div>'
     );
   }
 
@@ -247,10 +250,10 @@
     var groups = root.querySelector("[data-models-groups]");
     var html = '<div class="h-px w-full bg-primary-soft"></div>';
     var pareto = cat.pareto().filter(matchesBrand);
-    if (pareto.length) html += groupBlock("group-pareto", "高性价比", "综合能力与价格挑选的高性价比模型。", pareto.map(function (m) { return rowItem(m, false); }).join(""));
-    if (matchesBrand(LIVE_MODEL)) html += groupBlock("group-realtime", "实时语音", "全双工语音模型，接入方式见实时语音文档。", liveItem());
+    if (pareto.length) html += groupBlock("group-pareto", "高性价比", "综合能力与价格挑选的高性价比模型。", pareto.map(function (m) { return allCard(m, false); }).join(""));
+    if (matchesBrand(LIVE_MODEL)) html += groupBlock("group-realtime", "实时语音", "全双工语音模型，接入方式见实时语音文档。", liveCard());
     cat.vendors().filter(function (v) { return !brandFilter || v.brand === brandFilter; }).forEach(function (v) {
-      html += groupBlock("vendor-" + v.brand.toLowerCase().replace(/\s+/g, "-"), v.label, v.list.length + " 个模型", v.list.map(function (m) { return rowItem(m, true); }).join(""));
+      html += groupBlock("vendor-" + v.brand.toLowerCase().replace(/\s+/g, "-"), v.label, v.list.length + " 个模型", v.list.map(function (m) { return allCard(m, true); }).join(""));
     });
     groups.innerHTML = html;
     groups.removeAttribute("aria-busy");
