@@ -53,7 +53,7 @@ js: /api/assets/reference.js
 <div class="stldocs-property-description _description_mjoyi_68"><p>工具的 <code>name</code>、<code>description</code> 与 <code>input_schema</code>，每个工具另加 8 个 token。</p></div>
 </div></div>
 </div></div>
-<p class="ref-section-foot">文本按约 3.5 个字符折合 1 个 token 计算。请求体最大 10 MB。</p>
+<p class="ref-section-foot">文本按约 3.5 个字符折合 1 个 token 计算。请求体最大 16 MiB，与 Messages 的生成请求相同。</p>
 </div>
 
 <div class="_section_1btwc_47" id="returns">
@@ -72,7 +72,7 @@ js: /api/assets/reference.js
 <div class="stldocs-method-parameters _properties_1btwc_61" data-stldocs-property-group="errors"><div class="stldocs-properties _properties_mjoyi_119">
 <div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-invalid_request_error">
 <div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">invalid_request_error</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">400</span><span class="stldocs-text-punctuation"> / </span><span class="stldocs-literal-numeric">413</span></span></div>
-<div class="stldocs-property-description _description_mjoyi_68"><p>请求体不是合法的 JSON，<code>Content-Length</code> 无效，或请求体超过 10 MB（413）。</p></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>请求体不是合法的 JSON，<code>Content-Length</code> 无效，或请求体超过 16 MiB（413）。</p></div>
 </div></div>
 <div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-authentication_error">
 <div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">authentication_error</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">401</span></span></div>

@@ -5,6 +5,7 @@ export default [
     group: "成本与用量",
     items: [
       { title: "计费与余额", href: "/api/docs/guides/billing/" },
+      { title: "桌面端工具计费", href: "/api/docs/guides/desktop-tool-pricing/" },
       { title: "查询余额与用量", href: "/api/docs/guides/usage/" },
     ],
   },

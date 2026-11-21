@@ -313,7 +313,7 @@ js: /api/assets/reference.js
 </div></div>
 <div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-payload_too_large">
 <div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">payload_too_large</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">413</span></span></div>
-<div class="stldocs-property-description _description_mjoyi_68"><p>请求体超过 10 MB。Codex 等客户端会在 <code>input</code> 中带上整段历史，长会话请先压缩上下文。</p></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>网关请求体上限为 16 MiB（16,777,216 字节）。Codex 会在 <code>input</code> 中重发历史：即使当前只发一句「照计划改」，旧截图和工具输出仍计入大小。可先压缩会话，或把计划存成文件，在新会话中引用。</p></div>
 </div></div>
 <div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="error-insufficient_balance">
 <div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-text-identifier">insufficient_balance</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-numeric">402</span></span></div>

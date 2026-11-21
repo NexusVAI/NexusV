@@ -1,0 +1,39 @@
+---
+title: 桌面端搜索、图片识别与语音计费
+description: 在 Cancri Code 中使用搜索、图片文字识别、语音输入和朗读时，如何选择服务、查看单价并计算套餐额度。
+---
+<p>在 Cancri Code 的「设置 → 搜索、图片识别与语音」中，可以分别选择搜索引擎和语音识别服务，两项默认都是 DeepSeek API。图片识别选的是<strong>何时提取文字</strong>，朗读选的是<strong>在线还是本机合成</strong>，这两项没有单独的 NexusVAI 云服务选项。</p>
+
+<h2 id="prices">刊例价与桌面基价</h2>
+<p>以下均为人民币。DeepSeek 一列是<a href="https://api-docs.deepseek.com/zh-cn/quick_start/pricing/">官方非促销刊例价</a>；通过桌面端使用时，平台按刊例价加 5%，得到最右列的<strong>桌面基价</strong>。该列已含这 5%，不会重复加收。</p>
+<table>
+<thead><tr><th scope="col">功能与计价单位</th><th scope="col">选择 NexusVAI API</th><th scope="col">DeepSeek API 刊例价</th><th scope="col">桌面使用 DeepSeek 的基价</th></tr></thead>
+<tbody>
+<tr><td>联网搜索／1,000 次有结果的请求</td><td>¥0，不另收搜索费</td><td>¥5.00</td><td>¥5.25</td></tr>
+<tr><td>图片文字识别（OCR）／1,000 页</td><td>无独立选项；模型直接看图不收 OCR 页费</td><td>¥1.50</td><td>¥1.575</td></tr>
+<tr><td>语音输入（ASR）／1 小时音频</td><td>¥0，不另收转写费，有使用次数限制</td><td>¥0.78</td><td>¥0.819</td></tr>
+<tr><td>回复朗读（TTS）／10,000 个计费字符</td><td>无云朗读选项；本机朗读 ¥0</td><td>¥3.00</td><td>¥3.15</td></tr>
+</tbody>
+</table>
+<p>这些是<strong>工具费</strong>。模型阅读搜索结果、理解原图或处理识别出的文字，另按所选模型的<a href="/api/docs/pricing/">价格</a>计费。即使为聊天配置了自己的模型密钥，桌面内置在线工具仍使用已登录的 Cancri 账户。通过公开 <code>/v1</code> 接口自行实现和执行的工具，不适用本表。</p>
+
+<h2 id="units">一次操作怎样计量</h2>
+<ul>
+<li><strong>搜索：</strong>一次 DeepSeek 搜索返回一条或多条有效结果，都只计一次；没有结果或请求失败，不收搜索费。</li>
+<li><strong>图片：</strong>一张成功处理的图片计一页，不按识别出的字数收费。有效页面没有文字或文字因长度限制而截断，仍计一页。「仅文字模型自动 OCR」只在已知模型不能看图时触发；「不自动 OCR」不影响你单独批准的手动识别。直接发给视觉模型不产生 OCR 页费。</li>
+<li><strong>语音输入：</strong>DeepSeek 按每段实际识别的音频时长向上取整到秒，例如 5.2 秒按 6 秒计量，不按识别出的字数计。它会自动识别语种；需要指定普通话、粤语等语种时，选择 NexusVAI API。</li>
+<li><strong>朗读：</strong>在线合成按段计量，汉字按 2 个计费字符，其余 Unicode 码点按 1 个。已经成功合成的段落即使停止播放仍计费，以后没有合成的段落不计费。选择本机语种和音色时，文字不上传，不消耗额度。</li>
+</ul>
+
+<h2 id="plans">套餐倍率与钱包扣款</h2>
+<p><strong>套餐扣额 = 工具用量 × 桌面基价 × 套餐倍率。</strong>下表的「多扣」是相对桌面基价而言，指套餐额度消耗，不是在月费之外再收一笔现金。免费的工具不因倍率而变成收费项目。</p>
+<table>
+<thead><tr><th scope="col">套餐</th><th scope="col">月费／每月额度</th><th scope="col">套餐倍率</th><th scope="col">比桌面基价多扣</th><th scope="col">有效套餐额度用完后</th></tr></thead>
+<tbody>
+<tr><td>Go</td><td>¥9.90／¥15</td><td>1.6 倍</td><td>+60%</td><td>钱包按桌面基价</td></tr>
+<tr><td>Plus</td><td>¥19／¥45</td><td>2.4 倍</td><td>+140%</td><td>钱包按桌面基价</td></tr>
+<tr><td>Pro</td><td>¥99／¥300</td><td>3.2 倍</td><td>+220%</td><td>钱包按桌面基价的 9 折</td></tr>
+</tbody>
+</table>
+<p>例如，DeepSeek 一次有结果的搜索，桌面基价为 ¥0.00525。Pro 套餐额度充足时，这次扣 <strong>¥0.0168 套餐额度</strong>，钱包扣 ¥0；若有效 Pro 套餐的额度已用完，这次改扣 <strong>¥0.004725 钱包余额</strong>。若额度只够支付一部分，只有差额转入钱包，钱包部分不再乘套餐倍率。</p>
+<p>这是套餐的正常定价方式。以 Pro 为例，¥99 购买的是每月 ¥300 的<strong>套餐计量额度</strong>，不是充值 ¥300 钱包余额，不能按 ¥300 现金原价购买工具服务。当前桌面付费工具需要有效套餐；预扣无法覆盖本次请求时，不会开始付费调用。公开 API 余额和桌面套餐的区别见<a href="/api/docs/guides/billing/#api-balance-and-plans">计费与余额</a>。</p>

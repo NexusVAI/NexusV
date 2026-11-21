@@ -53,7 +53,7 @@ description: 接入前需要知道的几条约定：限额按账户计算、模�
 <li>GPT 系列模型的 <code>reasoning_effort</code>（Responses 为 <code>reasoning.effort</code>）只接受 <code>none</code>、<code>low</code>、<code>medium</code>、<code>high</code>、<code>xhigh</code>、<code>max</code>；<code>reasoning.effort</code> 额外接受 <code>minimal</code>。</li>
 <li><code>max_tokens</code>、<code>max_output_tokens</code>、<code>temperature</code>、<code>top_p</code> 必须是非负的有限数。</li>
 </ul>
-<p>请求体不能超过 10 MB，否则返回 <code>413 payload_too_large</code>。</p>
+<p>Chat Completions、Responses 和 Messages 的请求体上限相同：16 MiB（16,777,216 字节）。按整段 JSON 的 UTF-8 字节数计算，包括历史消息、工具结果和内联图片；超过上限返回 <code>413 payload_too_large</code>。模型的上下文窗口以 token 计，是另一项限制。</p>
 
 <h2 id="response-fields">响应字段</h2>
 <ul>

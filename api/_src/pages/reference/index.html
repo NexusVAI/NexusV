@@ -83,7 +83,7 @@ const client = new Anthropic({
 <thead><tr><th>项目</th><th>规则</th></tr></thead>
 <tbody>
 <tr><td>请求体</td><td>JSON 对象，<code>Content-Type: application/json</code>。不是合法的 JSON 对象时返回 <code>400</code>。</td></tr>
-<tr><td>大小上限</td><td>10 MB（10,485,760 字节），超出返回 <code>413 payload_too_large</code>。</td></tr>
+<tr><td>大小上限</td><td>16 MiB（16,777,216 字节），超出返回 <code>413 payload_too_large</code>。</td></tr>
 <tr><td><code>model</code></td><td>填 <code>GET /v1/models</code> 返回的 ID。响应中的 <code>model</code> 始终是这个公开 ID。</td></tr>
 <tr><td>数值参数</td><td><code>max_tokens</code>、<code>max_output_tokens</code>、<code>temperature</code>、<code>top_p</code> 必须是非负的有限数，否则返回 <code>400 invalid_request_parameter</code>。</td></tr>
 <tr><td><code>service_tier</code></td><td>只接受省略、<code>null</code>、<code>"auto"</code>、<code>"default"</code>，其他值返回 <code>400 invalid_request_parameter</code>。接受的值也不会转发给模型。</td></tr>
@@ -211,7 +211,7 @@ for await (const chunk of stream) {
 <tr><td>404</td><td><code>model_not_found</code></td><td>模型不存在、已下架或已停用（Messages 返回 <code>not_found_error</code>，不含 <code>code</code>）。</td></tr>
 <tr><td>404</td><td><code>null</code></td><td>请求的路径不存在。</td></tr>
 <tr><td>410</td><td><code>market_discontinued</code></td><td>请求了已下线功能的模型（<code>px:</code> 前缀）。</td></tr>
-<tr><td>413</td><td><code>payload_too_large</code></td><td>请求体超过 10 MB。</td></tr>
+<tr><td>413</td><td><code>payload_too_large</code></td><td>请求体过大。网关的请求体上限为 16 MiB。</td></tr>
 <tr><td>426</td><td><code>websocket_required</code></td><td>实时语音端点只接受 WebSocket 升级请求。</td></tr>
 <tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>超出 RPM 或 TPM。按 <code>Retry-After</code> 等待后重试。</td></tr>
 <tr><td>429</td><td><code>request_too_large</code></td><td>单次请求的预估 token 超过本档 TPM 的 4 倍。不可重试，请缩短上下文或调低输出上限。</td></tr>

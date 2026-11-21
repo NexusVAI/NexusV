@@ -39,7 +39,7 @@ description: 错误响应使用标准 HTTP 状态码，error.code 给出具体�
 <tr><td>400</td><td><code>invalid_limit</code></td><td><code>GET /v1/balance</code> 的 <code>limit</code> 不是 0–100 的整数。</td></tr>
 <tr><td>404</td><td><code>model_not_found</code></td><td><code>model</code> 不在可用列表中。用 <code>GET /v1/models</code> 核对模型 ID，大小写与连字符必须完全一致。</td></tr>
 <tr><td>404</td><td>无（<code>null</code>）</td><td>端点不存在，例如 <code>/v1/embeddings</code>。</td></tr>
-<tr><td>413</td><td><code>payload_too_large</code></td><td>请求体超过 10 MB。缩短上下文或拆分请求。</td></tr>
+<tr><td>413</td><td><code>payload_too_large</code></td><td>请求体过大。网关按完整 JSON 计，上限 16 MiB；请缩短历史、精简工具输出或移除重复的内联图片后再发。</td></tr>
 </tbody>
 </table>
 

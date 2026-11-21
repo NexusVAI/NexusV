@@ -58,6 +58,7 @@ js: /chat/cancri_config.js, /api/assets/models.js, /api/assets/models-pricing.js
           <li>扣费以响应中的 <code>usage</code> 为准。返回 4xx 或 5xx 的失败请求不扣费；未定价的模型不可调用，返回 <code>402 model_not_priced</code>。</li>
           <li>标有「免费」的模型不扣余额，调用计入免费额度，并受速率限制约束，详见<a href="/api/docs/guides/free-tier/">免费模型与免费额度</a>。</li>
           <li>API 调用从账户的 API 余额扣费，团队 API 密钥从团队余额扣费。充值与账单在<a href="/api/console/billing/">控制台</a>查看。</li>
+          <li>Cancri Code 的搜索、图片识别、语音输入与朗读单独计量，刊例价和套餐倍率见<a href="/api/docs/guides/desktop-tool-pricing/">桌面端工具计费</a>。</li>
         </ul>
       </article>
     </div>

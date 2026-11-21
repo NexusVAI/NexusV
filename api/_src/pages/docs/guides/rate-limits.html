@@ -94,7 +94,7 @@ description: 速率限制按账户计算，只有 RPM 和 TPM 两项，档位由
 <tr><td><code>GET /v1/balance</code></td><td>每个账户每分钟 30 次，不计入 RPM 与 TPM</td></tr>
 <tr><td><code>POST /v1/messages/count_tokens</code></td><td>每把密钥每分钟 600 次，不计入 RPM 与 TPM</td></tr>
 <tr><td>使用不存在的密钥</td><td>每个 IP（IPv6 按 /64 网段）每分钟 20 次、每小时 100 次</td></tr>
-<tr><td>请求体大小</td><td>10 MB</td></tr>
+<tr><td>文本生成与输入 token 计数的请求体大小</td><td>16 MiB（16,777,216 字节）</td></tr>
 <tr><td>API 密钥</td><td>每个账户最多 5 把有效密钥，每小时最多创建 10 把</td></tr>
 </tbody>
 </table>
