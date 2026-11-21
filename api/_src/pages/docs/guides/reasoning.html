@@ -1,0 +1,2323 @@
+---
+title: 推理模型
+description: 了解如何在 Responses API 中使用 OpenAI 推理模型、选择推理强度、管理推理 token，并在多轮对话中保持推理状态。
+tab: models
+lead: false
+css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
+js: /api/assets/model-guide.js
+---
+<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/reasoning (reference copy for local review). -->
+<p><strong>推理模型</strong>在生成回复前会先使用内部的推理 token。这有助于模型制定计划、有效使用工具、比较不同方案、处理模糊之处，并解决更难的多步骤任务。推理模型尤其适合复杂问题求解、编程、科学推理和多步骤的智能体工作流。它们也是 <a href="https://github.com/openai/codex">Codex CLI</a>（我们的轻量级编程智能体）的最佳模型。</p>
+<p>大多数推理任务建议从 <code>gpt-6-astra</code> 开始。如需更低成本，可以考虑 <a href="https://developers.openai.com/api/docs/models/gpt-5.6-terra"><code>gpt-5.6-terra</code></a>；如需最低成本和延迟，可以选择 <a href="https://developers.openai.com/api/docs/models/gpt-5.6-luna"><code>gpt-5.6-luna</code></a>。如果你使用 GPT-5.6 或 GPT-6 模型，请参阅<a href="#reasoning-mode">推理模式</a>了解其 <code>pro</code> 选项。</p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><strong>推理模型配合 <a href="https://developers.openai.com/api/docs/guides/migrate-to-responses">Responses API</a> 效果更好</strong>。Chat Completions API 仍受支持，但使用 Responses 可以获得更好的模型智能与性能。</p></div></div></div></div></div>
+<h2 id="get-started-with-reasoning">开始使用推理</h2>
+<p>调用 <a href="https://developers.openai.com/api/docs/api-reference/responses/create">Responses API</a>，并指定推理模型和推理强度：</p>
+<code-tabs title="在 Responses API 中使用推理模型">
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+prompt = """
+Write a bash script that takes a matrix represented as a string with
+format '[1,2],[3,4],[5,6]' and prints the transpose in the same format.
+"""
+
+response = client.responses.create(
+    model="gpt-6-astra",
+    reasoning={"effort": "low"},
+    input=[{"role": "user", "content": prompt}],
+)
+
+print(response.output_text)</pre>
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const openai = new OpenAI();
+
+const prompt = `
+Write a bash script that takes a matrix represented as a string with
+format '[1,2],[3,4],[5,6]' and prints the transpose in the same format.
+`;
+
+const response = await openai.responses.create({
+  model: "gpt-6-astra",
+  reasoning: { effort: "low" },
+  input: [
+    {
+      role: "user",
+      content: prompt,
+    },
+  ],
+});
+
+console.log(response.output_text);</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+	prompt := `Write a bash script that takes a matrix represented as a string with
+format '[1,2],[3,4],[5,6]' and prints the transpose in the same format.`
+
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model: "gpt-6-astra",
+		Reasoning: responses.ReasoningParam{
+			Effort: responses.ReasoningEffortLow,
+		},
+		Input: responses.ResponseNewParamsInputUnion{
+			OfString: openai.String(prompt),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(response.OutputText())
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.Reasoning;
+import com.openai.models.ReasoningEffort;
+import com.openai.models.responses.ResponseCreateParams;
+
+String prompt =
+    """
+    Write a bash script that takes a matrix represented as a string with format
+    '[1,2],[3,4],[5,6]' and prints the transpose in the same format.
+    """
+        .strip();
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder()
+        .model("gpt-6-astra")
+        .input(prompt)
+        .reasoning(Reasoning.builder().effort(ReasoningEffort.LOW).build())
+        .build();
+
+client.responses().create(params).output().stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="csharp">using OpenAI.Responses;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+ResponsesClient client = new(key);
+
+string prompt =
+    """
+    Write a bash script that takes a matrix represented as a string with format
+    '[1,2],[3,4],[5,6]' and prints the transpose in the same format.
+    """;
+CreateResponseOptions options = new()
+{
+    Model = "gpt-6-astra",
+    ReasoningOptions = new ResponseReasoningOptions
+    {
+        ReasoningEffortLevel = ResponseReasoningEffortLevel.Low,
+    },
+};
+options.InputItems.Add(ResponseItem.CreateUserMessageItem(prompt));
+
+ResponseResult response = await client.CreateResponseAsync(options);
+
+Console.WriteLine(response.GetOutputText());</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+prompt = <<~PROMPT
+  Write a bash script that takes a matrix represented as a string with format
+  '[1,2],[3,4],[5,6]' and prints the transpose in the same format.
+PROMPT
+
+response = client.responses.create(
+  model: "gpt-6-astra",
+  reasoning: { effort: :low },
+  input: prompt
+)
+
+puts(response.output_text)</pre>
+<pre data-lang="curl">curl https://api.openai.com/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -d '{
+    "model": "gpt-6-astra",
+    "reasoning": {"effort": "low"},
+    "input": [
+      {
+        "role": "user",
+        "content": "Write a bash script that takes a matrix represented as a string with format \"[1,2],[3,4],[5,6]\" and prints the transpose in the same format."
+      }
+    ]
+  }'</pre>
+</code-tabs>
+<h2 id="reasoning-effort">Reasoning effort</h2>
+<p>The <code>reasoning.effort</code> parameter guides the model on how much to think when performing a task.</p>
+<p>Supported values are model-dependent and can include <code>none</code>, <code>minimal</code>, <code>low</code>, <code>medium</code>, <code>high</code>, <code>xhigh</code>, and <code>max</code>. Lower effort favors speed and lower token usage, while at higher effort the model thinks more completely to provide higher quality responses. The models also reason adaptively across reasoning efforts, using fewer tokens for simpler tasks and thinking harder for complex tasks.</p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><a href="https://developers.openai.com/api/docs/models/gpt-6-astra">GPT-6 Astra</a> does not support <code>none</code> reasoning
+effort. Setting <code>reasoning.effort</code> (Responses) or <code>reasoning_effort</code> (Chat
+Completions) to <code>none</code> returns HTTP 400. <a href="https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6-astra#gpt-61-sol">GPT-6.1 Sol</a>
+does not support <code>none</code> or <code>minimal</code> and defaults to <code>medium</code>.</p><p>Use the <a href="https://developers.openai.com/api/docs/guides/migrate-to-responses">Responses API</a> for function
+calling. Chat Completions does not support function calling with GPT-6 Astra or
+GPT-6.1 Sol.</p></div></div></div></div></div>
+<p>Defaults are also model-dependent rather than universal. <code>gpt-5.5</code> defaults to <code>medium</code> reasoning effort. This is the best starting point for <code>gpt-5.5</code>’s full balance of quality, reliability and performance.</p>
+<div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
+<thead>
+<tr>
+<th>Effort</th>
+<th>Best for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>none</code></td>
+<td>Latency-critical tasks that do not benefit from any reasoning or multi-chained tool calls. For latency-sensitive use cases with <code>gpt-5.5</code>, we recommend trying <code>low</code> to begin with and then moving to <code>none</code> if required.<br/><br/>Common use cases include voice, fast information retrieval, and classification.</td>
+</tr>
+<tr>
+<td><code>low</code></td>
+<td>Efficient reasoning with a modest latency increase. Ideal for use cases requiring tool-use, planning, search, or multi-step decision making, while optimizing for speed and cost.<br/><br/>Common use cases include data analysis, drafting, execution-oriented coding, and customer support / chat assistant workflows.</td>
+</tr>
+<tr>
+<td><code>medium</code></td>
+<td>When quality and reliability matter, and the task involves planning, complex reasoning, and judgement. Default configuration for most workloads, and a well-balanced point on the pareto curve of latency, performance and cost.<br/><br/>Common use cases include agentic coding, research, working with spreadsheets &amp; slides, and delegating long-horizon work.</td>
+</tr>
+<tr>
+<td><code>high</code></td>
+<td>Hard reasoning, complex debugging, deep planning, and high-value tasks where quality and intelligence matters more than latency. Recommended for complex workflows and agentic tasks.<br/><br/>Common use cases include agentic coding, long-horizon research, and knowledge work. Depending on the complexity of the task, evaluate both <code>medium</code> and <code>high</code>.</td>
+</tr>
+<tr>
+<td><code>xhigh</code></td>
+<td>Deep research, asynchronous workflows and agentic tasks that require long runs. Only use when your evals show a clear benefit that justifies the extra latency and cost.<br/><br/>Common use cases include security and code review, enterprise productivity, deeper research tasks, and challenging coding workflows.</td>
+</tr>
+<tr>
+<td><code>max</code></td>
+<td>Maximum reasoning for your most complex tasks. If you are currently using <code>xhigh</code>, evaluate if <code>max</code> results in stronger performance</td>
+</tr>
+</tbody>
+</table></div>
+<p>For faster time to first visible token in latency-sensitive applications, ask the model to generate a short preamble before continuing with deeper reasoning.</p>
+<p>Some models support only a subset of these values, so check the relevant <a href="/api/docs/models/">model page</a> before choosing a setting.</p>
+<h2 id="reasoning-mode">Reasoning mode</h2>
+<p>GPT-5.6 and GPT-6 models support <code>standard</code> and <code>pro</code> reasoning modes in the Responses API. <code>standard</code> is the default. Set <code>reasoning.mode</code> to <code>pro</code> for difficult tasks that need more model work and can tolerate higher latency and token usage.</p>
+<p>Reasoning mode and reasoning effort are independent. Mode selects standard or pro execution, while <code>reasoning.effort</code> controls how much reasoning the model applies within that mode. If you omit <code>reasoning.effort</code>, GPT-5.6 defaults to <code>medium</code> in both modes. GPT-6.1 Sol, GPT-6 Sol, and GPT-6 Luna also default to <code>medium</code> reasoning effort.</p>
+<div class="code-sample not-prose _root_1czwd_2 light-mode"><div class="_header_1czwd_34"><div class="_title_1czwd_42 body-small">Using pro reasoning mode</div><button aria-label="Copy code" class="_Button_6dmow_1 _copyButton_1czwd_168" data-color="primary" data-gutter-size="xs" data-icon-size="sm" data-size="sm" data-variant="ghost" type="button"><span class="_ButtonInner_6dmow_4"><span class="block relative w-[var(--button-icon-size)] h-[var(--button-icon-size)]" data-transition-position="absolute" style="--tg-will-change:transform, opacity;--tg-enter-opacity:1;--tg-enter-transform:scale(1);--tg-enter-filter:none;--tg-enter-duration:300ms;--tg-enter-delay:150ms;--tg-enter-timing-function:var(--cubic-enter);--tg-exit-opacity:0;--tg-exit-transform:scale(0.6);--tg-exit-filter:none;--tg-exit-duration:150ms;--tg-exit-delay:0ms;--tg-exit-timing-function:var(--cubic-exit);--tg-initial-opacity:0;--tg-initial-transform:scale(0.6);--tg-initial-filter:none"><span class="_TransitionItem_1lpir_1 _TransitionGroupChild_1d6a5_1"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M12.7587 2H16.2413C17.0463 1.99999 17.7106 1.99998 18.2518 2.04419C18.8139 2.09012 19.3306 2.18868 19.816 2.43597C20.5686 2.81947 21.1805 3.43139 21.564 4.18404C21.8113 4.66937 21.9099 5.18608 21.9558 5.74817C22 6.28936 22 6.95372 22 7.75868V11.2413C22 12.0463 22 12.7106 21.9558 13.2518C21.9099 13.8139 21.8113 14.3306 21.564 14.816C21.1805 15.5686 20.5686 16.1805 19.816 16.564C19.3306 16.8113 18.8139 16.9099 18.2518 16.9558C17.8906 16.9853 17.4745 16.9951 16.9984 16.9984C16.9951 17.4745 16.9853 17.8906 16.9558 18.2518C16.9099 18.8139 16.8113 19.3306 16.564 19.816C16.1805 20.5686 15.5686 21.1805 14.816 21.564C14.3306 21.8113 13.8139 21.9099 13.2518 21.9558C12.7106 22 12.0463 22 11.2413 22H7.75868C6.95372 22 6.28936 22 5.74818 21.9558C5.18608 21.9099 4.66937 21.8113 4.18404 21.564C3.43139 21.1805 2.81947 20.5686 2.43597 19.816C2.18868 19.3306 2.09012 18.8139 2.04419 18.2518C1.99998 17.7106 1.99999 17.0463 2 16.2413V12.7587C1.99999 11.9537 1.99998 11.2894 2.04419 10.7482C2.09012 10.1861 2.18868 9.66937 2.43597 9.18404C2.81947 8.43139 3.43139 7.81947 4.18404 7.43598C4.66937 7.18868 5.18608 7.09012 5.74817 7.04419C6.10939 7.01468 6.52548 7.00487 7.00162 7.00162C7.00487 6.52548 7.01468 6.10939 7.04419 5.74817C7.09012 5.18608 7.18868 4.66937 7.43598 4.18404C7.81947 3.43139 8.43139 2.81947 9.18404 2.43597C9.66937 2.18868 10.1861 2.09012 10.7482 2.04419C11.2894 1.99998 11.9537 1.99999 12.7587 2ZM9.00176 7L11.2413 7C12.0463 6.99999 12.7106 6.99998 13.2518 7.04419C13.8139 7.09012 14.3306 7.18868 14.816 7.43598C15.5686 7.81947 16.1805 8.43139 16.564 9.18404C16.8113 9.66937 16.9099 10.1861 16.9558 10.7482C17 11.2894 17 11.9537 17 12.7587V14.9982C17.4455 14.9951 17.7954 14.9864 18.089 14.9624C18.5274 14.9266 18.7516 14.8617 18.908 14.782C19.2843 14.5903 19.5903 14.2843 19.782 13.908C19.8617 13.7516 19.9266 13.5274 19.9624 13.089C19.9992 12.6389 20 12.0566 20 11.2V7.8C20 6.94342 19.9992 6.36113 19.9624 5.91104C19.9266 5.47262 19.8617 5.24842 19.782 5.09202C19.5903 4.7157 19.2843 4.40973 18.908 4.21799C18.7516 4.1383 18.5274 4.07337 18.089 4.03755C17.6389 4.00078 17.0566 4 16.2 4H12.8C11.9434 4 11.3611 4.00078 10.911 4.03755C10.4726 4.07337 10.2484 4.1383 10.092 4.21799C9.7157 4.40973 9.40973 4.7157 9.21799 5.09202C9.1383 5.24842 9.07337 5.47262 9.03755 5.91104C9.01357 6.20463 9.00489 6.55447 9.00176 7ZM5.91104 9.03755C5.47262 9.07337 5.24842 9.1383 5.09202 9.21799C4.7157 9.40973 4.40973 9.7157 4.21799 10.092C4.1383 10.2484 4.07337 10.4726 4.03755 10.911C4.00078 11.3611 4 11.9434 4 12.8V16.2C4 17.0566 4.00078 17.6389 4.03755 18.089C4.07337 18.5274 4.1383 18.7516 4.21799 18.908C4.40973 19.2843 4.7157 19.5903 5.09202 19.782C5.24842 19.8617 5.47262 19.9266 5.91104 19.9624C6.36113 19.9992 6.94342 20 7.8 20H11.2C12.0566 20 12.6389 19.9992 13.089 19.9624C13.5274 19.9266 13.7516 19.8617 13.908 19.782C14.2843 19.5903 14.5903 19.2843 14.782 18.908C14.8617 18.7516 14.9266 18.5274 14.9624 18.089C14.9992 17.6389 15 17.0566 15 16.2V12.8C15 11.9434 14.9992 11.3611 14.9624 10.911C14.9266 10.4726 14.8617 10.2484 14.782 10.092C14.5903 9.7157 14.2843 9.40973 13.908 9.21799C13.7516 9.1383 13.5274 9.07337 13.089 9.03755C12.6389 9.00078 12.0566 9 11.2 9H7.8C6.94342 9 6.36113 9.00078 5.91104 9.03755Z" fill="currentColor"></path></svg></span></span></span></button><span aria-live="polite" class="sr-only"></span></div><div class="_body_1czwd_59 _bodySmall_1czwd_151 _bodyWithHeader_1czwd_139"><pre class="shiki shiki-themes syntax-highlighter light-mode _pre_1czwd_62" data-1p-ignore="true" data-copy-ignore="true" data-syntax-highlighter-id="_r45R_a_" tabindex="0"><code data-1p-ignore="true" data-language="bash" data-wrap-long-lines="false"><span aria-hidden="true" class="syntax-highlighter-line-numbers"><span class="syntax-highlighter-line-number">1<!-- -->
+</span><span class="syntax-highlighter-line-number">2<!-- -->
+</span><span class="syntax-highlighter-line-number">3<!-- -->
+</span><span class="syntax-highlighter-line-number">4<!-- -->
+</span><span class="syntax-highlighter-line-number">5<!-- -->
+</span><span class="syntax-highlighter-line-number">6<!-- -->
+</span><span class="syntax-highlighter-line-number">7<!-- -->
+</span><span class="syntax-highlighter-line-number">8<!-- -->
+</span><span class="syntax-highlighter-line-number">9<!-- -->
+</span><span class="syntax-highlighter-line-number">10<!-- -->
+</span><span class="syntax-highlighter-line-number">11</span></span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#B392F0;--shiki-light:#6F42C1">curl</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E"> </span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">https://api.openai.com/v1/responses</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E"> </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">\</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">  </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">-H</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E"> </span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">"Content-Type: application/json"</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E"> </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">\</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">  </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">-H</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E"> </span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">"Authorization: Bearer </span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">$OPENAI_API_KEY</span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">"</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E"> </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">\</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">  </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">-d</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E"> </span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">'{</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">    "model": "gpt-6.1-sol",</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">    "reasoning": {</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">      "mode": "pro",</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">      "effort": "medium"</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">    },</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">    "input": "Review this database migration plan and identify potential failure modes."</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">  }'</span></span></code></pre></div></div>
+<p>Pro mode aggregates the model work performed to produce the final answer and bills those tokens at the selected model’s standard <a href="/api/docs/pricing/">token rates</a>. Pro mode performs more model work than standard mode, increasing token usage and cost. Existing Pro model IDs keep their current behavior and pricing.</p>
+<h2 id="how-reasoning-works">How reasoning works</h2>
+<p>Reasoning models introduce <strong>reasoning tokens</strong> in addition to input and output tokens. The models use these reasoning tokens to “think,” breaking down the prompt and considering multiple approaches to generating a response. Our reasoning models like <code>gpt-5.5</code> and <code>gpt-5.4</code> support interleaved thinking, where the model is able to generate visible output tokens before and in between thinking, and is able to think in between tool calls.</p>
+<p>For models released before GPT-5.6, the default behavior in a multi-step conversation is to carry over input and output tokens from each step without rendering reasoning from earlier turns into the next sample. GPT-5.6 models instead default to rendering available reasoning from earlier turns. Use <code>reasoning.context</code> to select either behavior on supported models.</p>
+<p><img alt="Reasoning tokens with current-turn context" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/942e76679323c4f9e392.png"/></p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>While reasoning tokens are not visible via the API, they still occupy space in
+the model’s context window and are billed as <a href="https://openai.com/api/pricing">output
+tokens</a>.</p></div></div></div></div></div>
+<h2 id="controlling-costs">Controlling costs</h2>
+<p>To manage costs with reasoning models, you can limit the total number of tokens the
+model generates, including reasoning tokens, visible output tokens, and non-visible
+formatting tokens, by using the
+<a href="https://developers.openai.com/api/docs/api-reference/responses/create#responses-create-max_output_tokens"><code>max_output_tokens</code></a>
+parameter. See <a href="https://developers.openai.com/api/docs/guides/token-counting#understand-output-token-counts">output token counts</a> for details about how generated tokens are reflected in usage and output limits.</p>
+<h3 id="managing-the-context-window">Managing the context window</h3>
+<p>It’s important to ensure there’s enough space in the context window for reasoning tokens when creating responses. Depending on the problem’s complexity, the models may generate anywhere from a few hundred to tens of thousands of reasoning tokens. The exact number of reasoning tokens used is visible in the <a href="https://developers.openai.com/api/docs/api-reference/responses/object">usage object of the response object</a>, under <code>output_tokens_details</code>:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="json" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><span aria-hidden="true" class="platform-code-line-numbers" style="width:2ch"><span class="platform-code-line-number">1</span><span class="platform-code-line-number">2</span><span class="platform-code-line-number">3</span><span class="platform-code-line-number">4</span><span class="platform-code-line-number">5</span><span class="platform-code-line-number">6</span><span class="platform-code-line-number">7</span><span class="platform-code-line-number">8</span><span class="platform-code-line-number">9</span><span class="platform-code-line-number">10</span><span class="platform-code-line-number">11</span><span class="platform-code-line-number">12</span><span class="platform-code-line-number">13</span></span><code><span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  "usage"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "input_tokens"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">75</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "input_tokens_details"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">      "cached_tokens"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">0</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "output_tokens"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">1186</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "output_tokens_details"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">      "reasoning_tokens"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">1024</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "total_tokens"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">1261</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">}</span></span></code></pre>
+<p>Context window lengths are found on the <a href="/api/docs/models/">model reference page</a>, and will differ across model snapshots.</p>
+<h3 id="allocating-space-for-reasoning">Allocating space for reasoning</h3>
+<p>If the generated tokens reach the context window limit or the <code>max_output_tokens</code> value you’ve set, you’ll receive a response with a <code>status</code> of <code>incomplete</code> and <code>incomplete_details</code> with <code>reason</code> set to <code>max_output_tokens</code>. This might occur before any visible output tokens are produced, meaning you could incur costs for input and reasoning tokens without receiving a visible response.</p>
+<p>To prevent this, ensure there’s sufficient space in the context window or adjust the <code>max_output_tokens</code> value to a higher number. OpenAI recommends reserving at least 25,000 tokens for reasoning and outputs when you start experimenting with these models. As you become familiar with the number of reasoning tokens your prompts require, you can adjust this buffer accordingly.</p>
+<code-tabs title="Handling incomplete responses">
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+prompt = """
+Write a bash script that takes a matrix represented as a string with
+format '[1,2],[3,4],[5,6]' and prints the transpose in the same format.
+"""
+
+response = client.responses.create(
+    model="gpt-6-astra",
+    reasoning={"effort": "medium"},
+    input=[{"role": "user", "content": prompt}],
+    max_output_tokens=300,
+)
+
+if (
+    response.status == "incomplete"
+    and response.incomplete_details.reason == "max_output_tokens"
+):
+    print("Ran out of tokens")
+    if response.output_text:
+        print("Partial output:", response.output_text)
+    else:
+        print("Ran out of tokens during reasoning")</pre>
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const openai = new OpenAI();
+
+const prompt = `
+Write a bash script that takes a matrix represented as a string with
+format '[1,2],[3,4],[5,6]' and prints the transpose in the same format.
+`;
+
+const response = await openai.responses.create({
+  model: "gpt-6-astra",
+  reasoning: { effort: "medium" },
+  input: [
+    {
+      role: "user",
+      content: prompt,
+    },
+  ],
+  max_output_tokens: 300,
+});
+
+if (
+  response.status === "incomplete" &&
+  response.incomplete_details.reason === "max_output_tokens"
+) {
+  console.log("Ran out of tokens");
+  if (response.output_text?.length > 0) {
+    console.log("Partial output:", response.output_text);
+  } else {
+    console.log("Ran out of tokens during reasoning");
+  }
+}</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+	prompt := `Write a bash script that takes a matrix represented as a string with
+format '[1,2],[3,4],[5,6]' and prints the transpose in the same format.`
+
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model:           "gpt-6-astra",
+		MaxOutputTokens: openai.Int(300),
+		Reasoning: responses.ReasoningParam{
+			Effort: responses.ReasoningEffortMedium,
+		},
+		Input: responses.ResponseNewParamsInputUnion{
+			OfString: openai.String(prompt),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	if response.Status == responses.ResponseStatusIncomplete {
+		fmt.Println("Ran out of tokens")
+		if text := response.OutputText(); text != "" {
+			fmt.Println("Partial output:", text)
+		}
+	}
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.Reasoning;
+import com.openai.models.ReasoningEffort;
+import com.openai.models.responses.Response;
+import com.openai.models.responses.ResponseCreateParams;
+import com.openai.models.responses.ResponseStatus;
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder()
+        .model("gpt-6-astra")
+        .input(
+            "Write a bash script that takes a matrix represented as a string with format "
+                + "'[1,2],[3,4],[5,6]' and prints the transpose in the same format.")
+        .maxOutputTokens(300)
+        .reasoning(Reasoning.builder().effort(ReasoningEffort.MEDIUM).build())
+        .build();
+
+var response = client.responses().create(params);
+if (response.status().filter(ResponseStatus.INCOMPLETE::equals).isPresent()
+    && response
+        .incompleteDetails()
+        .flatMap(Response.IncompleteDetails::reason)
+        .filter(Response.IncompleteDetails.Reason.MAX_OUTPUT_TOKENS::equals)
+        .isPresent()) {
+  System.out.println("Ran out of tokens");
+  response.output().stream()
+      .flatMap(item -> item.message().stream())
+      .flatMap(message -> message.content().stream())
+      .flatMap(content -> content.outputText().stream())
+      .forEach(text -> System.out.println("Partial output: " + text.text()));
+}</pre>
+<pre data-lang="csharp">using OpenAI.Responses;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+ResponsesClient client = new(key);
+
+CreateResponseOptions options = new()
+{
+    Model = "gpt-6-astra",
+    MaxOutputTokenCount = 300,
+    ReasoningOptions = new ResponseReasoningOptions
+    {
+        ReasoningEffortLevel = ResponseReasoningEffortLevel.Medium,
+    },
+};
+options.InputItems.Add(
+    ResponseItem.CreateUserMessageItem("Write a bash script that transposes a matrix.")
+);
+
+ResponseResult response = await client.CreateResponseAsync(options);
+if (
+    response.Status == ResponseStatus.Incomplete
+    && response.IncompleteStatusDetails?.Reason == ResponseIncompleteStatusReason.MaxOutputTokens
+)
+{
+    Console.WriteLine("The response ended before all output tokens were generated.");
+    string partialOutput = response.GetOutputText();
+    Console.WriteLine(
+        string.IsNullOrWhiteSpace(partialOutput)
+            ? "Ran out of tokens during reasoning."
+            : $"Partial output: {partialOutput}"
+    );
+}
+else if (
+    response.Status == ResponseStatus.Incomplete
+    && response.IncompleteStatusDetails?.Reason == ResponseIncompleteStatusReason.ContentFilter
+)
+{
+    Console.WriteLine("The response was interrupted by the content filter.");
+}
+else if (response.Status == ResponseStatus.Completed)
+{
+    Console.WriteLine(response.GetOutputText());
+}
+else
+{
+    throw new InvalidOperationException($"The response ended with status: {response.Status}");
+}</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+prompt = <<~PROMPT
+  Write a bash script that takes a matrix represented as a string with format
+  '[1,2],[3,4],[5,6]' and prints the transpose in the same format.
+PROMPT
+
+response = client.responses.create(
+  model: "gpt-6-astra",
+  max_output_tokens: 300,
+  reasoning: { effort: :medium },
+  input: prompt
+)
+
+if response.status == OpenAI::Responses::ResponseStatus::INCOMPLETE
+  puts("Ran out of tokens")
+  puts("Partial output: #{response.output_text}") unless response.output_text.empty?
+end</pre>
+</code-tabs>
+<h2 id="preserve-reasoning-across-calls">Preserve reasoning across calls</h2>
+<p>Conversation state and reasoning state serve different purposes. Passing messages across calls gives the model the visible conversation history. On supported models, persisted reasoning also lets the model render compatible reasoning items from earlier turns into its next context.</p>
+<p>Persisted reasoning provides continuity; it does not expose the model’s raw reasoning. The reasoning items remain opaque, and the API does not return their reasoning text. Set <code>reasoning.context</code> to control which available reasoning items the model can use:</p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>The <a href="https://developers.openai.com/api/docs/guides/latest-model?model=gpt-5.6">GPT-5.6 model family</a>
+supports <code>all_turns</code> and uses it by default. Earlier models default
+to <code>current_turn</code>. <a href="https://developers.openai.com/api/docs/models/gpt-6.1-sol">GPT-6.1 Sol</a> also
+supports <code>all_turns</code>. Omit <code>reasoning.context</code> or set it
+to <code>auto</code> to use the selected model’s default.</p></div></div></div></div></div>
+<div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
+<thead>
+<tr>
+<th>Value</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>auto</code></td>
+<td>Uses the selected model’s default. Omitting <code>reasoning.context</code> has the same effect as <code>auto</code>.</td>
+</tr>
+<tr>
+<td><code>current_turn</code></td>
+<td>Makes reasoning from the active turn available, but does not render reasoning from earlier turns into the next sample.</td>
+</tr>
+<tr>
+<td><code>all_turns</code></td>
+<td>Renders available, compatible reasoning items from earlier turns into the next sample. GPT-5.6 models and GPT-6.1 Sol support this value.</td>
+</tr>
+</tbody>
+</table></div>
+<p>The response’s <code>reasoning.context</code> field contains the effective mode, either <code>current_turn</code> or <code>all_turns</code>. Check this field on each response to confirm which mode the model used. The setting does not create reasoning items that are not already available.</p>
+<p><code>all_turns</code> has an effect only when the request has access to earlier response items. Use <code>previous_response_id</code>, attach the response to a conversation, or manually replay the complete response history. On the first request, <code>current_turn</code> and <code>all_turns</code> behave the same because no earlier reasoning exists.</p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>Persisted reasoning can be reused only within the same model family. For example, <code>gpt-5.6-sol</code>, <code>gpt-5.6-terra</code>, and <code>gpt-5.6-luna</code> can reuse each other’s reasoning, but reasoning does not carry between the GPT-5.6 and GPT-5.5 families.</p><p>When you switch model families, the API omits incompatible reasoning from the model’s context, even when <code>reasoning.context</code> is <code>all_turns</code>.</p></div></div></div></div></div>
+<h3 id="continue-reasoning-with-stored-responses">Continue reasoning with stored responses</h3>
+<p>Use <code>previous_response_id</code> for the shortest stateful integration:</p>
+<code-tabs title="Preserve reasoning with a previous response">
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+model = "gpt-6.1-sol"
+
+first = client.responses.create(
+    model=model,
+    input="Inspect this repository and identify the likely bug.",
+    reasoning={"context": "current_turn"},
+)
+
+second = client.responses.create(
+    model=model,
+    previous_response_id=first.id,
+    input="Now patch the bug and explain the change.",
+    reasoning={"context": "all_turns"},
+)
+
+print(second.output_text)</pre>
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const client = new OpenAI();
+
+const first = await client.responses.create({
+  model: "gpt-6.1-sol",
+  input: "Inspect this repository and identify the likely bug.",
+  reasoning: { context: "current_turn" },
+});
+
+const second = await client.responses.create({
+  model: "gpt-6.1-sol",
+  previous_response_id: first.id,
+  input: "Now patch the bug and explain the change.",
+  reasoning: { context: "all_turns" },
+});
+
+console.log(second.output_text);</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+	model := "gpt-6.1-sol"
+
+	first, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model: model,
+		Input: responses.ResponseNewParamsInputUnion{
+			OfString: openai.String("Inspect this repository and identify the likely bug."),
+		},
+		Reasoning: responses.ReasoningParam{
+			Context: responses.ReasoningContextCurrentTurn,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	second, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model:              model,
+		PreviousResponseID: openai.String(first.ID),
+		Input: responses.ResponseNewParamsInputUnion{
+			OfString: openai.String("Now patch the bug and explain the change."),
+		},
+		Reasoning: responses.ReasoningParam{
+			Context: responses.ReasoningContextAllTurns,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(second.OutputText())
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.core.JsonValue;
+import com.openai.models.Reasoning;
+import com.openai.models.responses.ResponseCreateParams;
+
+var first =
+    client
+        .responses()
+        .create(
+            ResponseCreateParams.builder()
+                .model("gpt-6.1-sol")
+                .input("Inspect this repository and identify the likely bug.")
+                .reasoning(
+                    Reasoning.builder()
+                        .putAdditionalProperty("context", JsonValue.from("current_turn"))
+                        .build())
+                .build());
+
+var second =
+    client
+        .responses()
+        .create(
+            ResponseCreateParams.builder()
+                .model("gpt-6.1-sol")
+                .input("Now patch the bug and explain the change.")
+                .previousResponseId(first.id())
+                .reasoning(
+                    Reasoning.builder()
+                        .putAdditionalProperty("context", JsonValue.from("all_turns"))
+                        .build())
+                .build());
+second.output().stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+
+first = client.responses.create(
+  model: "gpt-6.1-sol",
+  input: "Inspect this repository and identify the likely bug.",
+  reasoning: { context: :current_turn }
+)
+
+second = client.responses.create(
+  model: "gpt-6.1-sol",
+  previous_response_id: first.id,
+  input: "Now patch the bug and explain the change.",
+  reasoning: { context: :all_turns }
+)
+
+puts(second.output_text)</pre>
+</code-tabs>
+<p>Use <code>current_turn</code> when replaying older response items that the model no longer needs. Those reasoning items can remain in the API payload for continuity, but the service does not render them into the new sample. This can reduce the rendered context for long-running workflows.</p>
+<h3 id="preserve-reasoning-without-stored-responses">Preserve reasoning without stored responses</h3>
+<p>When you create a response in stateless mode, reasoning items in the response’s <code>output</code> array include an <code>encrypted_content</code> property by default. Stateless mode applies when <code>store</code> is <code>false</code> or when your organization uses Zero Data Retention (ZDR). The API still accepts the legacy <code>reasoning.encrypted_content</code> value in <code>include</code> for compatibility, but doesn’t require it.</p>
+<p>The following request returns encrypted reasoning content without specifying <code>include</code>:</p>
+<div class="code-sample not-prose _root_1czwd_2 light-mode"><div class="_body_1czwd_59 _bodySmall_1czwd_151 _bodyWithCopyFloat_1czwd_145"><div class="_copyFloat_1czwd_157"><button aria-label="Copy code" class="_Button_6dmow_1 _copyButton_1czwd_168" data-color="primary" data-gutter-size="xs" data-icon-size="sm" data-size="sm" data-variant="ghost" type="button"><span class="_ButtonInner_6dmow_4"><span class="block relative w-[var(--button-icon-size)] h-[var(--button-icon-size)]" data-transition-position="absolute" style="--tg-will-change:transform, opacity;--tg-enter-opacity:1;--tg-enter-transform:scale(1);--tg-enter-filter:none;--tg-enter-duration:300ms;--tg-enter-delay:150ms;--tg-enter-timing-function:var(--cubic-enter);--tg-exit-opacity:0;--tg-exit-transform:scale(0.6);--tg-exit-filter:none;--tg-exit-duration:150ms;--tg-exit-delay:0ms;--tg-exit-timing-function:var(--cubic-exit);--tg-initial-opacity:0;--tg-initial-transform:scale(0.6);--tg-initial-filter:none"><span class="_TransitionItem_1lpir_1 _TransitionGroupChild_1d6a5_1"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M12.7587 2H16.2413C17.0463 1.99999 17.7106 1.99998 18.2518 2.04419C18.8139 2.09012 19.3306 2.18868 19.816 2.43597C20.5686 2.81947 21.1805 3.43139 21.564 4.18404C21.8113 4.66937 21.9099 5.18608 21.9558 5.74817C22 6.28936 22 6.95372 22 7.75868V11.2413C22 12.0463 22 12.7106 21.9558 13.2518C21.9099 13.8139 21.8113 14.3306 21.564 14.816C21.1805 15.5686 20.5686 16.1805 19.816 16.564C19.3306 16.8113 18.8139 16.9099 18.2518 16.9558C17.8906 16.9853 17.4745 16.9951 16.9984 16.9984C16.9951 17.4745 16.9853 17.8906 16.9558 18.2518C16.9099 18.8139 16.8113 19.3306 16.564 19.816C16.1805 20.5686 15.5686 21.1805 14.816 21.564C14.3306 21.8113 13.8139 21.9099 13.2518 21.9558C12.7106 22 12.0463 22 11.2413 22H7.75868C6.95372 22 6.28936 22 5.74818 21.9558C5.18608 21.9099 4.66937 21.8113 4.18404 21.564C3.43139 21.1805 2.81947 20.5686 2.43597 19.816C2.18868 19.3306 2.09012 18.8139 2.04419 18.2518C1.99998 17.7106 1.99999 17.0463 2 16.2413V12.7587C1.99999 11.9537 1.99998 11.2894 2.04419 10.7482C2.09012 10.1861 2.18868 9.66937 2.43597 9.18404C2.81947 8.43139 3.43139 7.81947 4.18404 7.43598C4.66937 7.18868 5.18608 7.09012 5.74817 7.04419C6.10939 7.01468 6.52548 7.00487 7.00162 7.00162C7.00487 6.52548 7.01468 6.10939 7.04419 5.74817C7.09012 5.18608 7.18868 4.66937 7.43598 4.18404C7.81947 3.43139 8.43139 2.81947 9.18404 2.43597C9.66937 2.18868 10.1861 2.09012 10.7482 2.04419C11.2894 1.99998 11.9537 1.99999 12.7587 2ZM9.00176 7L11.2413 7C12.0463 6.99999 12.7106 6.99998 13.2518 7.04419C13.8139 7.09012 14.3306 7.18868 14.816 7.43598C15.5686 7.81947 16.1805 8.43139 16.564 9.18404C16.8113 9.66937 16.9099 10.1861 16.9558 10.7482C17 11.2894 17 11.9537 17 12.7587V14.9982C17.4455 14.9951 17.7954 14.9864 18.089 14.9624C18.5274 14.9266 18.7516 14.8617 18.908 14.782C19.2843 14.5903 19.5903 14.2843 19.782 13.908C19.8617 13.7516 19.9266 13.5274 19.9624 13.089C19.9992 12.6389 20 12.0566 20 11.2V7.8C20 6.94342 19.9992 6.36113 19.9624 5.91104C19.9266 5.47262 19.8617 5.24842 19.782 5.09202C19.5903 4.7157 19.2843 4.40973 18.908 4.21799C18.7516 4.1383 18.5274 4.07337 18.089 4.03755C17.6389 4.00078 17.0566 4 16.2 4H12.8C11.9434 4 11.3611 4.00078 10.911 4.03755C10.4726 4.07337 10.2484 4.1383 10.092 4.21799C9.7157 4.40973 9.40973 4.7157 9.21799 5.09202C9.1383 5.24842 9.07337 5.47262 9.03755 5.91104C9.01357 6.20463 9.00489 6.55447 9.00176 7ZM5.91104 9.03755C5.47262 9.07337 5.24842 9.1383 5.09202 9.21799C4.7157 9.40973 4.40973 9.7157 4.21799 10.092C4.1383 10.2484 4.07337 10.4726 4.03755 10.911C4.00078 11.3611 4 11.9434 4 12.8V16.2C4 17.0566 4.00078 17.6389 4.03755 18.089C4.07337 18.5274 4.1383 18.7516 4.21799 18.908C4.40973 19.2843 4.7157 19.5903 5.09202 19.782C5.24842 19.8617 5.47262 19.9266 5.91104 19.9624C6.36113 19.9992 6.94342 20 7.8 20H11.2C12.0566 20 12.6389 19.9992 13.089 19.9624C13.5274 19.9266 13.7516 19.8617 13.908 19.782C14.2843 19.5903 14.5903 19.2843 14.782 18.908C14.8617 18.7516 14.9266 18.5274 14.9624 18.089C14.9992 17.6389 15 17.0566 15 16.2V12.8C15 11.9434 14.9992 11.3611 14.9624 10.911C14.9266 10.4726 14.8617 10.2484 14.782 10.092C14.5903 9.7157 14.2843 9.40973 13.908 9.21799C13.7516 9.1383 13.5274 9.07337 13.089 9.03755C12.6389 9.00078 12.0566 9 11.2 9H7.8C6.94342 9 6.36113 9.00078 5.91104 9.03755Z" fill="currentColor"></path></svg></span></span></span></button><span aria-live="polite" class="sr-only"></span></div><pre class="shiki shiki-themes syntax-highlighter light-mode _pre_1czwd_62" data-1p-ignore="true" data-copy-ignore="true" data-syntax-highlighter-id="_r48R_a_" tabindex="0"><code data-1p-ignore="true" data-language="bash" data-wrap-long-lines="false"><span aria-hidden="true" class="syntax-highlighter-line-numbers"><span class="syntax-highlighter-line-number">1<!-- -->
+</span><span class="syntax-highlighter-line-number">2<!-- -->
+</span><span class="syntax-highlighter-line-number">3<!-- -->
+</span><span class="syntax-highlighter-line-number">4<!-- -->
+</span><span class="syntax-highlighter-line-number">5<!-- -->
+</span><span class="syntax-highlighter-line-number">6<!-- -->
+</span><span class="syntax-highlighter-line-number">7<!-- -->
+</span><span class="syntax-highlighter-line-number">8<!-- -->
+</span><span class="syntax-highlighter-line-number">9<!-- -->
+</span><span class="syntax-highlighter-line-number">10</span></span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#B392F0;--shiki-light:#6F42C1">curl</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E"> </span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">https://api.openai.com/v1/responses</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E"> </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">\</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">  </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">-H</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E"> </span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">"Content-Type: application/json"</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E"> </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">\</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">  </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">-H</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E"> </span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">"Authorization: Bearer </span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">$OPENAI_API_KEY</span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">"</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E"> </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">\</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">  </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">-d</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E"> </span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">'{</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">    "model": "gpt-6-astra",</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">    "store": false,</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">    "reasoning": {"effort": "medium"},</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">    "input": "What is the weather like today?",</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">    "tools": [ ... function config here ... ]</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">  }'</span></span></code></pre></div></div>
+<p>Reasoning items in the <code>output</code> array will include an <code>encrypted_content</code> property containing encrypted reasoning tokens that you can pass to future calls.</p>
+<p>To use <code>all_turns</code> with <code>store: false</code>, preserve every output item, append the next user message, and replay the complete history:</p>
+<code-tabs title="Preserve reasoning without storing responses">
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+model = "gpt-6.1-sol"
+
+history = [
+    {
+        "role": "user",
+        "content": "Inspect this repository and identify the likely bug.",
+    }
+]
+
+first = client.responses.create(
+    model=model,
+    store=False,
+    input=history,
+    reasoning={"context": "current_turn"},
+)
+
+# Keep every output item, including encrypted reasoning and assistant phase.
+history.extend(item.to_dict() for item in first.output)
+history.append(
+    {
+        "role": "user",
+        "content": "Now patch the bug and explain the change.",
+    }
+)
+
+second = client.responses.create(
+    model=model,
+    store=False,
+    input=history,
+    reasoning={"context": "all_turns"},
+)
+
+print(second.output_text)</pre>
+<pre data-lang="javascript">import OpenAI from "openai";
+import { toResponseInputItems } from "openai/lib/responses/ResponseInputItems";
+
+const client = new OpenAI();
+
+const history = [
+  {
+    role: "user",
+    content: "Inspect this repository and identify the likely bug.",
+  },
+];
+
+const first = await client.responses.create({
+  model: "gpt-6.1-sol",
+  store: false,
+  input: history,
+  reasoning: { context: "current_turn" },
+});
+
+// Keep replayable output, including encrypted reasoning and assistant phase.
+history.push(...toResponseInputItems(first.output));
+history.push({
+  role: "user",
+  content: "Now patch the bug and explain the change.",
+});
+
+const second = await client.responses.create({
+  model: "gpt-6.1-sol",
+  store: false,
+  input: history,
+  reasoning: { context: "all_turns" },
+});
+
+console.log(second.output_text);</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+	"github.com/openai/openai-go/v3/shared"
+)
+
+func main() {
+	client := openai.NewClient()
+	history := []responses.ResponseInputItemUnionParam{
+		responses.ResponseInputItemParamOfMessage("Inspect this repository and identify the likely bug.", responses.EasyInputMessageRoleUser),
+	}
+	first, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model:     "gpt-6.1-sol",
+		Store:     openai.Bool(false),
+		Input:     responses.ResponseNewParamsInputUnion{OfInputItemList: history},
+		Reasoning: shared.ReasoningParam{Context: shared.ReasoningContextCurrentTurn},
+	})
+	if err != nil {
+		panic(err)
+	}
+	history = append(history, outputAsInput(first.Output)...)
+	history = append(history, responses.ResponseInputItemParamOfMessage(
+		"Now patch the bug and explain the change.",
+		responses.EasyInputMessageRoleUser,
+	))
+	second, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model:     "gpt-6.1-sol",
+		Store:     openai.Bool(false),
+		Input:     responses.ResponseNewParamsInputUnion{OfInputItemList: history},
+		Reasoning: shared.ReasoningParam{Context: shared.ReasoningContextAllTurns},
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(second.OutputText())
+}
+
+func outputAsInput(output []responses.ResponseOutputItemUnion) []responses.ResponseInputItemUnionParam {
+	input := make([]responses.ResponseInputItemUnionParam, 0, len(output))
+	for _, item := range output {
+		var converted responses.ResponseInputItemUnion
+		if err := json.Unmarshal([]byte(item.RawJSON()), &converted); err != nil {
+			panic(err)
+		}
+		input = append(input, converted.ToParam())
+	}
+	return input
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.core.JsonValue;
+import com.openai.models.Reasoning;
+import com.openai.models.responses.EasyInputMessage;
+import com.openai.models.responses.ResponseCreateParams;
+import com.openai.models.responses.ResponseInputItem;
+import java.util.ArrayList;
+
+var history = new ArrayList<ResponseInputItem>();
+history.add(
+    ResponseInputItem.ofEasyInputMessage(
+        EasyInputMessage.builder()
+            .role(EasyInputMessage.Role.USER)
+            .content("Inspect this repository and identify the likely bug.")
+            .build()));
+
+var first =
+    client
+        .responses()
+        .create(
+            ResponseCreateParams.builder()
+                .model("gpt-6.1-sol")
+                .inputOfResponse(history)
+                .store(false)
+                .reasoning(
+                    Reasoning.builder()
+                        .putAdditionalProperty("context", JsonValue.from("current_turn"))
+                        .build())
+                .build());
+first.output().stream()
+    .map(item -> JsonValue.from(item).convert(ResponseInputItem.class))
+    .forEach(history::add);
+history.add(
+    ResponseInputItem.ofEasyInputMessage(
+        EasyInputMessage.builder()
+            .role(EasyInputMessage.Role.USER)
+            .content("Now patch the bug and explain the change.")
+            .build()));
+
+client
+    .responses()
+    .create(
+        ResponseCreateParams.builder()
+            .model("gpt-6.1-sol")
+            .inputOfResponse(history)
+            .store(false)
+            .reasoning(
+                Reasoning.builder()
+                    .putAdditionalProperty("context", JsonValue.from("all_turns"))
+                    .build())
+            .build())
+    .output()
+    .stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+history = [
+  {
+    role: :user,
+    content: "Inspect this repository and identify the likely bug."
+  }
+]
+
+first = client.responses.create(
+  model: "gpt-6.1-sol",
+  store: false,
+  input: history,
+  reasoning: { context: :current_turn }
+)
+history.concat(first.output)
+history << {
+  role: :user,
+  content: "Now patch the bug and explain the change."
+}
+
+second = client.responses.create(
+  model: "gpt-6.1-sol",
+  store: false,
+  input: history,
+  reasoning: { context: :all_turns }
+)
+
+puts(second.output_text)</pre>
+</code-tabs>
+<h3 id="keeping-reasoning-items-in-context">Keeping reasoning items in context</h3>
+<p>When doing <a href="https://developers.openai.com/api/docs/guides/function-calling">function calling</a> with a reasoning model in the <a href="https://developers.openai.com/api/docs/api-reference/responses">Responses API</a>, we highly recommend you pass back any reasoning items returned with the last function call (in addition to the output of your function). If the model calls multiple functions consecutively, you should pass back all reasoning items, function call items, and function call output items, since the last <code>user</code> message. This allows the model to continue its reasoning process to produce better results in the most token-efficient manner.</p>
+<p>The simplest way to do this is to pass in all reasoning items from a previous response into the next one. Our systems will smartly ignore any reasoning items that aren’t relevant to your functions, and only retain those in context that are relevant. You can pass reasoning items from previous responses either using the <code>previous_response_id</code> parameter, or by manually passing in all the <a href="https://developers.openai.com/api/docs/api-reference/responses/object#responses/object-output">output</a> items from a past response into the <a href="https://developers.openai.com/api/docs/api-reference/responses/create#responses-create-input">input</a> of a new one.</p>
+<p>For advanced use cases where you might be truncating and optimizing parts of the context window before passing them on to the next response, just ensure all items between the last user message and your function call output are passed into the next response untouched. This will ensure that the model has all the context it needs.</p>
+<p>Check out <a href="https://developers.openai.com/api/docs/guides/conversation-state">this guide</a> to learn more about manual context management.</p>
+<h2 id="change-reasoning-mid-conversation">Change reasoning mid-conversation</h2>
+<p>Use <code>configuration_update</code> to increase reasoning effort for difficult work or reduce it for routine follow-ups. Add the update between responses while leaving the request-level <code>reasoning.effort</code> unchanged. This preserves the original prompt prefix for <a href="https://developers.openai.com/api/docs/guides/prompt-caching">prompt caching</a>.</p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>On supported GPT-6 and later models, you can update reasoning effort and
+response format in standard, single-agent mode.</p></div></div></div></div></div>
+<p>Add the following item before the next user message in the <code>input</code> array of an HTTP Responses request or a WebSocket <code>response.create</code> request:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="json" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><span aria-hidden="true" class="platform-code-line-numbers" style="width:1ch"><span class="platform-code-line-number">1</span><span class="platform-code-line-number">2</span><span class="platform-code-line-number">3</span><span class="platform-code-line-number">4</span><span class="platform-code-line-number">5</span><span class="platform-code-line-number">6</span></span><code><span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  "type"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"configuration_update"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  "reasoning"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "effort"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"high"</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">}</span></span></code></pre>
+<p>For example, if the conversation starts with request-level effort <code>low</code>, this update selects <code>high</code> for the next response and subsequent responses until another update overrides it.</p>
+<code-tabs title="Increase reasoning effort for a follow-up">
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+model = "gpt-6-astra"
+
+response = client.responses.create(
+    model=model,
+    reasoning={"effort": "low"},
+    input="Draft a database migration plan.",
+    store=True,
+)
+print(response.output_text)
+
+response = client.responses.create(
+    model=model,
+    previous_response_id=response.id,
+    reasoning={"effort": "low"},
+    input=[
+        {
+            "type": "configuration_update",
+            "reasoning": {"effort": "high"},
+        },
+        {
+            "role": "user",
+            "content": "Analyze the failure modes and propose rollback steps.",
+        },
+    ],
+    store=True,
+)
+print(response.output_text)</pre>
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const client = new OpenAI();
+const model = "gpt-6-astra";
+
+const first = await client.responses.create({
+  model,
+  reasoning: { effort: "low" },
+  input: "Draft a database migration plan.",
+});
+
+const next = await client.responses.create({
+  model,
+  reasoning: { effort: "low" },
+  previous_response_id: first.id,
+  input: [
+    { type: "configuration_update", reasoning: { effort: "high" } },
+    {
+      role: "user",
+      content: "Analyze the failure modes and propose rollback steps.",
+    },
+  ],
+});
+console.log(next.output_text);</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+	"github.com/openai/openai-go/v3/shared"
+)
+
+func main() {
+	client := openai.NewClient()
+	ctx := context.Background()
+	first, err := client.Responses.New(ctx, responses.ResponseNewParams{
+		Store:     openai.Bool(true),
+		Model:     "gpt-6-astra",
+		Reasoning: shared.ReasoningParam{Effort: shared.ReasoningEffortLow},
+		Input:     responses.ResponseNewParamsInputUnion{OfString: openai.String("Draft a database migration plan.")},
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(first.OutputText())
+	response, err := client.Responses.New(ctx, responses.ResponseNewParams{
+		Model:              "gpt-6-astra",
+		PreviousResponseID: openai.String(first.ID),
+		// Keep the original request-level setting; the item updates the conversation.
+		Reasoning: shared.ReasoningParam{Effort: shared.ReasoningEffortLow},
+		Input: responses.ResponseNewParamsInputUnion{OfInputItemList: responses.ResponseInputParam{
+			{OfConfigurationUpdate: &responses.ResponseConfigurationUpdateItemParam{
+				Reasoning: responses.ResponseConfigurationUpdateItemParamReasoning{Effort: shared.ReasoningEffortHigh},
+			}},
+			responses.ResponseInputItemParamOfMessage("Analyze the failure modes and propose rollback steps.", responses.EasyInputMessageRoleUser),
+		}},
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(response.OutputText())
+}</pre>
+<pre data-lang="java">import com.openai.models.Reasoning;
+import com.openai.models.ReasoningEffort;
+import com.openai.models.responses.EasyInputMessage;
+import com.openai.models.responses.Response;
+import com.openai.models.responses.ResponseConfigurationUpdateItemParam;
+import com.openai.models.responses.ResponseCreateParams;
+import com.openai.models.responses.ResponseInputItem;
+import java.util.List;
+
+Response first =
+    client
+        .responses()
+        .create(
+            ResponseCreateParams.builder()
+                .model("gpt-6-astra")
+                .store(true)
+                .reasoning(Reasoning.builder().effort(ReasoningEffort.LOW).build())
+                .input("Draft a database migration plan.")
+                .build());
+Response response =
+    client
+        .responses()
+        .create(
+            ResponseCreateParams.builder()
+                .model("gpt-6-astra")
+                .previousResponseId(first.id())
+                // Keep the original request-level setting; the item updates the conversation.
+                .reasoning(Reasoning.builder().effort(ReasoningEffort.LOW).build())
+                .inputOfResponse(
+                    List.of(
+                        ResponseInputItem.ofConfigurationUpdate(
+                            ResponseConfigurationUpdateItemParam.builder()
+                                .reasoning(
+                                    ResponseConfigurationUpdateItemParam.Reasoning.builder()
+                                        .effort(ReasoningEffort.HIGH)
+                                        .build())
+                                .build()),
+                        ResponseInputItem.ofEasyInputMessage(
+                            EasyInputMessage.builder()
+                                .role(EasyInputMessage.Role.USER)
+                                .content(
+                                    "Analyze the failure modes and propose rollback steps.")
+                                .build())))
+                .build());
+response.output().stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+first = client.responses.create(
+  model: "gpt-6-astra",
+  store: true,
+  reasoning: OpenAI::Models::Reasoning.new(effort: :low),
+  input: "Draft a database migration plan."
+)
+puts(first.output_text)
+response = client.responses.create(
+  model: "gpt-6-astra",
+  previous_response_id: first.id,
+  # Keep the original request-level setting; the item updates the conversation.
+  reasoning: OpenAI::Models::Reasoning.new(effort: :low),
+  input: [
+    OpenAI::Models::Responses::ResponseConfigurationUpdateItemParam.new(
+      reasoning: OpenAI::Models::Responses::ResponseConfigurationUpdateItemParam::Reasoning.new(
+        effort: :high
+      )
+    ),
+    OpenAI::Models::Responses::EasyInputMessage.new(
+      role: :user,
+      content: "Analyze the failure modes and propose rollback steps."
+    )
+  ]
+)
+puts(response.output_text)</pre>
+</code-tabs>
+<p>Preserve updates with <code>previous_response_id</code>, or replay them in their original positions when <a href="https://developers.openai.com/api/docs/guides/conversation-state#manually-manage-conversation-state">managing conversation history manually</a>. The response’s <code>reasoning.effort</code> continues to report the request-level setting, not the effort selected by the update.</p>
+<p>You can set <code>reasoning.effort</code> and <a href="/api/docs/guides/structured-outputs/?api-mode=responses#change-the-response-format-mid-conversation"><code>text.format</code></a> in the same <code>configuration_update</code> item. An update to either setting alone preserves the other.</p>
+<p>Do not combine configuration updates with automatic compaction or automatic truncation. The standalone <code>/responses/compact</code> endpoint also rejects histories containing these updates.</p>
+<p>You can still explicitly compact history by including a <code>compaction_trigger</code> item in a <code>/responses</code> request. After compaction, add a fresh <code>configuration_update</code> before the next user message. Restate each setting you changed, including the format if you changed it.</p>
+<p>Normal prompt caching requirements still apply. To send user instructions while a response is running, use <a href="https://developers.openai.com/api/docs/guides/steering">Mid-turn steering</a>.</p>
+<h2 id="reasoning-summaries">Reasoning summaries</h2>
+<p>While we don’t expose the raw reasoning tokens emitted by the model, you can view a summary of the model’s reasoning using the <code>summary</code> parameter. See our <a href="/api/docs/models/">model documentation</a> to check which reasoning models support summaries.</p>
+<p>Different models support different reasoning summary settings. For example, our computer use model supports the <code>concise</code> summarizer, while o4-mini supports <code>detailed</code>. To access the most detailed summarizer available for a model, set the value of this parameter to <code>auto</code>. <code>auto</code> will be equivalent to <code>detailed</code> for most reasoning models today, but there may be more granular settings in the future.</p>
+<p>Reasoning summary output is part of the <code>summary</code> array in the <code>reasoning</code> <a href="https://developers.openai.com/api/docs/api-reference/responses/object#responses/object-output">output item</a>. This output will not be included unless you explicitly opt in to including reasoning summaries.</p>
+<p>The example below shows how to make an API request that includes a reasoning summary.</p>
+<code-tabs title="Include a reasoning summary with the API response">
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+response = client.responses.create(
+    model="gpt-6-astra",
+    input="What is the capital of France?",
+    reasoning={"effort": "low", "summary": "auto"},
+)
+
+print(response.output)</pre>
+<pre data-lang="javascript">import OpenAI from "openai";
+const openai = new OpenAI();
+
+const response = await openai.responses.create({
+  model: "gpt-6-astra",
+  input: "What is the capital of France?",
+  reasoning: {
+    effort: "low",
+    summary: "auto",
+  },
+});
+
+console.log(response.output);</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model: "gpt-6-astra",
+		Input: responses.ResponseNewParamsInputUnion{
+			OfString: openai.String("What is the capital of France?"),
+		},
+		Reasoning: responses.ReasoningParam{
+			Effort:  responses.ReasoningEffortLow,
+			Summary: responses.ReasoningSummaryAuto,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(response.Output)
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.Reasoning;
+import com.openai.models.ReasoningEffort;
+import com.openai.models.responses.ResponseCreateParams;
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder()
+        .model("gpt-6-astra")
+        .input("What is the capital of France?")
+        .reasoning(
+            Reasoning.builder()
+                .effort(ReasoningEffort.LOW)
+                .summary(Reasoning.Summary.AUTO)
+                .build())
+        .build();
+
+client.responses().create(params).output().stream()
+    .flatMap(item -> item.reasoning().stream())
+    .flatMap(reasoning -> reasoning.summary().stream())
+    .forEach(summary -> System.out.println(summary.text()));</pre>
+<pre data-lang="csharp">using OpenAI.Responses;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+ResponsesClient client = new(key);
+
+CreateResponseOptions options = new()
+{
+    Model = "gpt-6-astra",
+    ReasoningOptions = new ResponseReasoningOptions
+    {
+        ReasoningEffortLevel = ResponseReasoningEffortLevel.Low,
+        ReasoningSummaryVerbosity = ResponseReasoningSummaryVerbosity.Auto,
+    },
+};
+options.InputItems.Add(ResponseItem.CreateUserMessageItem("What is the capital of France?"));
+
+ResponseResult response = await client.CreateResponseAsync(options);
+foreach (ReasoningResponseItem reasoning in response.OutputItems.OfType<ReasoningResponseItem>())
+{
+    Console.WriteLine(reasoning.GetSummaryText());
+}
+Console.WriteLine(response.GetOutputText());</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+
+response = client.responses.create(
+  model: "gpt-6-astra",
+  input: "What is the capital of France?",
+  reasoning: {
+    effort: :low,
+    summary: :auto
+  }
+)
+
+puts(response.output)</pre>
+<pre data-lang="curl">curl https://api.openai.com/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -d '{
+    "model": "gpt-6-astra",
+    "input": "What is the capital of France?",
+    "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+    }
+  }'</pre>
+</code-tabs>
+<p>This API request will return an output array with both an assistant message and a summary of the model’s reasoning in generating that response.</p>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="json" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><span aria-hidden="true" class="platform-code-line-numbers" style="width:2ch"><span class="platform-code-line-number">1</span><span class="platform-code-line-number">2</span><span class="platform-code-line-number">3</span><span class="platform-code-line-number">4</span><span class="platform-code-line-number">5</span><span class="platform-code-line-number">6</span><span class="platform-code-line-number">7</span><span class="platform-code-line-number">8</span><span class="platform-code-line-number">9</span><span class="platform-code-line-number">10</span><span class="platform-code-line-number">11</span><span class="platform-code-line-number">12</span><span class="platform-code-line-number">13</span><span class="platform-code-line-number">14</span><span class="platform-code-line-number">15</span><span class="platform-code-line-number">16</span><span class="platform-code-line-number">17</span><span class="platform-code-line-number">18</span><span class="platform-code-line-number">19</span><span class="platform-code-line-number">20</span><span class="platform-code-line-number">21</span><span class="platform-code-line-number">22</span><span class="platform-code-line-number">23</span><span class="platform-code-line-number">24</span><span class="platform-code-line-number">25</span><span class="platform-code-line-number">26</span></span><code><span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">[</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "id"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"rs_6876cf02e0bc8192b74af0fb64b715ff06fa2fcced15a5ac"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "type"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"reasoning"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "summary"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">      {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "type"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"summary_text"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "text"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"**Answering a simple question**</span><span style="color:#005CC5;--shiki-dark:#79B8FF">\n\n</span><span style="color:#032F62;--shiki-dark:#9ECBFF">I</span><span style="color:#005CC5;--shiki-dark:#79B8FF">\u2019</span><span style="color:#032F62;--shiki-dark:#9ECBFF">m looking at a straightforward question: the capital of France is Paris. It</span><span style="color:#005CC5;--shiki-dark:#79B8FF">\u2019</span><span style="color:#032F62;--shiki-dark:#9ECBFF">s a well-known fact, and I want to keep it brief and to the point. Paris is known for its history, art, and culture, so it might be nice to add just a hint of that charm. But mostly, I</span><span style="color:#005CC5;--shiki-dark:#79B8FF">\u2019</span><span style="color:#032F62;--shiki-dark:#9ECBFF">ll aim to focus on delivering a clear and direct answer, ensuring the user gets what they</span><span style="color:#005CC5;--shiki-dark:#79B8FF">\u2019</span><span style="color:#032F62;--shiki-dark:#9ECBFF">re looking for without any extra fluff."</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    ]</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "id"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"msg_6876cf054f58819284ecc1058131305506fa2fcced15a5ac"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "type"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"message"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "status"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"completed"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "content"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">      {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "type"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"output_text"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "annotations"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "logprobs"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "text"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"The capital of France is Paris."</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    ],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "role"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"assistant"</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">]</span></span></code></pre>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>Before using summarizers with our latest reasoning models, you may need to
+complete <a href="https://help.openai.com/en/articles/10910291-api-organization-verification">organization
+verification</a>
+to ensure safe deployment. Get started with verification on the <a href="https://platform.openai.com/settings/organization/general">platform
+settings page</a>.</p></div></div></div></div></div>
+<h2 id="phase-parameter">phase parameter</h2>
+<p>For long-running or tool-heavy flows with GPT-5.5 and GPT-5.4 in the Responses API, use the assistant message <code>phase</code> field to avoid early stopping and other misbehavior.
+<code>phase</code> is optional at the API level, but OpenAI recommends using it. Use <code>phase: "commentary"</code> for intermediate assistant updates, such as preambles before tool calls, and <code>phase: "final_answer"</code> for the completed answer. Don’t add <code>phase</code> to user messages.
+Using <code>previous_response_id</code> is usually the simplest path because prior assistant state is preserved. If you replay assistant history manually, preserve each original <code>phase</code> value.
+Missing or dropped <code>phase</code> can cause preambles to be treated as final answers in those workflows. For model-specific prompt guidance, see <a href="https://developers.openai.com/api/docs/guides/latest-model?model=gpt-5.5#prompting-best-practices">Prompting GPT-5.5</a>.</p>
+<h3 id="round-trip-assistant-phase-values">Round-trip assistant phase values</h3>
+<code-tabs title="Round-trip assistant phase values">
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+response = client.responses.create(
+    model="gpt-6-astra",
+    input=[
+        {
+            "role": "assistant",
+            "phase": "commentary",
+            "content": "I’ll inspect the logs and then summarize root cause and remediation.",
+        },
+        {
+            "role": "assistant",
+            "phase": "final_answer",
+            "content": "Root cause: cache invalidation race.",
+        },
+        {
+            "role": "user",
+            "content": "Great—now give me a rollout-safe fix plan.",
+        },
+    ],
+)
+
+print(response.output_text)</pre>
+<pre data-lang="javascript">import OpenAI from "openai";
+const client = new OpenAI();
+
+const response = await client.responses.create({
+  model: "gpt-6-astra",
+  input: [
+    {
+      role: "assistant",
+      phase: "commentary",
+      content:
+        "I’ll inspect the logs and then summarize root cause and remediation.",
+    },
+    {
+      role: "assistant",
+      phase: "final_answer",
+      content: "Root cause: cache invalidation race.",
+    },
+    {
+      role: "user",
+      content: "Great—now give me a rollout-safe fix plan.",
+    },
+  ],
+});
+
+console.log(response.output_text);</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+	commentary := responses.ResponseInputItemParamOfMessage(
+		"I’ll inspect the logs and then summarize root cause and remediation.",
+		responses.EasyInputMessageRoleAssistant,
+	)
+	commentary.OfMessage.Phase = responses.EasyInputMessagePhaseCommentary
+	finalAnswer := responses.ResponseInputItemParamOfMessage(
+		"Root cause: cache invalidation race.",
+		responses.EasyInputMessageRoleAssistant,
+	)
+	finalAnswer.OfMessage.Phase = responses.EasyInputMessagePhaseFinalAnswer
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model: "gpt-6-astra",
+		Input: responses.ResponseNewParamsInputUnion{OfInputItemList: responses.ResponseInputParam{
+			commentary,
+			finalAnswer,
+			responses.ResponseInputItemParamOfMessage("Great—now give me a rollout-safe fix plan.", responses.EasyInputMessageRoleUser),
+		}},
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(response.OutputText())
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.responses.EasyInputMessage;
+import com.openai.models.responses.ResponseCreateParams;
+import com.openai.models.responses.ResponseInputItem;
+import java.util.List;
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder()
+        .model("gpt-6-astra")
+        .inputOfResponse(
+            List.of(
+                ResponseInputItem.ofEasyInputMessage(
+                    EasyInputMessage.builder()
+                        .role(EasyInputMessage.Role.ASSISTANT)
+                        .phase(EasyInputMessage.Phase.COMMENTARY)
+                        .content(
+                            "I'll inspect the logs and then summarize root cause and remediation.")
+                        .build()),
+                ResponseInputItem.ofEasyInputMessage(
+                    EasyInputMessage.builder()
+                        .role(EasyInputMessage.Role.ASSISTANT)
+                        .phase(EasyInputMessage.Phase.FINAL_ANSWER)
+                        .content("Root cause: cache invalidation race.")
+                        .build()),
+                ResponseInputItem.ofEasyInputMessage(
+                    EasyInputMessage.builder()
+                        .role(EasyInputMessage.Role.USER)
+                        .content("Great—now give me a rollout-safe fix plan.")
+                        .build())))
+        .build();
+
+client.responses().create(params).output().stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+
+response = client.responses.create(
+  model: "gpt-6-astra",
+  input: [
+    {
+      role: :assistant,
+      phase: :commentary,
+      content: "I'll inspect the logs and then summarize root cause and remediation."
+    },
+    {
+      role: :assistant,
+      phase: :final_answer,
+      content: "Root cause: cache invalidation race."
+    },
+    {
+      role: :user,
+      content: "Great—now give me a rollout-safe fix plan."
+    }
+  ]
+)
+
+puts(response.output_text)</pre>
+</code-tabs>
+<h2 id="advice-on-prompting">Advice on prompting</h2>
+<p>Consider these differences when prompting a reasoning model. Reasoning-capable GPT-5 models usually work best when you give them a clear goal, strong constraints, and an explicit output contract without prescribing every intermediate step.</p>
+<ul>
+<li>Give the model the task, constraints, and desired output format.</li>
+<li>Treat <code>reasoning.effort</code> as a tuning knob, not the primary way to recover quality.</li>
+<li>For agentic or research-heavy workflows, define what counts as done and how the model should verify its work.</li>
+</ul>
+<p>For more information on best practices when using reasoning models, <a href="/api/docs/guides/reasoning-best-practices/">refer to this guide</a>.</p>
+<h3 id="prompt-examples">Prompt examples</h3>
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="example" data-content-switcher-initial="refactoring" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="refactoring" id="content-switcher-example"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="refactoring">Coding (refactoring)</option><option value="planning">Coding (planning)</option><option value="research">STEM Research</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="refactoring"><div class="hidden">Coding (refactoring)</div><p>Reasoning models can implement complex algorithms and produce code. This prompt asks the model to refactor a React component based on specific criteria.</p>
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <code-tabs title="Refactor code">
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const openai = new OpenAI();
+
+const prompt = `
+Instructions:
+- Given the React component below, change it so that nonfiction books have red
+  text.
+- Return only the code in your reply
+- Do not include any additional formatting, such as markdown code blocks
+- For formatting, use four space tabs, and do not allow any lines of code to
+  exceed 80 columns
+
+const books = [
+  { title: 'Dune', category: 'fiction', id: 1 },
+  { title: 'Frankenstein', category: 'fiction', id: 2 },
+  { title: 'Moneyball', category: 'nonfiction', id: 3 },
+];
+
+export default function BookList() {
+  const listItems = books.map(book =>
+    <li>
+      {book.title}
+    </li>
+  );
+
+  return (
+    <ul>{listItems}</ul>
+  );
+}
+`.trim();
+
+const completion = await openai.chat.completions.create({
+  model: "gpt-6-astra",
+  messages: [
+    {
+      role: "user",
+      content: prompt,
+    },
+  ],
+  store: true,
+});
+
+console.log(completion.choices[0].message.content);</pre>
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+prompt = """
+Instructions:
+- Given the React component below, change it so that nonfiction books have red
+  text.
+- Return only the code in your reply
+- Do not include any additional formatting, such as markdown code blocks
+- For formatting, use four space tabs, and do not allow any lines of code to
+  exceed 80 columns
+
+const books = [
+  { title: 'Dune', category: 'fiction', id: 1 },
+  { title: 'Frankenstein', category: 'fiction', id: 2 },
+  { title: 'Moneyball', category: 'nonfiction', id: 3 },
+];
+
+export default function BookList() {
+  const listItems = books.map(book =>
+    <li>
+      {book.title}
+    </li>
+  );
+
+  return (
+    <ul>{listItems}</ul>
+  );
+}
+"""
+
+response = client.chat.completions.create(
+    model="gpt-6-astra",
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+            ],
+        }
+    ],
+)
+
+print(response.choices[0].message.content)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+)
+
+func main() {
+	client := openai.NewClient()
+	prompt := `Instructions:
+- Given the React component below, change it so that nonfiction books have red text.
+- Return only the code in your reply.
+- Do not include any additional formatting, such as markdown code blocks.
+
+const books = [
+  { title: 'Dune', category: 'fiction', id: 1 },
+  { title: 'Frankenstein', category: 'fiction', id: 2 },
+  { title: 'Moneyball', category: 'nonfiction', id: 3 },
+];`
+
+	completion, err := client.Chat.Completions.New(context.Background(), openai.ChatCompletionNewParams{
+		Model: "gpt-6-astra",
+		Messages: []openai.ChatCompletionMessageParamUnion{
+			openai.UserMessage(prompt),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(completion.Choices[0].Message.Content)
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.chat.completions.ChatCompletionCreateParams;
+
+String prompt =
+    """
+    Instructions:
+    - Given the React component below, change it so that nonfiction books have red text.
+    - Return only the code in your reply.
+    - Do not include any additional formatting, such as markdown code blocks.
+
+    const books = [
+    { title: 'Dune', category: 'fiction', id: 1 },
+    { title: 'Frankenstein', category: 'fiction', id: 2 },
+    { title: 'Moneyball', category: 'nonfiction', id: 3 },
+    ];
+    """
+        .strip();
+
+ChatCompletionCreateParams params =
+    ChatCompletionCreateParams.builder().model("gpt-6-astra").addUserMessage(prompt).build();
+
+client.chat().completions().create(params).choices().stream()
+    .flatMap(choice -> choice.message().content().stream())
+    .forEach(System.out::println);</pre>
+<pre data-lang="csharp">using OpenAI.Chat;
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+string model = "gpt-6-astra";
+ChatClient client = new(model, key);
+
+string prompt =
+    """
+    Instructions:
+    - Given the React component below, make nonfiction book titles red.
+    - Return only the updated component code in your reply.
+    - Do not include any additional formatting, such as markdown code blocks.
+    - For formatting, use four space tabs, and do not allow any lines of code to
+      exceed 80 columns.
+
+    const books = [
+      { title: 'Dune', category: 'fiction', id: 1 },
+      { title: 'Frankenstein', category: 'fiction', id: 2 },
+      { title: 'Moneyball', category: 'nonfiction', id: 3 },
+    ];
+
+    export default function BookList() {
+      const listItems = books.map(book =>
+        <li>
+          {book.title}
+        </li>
+      );
+
+      return (
+        <ul>{listItems}</ul>
+      );
+    }
+    """;
+ChatCompletion completion = await client.CompleteChatAsync(new UserChatMessage(prompt));
+Console.WriteLine(completion.Content[0].Text);</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+prompt = <<~PROMPT
+  Instructions:
+  - Given the React component below, change it so that nonfiction books have red text.
+  - Return only the code in your reply.
+  - Do not include any additional formatting, such as markdown code blocks.
+
+  const books = [
+    { title: 'Dune', category: 'fiction', id: 1 },
+    { title: 'Frankenstein', category: 'fiction', id: 2 },
+    { title: 'Moneyball', category: 'nonfiction', id: 3 },
+  ];
+PROMPT
+
+completion = client.chat.completions.create(
+  model: "gpt-6-astra",
+  messages: [
+    {
+      role: :user,
+      content: prompt
+    }
+  ]
+)
+
+puts(completion.choices.fetch(0).message.content)</pre>
+</code-tabs> </div> 
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="Refactor code">
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const openai = new OpenAI();
+
+const prompt = `
+Instructions:
+- Given the React component below, change it so that nonfiction books have red
+  text.
+- Return only the code in your reply
+- Do not include any additional formatting, such as markdown code blocks
+- For formatting, use four space tabs, and do not allow any lines of code to
+  exceed 80 columns
+
+const books = [
+  { title: 'Dune', category: 'fiction', id: 1 },
+  { title: 'Frankenstein', category: 'fiction', id: 2 },
+  { title: 'Moneyball', category: 'nonfiction', id: 3 },
+];
+
+export default function BookList() {
+  const listItems = books.map(book =>
+    <li>
+      {book.title}
+    </li>
+  );
+
+  return (
+    <ul>{listItems}</ul>
+  );
+}
+`.trim();
+
+const response = await openai.responses.create({
+  model: "gpt-6-astra",
+  input: [
+    {
+      role: "user",
+      content: prompt,
+    },
+  ],
+});
+
+console.log(response.output_text);</pre>
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+prompt = """
+Instructions:
+- Given the React component below, change it so that nonfiction books have red
+  text.
+- Return only the code in your reply
+- Do not include any additional formatting, such as markdown code blocks
+- For formatting, use four space tabs, and do not allow any lines of code to
+  exceed 80 columns
+
+const books = [
+  { title: 'Dune', category: 'fiction', id: 1 },
+  { title: 'Frankenstein', category: 'fiction', id: 2 },
+  { title: 'Moneyball', category: 'nonfiction', id: 3 },
+];
+
+export default function BookList() {
+  const listItems = books.map(book =>
+    <li>
+      {book.title}
+    </li>
+  );
+
+  return (
+    <ul>{listItems}</ul>
+  );
+}
+"""
+
+response = client.responses.create(
+    model="gpt-6-astra",
+    input=[
+        {
+            "role": "user",
+            "content": prompt,
+        }
+    ],
+)
+
+print(response.output_text)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+	prompt := `Instructions:
+- Given the React component below, change it so that nonfiction books have red text.
+- Return only the code in your reply.
+- Do not include any additional formatting, such as markdown code blocks.
+
+const books = [
+  { title: 'Dune', category: 'fiction', id: 1 },
+  { title: 'Frankenstein', category: 'fiction', id: 2 },
+  { title: 'Moneyball', category: 'nonfiction', id: 3 },
+];`
+
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model: "gpt-6-astra",
+		Input: responses.ResponseNewParamsInputUnion{
+			OfString: openai.String(prompt),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(response.OutputText())
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.responses.ResponseCreateParams;
+
+String prompt =
+    """
+    Instructions:
+    - Given the React component below, change it so that nonfiction books have red text.
+    - Return only the code in your reply.
+    - Do not include any additional formatting, such as markdown code blocks.
+
+    const books = [
+    { title: 'Dune', category: 'fiction', id: 1 },
+    { title: 'Frankenstein', category: 'fiction', id: 2 },
+    { title: 'Moneyball', category: 'nonfiction', id: 3 },
+    ];
+    """
+        .strip();
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder().model("gpt-6-astra").input(prompt).build();
+
+client.responses().create(params).output().stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="csharp">using OpenAI.Responses;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+ResponsesClient client = new(key);
+
+string prompt =
+    """
+    Instructions:
+    - Given the React component below, make nonfiction book titles red.
+    - Return only the updated component code in your reply.
+    - Do not include any additional formatting, such as markdown code blocks.
+    - For formatting, use four space tabs, and do not allow any lines of code to
+      exceed 80 columns.
+
+    const books = [
+      { title: 'Dune', category: 'fiction', id: 1 },
+      { title: 'Frankenstein', category: 'fiction', id: 2 },
+      { title: 'Moneyball', category: 'nonfiction', id: 3 },
+    ];
+
+    export default function BookList() {
+      const listItems = books.map(book =>
+        <li>
+          {book.title}
+        </li>
+      );
+
+      return (
+        <ul>{listItems}</ul>
+      );
+    }
+    """;
+ResponseResult response = await client.CreateResponseAsync(
+    "gpt-6-astra",
+    [ResponseItem.CreateUserMessageItem(prompt)]
+);
+Console.WriteLine(response.GetOutputText());</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+prompt = <<~PROMPT
+  Instructions:
+  - Given the React component below, change it so that nonfiction books have red text.
+  - Return only the code in your reply.
+  - Do not include any additional formatting, such as markdown code blocks.
+
+  const books = [
+    { title: 'Dune', category: 'fiction', id: 1 },
+    { title: 'Frankenstein', category: 'fiction', id: 2 },
+    { title: 'Moneyball', category: 'nonfiction', id: 3 },
+  ];
+PROMPT
+
+response = client.responses.create(
+  model: "gpt-6-astra",
+  input: prompt
+)
+
+puts(response.output_text)</pre>
+</code-tabs> </div> </div><div data-content-switcher-pane="true" data-value="planning" hidden=""><div class="hidden">Coding (planning)</div><p>Reasoning models can also create multi-step plans. This example prompt asks the model to create a filesystem structure for a full solution, along with Python code that implements the desired use case.</p>
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <code-tabs title="Plan and create a Python project">
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const openai = new OpenAI();
+
+const prompt = `
+I want to build a Python app that takes user questions and looks
+them up in a database where they are mapped to answers. If there
+is close match, it retrieves the matched answer. If there isn't,
+it asks the user to provide an answer and stores the
+question/answer pair in the database. Make a plan for the directory
+structure you'll need, then return each file in full. Only supply
+your reasoning at the beginning and end, not throughout the code.
+`.trim();
+
+const completion = await openai.chat.completions.create({
+  model: "gpt-6-astra",
+  messages: [
+    {
+      role: "user",
+      content: prompt,
+    },
+  ],
+  store: true,
+});
+
+console.log(completion.choices[0].message.content);</pre>
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+prompt = """
+I want to build a Python app that takes user questions and looks
+them up in a database where they are mapped to answers. If there
+is close match, it retrieves the matched answer. If there isn't,
+it asks the user to provide an answer and stores the
+question/answer pair in the database. Make a plan for the directory
+structure you'll need, then return each file in full. Only supply
+your reasoning at the beginning and end, not throughout the code.
+"""
+
+response = client.chat.completions.create(
+    model="gpt-6-astra",
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+            ],
+        }
+    ],
+)
+
+print(response.choices[0].message.content)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+)
+
+func main() {
+	client := openai.NewClient()
+	prompt := `I want to build a Python app that takes user questions and looks them up
+in a database where they are mapped to answers. If there is a close match, it
+retrieves the matched answer. If there is not, it asks the user to provide an
+answer and stores the question/answer pair in the database. Make a plan for the
+directory structure you will need, then return each file in full.`
+
+	completion, err := client.Chat.Completions.New(context.Background(), openai.ChatCompletionNewParams{
+		Model: "gpt-6-astra",
+		Messages: []openai.ChatCompletionMessageParamUnion{
+			openai.UserMessage(prompt),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(completion.Choices[0].Message.Content)
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.chat.completions.ChatCompletionCreateParams;
+
+String prompt =
+    """
+    I want to build a Python app that looks up user questions in a database where
+    they are mapped to answers. If there is a close match, it retrieves the answer.
+    Otherwise, it asks the user for an answer and stores the question and answer.
+    Plan the directory structure, then return each file in full.
+    """
+        .strip();
+
+ChatCompletionCreateParams params =
+    ChatCompletionCreateParams.builder().model("gpt-6-astra").addUserMessage(prompt).build();
+
+client.chat().completions().create(params).choices().stream()
+    .flatMap(choice -> choice.message().content().stream())
+    .forEach(System.out::println);</pre>
+<pre data-lang="csharp">using OpenAI.Chat;
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+string model = "gpt-6-astra";
+ChatClient client = new(model, key);
+
+string prompt =
+    """
+    I want to build a Python app that looks up user questions in a database where
+    they are mapped to answers. If there is a close match, it retrieves the answer.
+    Otherwise, it asks the user for an answer and stores the question and answer.
+    Plan the directory structure, then return each file in full.
+    Only supply your reasoning at the beginning and end, not throughout the code.
+    """;
+ChatCompletion completion = await client.CompleteChatAsync(
+    new UserChatMessage(prompt)
+);
+
+Console.WriteLine(completion.Content[0].Text);</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+prompt = <<~PROMPT
+  I want to build a Python app that looks up user questions in a database where
+  they are mapped to answers. If there is a close match, it retrieves the answer.
+  Otherwise, it asks the user for an answer and stores the question and answer.
+  Plan the directory structure, then return each file in full.
+PROMPT
+
+completion = client.chat.completions.create(
+  model: "gpt-6-astra",
+  messages: [
+    {
+      role: :user,
+      content: prompt
+    }
+  ]
+)
+
+puts(completion.choices.fetch(0).message.content)</pre>
+</code-tabs> </div> 
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="Plan and create a Python project">
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const openai = new OpenAI();
+
+const prompt = `
+I want to build a Python app that takes user questions and looks
+them up in a database where they are mapped to answers. If there
+is close match, it retrieves the matched answer. If there isn't,
+it asks the user to provide an answer and stores the
+question/answer pair in the database. Make a plan for the directory
+structure you'll need, then return each file in full. Only supply
+your reasoning at the beginning and end, not throughout the code.
+`.trim();
+
+const response = await openai.responses.create({
+  model: "gpt-6-astra",
+  input: [
+    {
+      role: "user",
+      content: prompt,
+    },
+  ],
+});
+
+console.log(response.output_text);</pre>
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+prompt = """
+I want to build a Python app that takes user questions and looks
+them up in a database where they are mapped to answers. If there
+is close match, it retrieves the matched answer. If there isn't,
+it asks the user to provide an answer and stores the
+question/answer pair in the database. Make a plan for the directory
+structure you'll need, then return each file in full. Only supply
+your reasoning at the beginning and end, not throughout the code.
+"""
+
+response = client.responses.create(
+    model="gpt-6-astra",
+    input=[
+        {
+            "role": "user",
+            "content": prompt,
+        }
+    ],
+)
+
+print(response.output_text)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+	prompt := `I want to build a Python app that takes user questions and looks them up
+in a database where they are mapped to answers. If there is a close match, it
+retrieves the matched answer. If there is not, it asks the user to provide an
+answer and stores the question/answer pair in the database. Make a plan for the
+directory structure you will need, then return each file in full.`
+
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model: "gpt-6-astra",
+		Input: responses.ResponseNewParamsInputUnion{
+			OfString: openai.String(prompt),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(response.OutputText())
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.responses.ResponseCreateParams;
+
+String prompt =
+    """
+    I want to build a Python app that looks up user questions in a database where
+    they are mapped to answers. If there is a close match, it retrieves the answer.
+    Otherwise, it asks the user for an answer and stores the question and answer.
+    Plan the directory structure, then return each file in full.
+    """
+        .strip();
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder().model("gpt-6-astra").input(prompt).build();
+
+client.responses().create(params).output().stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="csharp">using OpenAI.Responses;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+ResponsesClient client = new(key);
+
+string prompt =
+    """
+    I want to build a Python app that looks up user questions in a database where
+    they are mapped to answers. If there is a close match, it retrieves the answer.
+    Otherwise, it asks the user for an answer and stores the question and answer.
+    Plan the directory structure, then return each file in full.
+    Only supply your reasoning at the beginning and end, not throughout the code.
+    """;
+ResponseResult response = await client.CreateResponseAsync("gpt-6-astra", prompt);
+
+Console.WriteLine(response.GetOutputText());</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+prompt = <<~PROMPT
+  I want to build a Python app that looks up user questions in a database where
+  they are mapped to answers. If there is a close match, it retrieves the answer.
+  Otherwise, it asks the user for an answer and stores the question and answer.
+  Plan the directory structure, then return each file in full.
+PROMPT
+
+response = client.responses.create(
+  model: "gpt-6-astra",
+  input: prompt
+)
+
+puts(response.output_text)</pre>
+</code-tabs> </div> </div><div data-content-switcher-pane="true" data-value="research" hidden=""><div class="hidden">STEM Research</div><p>OpenAI o-series models have shown excellent performance in STEM research. Prompts asking for support of basic research tasks should show strong results.</p>
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <code-tabs title="Ask questions related to basic scientific research">
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const openai = new OpenAI();
+
+const prompt = `
+What are three compounds we should consider investigating to
+advance research into new antibiotics? Why should we consider
+them?
+`;
+
+const completion = await openai.chat.completions.create({
+  model: "gpt-6-astra",
+  messages: [
+    {
+      role: "user",
+      content: prompt,
+    },
+  ],
+  store: true,
+});
+
+console.log(completion.choices[0].message.content);</pre>
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+prompt = """
+What are three compounds we should consider investigating to
+advance research into new antibiotics? Why should we consider
+them?
+"""
+
+response = client.chat.completions.create(
+    model="gpt-6-astra", messages=[{"role": "user", "content": prompt}]
+)
+
+print(response.choices[0].message.content)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+)
+
+func main() {
+	client := openai.NewClient()
+	prompt := `What are three compounds we should consider investigating to advance
+research into new antibiotics? Why should we consider them?`
+
+	completion, err := client.Chat.Completions.New(context.Background(), openai.ChatCompletionNewParams{
+		Model: "gpt-6-astra",
+		Messages: []openai.ChatCompletionMessageParamUnion{
+			openai.UserMessage(prompt),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(completion.Choices[0].Message.Content)
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.chat.completions.ChatCompletionCreateParams;
+
+String prompt =
+    """
+    What are three compounds we should consider investigating to advance research
+    into new antibiotics? Why should we consider them?
+    """
+        .strip();
+
+ChatCompletionCreateParams params =
+    ChatCompletionCreateParams.builder().model("gpt-6-astra").addUserMessage(prompt).build();
+
+client.chat().completions().create(params).choices().stream()
+    .flatMap(choice -> choice.message().content().stream())
+    .forEach(System.out::println);</pre>
+<pre data-lang="csharp">using OpenAI.Chat;
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+string model = "gpt-6-astra";
+ChatClient client = new(model, key);
+
+string prompt =
+    """
+    What are three compounds we should investigate to advance research into
+    new antibiotics? Why should we consider them?
+    """;
+ChatCompletion completion = await client.CompleteChatAsync(new UserChatMessage(prompt));
+Console.WriteLine(completion.Content[0].Text);</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+prompt = <<~PROMPT
+  What are three compounds we should consider investigating to advance research
+  into new antibiotics? Why should we consider them?
+PROMPT
+
+completion = client.chat.completions.create(
+  model: "gpt-6-astra",
+  messages: [
+    {
+      role: :user,
+      content: prompt
+    }
+  ]
+)
+
+puts(completion.choices.fetch(0).message.content)</pre>
+</code-tabs> </div> 
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="Ask questions related to basic scientific research">
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const openai = new OpenAI();
+
+const prompt = `
+What are three compounds we should consider investigating to
+advance research into new antibiotics? Why should we consider
+them?
+`;
+
+const response = await openai.responses.create({
+  model: "gpt-6-astra",
+  input: [
+    {
+      role: "user",
+      content: prompt,
+    },
+  ],
+});
+
+console.log(response.output_text);</pre>
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+prompt = """
+What are three compounds we should consider investigating to
+advance research into new antibiotics? Why should we consider
+them?
+"""
+
+response = client.responses.create(
+    model="gpt-6-astra", input=[{"role": "user", "content": prompt}]
+)
+
+print(response.output_text)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+	prompt := `What are three compounds we should consider investigating to advance
+research into new antibiotics? Why should we consider them?`
+
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model: "gpt-6-astra",
+		Input: responses.ResponseNewParamsInputUnion{
+			OfString: openai.String(prompt),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(response.OutputText())
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.responses.ResponseCreateParams;
+
+String prompt =
+    """
+    What are three compounds we should consider investigating to advance research
+    into new antibiotics? Why should we consider them?
+    """
+        .strip();
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder().model("gpt-6-astra").input(prompt).build();
+
+client.responses().create(params).output().stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="csharp">using OpenAI.Responses;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+ResponsesClient client = new(key);
+
+string prompt =
+    """
+    What are three compounds we should investigate to advance research into
+    new antibiotics? Why should we consider them?
+    """;
+ResponseResult response = await client.CreateResponseAsync(
+    "gpt-6-astra",
+    [ResponseItem.CreateUserMessageItem(prompt)]
+);
+Console.WriteLine(response.GetOutputText());</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+prompt = <<~PROMPT
+  What are three compounds we should consider investigating to advance research
+  into new antibiotics? Why should we consider them?
+PROMPT
+
+response = client.responses.create(
+  model: "gpt-6-astra",
+  input: prompt
+)
+
+puts(response.output_text)</pre>
+</code-tabs> </div> </div> </div> </div>
+<h2 id="use-case-examples">Use case examples</h2>
+<p>Some examples of using reasoning models for real-world use cases can be found in <a href="https://developers.openai.com/cookbook">the cookbook</a>.</p>
+<a href="https://cookbook.openai.com/examples/o1/using_reasoning_for_data_validation" rel="noopener noreferrer" target="_blank"><div class="icon-item mt-6"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M6.00633 5.5C6.02321 5.53319 6.07042 5.60366 6.19525 5.70906C6.42458 5.9027 6.81573 6.12215 7.38659 6.32603C8.5196 6.73067 10.1506 7 12 7C13.8494 7 15.4804 6.73067 16.6134 6.32603C17.1843 6.12215 17.5754 5.9027 17.8048 5.70906C17.9296 5.60366 17.9768 5.53319 17.9937 5.5C17.9768 5.46681 17.9296 5.39634 17.8048 5.29094C17.5754 5.0973 17.1843 4.87785 16.6134 4.67397C15.4804 4.26933 13.8494 4 12 4C10.1506 4 8.5196 4.26933 7.38659 4.67397C6.81573 4.87785 6.42458 5.0973 6.19525 5.29094C6.07042 5.39634 6.02321 5.46681 6.00633 5.5ZM18 7.91726C17.7726 8.02403 17.5333 8.12123 17.2861 8.20951C15.8856 8.70968 14.0166 9 12 9C9.98341 9 8.1144 8.70968 6.71392 8.20951C6.46674 8.12123 6.22738 8.02403 6 7.91726V11.986C6.00906 12.0096 6.04856 12.0852 6.19525 12.2091C6.42458 12.4027 6.81573 12.6221 7.38659 12.826C8.5196 13.2307 10.1506 13.5 12 13.5C13.8494 13.5 15.4804 13.2307 16.6134 12.826C17.1843 12.6221 17.5754 12.4027 17.8048 12.2091C17.9514 12.0852 17.9909 12.0096 18 11.986V7.91726ZM18 14.4173C17.7726 14.524 17.5333 14.6212 17.2861 14.7095C15.8856 15.2097 14.0166 15.5 12 15.5C9.98341 15.5 8.1144 15.2097 6.71392 14.7095C6.46674 14.6212 6.22738 14.524 6 14.4173V18.486C6.00906 18.5096 6.04856 18.5852 6.19525 18.7091C6.42458 18.9027 6.81573 19.1221 7.38659 19.326C8.5196 19.7307 10.1506 20 12 20C13.8494 20 15.4804 19.7307 16.6134 19.326C17.1843 19.1221 17.5754 18.9027 17.8048 18.7091C17.9514 18.5852 17.9909 18.5096 18 18.486V14.4173ZM4 5.5C4 4.74631 4.43048 4.16346 4.90494 3.76283C5.38405 3.35829 6.01803 3.03902 6.71392 2.79049C8.1144 2.29032 9.98341 2 12 2C14.0166 2 15.8856 2.29032 17.2861 2.79049C17.982 3.03902 18.616 3.35829 19.0951 3.76283C19.5695 4.16346 20 4.74631 20 5.5V18.5C20 19.2537 19.5695 19.8365 19.0951 20.2372C18.616 20.6417 17.982 20.961 17.2861 21.2095C15.8856 21.7097 14.0166 22 12 22C9.98341 22 8.1144 21.7097 6.71392 21.2095C6.01803 20.961 5.38405 20.6417 4.90494 20.2372C4.43048 19.8365 4 19.2537 4 18.5V5.5Z" fill="currentColor"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">Using reasoning for data validation</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>Evaluate a synthetic medical data set for discrepancies.</p> </div> </div> </div></a>
+<a href="https://cookbook.openai.com/examples/o1/using_reasoning_for_routine_generation" rel="noopener noreferrer" target="_blank"><div class="icon-item mt-6"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path clip-rule="evenodd" d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Z" fill-rule="evenodd"></path><path clip-rule="evenodd" d="M12 9a1 1 0 0 0-.879.522 1 1 0 0 1-1.754-.96A3 3 0 0 1 12 7c1.515 0 2.567 1.006 2.866 2.189.302 1.189-.156 2.574-1.524 3.258A.618.618 0 0 0 13 13a1 1 0 1 1-2 0c0-.992.56-1.898 1.447-2.342.455-.227.572-.618.48-.978C12.836 9.314 12.529 9 12 9Z" fill-rule="evenodd"></path><path d="M13.1 16a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0Z"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">Using reasoning for routine generation</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>Use help center articles to generate actions that an agent could perform.</p> </div> </div> </div></a>

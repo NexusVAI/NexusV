@@ -104,7 +104,8 @@ for (const row of data.recent_usage.data) {
 <p>流式请求的 usage 在流的结尾返回。<code>usage</code> 不包含缓存命中的 token 数，实际扣费以 <code>cost</code> 为准。</p>
 
 <h2 id="console">在控制台查看</h2>
-<p>控制台的<a href="/api/console/usage/">用量</a>页可以查看最近 30 天所有个人密钥的调用记录、token 用量与消费金额；<a href="/api/console/billing/">账单</a>页可以查看余额与充值记录。团队的用量在<a href="/api/console/team/">团队</a>页查看。</p>
+<p><a href="/api/console/usage/">用量</a>默认显示北京时间当天的请求数、Token 与消费。点击「默认项目」右侧的日期可选择其他时段。逐次调用在<a href="/api/console/logs/">日志</a>中查看；每把密钥的累计消费与最近调用时间在<a href="/api/console/keys/">API 密钥</a>中查看。</p>
+<p>余额与充值记录在<a href="/api/console/billing/">账单</a>中查看，团队用量在<a href="/api/console/team/">团队</a>页查看。</p>
 
 <h2 id="next-steps">下一步</h2>
 <cards>

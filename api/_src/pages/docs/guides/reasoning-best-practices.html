@@ -1,0 +1,119 @@
+---
+title: 推理最佳实践
+description: 探讨 o 系列推理模型（如 o1 和 o3-mini）与 GPT 模型的最佳实践，包括适用场景、模型选择和提示词指导。
+tab: models
+lead: false
+css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
+js: /api/assets/model-guide.js
+---
+<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/reasoning-best-practices (reference copy for local review). -->
+<p>OpenAI 提供两类模型：<a href="/api/docs/models/#o4-mini">推理模型</a>（例如 o3 和 o4-mini）与 <a href="/api/docs/models/#gpt-4.1">GPT 模型</a>（例如 GPT-4.1）。这两类模型的行为不同。</p>
+<p>本指南涵盖以下内容：</p>
+<ol>
+<li>推理模型与非推理 GPT 模型的区别</li>
+<li>何时使用推理模型</li>
+<li>如何有效地向推理模型提示</li>
+</ol>
+<p>进一步了解<a href="/api/docs/guides/reasoning/">推理模型</a>及其工作原理。</p>
+<h2 id="reasoning-models-vs-gpt-models">推理模型与 GPT 模型</h2>
+<p>与 GPT 模型相比，o 系列模型擅长的任务不同，需要的提示方式也不同。两者没有孰优孰劣，只是各有所长。</p>
+<p>我们训练 o 系列模型（即“规划者”）对复杂任务进行更长时间、更深入的思考。它们擅长制定策略、规划复杂问题的解法，并基于大量模糊信息做决策。这些模型还能高精度、高准确率地执行任务，适合数学、科学、工程、金融服务和法律服务等原本需要人类专家的领域。</p>
+<p>另一方面，延迟更低、成本更低的 GPT 模型（即“执行者”）专为直接执行任务而设计。应用可以先用 o 系列模型规划解决问题的策略，再用 GPT 模型执行具体任务，尤其是当速度和成本比完美的准确率更重要时。</p>
+<h3 id="how-to-choose">如何选择</h3>
+<p>对你的场景来说，什么最重要？</p>
+<ul>
+<li><strong>速度和成本</strong> → GPT 模型更快，通常成本也更低</li>
+<li><strong>执行定义清晰的任务</strong> → GPT 模型能很好地处理明确定义的任务</li>
+<li><strong>准确性和可靠性</strong> → o 系列模型是可靠的决策者</li>
+<li><strong>复杂问题求解</strong> → o 系列模型能处理模糊性和复杂性</li>
+</ul>
+<p>如果完成任务时最看重速度和成本，<em>并且</em>你的场景由简单、定义清晰的任务组成，那么 GPT 模型最适合你。如果最看重准确性和可靠性，<em>并且</em>你要解决的是非常复杂的多步骤问题，那么 o 系列模型更可能适合你。</p>
+<p>多数 AI 工作流会同时使用两类模型：o 系列负责智能体的规划和决策，GPT 系列负责执行任务。</p>
+<p><img alt="GPT 模型与 o 系列模型搭配效果好" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/933791a0c99eac942911.png"/></p>
+<small><p><em>我们的 GPT-4o 和 GPT-4o mini 模型整理订单详情与客户信息，识别订单问题和退货政策，然后把这些数据交给 o3-mini，由它根据政策判断退货是否可行并做出最终决定。</em></p></small>
+<h2 id="when-to-use-our-reasoning-models">何时使用推理模型</h2>
+<p>以下是我们从客户以及 OpenAI 内部观察到的几种成功用法。这并非对所有可能场景的完整梳理，而是一些用于测试 o 系列模型的实用参考。</p>
+<p><a href="/api/docs/guides/reasoning/">准备好使用推理模型了？直接跳到快速开始 →</a></p>
+<h3 id="1-navigating-ambiguous-tasks">1. 处理模糊任务</h3>
+<p>推理模型擅长处理有限或零散的信息。只需一个简单的提示，它就能理解用户意图，并补足指令中的缺口。事实上，推理模型常会先提出澄清问题，而不是贸然猜测或硬性填补信息空缺。</p>
+<blockquote>
+<p>“o1 的推理能力让我们的多智能体平台 Matrix 在处理复杂文档时，能够给出详尽、格式规范、细节丰富的回答。例如，只用一个基础提示，o1 就能在一份信贷协议中找出受限支付额度下可用的全部篮子。此前的模型都做不到这一点。在密集的信贷协议复杂提示上，o1 有 52% 的情况结果优于其他模型。”</p>
+<p>—<a href="https://www.hebbia.com/">Hebbia</a>，面向法律和金融的 AI 知识平台公司</p>
+</blockquote>
+<h3 id="2-finding-a-needle-in-a-haystack">2. 大海捞针</h3>
+<p>当你输入大量非结构化信息时，推理模型擅长理解内容，并只提取与问题最相关的部分。</p>
+<blockquote>
+<p>“在分析一家公司的收购案时，o1 查阅了数十份公司文件，包括合同和租约，找出可能影响交易的棘手条款。它的任务是标出关键条款，结果在脚注中发现了一条关键的“控制权变更”条款：如果公司被出售，就必须立即偿还一笔 7500 万美元的贷款。o1 对细节的极高敏感度，使我们的 AI 智能体能够帮助金融专业人士识别关键信息。”</p>
+<p>—<a href="https://endex.ai/">Endex</a>，AI 金融情报平台</p>
+</blockquote>
+<h3 id="3-finding-relationships-and-nuance-across-a-large-dataset">3. 在大型数据集中发现关联和细微差别</h3>
+<p>我们发现，推理模型尤其擅长处理包含数百页密集非结构化信息的复杂文档，例如法律合同、财务报表和保险理赔材料。这些模型善于在文档之间建立对应关系，并基于数据中未明说的事实做出判断。</p>
+<blockquote>
+<p>“税务研究需要综合多份文档，才能得出一个有说服力的最终结论。我们把 GPT-4o 换成 o1 后发现，o1 更擅长推理文档之间的相互关系，得出在任何单一文档中都看不出的逻辑结论。结果是，换用 o1 后端到端的表现提升了 4 倍，效果出色。”</p>
+<p>—<a href="https://www.bluej.com/">Blue J</a>，税务研究 AI 平台</p>
+</blockquote>
+<p>推理模型也擅长推理细致的政策和规则，并把它们应用到当前任务中，从而得出合理的结论。</p>
+<blockquote>
+<p>“在财务分析中，分析师常要处理与股东权益相关的复杂情形，并理解其中的法律细节。我们用一个既有挑战又很常见的问题测试了约 10 个不同供应商的模型：融资如何影响现有股东，尤其是当他们行使反稀释权利时？这需要推算融资前后的估值，并处理循环稀释的问题，而顶尖的金融分析师通常要花 20 到 30 分钟才能算清。我们发现 o1 和 o3-mini 能够完美地完成这项工作！模型甚至生成了一张清晰的计算表，展示对一位持股 10 万美元股东的影响。”</p>
+<p>—<a href="https://www.blueflame.ai/">BlueFlame AI</a>，投资管理 AI 平台</p>
+</blockquote>
+<h3 id="4-multistep-agentic-planning">4. 多步骤智能体规划</h3>
+<p>推理模型是智能体规划和策略制定的关键。我们看到，当推理模型担任“规划者”时效果很好：它先给出详细的多步骤解法，再根据每一步更看重高智能还是低延迟，为其选择并分配合适的 GPT 模型（即“执行者”）。</p>
+<blockquote>
+<p>“我们在智能体基础设施中用 o1 作为规划者，让它编排工作流中的其他模型来完成多步骤任务。我们发现 o1 很擅长挑选数据类型，并把大问题拆成小块，从而让其他模型专注于执行。”</p>
+<p>—<a href="https://argon-ai.com/">Argon AI</a>，医药行业 AI 知识平台</p>
+</blockquote>
+<blockquote>
+<p>“Lindy 是我们面向工作场景的 AI 助手，o1 驱动着其中的许多智能体工作流。模型通过函数调用从你的日历或邮件中获取信息，然后自动帮你安排会议、发送邮件，并管理日常事务的其他部分。我们把过去经常出问题的智能体步骤全部切换到 o1，结果智能体一夜之间几乎变得毫无差错！”</p>
+<p>—<a href="http://Lindy.AI">Lindy.AI</a>，面向工作场景的 AI 助手</p>
+</blockquote>
+<h3 id="5-visual-reasoning">5. 视觉推理</h3>
+<p>截至目前，o1 是唯一支持视觉能力的推理模型。它与 GPT-4o 的区别在于，即使是图表和表格结构模糊、照片质量很差等最具挑战的视觉内容，o1 也能理解。</p>
+<blockquote>
+<p>“我们为网上数百万件商品做风险与合规审核，包括奢侈珠宝仿品、濒危物种和受管制物质。在我们最难的图像分类任务上，GPT-4o 的准确率为 50%。在没有修改任何流程的情况下，o1 达到了 88% 的准确率，提升十分明显。”</p>
+<p>—<a href="https://www.safetykit.com/">SafetyKit</a>，AI 驱动的风险与合规平台</p>
+</blockquote>
+<p>我们自己的内部测试显示，o1 能从非常详细的建筑图纸中识别构件和材料，并生成完整的材料清单。最出乎意料的一点是，o1 能够跨图像建立关联：它能读懂建筑图纸某一页上的图例，并在另一页上正确应用，而无需额外指令。下图中，对于 4x4 PT 木桩，o1 根据图例识别出“PT”代表压力处理。</p>
+<p><img alt="o 系列模型正确读取建筑图纸细节" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/b4c45fefa9b10eb630d0.png"/></p>
+<h3 id="6-reviewing-debugging-and-improving-code-quality">6. 审查、调试和提升代码质量</h3>
+<p>推理模型在审查和改进大量代码方面尤其有效。考虑到它们的延迟较高，这类任务常在后台运行代码审查。</p>
+<blockquote>
+<p>“我们在 GitHub 和 GitLab 等平台上提供自动化 AI 代码审查。代码审查本身对延迟并不敏感，但需要理解跨多个文件的代码差异。这正是 o1 的强项：它能可靠地发现人工审查者可能漏掉的细微代码改动。切换到 o 系列模型后，我们的产品转化率提升了 3 倍。”</p>
+<p>—<a href="https://www.coderabbit.ai/">CodeRabbit</a>，AI 代码审查创业公司</p>
+</blockquote>
+<p>虽然 GPT-4o 和 GPT-4o mini 凭借较低的延迟，可能更适合编写代码，但在对延迟不太敏感的代码生成场景中，我们也看到 o3-mini 有出色表现。</p>
+<blockquote>
+<p>“当问题定义清楚时，o3-mini 能持续产出高质量、结论明确的代码，即使是非常有挑战性的编程任务，它也经常给出正确解法。其他模型可能只适合小规模、快速的代码迭代，而 o3-mini 擅长规划和实现复杂的软件设计系统。”</p>
+<p>—<a href="https://codeium.com/">Windsurf</a>，协作式智能体 AI IDE，由 Codeium 开发</p>
+</blockquote>
+<h3 id="7-evaluation-and-benchmarking-for-other-model-responses">7. 评估和基准测试其他模型的回复</h3>
+<p>我们还看到，推理模型在评测和评估其他模型的回复方面表现很好。数据验证对保证数据集的质量和可靠性很重要，在医疗等敏感领域尤其如此。传统验证方法依赖预定义的规则和模式，而 o1 和 o3-mini 这类高级模型能理解上下文并推理数据，从而实现更灵活、更智能的验证。</p>
+<blockquote>
+<p>“许多客户在 Braintrust 的评估流程中都使用 LLM 作为裁判。例如，一家医疗公司可能用 gpt-4o 这类主力模型汇总患者的问题，再用 o1 评估摘要质量。一位 Braintrust 客户发现，裁判模型的 F1 分数从用 4o 时的 0.12 提升到用 o1 时的 0.74！在这些场景中，对于最困难、最复杂的评分任务，他们发现 o1 的推理能力能找出回答之间细微的差别，是一大突破。”</p>
+<p>—<a href="https://www.braintrust.dev/">Braintrust</a>，AI 评估平台</p>
+</blockquote>
+<h2 id="how-to-prompt-reasoning-models-effectively">如何有效地向推理模型提示</h2>
+<p>这些模型在简单直接的提示下表现最好。一些提示工程技巧，例如要求模型“一步一步思考”，可能无法提升表现，有时甚至会起反作用。参考以下最佳实践，或<a href="https://developers.openai.com/api/docs/guides/reasoning/advice-on-prompting#prompt-examples">从提示示例开始</a>。</p>
+<ul>
+<li><strong>开发者消息取代系统消息</strong>：从 <code>o1-2024-12-17</code> 开始，推理模型支持开发者消息而不是系统消息，以与<a href="https://cdn.openai.com/spec/model-spec-2024-05-08.html#follow-the-chain-of-command">模型规范</a>中描述的指令层级行为保持一致。</li>
+<li><strong>保持提示简单直接</strong>：这些模型擅长理解并响应简短、清晰的指令。</li>
+<li><strong>避免思维链提示</strong>：由于这些模型在内部完成推理，要求它们“一步一步思考”或“解释你的推理过程”没有必要。</li>
+<li><strong>用分隔符让结构清晰</strong>：使用 Markdown、XML 标签和章节标题等分隔符，明确标示输入的不同部分，帮助模型正确理解各部分。</li>
+<li><strong>先尝试零样本，必要时再用少样本</strong>：推理模型通常不需要少样本示例也能给出好结果，因此应先尝试不带示例的提示。如果对输出有更复杂的要求，可以在提示中加入几组输入与期望输出的示例。但要确保示例与提示中的指令高度一致，否则两者的差异可能导致效果不佳。</li>
+<li><strong>给出具体指引</strong>：如果你希望明确限制模型的回答方式（例如“提出预算低于 500 美元的方案”），请在提示中直接写明这些约束。</li>
+<li><strong>明确最终目标</strong>：在指令中尽量给出成功回答的具体参数，并鼓励模型持续推理和迭代，直到符合你的成功标准。</li>
+<li><strong>Markdown 格式</strong>：从 <code>o1-2024-12-17</code> 开始，API 中的推理模型默认不生成带 Markdown 格式的回答。如果你希望模型使用 Markdown 格式，请在开发者消息的第一行加入字符串 <code>Formatting re-enabled</code>。</li>
+</ul>
+<h2 id="how-to-keep-costs-low-and-accuracy-high">如何在控制成本的同时保持准确性</h2>
+<p>随着 <code>o3</code> 和 <code>o4-mini</code> 模型的推出，Responses API 中被持久化的推理项的处理方式有所不同。此前（对于 <code>o1</code>、<code>o3-mini</code>、<code>o1-mini</code> 和 <code>o1-preview</code>），即使推理项出现在请求的输入项中，后续 API 请求也会忽略它们。而对于 <code>o3</code> 和 <code>o4-mini</code>，与函数调用相邻的一些推理项会被纳入模型的上下文，在使用最少推理 token 的同时帮助提升模型表现。</p>
+<p>要在这一变化下取得最佳效果，我们建议使用 Responses API，将 <code>store</code> 参数设为 <code>true</code>，并传入之前请求中的所有推理项（可以使用 <code>previous_response_id</code>，也可以把旧请求的全部输出项作为新请求的输入项传入）。OpenAI 会自动把相关的推理项纳入模型上下文，并忽略不相关的部分。在更高级的场景中，如果你希望更精确地控制模型上下文，我们建议至少包含最新函数调用与上一条用户消息之间的全部推理项。这样，在你回复函数调用时，模型就无需重新开始推理，从而提升函数调用的表现，并降低总体 token 用量。</p>
+<p>如果你使用 Chat Completions API，推理项永远不会进入模型上下文，因为 Chat Completions 是无状态 API。在涉及大量函数调用的复杂智能体场景中，这会让模型表现略有下降，推理 token 用量也会更多。如果不涉及复杂的多函数调用，无论使用哪种 API，表现都不会下降。</p>
+<h2 id="other-resources">其他资源</h2>
+<p>如需更多灵感，请访问 <a href="https://developers.openai.com/cookbook">OpenAI Cookbook</a>，其中包含示例代码和第三方资源链接；也可以进一步了解我们的模型和推理能力：</p>
+<ul>
+<li><a href="/api/docs/models/">认识模型</a></li>
+<li><a href="/api/docs/guides/reasoning/">推理指南</a></li>
+<li><a href="https://developers.openai.com/cookbook/examples/o1/using_reasoning_for_data_validation">如何使用推理进行数据验证</a></li>
+<li><a href="https://www.deeplearning.ai/short-courses/reasoning-with-o1/">视频课程：使用 o1 进行推理</a></li>
+<li><a href="https://developers.openai.com/cookbook/related_resources#papers-on-advanced-prompting-to-improve-reasoning">关于提升推理能力的高级提示论文</a></li>
+</ul>

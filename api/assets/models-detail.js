@@ -290,6 +290,9 @@
     loading.hidden = true;
     state.hidden = true;
     main.hidden = false;
+    if (location.hash === "#use-in-api") requestAnimationFrame(function () {
+      document.getElementById("use-in-api").scrollIntoView({ block: "start" });
+    });
     M.syncCovers();
     paintHealth(m);
   }

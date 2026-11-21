@@ -1,0 +1,604 @@
+---
+title: 引用格式
+description: 了解让模型生成可靠引用的实用格式化方法。
+tab: models
+lead: false
+css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
+js: /api/assets/model-guide.js
+---
+<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/citation-formatting (reference copy for local review). -->
+<p>可靠的引用能建立信任，也能帮助读者核实回答的准确性。本指南介绍如何准备可引用的材料，并指导模型按 OpenAI 模型熟悉的格式有效地标注引用。</p>
+<h2 id="overview">概述</h2>
+<p>一个引用系统包含多个部分：你要决定哪些内容可以被引用，把这些材料清晰地呈现出来，告诉模型怎样引用，并在结果呈现给用户之前进行校验。</p>
+<p>本指南涵盖模型直接处理的五个核心环节：</p>
+<ol>
+<li>可引用单元：定义模型被允许引用的内容。</li>
+<li>材料呈现：以清晰、结构化的格式展示源材料。</li>
+<li>引用格式：规定模型应使用的准确引用格式。</li>
+<li>提示指令：告诉模型何时引用以及如何正确引用。</li>
+<li>引用解析：从模型的回答中提取引用，供下游使用。</li>
+</ol>
+<h2 id="choose-citable-units">选择可引用单元</h2>
+<p>在编写提示词之前，先明确模型可以引用什么。常见的选择有：</p>
+<div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
+<thead>
+<tr>
+<th>可引用单元</th>
+<th>适用场景</th>
+<th>缺点</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>文档</td>
+<td>只需要说明答案来自哪份文档。</td>
+<td>不够精确。</td>
+<td>当你只需要证明某个说法由哪份文档支持时，引用整份员工手册。</td>
+</tr>
+<tr>
+<td>块／片段</td>
+<td>在简单和精确之间取得良好平衡。</td>
+<td>仍不精确到行。</td>
+<td>引用包含该条款的具体合同段落或检索到的片段。</td>
+</tr>
+<tr>
+<td>行范围</td>
+<td>需要展示精确的支持原文。</td>
+<td>对模型来说更难。</td>
+<td>当用户需要核对精确段落时，引用 <code>L42-L47</code> 这几行。</td>
+</tr>
+</tbody>
+</table></div>
+<p>一个好的可引用单元应当满足：</p>
+<ul>
+<li>一致：同一来源在每次运行中都使用相同的 ID。</li>
+<li>易于检查：人能读懂它，并理解其前后上下文。</li>
+<li>大小合适：足以表达完整含义，又足够小以保持精确。</li>
+</ul>
+<p>对大多数系统而言，块级引用是最佳默认选择。相比行级引用，它对模型更容易；相比文档级引用，它对用户更有用。</p>
+<h2 id="represent-citable-material">呈现可引用材料</h2>
+<p>模型无法引用没有清晰呈现的材料。无论材料来自工具还是直接注入，都请确保它具备：</p>
+<ul>
+<li>稳定的来源 ID：例如 <code>file1</code> 或 <code>block1</code> 这样一致的标识符。</li>
+<li>可读的文本：格式清晰的源材料。</li>
+<li>元数据（可选）：URL、时间戳、标题等类似上下文。</li>
+</ul>
+<details class="guide-disclosure"><summary>可引用材料示例</summary><pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>引用标记：{CITATION_START}cite{CITATION_DELIMITER}file0{CITATION_STOP}</span></span>
+<span class="line"><span>标题：员工手册</span></span>
+<span class="line"><span>URL：https://company.example/handbook</span></span>
+<span class="line"><span>更新：2026-03-01</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>[L1] 员工每周最多可以远程办公三天。</span></span>
+<span class="line"><span>[L2] 额外的远程办公天数需要经理批准。</span></span>
+<span class="line"><span>[L3] 获批准的例外情况可能适用。</span></span></code></pre></details>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><strong>来源 ID 与定位器：</strong>来源 ID 是模型生成的稳定标识符，例如 <code>block1</code>。定位器是界面中精确高亮的位置，例如 <code>lines L8-L13</code> 或 <code>Paragraph 21</code>。一般情况下，模型应输出来源 ID，由你的系统解析或渲染定位器。过早混用两者，往往会增加格式错误。</p></div></div></div></div></div>
+<h2 id="define-citation-format">定义引用格式</h2>
+<p>你需要为模型定义它将要生成的引用格式。应使用明确、一致且模型容易稳定复现的格式。</p>
+<p>下面是我们推荐的引用格式和标记。这些引用标记很值得使用，因为它们与我们模型训练时使用的标记高度匹配。如果你选用不同的标记值，请尽量保持整体引用格式与上述一致。</p>
+<div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
+<thead>
+<tr>
+<th>组成部分</th>
+<th>作用</th>
+<th>推荐值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CITATION_START</code></td>
+<td>开始引用标记。</td>
+<td><code>\ue200</code></td>
+</tr>
+<tr>
+<td>引用类型</td>
+<td>识别引用的类型。所有受支持的来源都使用 <code>cite</code>。</td>
+<td><code>cite</code></td>
+</tr>
+<tr>
+<td><code>CITATION_DELIMITER</code></td>
+<td>在标记内分隔各个字段。</td>
+<td><code>\ue202</code></td>
+</tr>
+<tr>
+<td>来源 ID</td>
+<td>标识被引用的单元。<code>turn#</code> 是轮次编号，<code>item#</code> 是具体的文件、块或 URL。</td>
+<td><code>turn0file1</code>, <code>turn0block1</code>, <code>turn0url1</code></td>
+</tr>
+<tr>
+<td>定位器（可选）</td>
+<td>把引用缩小到精确的范围。</td>
+<td><code>L8-L13</code></td>
+</tr>
+<tr>
+<td>关闭引用标记。</td>
+<td><code>\ue201</code></td>
+</tr>
+</tbody>
+</table></div>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>对于工具调用，<code>turnN</code> 每次工具调用增加一次，而不是每个单个结果增加一次。在同一次调用中，来源通过 <code>file0</code>、<code>file1</code> 等后缀区分。在单次回答的系统中，只有当模型在作答前恰好调用一次工具时，所有引用才会全部是 <code>turn0…</code>。如果模型调用了多次工具，你可能会看到 <code>turn0fileX</code>、<code>turn1fileX</code> 这样的引用。</p></div></div></div></div></div>
+<h3 id="template">模板</h3>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>{CITATION_START}&lt;citation_family&gt;{CITATION_DELIMITER}&lt;source_id&gt;{CITATION_DELIMITER}&lt;locator&gt;{CITATION_STOP}</span></span></code></pre>
+<h3 id="example">示例</h3>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>{CITATION_START}cite{CITATION_DELIMITER}turn0file1{CITATION_DELIMITER}L8-L13{CITATION_STOP}</span></span></code></pre>
+<p>如果你的系统不使用定位器，请省略该字段：</p>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>{CITATION_START}cite{CITATION_DELIMITER}turn0file1{CITATION_STOP}</span></span></code></pre>
+<h2 id="write-effective-citation-instructions">Write effective citation instructions</h2>
+<p>To maintain maximum accuracy, use familiar citation patterns. Custom or unfamiliar formats increase cognitive load on the model, leading to citation errors, especially in:</p>
+<ul>
+<li>low reasoning effort, where the model has less budget to recover from formatting mistakes.</li>
+<li>high-complexity tasks, where most of the reasoning budget is spent on solving the task itself rather than cleaning up citation syntax.</li>
+</ul>
+<p>下面推荐一种接近模型熟悉写法的引用格式。你可以直接使用，也可以按自己的系统调整。</p>
+<p>如果你想定义自己的提示词，需要说明：</p>
+<ul>
+<li>精确的标记语法。</li>
+<li>引用放在哪里。</li>
+<li>何时引用，何时不引用。</li>
+<li>如何引用多个支持来源。</li>
+<li>哪些格式禁止使用。</li>
+<li>缺少支持依据时怎么做。</li>
+</ul>
+<details class="guide-disclosure"><summary>推荐的提示词指令</summary><p>请用以下格式明确告诉模型：</p><pre class="astro-code astro-code-themes github-light github-dark" data-language="md" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span style="color:#005CC5;--shiki-light-font-weight:bold;--shiki-dark:#79B8FF;--shiki-dark-font-weight:bold">## Citations</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Results are returned by "tool_1". Each message from </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`tool_1`</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> is called a "source" and identified by its reference ID, which is the first occurrence of 【turn\d+\w+\d+】 (e.g. 【turn2file1】). In this example, the string "turn2file1" would be the source reference ID.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Citations are references to </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`tool_1`</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> sources. Citations may be used to refer to either a single source or multiple sources.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Citations to a single source must be written as {CITATION_START}cite{CITATION_DELIMITER}turn\d+\w+\d+{CITATION_STOP} (e.g. {CITATION_START}cite{CITATION_DELIMITER}turn2file5{CITATION_STOP}).</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Citations to multiple sources must be written as {CITATION_START}cite{CITATION_DELIMITER}turn\d+\w+\d+{CITATION_DELIMITER}turn\d+\w+\d+{CITATION_DELIMITER}...{CITATION_STOP} (e.g. {CITATION_START}cite{CITATION_DELIMITER}turn2file5{CITATION_DELIMITER}turn2file1{CITATION_DELIMITER}...{CITATION_STOP}).</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Citations must not be placed inside markdown bold, italics, or code fences, as they will not display correctly. Instead, place the citations outside the markdown block. Citations outside code fences may not be placed on the same line as the end of the code fence.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">You must NOT write reference ID turn\d+\w+\d+ verbatim in the response text without putting them between {CITATION_START}...{CITATION_STOP}.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Place citations at the end of the paragraph, or inline if the paragraph is long, unless the user requests specific citation placement.</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Citations must be placed after punctuation.</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Citations must not be all grouped together at the end of the response.</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Citations must not be put in a line or paragraph with nothing else but the citations themselves.</span></span></code></pre><p>If you want the model to also output locators such as lines (<code>L1-L22</code>), specify it in the prompt like this:</p><pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>You *must* cite any results you use from this tool using the:</span></span>
+<span class="line"><span>`\ue200cite\ue202turn0file0\ue202L8-L13\ue201` format ONLY if the item has a corresponding citation marker.</span></span></code></pre><ul>
+<li>Do not attempt to cite items without a corresponding citation marker, as they are not meant to be cited.</li>
+<li>You MUST include line ranges in your citations.</li>
+</ul></details>
+<details class="guide-disclosure"><summary>提高依据质量的可选指令</summary><p>需要更高质量的依据行为时，通常值得加入以下规则。请根据你的使用场景调整本节。</p><pre class="astro-code astro-code-themes github-light github-dark" data-language="xml" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><span aria-hidden="true" class="platform-code-line-numbers" style="width:2ch"><span class="platform-code-line-number">1</span><span class="platform-code-line-number">2</span><span class="platform-code-line-number">3</span><span class="platform-code-line-number">4</span><span class="platform-code-line-number">5</span><span class="platform-code-line-number">6</span><span class="platform-code-line-number">7</span><span class="platform-code-line-number">8</span><span class="platform-code-line-number">9</span><span class="platform-code-line-number">10</span><span class="platform-code-line-number">11</span><span class="platform-code-line-number">12</span><span class="platform-code-line-number">13</span></span><code><span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">&lt;</span><span style="color:#22863A;--shiki-dark:#85E89D">extra_considerations_for_citations</span><span style="color:#24292E;--shiki-dark:#E1E4E8">&gt;</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">- **Relevance:** Include only search results and citations that support the cited response text. Irrelevant sources permanently degrade user trust.</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">- **Diversity:** You must base your answer on sources from diverse domains, and cite accordingly.</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">- **Trustworthiness:** To produce a credible response, you must rely on high quality domains, and ignore information from less reputable domains unless they are the only source.</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">- **Accurate Representation:** Each citation must accurately reflect the source content. Selective interpretation of the source content is not allowed.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Remember, the quality of a domain/source depends on the context.</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">- When multiple viewpoints exist, cite sources covering the spectrum of opinions to ensure balance and comprehensiveness.</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">- When reliable sources disagree, cite at least one high-quality source for each major viewpoint.</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">- Ensure more than half of citations come from widely recognized authoritative outlets on the topic.</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">- For debated topics, cite at least one reliable source representing each major viewpoint.</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">- Do not ignore the content of a relevant source because it is low quality.</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">&lt;/</span><span style="color:#22863A;--shiki-dark:#85E89D">extra_considerations_for_citations</span><span style="color:#24292E;--shiki-dark:#E1E4E8">&gt;</span></span></code></pre></details>
+<h2 id="parse-citations">解析引用</h2>
+<p>模型输出引用后，你需要从回复文本中把它们提取出来，以便解析来源 ID、渲染链接，或在把答案展示给用户之前去掉原始标记。</p>
+<p>下面的辅助函数可以直接复制到你的应用中。它解析单来源引用、多来源引用和可选的行范围定位器，并保留原文中的字符偏移量。</p>
+<p>这个示例只支持行定位器。如果你的系统使用其他定位格式，需要相应调整。</p>
+<details class="guide-disclosure"><summary>后处理示例</summary><code-tabs title="引用解析辅助函数">
+<pre data-lang="python">import re
+from collections.abc import Iterable
+from typing import TypedDict
+
+CITATION_START = "\ue200"
+CITATION_DELIMITER = "\ue202"
+CITATION_STOP = "\ue201"
+
+SOURCE_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+LINE_LOCATOR_RE = re.compile(r"^L\d+(?:-L\d+)?$")
+
+
+class Citation(TypedDict):
+    raw: str
+    family: str
+    source_ids: list[str]
+    locator: str | None
+    start: int
+    end: int
+
+
+def extract_citations(
+    text: str,
+    *,
+    families: tuple[str, ...] = ("cite",),
+) -> list[Citation]:
+    """
+    Extract citations such as:
+
+      {CITATION_START}cite{CITATION_DELIMITER}turn0file0{CITATION_STOP}
+      {CITATION_START}cite{CITATION_DELIMITER}turn0file0{CITATION_DELIMITER}L8-L13{CITATION_STOP}
+      {CITATION_START}cite{CITATION_DELIMITER}turn0search0{CITATION_DELIMITER}turn1news2{CITATION_STOP}
+    """
+    if not families:
+        return []
+
+    family_pattern = "|".join(re.escape(family) for family in families)
+    token_re = re.compile(
+        rf"{re.escape(CITATION_START)}"
+        rf"(?P<family>{family_pattern})"
+        rf"{re.escape(CITATION_DELIMITER)}"
+        rf"(?P<body>.*?)"
+        rf"{re.escape(CITATION_STOP)}",
+        re.DOTALL,
+    )
+
+    citations: list[Citation] = []
+
+    for match in token_re.finditer(text):
+        parts = [part.strip() for part in match.group("body").split(CITATION_DELIMITER)]
+        parts = [part for part in parts if part]
+
+        if not parts:
+            continue
+
+        locator = None
+        if LINE_LOCATOR_RE.fullmatch(parts[-1]):
+            locator = parts.pop()
+
+        if not parts or any(not SOURCE_ID_RE.fullmatch(part) for part in parts):
+            continue
+
+        citations.append(
+            {
+                "raw": match.group(0),
+                "family": match.group("family"),
+                "source_ids": parts,
+                "locator": locator,
+                "start": match.start(),
+                "end": match.end(),
+            }
+        )
+
+    return citations
+
+
+def strip_citations(text: str, citations: Iterable[Citation]) -> str:
+    """
+    Remove raw citation markers from text using offsets returned by
+    extract_citations().
+    """
+    clean_text = text
+
+    for citation in sorted(citations, key=lambda item: item["start"], reverse=True):
+        clean_text = clean_text[: citation["start"]] + clean_text[citation["end"] :]
+
+    return clean_text</pre>
+<pre data-lang="javascript">const CITATION_START = "\uE200";
+const CITATION_DELIMITER = "\uE202";
+const CITATION_STOP = "\uE201";
+
+const SOURCE_ID_RE = /^[A-Za-z0-9_-]+$/;
+const LINE_LOCATOR_RE = /^L\d+(?:-L\d+)?$/;
+
+// Extract citations such as:
+//
+//   {CITATION_START}cite{CITATION_DELIMITER}turn0file0{CITATION_STOP}
+//   {CITATION_START}cite{CITATION_DELIMITER}turn0file0{CITATION_DELIMITER}L8-L13{CITATION_STOP}
+//   {CITATION_START}cite{CITATION_DELIMITER}turn0search0{CITATION_DELIMITER}turn1news2{CITATION_STOP}
+function extractCitations(text, { families = ["cite"] } = {}) {
+  if (families.length === 0) {
+    return [];
+  }
+
+  const familyPattern = families
+    .map((family) => family.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+
+  const tokenRe = new RegExp(
+    `${CITATION_START}(?<family>${familyPattern})${CITATION_DELIMITER}(?<body>[\\s\\S]*?)${CITATION_STOP}`,
+    "g"
+  );
+
+  const citations = [];
+
+  for (const match of text.matchAll(tokenRe)) {
+    const body = match.groups?.body ?? "";
+    const parts = body
+      .split(CITATION_DELIMITER)
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    if (parts.length === 0) {
+      continue;
+    }
+
+    let locator = null;
+    const lastPart = parts[parts.length - 1];
+    if (LINE_LOCATOR_RE.test(lastPart)) {
+      locator = parts.pop() ?? null;
+    }
+
+    if (parts.length === 0 || parts.some((part) => !SOURCE_ID_RE.test(part))) {
+      continue;
+    }
+
+    citations.push({
+      raw: match[0],
+      family: match.groups?.family ?? "",
+      source_ids: parts,
+      locator,
+      start: match.index ?? 0,
+      end: (match.index ?? 0) + match[0].length,
+    });
+  }
+
+  return citations;
+}
+
+function stripCitations(text, citations) {
+  let cleanText = text;
+  const sortedCitations = Array.from(citations).sort(
+    (left, right) => right.start - left.start
+  );
+
+  for (const citation of sortedCitations) {
+    cleanText =
+      cleanText.slice(0, citation.start) + cleanText.slice(citation.end);
+  }
+
+  return cleanText;
+}</pre>
+<pre data-lang="go">// Start and End are UTF-8 byte offsets, suitable for Go string slicing.
+type Citation struct {
+	Raw, Family string
+	SourceIDs   []string
+	Locator     string
+	Start, End  int
+}
+
+var sourceID = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+var lineLocator = regexp.MustCompile(`^L\d+(?:-L\d+)?$`)
+
+func extractCitations(text string, families []string) []Citation {
+	citations := []Citation{}
+	if len(families) == 0 {
+		return citations
+	}
+	escaped := make([]string, len(families))
+	for i, family := range families {
+		escaped[i] = regexp.QuoteMeta(family)
+	}
+	token := regexp.MustCompile("(?s)\uE200(" + strings.Join(escaped, "|") + ")\uE202(.*?)\uE201")
+	for _, match := range token.FindAllStringSubmatchIndex(text, -1) {
+		parts := []string{}
+		for _, part := range strings.Split(text[match[4]:match[5]], "\uE202") {
+			if part = strings.TrimSpace(part); part != "" {
+				parts = append(parts, part)
+			}
+		}
+		locator := ""
+		if len(parts) > 0 && lineLocator.MatchString(parts[len(parts)-1]) {
+			locator = parts[len(parts)-1]
+			parts = parts[:len(parts)-1]
+		}
+		valid := len(parts) > 0
+		for _, part := range parts {
+			if !sourceID.MatchString(part) {
+				valid = false
+				break
+			}
+		}
+		if valid {
+			citations = append(citations, Citation{
+				text[match[0]:match[1]],
+				text[match[2]:match[3]],
+				parts,
+				locator,
+				match[0],
+				match[1],
+			})
+		}
+	}
+	return citations
+}
+func stripCitations(text string, citations []Citation) string {
+	sorted := append([]Citation(nil), citations...)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].Start > sorted[j].Start
+	})
+	for _, citation := range sorted {
+		text = text[:citation.Start] + text[citation.End:]
+	}
+	return text
+}</pre>
+<pre data-lang="java">import java.util.*;
+import java.util.regex.Pattern;
+
+// Java string offsets are UTF-16 code units, matching substring().
+record Citation(
+    String raw, String family, List<String> sourceIds, String locator, int start, int end) {}
+
+static final Pattern SOURCE_ID = Pattern.compile("^[A-Za-z0-9_-]+$");
+static final Pattern LINE_LOCATOR = Pattern.compile("^L\\d+(?:-L\\d+)?$");
+
+static List<Citation> extractCitations(String text, List<String> families) {
+  var citations = new ArrayList<Citation>();
+  if (families.isEmpty()) return citations;
+  var familyPattern =
+      families.stream().map(Pattern::quote).collect(java.util.stream.Collectors.joining("|"));
+  var matcher =
+      Pattern.compile("\uE200(" + familyPattern + ")\uE202(.*?)\uE201", Pattern.DOTALL)
+          .matcher(text);
+  while (matcher.find()) {
+    var parts =
+        new ArrayList<>(
+            Arrays.stream(matcher.group(2).split("\uE202"))
+                .map(String::strip)
+                .filter(s -> !s.isEmpty())
+                .toList());
+    String locator = null;
+    if (!parts.isEmpty() && LINE_LOCATOR.matcher(parts.get(parts.size() - 1)).matches())
+      locator = parts.remove(parts.size() - 1);
+    if (parts.isEmpty() || parts.stream().anyMatch(s -> !SOURCE_ID.matcher(s).matches()))
+      continue;
+    citations.add(
+        new Citation(
+            matcher.group(),
+            matcher.group(1),
+            List.copyOf(parts),
+            locator,
+            matcher.start(),
+            matcher.end()));
+  }
+  return citations;
+}
+
+static String stripCitations(String text, List<Citation> citations) {
+  var sorted = new ArrayList<>(citations);
+  sorted.sort(Comparator.comparingInt(Citation::start).reversed());
+  for (var citation : sorted)
+    text = text.substring(0, citation.start()) + text.substring(citation.end());
+  return text;
+}</pre>
+<pre data-lang="ruby">CITATION_START = "\u{E200}"
+CITATION_DELIMITER = "\u{E202}"
+CITATION_STOP = "\u{E201}"
+
+SOURCE_ID_RE = /\A[A-Za-z0-9_-]+\z/
+LINE_LOCATOR_RE = /\AL\d+(?:-L\d+)?\z/
+
+def extract_citations(text, families: ["cite"])
+  return [] if families.empty?
+
+  family_pattern = families.map { |family| Regexp.escape(family) }.join("|")
+  token_re = Regexp.new(
+    "#{Regexp.escape(CITATION_START)}" \
+      "(?<family>#{family_pattern})" \
+      "#{Regexp.escape(CITATION_DELIMITER)}" \
+      "(?<body>.*?)" \
+      "#{Regexp.escape(CITATION_STOP)}",
+    Regexp::MULTILINE
+  )
+
+  text.enum_for(:scan, token_re).map do
+    match = Regexp.last_match
+    next unless match
+
+    body = match[:body]
+    next unless body
+
+    parts = body.split(CITATION_DELIMITER).map(&:strip).reject(&:empty?)
+    locator = parts.pop if parts.last&.match?(LINE_LOCATOR_RE)
+    next if parts.empty? || parts.any? { |part| !part.match?(SOURCE_ID_RE) }
+
+    {
+      raw: match[0],
+      family: match[:family],
+      source_ids: parts,
+      locator: locator,
+      start: match.begin(0),
+      end: match.end(0)
+    }
+  end.compact
+end
+
+def strip_citations(text, citations)
+  citations.sort_by { |citation| -citation.fetch(:start) }.each_with_object(text.dup) do |citation, clean|
+    clean[citation.fetch(:start)...citation.fetch(:end)] = ""
+  end
+end</pre>
+</code-tabs></details>
+<p>如果你的来源 ID 格式不同，请更新 <code>SOURCE_ID_RE</code> 以匹配你的系统。</p>
+<h2 id="examples">示例</h2>
+<p>下面的示例展示两种常见的引用模式：</p>
+<ul>
+<li>检索到的工具上下文：工具返回可引用的材料和 ID。</li>
+<li>注入的上下文：你直接在提示词中提供可引用的片段。</li>
+</ul>
+<h3 id="format-citations-for-retrieved-tool-context">为检索到的工具上下文设置引用格式</h3>
+<p>当模型通过工具检索上下文，并在回答中引用这些内容时，使用这种模式。</p>
+<h4 id="define-citable-units">定义可引用单元</h4>
+<p>应根据使用场景所需的精确度选择可引用单元。下面的示例展示了几种可能的工具输出。</p>
+<p>下面展示了几种推荐的工具输出格式。底层工具可能因应用而异，最重要的是输出呈现为这些示例那样清晰、稳定的结构。</p>
+<details class="guide-disclosure"><summary>行级示例</summary><p>以下是工具调用输出的示例：</p><pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>Citation Marker: {CITATION_START}cite{CITATION_DELIMITER}turn0file0{CITATION_STOP}</span></span>
+<span class="line"><span>[L1] The service agreement states that termination for convenience requires thirty (30) days’ written notice, unless superseded by a customer-specific addendum.</span></span>
+<span class="line"><span>[L2] In practice, renewal terms auto-extend for successive one-year periods when no written non-renewal notice is received before the deadline.</span></span>
+<span class="line"><span>[L3] Appendix B further clarifies that pricing exceptions must be approved in writing by both Finance and the account owner.</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>Citation Marker: {CITATION_START}cite{CITATION_DELIMITER}turn0file1{CITATION_STOP}</span></span>
+<span class="line"><span>...</span></span></code></pre><p>这里 <code>turn0file0</code> 是稳定的来源 ID，行号就是定位器。</p></details>
+<details class="guide-disclosure"><summary>块级示例</summary><p>以下是工具调用输出的示例：</p><pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>Citation Marker: {CITATION_START}cite{CITATION_DELIMITER}turn0file0{CITATION_STOP}</span></span>
+<span class="line"><span>[Block1]</span></span>
+<span class="line"><span>The service agreement states that termination for convenience requires thirty (30) days’ written notice, unless superseded by a customer-specific addendum.</span></span>
+<span class="line"><span>In practice, renewal terms auto-extend for successive one-year periods when no written non-renewal notice is received before the deadline.</span></span>
+<span class="line"><span>Appendix B further clarifies that pricing exceptions must be approved in writing by both Finance and the account owner.</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>Citation Marker: {CITATION_START}cite{CITATION_DELIMITER}turn0file1{CITATION_STOP}</span></span>
+<span class="line"><span>[Block2]</span></span>
+<span class="line"><span>...</span></span></code></pre><p>如果你想用块级引用代替行级引用，推荐做法是：让每个检索到的块拥有自己稳定的来源 ID，并仍用相同的两字段 cite 结构引用它，例如 <code>{CITATION_START}cite{CITATION_DELIMITER}turn0file0{CITATION_STOP}</code>，而不是另外发明一套完全不同的引用类型。</p></details>
+<h4 id="write-prompt-instructions">编写提示词指令</h4>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="md" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span style="color:#005CC5;--shiki-light-font-weight:bold;--shiki-dark:#79B8FF;--shiki-dark-font-weight:bold">## Citations</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Results are returned by "tool_1". Each message from </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`tool_1`</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> is called a "source" and identified by its reference ID, which is the first occurrence of </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`turn\\d+file\\d+`</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> (for example, </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`turn0file0`</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> or </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`turn2file1`</span><span style="color:#24292E;--shiki-dark:#E1E4E8">). In this example, the string </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`turn0file0`</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> would be the source reference ID.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Citations are references to </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`tool_1`</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> sources. Citations may be used to refer to either a single source or multiple sources.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">A citation to a single source must be written as:</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">{CITATION_START}cite{CITATION_DELIMITER}turn\d+file\d+{CITATION_STOP}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">If line-level citations are supported, a citation to a specific line range must be written as:</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">{CITATION_START}cite{CITATION_DELIMITER}turn\d+file\d+{CITATION_DELIMITER}L\d+-L\d+{CITATION_STOP}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Citations to multiple sources must be written by emitting multiple citation markers, one for each supporting source.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">You must NOT write reference IDs like </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`turn0file0`</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> verbatim in the response text without putting them between {CITATION_START}...{CITATION_STOP}.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Place citations at the end of the supported sentence, or inline if the sentence is long and contains multiple supported clauses.</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Citations must be placed after punctuation.</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Cite only retrieved sources that directly support the cited text.</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Never invent source IDs, line ranges, or block locators that were not returned by the tool.</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> If multiple retrieved sources materially support a proposition, cite all of them.</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> If the retrieved sources disagree, cite the conflicting sources and describe the disagreement accurately.</span></span></code></pre>
+<p>示例输出：</p>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>The on-call handoff process is documented in the weekly support sync notes. \ue200cite\ue202turn0file0\ue202L8-L13\ue201</span></span></code></pre>
+<h3 id="format-citations-for-injected-context">为注入的上下文设置引用格式</h3>
+<p>当你提前检索或准备好上下文，并直接把它注入提示词时，使用这种模式。</p>
+<h4 id="define-citable-units-1">定义可引用单元</h4>
+<p>对于注入的上下文，常见做法是用显式标签包裹各个来源片段，并为每段分配稳定的引用 ID。</p>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="xml" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><span aria-hidden="true" class="platform-code-line-numbers" style="width:2ch"><span class="platform-code-line-number">1</span><span class="platform-code-line-number">2</span><span class="platform-code-line-number">3</span><span class="platform-code-line-number">4</span><span class="platform-code-line-number">5</span><span class="platform-code-line-number">6</span><span class="platform-code-line-number">7</span><span class="platform-code-line-number">8</span><span class="platform-code-line-number">9</span><span class="platform-code-line-number">10</span></span><code><span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">&lt;</span><span style="color:#22863A;--shiki-dark:#85E89D">BLOCK</span><span style="color:#6F42C1;--shiki-dark:#B392F0"> id</span><span style="color:#24292E;--shiki-dark:#E1E4E8">=</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"block1"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">&gt;</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">The service agreement states that termination for convenience requires thirty (30) days’ written notice, unless superseded by a customer-specific addendum.</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">In practice, renewal terms auto-extend for successive one-year periods when no written non-renewal notice is received before the deadline.</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Appendix B further clarifies that pricing exceptions must be approved in writing by both Finance and the account owner.</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">&lt;/</span><span style="color:#22863A;--shiki-dark:#85E89D">BLOCK</span><span style="color:#24292E;--shiki-dark:#E1E4E8">&gt;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">&lt;</span><span style="color:#22863A;--shiki-dark:#85E89D">BLOCK</span><span style="color:#6F42C1;--shiki-dark:#B392F0"> id</span><span style="color:#24292E;--shiki-dark:#E1E4E8">=</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"block2"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">&gt;</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Syllabus</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">&lt;/</span><span style="color:#22863A;--shiki-dark:#85E89D">BLOCK</span><span style="color:#24292E;--shiki-dark:#E1E4E8">&gt;</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">...</span></span></code></pre>
+<p>这样可引用单元就很明确，模型也容易引用。</p>
+<h4 id="write-prompt-instructions-1">编写提示词指令</h4>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="md" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span style="color:#005CC5;--shiki-light-font-weight:bold;--shiki-dark:#79B8FF;--shiki-dark-font-weight:bold">## Citations</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Supporting context is provided directly in the prompt as citable units. Each citable unit is identified by the value of its </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`id`</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> attribute in the first occurrence of a tag such as </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`&lt;BLOCK id="block5"&gt; ... &lt;/BLOCK&gt;`</span><span style="color:#24292E;--shiki-dark:#E1E4E8">. In this example, </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`block5`</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> would be the source reference ID.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Because this pattern does not invoke tools, there is no tool turn counter to increment. That means you do not need to use a </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`turn#`</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> prefix for the citation marker. You can keep IDs in a </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`turn0block5`</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> style if that matches the rest of your system, or use plain IDs like </span><span style="color:#005CC5;--shiki-dark:#79B8FF">`block5`</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> as shown here. The key requirement is that the citation marker matches the injected context ID exactly and consistently.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Citations are references to these provided citable units. Citations may be used to refer to either a single source or multiple sources.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">A citation to a single source must be written as:</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">{CITATION_START}cite{CITATION_DELIMITER}&lt;block_id&gt;{CITATION_STOP}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">For example:</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">{CITATION_START}cite{CITATION_DELIMITER}block5{CITATION_STOP}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">Citations to multiple sources must be written by emitting multiple citation markers, one for each supporting block.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">You must NOT write block IDs verbatim in the response text without putting them between {CITATION_START}...{CITATION_STOP}.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Place citations at the end of the supported sentence, or inline if the sentence is long and contains multiple supported clauses.</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Citations must be placed after punctuation.</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Cite only blocks that appear in the provided context.</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Never invent new block IDs.</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Never cite outside knowledge or outside authorities.</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> If multiple blocks materially support a proposition, cite all of them.</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> If the provided blocks conflict, cite the conflicting blocks and describe the conflict accurately.</span></span></code></pre>
+<p>示例输出：</p>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>The Court held that the District Court lacked personal jurisdiction over the petitioner. \ue200cite\ue202block5\ue201</span></span></code></pre>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><strong>注意：</strong>网页搜索等 OpenAI 托管工具会自动提供行内引用。
+如果你想改用托管工具，请参阅 
+<a href="https://developers.openai.com/api/docs/guides/tools">工具概览</a>、 
+<a href="https://developers.openai.com/api/docs/guides/tools-web-search">网页搜索指南</a> 和 
+<a href="https://developers.openai.com/api/docs/guides/tools-file-search">文件搜索指南</a>。</p></div></div></div></div></div>

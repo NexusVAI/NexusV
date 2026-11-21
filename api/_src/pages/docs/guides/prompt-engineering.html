@@ -1,0 +1,978 @@
+---
+title: 提示词工程
+description: 了解如何在 OpenAI API 中编写提示词，让大语言模型给出更稳定、更好的结果。
+tab: models
+lead: false
+css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
+js: /api/assets/model-guide.js
+---
+<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/prompt-engineering (reference copy for local review). -->
+<p>使用 OpenAI API，你可以像在 <a href="https://chatgpt.com">ChatGPT</a> 中一样，用<a href="/api/docs/models/">大语言模型</a>根据提示生成文本。模型几乎能生成任何类型的文本回复，例如代码、数学公式、结构化的 JSON 数据或接近人类的散文。</p>
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <p>下面是使用 <a href="https://developers.openai.com/api/docs/api-reference/responses">Responses API</a> 的简单示例。</p><code-tabs title="用简单提示生成文本">
+<pre data-lang="javascript">import OpenAI from "openai";
+const client = new OpenAI();
+
+const response = await client.responses.create({
+  model: "gpt-6-astra",
+  input: "Write a one-sentence bedtime story about a unicorn.",
+});
+
+console.log(response.output_text);</pre>
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+response = client.responses.create(
+    model="gpt-6-astra",
+    input="Write a one-sentence bedtime story about a unicorn.",
+)
+
+print(response.output_text)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+
+	resp, err := client.Responses.New(context.TODO(), responses.ResponseNewParams{
+		Model: "gpt-6-astra",
+		Input: responses.ResponseNewParamsInputUnion{OfString: openai.String("Say this is a test")},
+	})
+	if err != nil {
+		panic(err.Error())
+	}
+
+	fmt.Println(resp.OutputText())
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.responses.Response;
+import com.openai.models.responses.ResponseCreateParams;
+
+public class Main {
+  public static void main(String[] args) {
+    OpenAIClient client = OpenAIOkHttpClient.fromEnv();
+
+    ResponseCreateParams params =
+        ResponseCreateParams.builder().input("Say this is a test").model("gpt-6-astra").build();
+
+    Response response = client.responses().create(params);
+    response.output().stream()
+        .flatMap(item -> item.message().stream())
+        .flatMap(message -> message.content().stream())
+        .flatMap(content -> content.outputText().stream())
+        .forEach(outputText -> System.out.println(outputText.text()));
+  }
+}</pre>
+<pre data-lang="csharp">using OpenAI.Responses;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+ResponsesClient client = new(key);
+
+ResponseResult response = await client.CreateResponseAsync(
+    "gpt-6-astra",
+    "Say 'this is a test.'"
+);
+
+Console.WriteLine($"[ASSISTANT]: {response.GetOutputText()}");</pre>
+<pre data-lang="ruby">require "openai"
+
+openai = OpenAI::Client.new
+
+response = openai.responses.create(
+  model: "gpt-6-astra",
+  input: "Write a one-sentence bedtime story about a unicorn."
+)
+
+puts(response.output_text)</pre>
+<pre data-lang="cli">openai responses create \
+  --model "gpt-6-astra" \
+  --input "Write a one-sentence bedtime story about a unicorn." \
+  --raw-output \
+  --transform 'output.#(type=="message").content.0.text'</pre>
+<pre data-lang="curl">curl "https://api.openai.com/v1/responses" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -d '{
+        "model": "gpt-6-astra",
+        "input": "Write a one-sentence bedtime story about a unicorn."
+    }'</pre>
+</code-tabs><p>模型生成的内容数组位于响应的 <code>output</code> 属性中。在这个简单示例中只有一个输出项，结构如下：</p><pre class="astro-code astro-code-themes github-light github-dark" data-language="json" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><span aria-hidden="true" class="platform-code-line-numbers" style="width:2ch"><span class="platform-code-line-number">1</span><span class="platform-code-line-number">2</span><span class="platform-code-line-number">3</span><span class="platform-code-line-number">4</span><span class="platform-code-line-number">5</span><span class="platform-code-line-number">6</span><span class="platform-code-line-number">7</span><span class="platform-code-line-number">8</span><span class="platform-code-line-number">9</span><span class="platform-code-line-number">10</span><span class="platform-code-line-number">11</span><span class="platform-code-line-number">12</span><span class="platform-code-line-number">13</span><span class="platform-code-line-number">14</span></span><code><span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">[</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "id"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"msg_67b73f697ba4819183a15cc17d011509"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "type"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"message"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "role"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"assistant"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "content"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">      {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "type"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"output_text"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "text"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"Under the soft glow of the moon, Luna the unicorn danced through fields of twinkling stardust, leaving trails of dreams for every child asleep."</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "annotations"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: []</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    ]</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">]</span></span></code></pre><div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><strong><code>output</code> 数组中往往不止一项！</strong>它可能包含工具调用、<a href="/api/docs/guides/reasoning/">推理模型</a>生成的推理 token 数据以及其他项。不要假定模型的文本输出一定位于 <code>output[0].content[0].text</code>。</p></div></div></div></div></div><p>为方便使用，我们的一些<a href="https://developers.openai.com/api/docs/libraries">官方 SDK</a>在模型响应上提供了 <code>output_text</code> 属性，它会把模型的全部文本输出合并为一个字符串。如果只想快速取得文本输出，这个属性很有用。</p><p>除纯文本外，你还可以让模型以 JSON 格式返回结构化数据，这一功能称为<a href="/api/docs/guides/structured-outputs/"><strong>结构化输出</strong></a>。</p> </div> 
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <p>使用 <a href="https://developers.openai.com/api/docs/api-reference/chat">Chat Completions API</a> 的简单示例。</p><code-tabs title="用简单提示生成文本">
+<pre data-lang="javascript">import OpenAI from "openai";
+const client = new OpenAI();
+
+const completion = await client.chat.completions.create({
+  model: "gpt-5.5",
+  messages: [
+    {
+      role: "user",
+      content: "Write a one-sentence bedtime story about a unicorn.",
+    },
+  ],
+});
+
+console.log(completion.choices[0].message.content);</pre>
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+completion = client.chat.completions.create(
+    model="gpt-5.5",
+    messages=[
+        {
+            "role": "user",
+            "content": "Write a one-sentence bedtime story about a unicorn.",
+        }
+    ],
+)
+
+print(completion.choices[0].message.content)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+)
+
+func main() {
+	client := openai.NewClient()
+
+	completion, err := client.Chat.Completions.New(
+		context.Background(),
+		openai.ChatCompletionNewParams{
+			Model: "gpt-6-astra",
+			Messages: []openai.ChatCompletionMessageParamUnion{
+				openai.UserMessage("Write a one-sentence bedtime story about a unicorn."),
+			},
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(completion.Choices[0].Message.Content)
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.chat.completions.ChatCompletionCreateParams;
+
+ChatCompletionCreateParams params =
+    ChatCompletionCreateParams.builder()
+        .model("gpt-6-astra")
+        .addUserMessage("Write a one-sentence bedtime story about a unicorn.")
+        .build();
+
+client.chat().completions().create(params).choices().stream()
+    .flatMap(choice -> choice.message().content().stream())
+    .forEach(System.out::println);</pre>
+<pre data-lang="csharp">using OpenAI.Chat;
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+string model = "gpt-6-astra";
+ChatClient client = new(model, key);
+
+ChatCompletion completion = await client.CompleteChatAsync(
+    new UserChatMessage("Write a one-sentence bedtime story about a unicorn.")
+);
+
+Console.WriteLine(completion.Content[0].Text);</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+completion = client.chat.completions.create(
+  model: "gpt-6-astra",
+  messages: [
+    {
+      role: :user,
+      content: "Write a one-sentence bedtime story about a unicorn."
+    }
+  ]
+)
+
+puts(completion.choices.fetch(0).message.content)</pre>
+<pre data-lang="curl">curl "https://api.openai.com/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -d '{
+        "model": "gpt-5.5",
+        "messages": [
+            {
+                "role": "user",
+                "content": "Write a one-sentence bedtime story about a unicorn."
+            }
+        ]
+    }'</pre>
+</code-tabs><p>模型生成的内容数组位于响应的 <code>choices</code> 属性中。在这个简单示例中只有一个输出项，结构如下：</p><pre class="astro-code astro-code-themes github-light github-dark" data-language="json" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><span aria-hidden="true" class="platform-code-line-numbers" style="width:2ch"><span class="platform-code-line-number">1</span><span class="platform-code-line-number">2</span><span class="platform-code-line-number">3</span><span class="platform-code-line-number">4</span><span class="platform-code-line-number">5</span><span class="platform-code-line-number">6</span><span class="platform-code-line-number">7</span><span class="platform-code-line-number">8</span><span class="platform-code-line-number">9</span><span class="platform-code-line-number">10</span><span class="platform-code-line-number">11</span><span class="platform-code-line-number">12</span></span><code><span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">[</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "index"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">0</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "message"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">      "role"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"assistant"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">      "content"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"Under the soft glow of the moon, Luna the unicorn danced through fields of twinkling stardust, leaving trails of dreams for every child asleep."</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">      "refusal"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">null</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "logprobs"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">null</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "finish_reason"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"stop"</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">]</span></span></code></pre><p>除纯文本外，你还可以让模型以 JSON 格式返回结构化数据，这一功能称为<a href="/api/docs/guides/structured-outputs/"><strong>结构化输出</strong></a>。</p> </div> 
+<h2 id="choosing-a-model">选择模型</h2>
+<p>通过 API 生成内容时，首先要选择模型，也就是上面代码示例中的 <code>model</code> 参数。<a href="/api/docs/models/">完整的可用模型列表见此处</a>。选择文本生成模型时可以考虑以下几个因素。</p>
+<ul>
+<li><strong><a href="/api/docs/guides/reasoning/">推理模型</a></strong>会先在内部生成思维链来分析输入提示，擅长理解复杂任务和多步骤规划。通常，它们比 GPT 模型更慢，成本也更高。</li>
+<li><strong>GPT 模型</strong>速度快、性价比高、智能程度也很高，但需要更明确的指令来说明如何完成任务。</li>
+<li><strong>大模型与小模型（mini 或 nano）</strong>在速度、成本和智能程度之间各有取舍。大模型更擅长理解提示并跨领域解决问题，小模型通常更快、更便宜。</li>
+</ul>
+<p>拿不准时，可以先用 <a href="https://developers.openai.com/api/docs/models/gpt-6-astra"><code>gpt-6-astra</code></a>，它是通用文本生成和提示词迭代的可靠默认选择。</p>
+<h2 id="prompt-engineering">提示词工程</h2>
+<p><strong>提示词工程</strong>是为模型编写有效指令的过程，目的是让模型稳定地生成符合你要求的内容。</p>
+<p>模型的输出具有不确定性，因此要得到理想结果，提示词既是艺术也是科学。不过，只要运用合适的技巧和最佳实践，就能稳定地获得好结果。</p>
+<p>有些提示词技巧对所有模型都适用，例如合理使用消息角色。但不同类型的模型（如推理模型和 GPT 模型）可能需要不同的提示方式才能获得最佳结果，即使是同一系列的不同快照，结果也可能不同。因此，在构建更复杂的应用时，我们强烈建议：</p>
+<ul>
+<li>将生产应用固定到特定的<a href="/api/docs/models/">模型快照</a>（例如 <code>gpt-4.1-2025-04-14</code>），以保证行为一致</li>
+<li>编写测试和评估套件来衡量提示词的行为，以便在迭代提示词、或更换和升级模型版本时持续监控效果</li>
+</ul>
+<p>接下来，我们看一看构造提示词时可用的工具和技巧。</p>
+<h2 id="message-roles-and-instruction-following">消息角色与指令遵循</h2>
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <p>你可以结合 <code>instructions</code> API 参数与<strong>消息角色</strong>，向模型提供具有不同<a href="https://model-spec.openai.com/2025-02-12.html#chain_of_command">权威层级</a>的指令。</p><p><code>instructions</code> 参数向模型提供生成回复时的高层指令，包括语气、目标以及正确回答的示例。通过这种方式提供的指令优先于 <code>input</code> 参数中的提示。</p><code-tabs title="用 instructions 生成文本">
+<pre data-lang="javascript">import OpenAI from "openai";
+const client = new OpenAI();
+
+const response = await client.responses.create({
+  model: "gpt-6-astra",
+  reasoning: { effort: "low" },
+  instructions: "Talk like a pirate.",
+  input: "Are semicolons optional in JavaScript?",
+});
+
+console.log(response.output_text);</pre>
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+response = client.responses.create(
+    model="gpt-6-astra",
+    reasoning={"effort": "low"},
+    instructions="Talk like a pirate.",
+    input="Are semicolons optional in JavaScript?",
+)
+
+print(response.output_text)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model:        "gpt-6-astra",
+		Instructions: openai.String("Talk like a pirate."),
+		Reasoning: responses.ReasoningParam{
+			Effort: responses.ReasoningEffortLow,
+		},
+		Input: responses.ResponseNewParamsInputUnion{
+			OfString: openai.String("Are semicolons optional in JavaScript?"),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(response.OutputText())
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.Reasoning;
+import com.openai.models.ReasoningEffort;
+import com.openai.models.responses.ResponseCreateParams;
+
+String semicolonsDevMsg = "Talk like a pirate.";
+
+String semicolonsPrompt = "Are semicolons optional in JavaScript?";
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder()
+        .model("gpt-6-astra")
+        .input(semicolonsPrompt)
+        .instructions(semicolonsDevMsg)
+        .reasoning(Reasoning.builder().effort(ReasoningEffort.LOW).build())
+        .build();
+
+client.responses().create(params).output().stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="csharp">using OpenAI.Responses;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+ResponsesClient client = new(key);
+
+CreateResponseOptions options = new()
+{
+    Model = "gpt-6-astra",
+    Instructions = "Talk like a pirate.",
+    ReasoningOptions = new ResponseReasoningOptions
+    {
+        ReasoningEffortLevel = ResponseReasoningEffortLevel.Low,
+    },
+};
+options.InputItems.Add(
+    ResponseItem.CreateUserMessageItem("Are semicolons optional in JavaScript?")
+);
+
+ResponseResult response = await client.CreateResponseAsync(options);
+
+Console.WriteLine(response.GetOutputText());</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+response = client.responses.create(
+  model: "gpt-6-astra",
+  instructions: "Talk like a pirate.",
+  reasoning: { effort: :low },
+  input: "Are semicolons optional in JavaScript?"
+)
+
+puts(response.output_text)</pre>
+<pre data-lang="curl">curl "https://api.openai.com/v1/responses" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -d '{
+        "model": "gpt-6-astra",
+        "reasoning": {"effort": "low"},
+        "instructions": "Talk like a pirate.",
+        "input": "Are semicolons optional in JavaScript?"
+    }'</pre>
+</code-tabs><p>上面的示例大致等同于在 <code>input</code> 数组中使用以下输入消息：</p><code-tabs title="用不同角色的消息生成文本">
+<pre data-lang="javascript">import OpenAI from "openai";
+const client = new OpenAI();
+
+const response = await client.responses.create({
+  model: "gpt-6-astra",
+  reasoning: { effort: "low" },
+  input: [
+    {
+      role: "developer",
+      content: "Talk like a pirate.",
+    },
+    {
+      role: "user",
+      content: "Are semicolons optional in JavaScript?",
+    },
+  ],
+});
+
+console.log(response.output_text);</pre>
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+response = client.responses.create(
+    model="gpt-6-astra",
+    reasoning={"effort": "low"},
+    input=[
+        {"role": "developer", "content": "Talk like a pirate."},
+        {"role": "user", "content": "Are semicolons optional in JavaScript?"},
+    ],
+)
+
+print(response.output_text)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model: "gpt-6-astra",
+		Reasoning: responses.ReasoningParam{
+			Effort: responses.ReasoningEffortLow,
+		},
+		Input: responses.ResponseNewParamsInputUnion{
+			OfInputItemList: responses.ResponseInputParam{
+				responses.ResponseInputItemParamOfMessage(
+					"Talk like a pirate.",
+					responses.EasyInputMessageRoleDeveloper,
+				),
+				responses.ResponseInputItemParamOfMessage(
+					"Are semicolons optional in JavaScript?",
+					responses.EasyInputMessageRoleUser,
+				),
+			},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(response.OutputText())
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.Reasoning;
+import com.openai.models.ReasoningEffort;
+import com.openai.models.responses.EasyInputMessage;
+import com.openai.models.responses.ResponseCreateParams;
+import com.openai.models.responses.ResponseInputItem;
+import java.util.List;
+
+String semicolonsDevMsg = "Talk like a pirate.";
+
+String semicolonsPrompt = "Are semicolons optional in JavaScript?";
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder()
+        .model("gpt-6-astra")
+        .input(
+            ResponseCreateParams.Input.ofResponse(
+                List.of(
+                    ResponseInputItem.ofEasyInputMessage(
+                        EasyInputMessage.builder()
+                            .role(EasyInputMessage.Role.DEVELOPER)
+                            .content(semicolonsDevMsg)
+                            .build()),
+                    ResponseInputItem.ofEasyInputMessage(
+                        EasyInputMessage.builder()
+                            .role(EasyInputMessage.Role.USER)
+                            .content(semicolonsPrompt)
+                            .build()))))
+        .reasoning(Reasoning.builder().effort(ReasoningEffort.LOW).build())
+        .build();
+
+client.responses().create(params).output().stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="csharp">using OpenAI.Responses;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+ResponsesClient client = new(key);
+
+CreateResponseOptions options = new()
+{
+    Model = "gpt-6-astra",
+    ReasoningOptions = new ResponseReasoningOptions
+    {
+        ReasoningEffortLevel = ResponseReasoningEffortLevel.Low,
+    },
+};
+options.InputItems.Add(
+    ResponseItem.CreateDeveloperMessageItem("Talk like a pirate.")
+);
+options.InputItems.Add(
+    ResponseItem.CreateUserMessageItem("Are semicolons optional in JavaScript?")
+);
+
+ResponseResult response = await client.CreateResponseAsync(options);
+
+Console.WriteLine(response.GetOutputText());</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+response = client.responses.create(
+  model: "gpt-6-astra",
+  reasoning: { effort: :low },
+  input: [
+    {
+      role: :developer,
+      content: "Talk like a pirate."
+    },
+    {
+      role: :user,
+      content: "Are semicolons optional in JavaScript?"
+    }
+  ]
+)
+
+puts(response.output_text)</pre>
+<pre data-lang="curl">curl "https://api.openai.com/v1/responses" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -d '{
+        "model": "gpt-6-astra",
+        "reasoning": {"effort": "low"},
+        "input": [
+            {
+                "role": "developer",
+                "content": "Talk like a pirate."
+            },
+            {
+                "role": "user",
+                "content": "Are semicolons optional in JavaScript?"
+            }
+        ]
+    }'</pre>
+</code-tabs><div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>注意，<code>instructions</code> 参数只作用于当前这次回复生成请求。如果你使用 <code>previous_response_id</code> 参数<a href="https://developers.openai.com/api/docs/guides/conversation-state">管理对话状态</a>，之前轮次使用的 <code>instructions</code> 不会出现在上下文中。</p></div></div></div></div></div> </div> 
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <p>你可以使用<strong>消息角色</strong>，结合<a href="https://model-spec.openai.com/2025-02-12.html#chain_of_command">不同的权威层级</a>向模型提供指令（提示）。</p><code-tabs title="用不同角色的消息生成文本">
+<pre data-lang="javascript">import OpenAI from "openai";
+const client = new OpenAI();
+
+const completion = await client.chat.completions.create({
+  model: "gpt-6-astra",
+  messages: [
+    {
+      role: "developer",
+      content: "Talk like a pirate.",
+    },
+    {
+      role: "user",
+      content: "Are semicolons optional in JavaScript?",
+    },
+  ],
+});
+
+console.log(completion.choices[0].message);</pre>
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+completion = client.chat.completions.create(
+    model="gpt-6-astra",
+    reasoning_effort="low",
+    messages=[
+        {"role": "developer", "content": "Talk like a pirate."},
+        {"role": "user", "content": "Are semicolons optional in JavaScript?"},
+    ],
+)
+
+print(completion.choices[0].message.content)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+)
+
+func main() {
+	client := openai.NewClient()
+
+	completion, err := client.Chat.Completions.New(context.Background(), openai.ChatCompletionNewParams{
+		Model: "gpt-6-astra",
+		Messages: []openai.ChatCompletionMessageParamUnion{
+			openai.DeveloperMessage("Talk like a pirate."),
+			openai.UserMessage("Are semicolons optional in JavaScript?"),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(completion.Choices[0].Message.Content)
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.chat.completions.ChatCompletionCreateParams;
+
+String semicolonsDevMsg = "Talk like a pirate.";
+
+String semicolonsPrompt = "Are semicolons optional in JavaScript?";
+
+ChatCompletionCreateParams params =
+    ChatCompletionCreateParams.builder()
+        .model("gpt-6-astra")
+        .addDeveloperMessage(semicolonsDevMsg)
+        .addUserMessage(semicolonsPrompt)
+        .build();
+
+client.chat().completions().create(params).choices().stream()
+    .flatMap(choice -> choice.message().content().stream())
+    .forEach(System.out::println);</pre>
+<pre data-lang="csharp">using OpenAI.Chat;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+string model = "gpt-6-astra";
+ChatClient client = new(model, key);
+
+ChatCompletion completion = await client.CompleteChatAsync(
+    [
+        new DeveloperChatMessage("Talk like a pirate."),
+        new UserChatMessage("Are semicolons optional in JavaScript?"),
+    ]
+);
+
+Console.WriteLine(completion.Content[0].Text);</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+completion = client.chat.completions.create(
+  model: "gpt-6-astra",
+  messages: [
+    {
+      role: :developer,
+      content: "Talk like a pirate."
+    },
+    {
+      role: :user,
+      content: "Are semicolons optional in JavaScript?"
+    }
+  ]
+)
+
+puts(completion.choices.fetch(0).message.content)</pre>
+<pre data-lang="curl">curl "https://api.openai.com/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -d '{
+        "model": "gpt-6-astra",
+        "messages": [
+            {
+                "role": "developer",
+                "content": "Talk like a pirate."
+            },
+            {
+                "role": "user",
+                "content": "Are semicolons optional in JavaScript?"
+            }
+        ]
+    }'</pre>
+</code-tabs> </div> 
+<p><a href="https://model-spec.openai.com/2025-02-12.html#chain_of_command">OpenAI 模型规范</a>描述了模型如何为不同角色的消息赋予不同的优先级。</p>
+<div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
+<thead>
+<tr>
+<th><code>developer</code></th>
+<th><code>user</code></th>
+<th><code>assistant</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>developer</code> 消息是应用开发者提供的指令，优先级高于 <code>user</code> 消息。</td>
+<td><code>user</code> 消息是终端用户提供的指令，优先级低于 <code>developer</code> 消息。</td>
+<td>模型生成的消息使用 <code>assistant</code> 角色。</td>
+</tr>
+</tbody>
+</table></div>
+<p>多轮对话可以由这些类型的多条消息组成，并包含你和模型提供的其他内容类型。进一步了解如何<a href="https://developers.openai.com/api/docs/guides/conversation-state">管理对话状态</a>。</p>
+<p>可以把 <code>developer</code> 消息和 <code>user</code> 消息类比为编程语言中的函数及其参数。</p>
+<ul>
+<li><code>developer</code> 消息提供系统的规则和业务逻辑，相当于函数定义。</li>
+<li><code>user</code> 消息提供输入和配置，<code>developer</code> 消息中的指令会作用于这些内容，相当于函数的参数。</li>
+</ul>
+<h2 id="version-prompts-in-code">在代码中管理提示词版本</h2>
+<p>把生产环境的提示词存放在应用代码中，而不是创建可复用的提示词对象。由代码管理的提示词可以使用有类型的输入、代码评审、测试以及常规的部署流程来改变模型行为。</p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="warning" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M10.42 2.006a4 4 0 0 1 3.159 0c.674.29 1.188.822 1.667 1.456.474.627 1 1.473 1.653 2.523l3.542 5.696c.72 1.16 1.3 2.09 1.682 2.854.384.766.654 1.517.59 2.292a4 4 0 0 1-1.604 2.886c-.625.463-1.405.63-2.258.709-.85.078-1.945.078-3.311.078H8.46c-1.366 0-2.46 0-3.31-.078-.854-.078-1.634-.246-2.26-.71a4 4 0 0 1-1.603-2.885c-.064-.775.206-1.526.59-2.292.383-.764.961-1.694 1.682-2.854l3.542-5.696c.653-1.05 1.18-1.896 1.653-2.523.48-.634.993-1.166 1.667-1.456Zm2.37 1.838a2 2 0 0 0-1.58 0c-.192.083-.448.28-.86.825-.413.544-.891 1.312-1.577 2.415l-3.488 5.61c-.755 1.214-1.283 2.066-1.62 2.737-.34.678-.402 1.02-.385 1.232a2 2 0 0 0 .802 1.443c.171.127.494.255 1.25.324.748.069 1.75.07 3.18.07h6.976c1.43 0 2.432-.001 3.18-.07.756-.069 1.079-.197 1.25-.324a2 2 0 0 0 .802-1.443c.017-.212-.045-.554-.385-1.232-.337-.671-.865-1.523-1.62-2.737l-3.488-5.61c-.686-1.103-1.164-1.87-1.576-2.415-.413-.546-.67-.742-.861-.825"></path><path d="M12 7.5a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1M10.851 15a1.15 1.15 0 1 1 2.3 0 1.15 1.15 0 0 1-2.3 0"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>OpenAI 正在弃用 API 中可复用的提示词对象。自 2026 年 6 月 3 日起，不再推荐创建提示词，<code>v1/prompts</code> 计划于 2026 年 11 月 30 日下线。当前时间线请参阅<a href="https://developers.openai.com/api/docs/deprecations#2026-06-03-reusable-prompts">弃用说明页</a>。</p></div></div></div></div></div>
+<p>对于新的文本生成工作：</p>
+<ul>
+<li>把提示词构建函数放在它所服务的功能附近的小模块中。</li>
+<li>对客户数据、文件或任务选项等动态值，使用有类型的函数参数或 schema。</li>
+<li>把生成的 <code>instructions</code> 和 <code>input</code> 直接传给 <a href="https://developers.openai.com/api/docs/api-reference/responses/create">Responses API</a>。</li>
+<li>修改生产提示词之前，先添加有代表性的样例、测试和评估检查。</li>
+<li>通过你的部署系统发布提示词修改；需要分阶段发布时，使用功能开关或配置。</li>
+</ul>
+<p>如果你的集成通过提示词 ID 或版本调用已保存的提示词，请参阅<a href="/api/docs/guides/prompting/migrate-from-prompt-object/">提示词对象迁移指南</a>，把该提示词迁移到代码中。</p>
+<h2 id="message-formatting-with-markdown-and-xml">使用 Markdown 与 XML 设置消息格式</h2>
+<p>编写 <code>developer</code> 和 <code>user</code> 消息时，可以结合使用 <a href="https://commonmark.org/help/">Markdown</a> 格式和 <a href="https://www.w3.org/TR/xml/">XML 标签</a>，帮助模型理解提示词和上下文数据的逻辑边界。</p>
+<p>Markdown 标题和列表有助于划分提示词的不同部分，并向模型传达层级关系。在开发过程中，它们还能让提示词更易读。XML 标签可以划定某段内容（例如用作参考的资料）的起止位置。XML 属性还可以为提示词中的内容定义元数据，供你的指令引用。</p>
+<p>一般来说，developer 消息包含以下几部分，通常按此顺序排列（具体的最佳内容和顺序可能因所用模型而异）：</p>
+<ul>
+<li><strong>身份：</strong>说明助手的用途、沟通风格和总体目标。</li>
+<li><strong>指令：</strong>提供模型完成工作时的高层指引，包括应遵循的规则，以及应做什么、绝不应做什么。根据你的场景，这一部分可以细分为多个小节，例如模型如何<a href="https://developers.openai.com/api/docs/guides/function-calling">调用自定义函数</a>。</li>
+<li><strong>示例：</strong>给出可能的输入示例，以及模型应给出的期望输出。</li>
+<li><strong>上下文：</strong>提供模型生成回复可能需要的任何额外信息，例如训练数据之外的私有或专有数据，或你知道特别相关的其他数据。这部分内容通常最好放在提示词末尾附近，因为不同的生成请求可能需要不同的上下文。</li>
+</ul>
+<p>下面是一个使用 Markdown 和 XML 标签构建 <code>developer</code> 消息的示例，它包含清晰的分节和配套的样例。</p>
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="prompt-example" data-content-switcher-initial="prompt" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="prompt" id="content-switcher-prompt-example"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="prompt">示例提示词</option><option value="code">API 请求</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="prompt"><div class="hidden">示例提示词</div><code-tabs title="用于代码生成的 developer 消息">
+<pre data-lang="text">
+# Identity
+
+You are coding assistant that helps enforce the use of snake case
+variables in JavaScript code, and writing code that will run in
+Internet Explorer version 6.
+
+# Instructions
+
+* When defining variables, use snake case names (e.g. my_variable)
+  instead of camel case names (e.g. myVariable).
+* To support old browsers, declare variables using the older
+  "var" keyword.
+* Do not give responses with Markdown formatting, just return
+  the code as requested.
+
+# Examples
+
+<user_query>
+How do I declare a string variable for a first name?
+</user_query>
+
+<assistant_response>
+var first_name = "Anna";
+</assistant_response>
+</pre>
+</code-tabs></div><div data-content-switcher-pane="true" data-value="code" hidden=""><div class="hidden">API 请求</div><code-tabs title="通过 API 发送提示词以生成代码">
+<pre data-lang="javascript">import fs from "fs/promises";
+import OpenAI from "openai";
+const client = new OpenAI();
+
+const instructions = await fs.readFile("fixtures/prompt.txt", "utf-8");
+
+const response = await client.responses.create({
+  model: "gpt-6-astra",
+  instructions,
+  input: "How would I declare a variable for a last name?",
+});
+
+console.log(response.output_text);</pre>
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+with open("prompt.txt", "r", encoding="utf-8") as f:
+    instructions = f.read()
+
+response = client.responses.create(
+    model="gpt-6-astra",
+    instructions=instructions,
+    input="How would I declare a variable for a last name?",
+)
+
+print(response.output_text)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+
+	instructions, err := os.ReadFile("prompt.txt")
+	if err != nil {
+		panic(err)
+	}
+
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model:        "gpt-6-astra",
+		Instructions: openai.String(string(instructions)),
+		Input: responses.ResponseNewParamsInputUnion{
+			OfString: openai.String("How would I declare a variable for a last name?"),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(response.OutputText())
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.responses.ResponseCreateParams;
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder()
+        .model("gpt-6-astra")
+        .instructions(
+            "You are a coding assistant. Answer with concise JavaScript examples and use semicolons.")
+        .input("How would I declare a variable for a last name?")
+        .build();
+
+client.responses().create(params).output().stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="csharp">using OpenAI.Responses;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+ResponsesClient client = new(key);
+
+string instructions = await File.ReadAllTextAsync("prompt.txt");
+CreateResponseOptions options = new()
+{
+    Model = "gpt-6-astra",
+    Instructions = instructions,
+};
+options.InputItems.Add(
+    ResponseItem.CreateUserMessageItem("How would I declare a variable for a last name?")
+);
+
+ResponseResult response = await client.CreateResponseAsync(options);
+Console.WriteLine(response.GetOutputText());</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+instructions = File.read(File.join(__dir__, "prompt.txt"))
+response = client.responses.create(
+  model: "gpt-6-astra",
+  instructions: instructions,
+  input: "How would I declare a variable for a last name?"
+)
+
+puts(response.output_text)</pre>
+<pre data-lang="curl">
+curl https://api.openai.com/v1/responses \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-6-astra",
+    "instructions": "'"$(< prompt.txt)"'",
+    "input": "How would I declare a variable for a last name?"
+  }'
+</pre>
+</code-tabs></div> </div> </div>
+<h4 id="save-on-cost-and-latency-with-prompt-caching">通过提示词缓存降低成本与延迟</h4>
+<p>构造消息时，应把你会在 API 请求中反复使用的内容放在提示词开头，<strong>并且</strong>放在传给 <a href="https://developers.openai.com/api/docs/api-reference/chat">Chat Completions</a> 或 <a href="https://developers.openai.com/api/docs/api-reference/responses">Responses</a> 的 JSON 请求体中靠前的参数位置。这样可以最大化<a href="https://developers.openai.com/api/docs/guides/prompt-caching">提示词缓存</a>带来的成本和延迟节省。</p>
+<h2 id="few-shot-learning">少样本学习</h2>
+<p>少样本学习通过在提示词中加入几组输入与输出示例，引导大语言模型完成新任务，而不必对模型进行<a href="https://developers.openai.com/api/docs/guides/model-optimization">微调</a>。模型会从这些示例中隐式地“领会”规律，并应用到新的提示上。提供示例时，应尽量覆盖多种可能的输入以及对应的期望输出。</p></p>
+<p>通常，你会把示例放在 API 请求的 <code>developer</code> 消息中。下面的 <code>developer</code> 消息示例通过几组样例，告诉模型如何区分正面和负面的客户服务评价。</p>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span># Identity</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>You are a helpful assistant that labels short product reviews as</span></span>
+<span class="line"><span>Positive, Negative, or Neutral.</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span># Instructions</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>* Only output a single word in your response with no additional formatting</span></span>
+<span class="line"><span>  or commentary.</span></span>
+<span class="line"><span>* Your response should only be one of the words "Positive", "Negative", or</span></span>
+<span class="line"><span>  "Neutral" depending on the sentiment of the product review you are given.</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span># Examples</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>&lt;product_review id="example-1"&gt;</span></span>
+<span class="line"><span>I absolutely love this headphones — sound quality is amazing!</span></span>
+<span class="line"><span>&lt;/product_review&gt;</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>&lt;assistant_response id="example-1"&gt;</span></span>
+<span class="line"><span>Positive</span></span>
+<span class="line"><span>&lt;/assistant_response&gt;</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>&lt;product_review id="example-2"&gt;</span></span>
+<span class="line"><span>Battery life is okay, but the ear pads feel cheap.</span></span>
+<span class="line"><span>&lt;/product_review&gt;</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>&lt;assistant_response id="example-2"&gt;</span></span>
+<span class="line"><span>Neutral</span></span>
+<span class="line"><span>&lt;/assistant_response&gt;</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>&lt;product_review id="example-3"&gt;</span></span>
+<span class="line"><span>Terrible customer service, I'll never buy from them again.</span></span>
+<span class="line"><span>&lt;/product_review&gt;</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>&lt;assistant_response id="example-3"&gt;</span></span>
+<span class="line"><span>Negative</span></span>
+<span class="line"><span>&lt;/assistant_response&gt;</span></span></code></pre>
+<h2 id="include-relevant-context-information">加入相关的上下文信息</h2>
+<p>在提示词中加入模型可用于生成回复的额外上下文信息，通常很有用。常见原因有以下几种：</p>
+<ul>
+<li>让模型能够访问专有数据，或训练数据集之外的其他数据。</li>
+<li>把模型的回复限定在你认为最有价值的一组特定资源之内。</li>
+</ul>
+<p>这种在模型生成请求中加入额外相关上下文的做法，有时被称为<strong>检索增强生成（RAG）</strong>。你可以通过很多方式向提示词添加上下文，例如查询向量数据库并把返回的文本放进提示词，或者使用 OpenAI 内置的<a href="https://developers.openai.com/api/docs/guides/tools-file-search">文件搜索工具</a>，根据上传的文档生成内容。</p>
+<h4 id="planning-for-the-context-window">规划上下文窗口</h4>
+<p>模型在一次生成请求中能够处理的上下文数据量有限。这一限制称为<strong>上下文窗口</strong>，以 <a href="https://blogs.nvidia.com/blog/ai-tokens-explained">token</a> 计量（即你传入的数据块，可以是文本，也可以是图像）。</p>
+<p>不同模型的上下文窗口大小不同，较新的 GPT-4.1 模型从十万级到一百万 token 不等。各模型的具体上下文窗口大小请参阅<a href="/api/docs/models/">模型文档</a>。</p>
+<span id="prompting-current-gpt-5-series-models"></span>
+<h2 id="prompting-current-models">当前模型的提示方式</h2>
+<p>像 <a href="https://developers.openai.com/api/docs/models/gpt-6-astra"><code>gpt-6-astra</code></a> 这样的 GPT 模型，适合接收精确的指令，即在提示词中明确给出完成任务所需的逻辑和数据。要充分发挥最新模型的能力，请先阅读当前的提示指南。</p>
+<a href="https://developers.openai.com/api/docs/guides/latest-model"><div class="icon-item mt-2"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path clip-rule="evenodd" d="M14.447 7.106a1 1 0 0 1 .447 1.341l-4 8a1 1 0 1 1-1.788-.894l4-8a1 1 0 0 1 1.341-.447ZM6.6 7.2a1 1 0 0 1 .2 1.4L4.25 12l2.55 3.4a1 1 0 0 1-1.6 1.2l-3-4a1 1 0 0 1 0-1.2l3-4a1 1 0 0 1 1.4-.2Zm10.8 0a1 1 0 0 1 1.4.2l3 4a1 1 0 0 1 0 1.2l-3 4a1 1 0 0 1-1.6-1.2l2.55-3.4-2.55-3.4a1 1 0 0 1 .2-1.4Z" fill-rule="evenodd"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">GPT-6 Astra 提示指南</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>使用最新的指南、实用示例和迁移说明，充分发挥最新模型的提示效果。</p> </div> </div> </div></a>
+<span id="prompting-best-practices-for-the-latest-gpt-5-series-model"></span>
+<h3 id="prompting-best-practices-for-the-latest-model">最新模型的提示最佳实践</h3>
+<p>完整内容请参阅<a href="https://developers.openai.com/api/docs/guides/latest-model">最新模型提示最佳实践</a>。以下实用提醒依然适用。</p>
+<details class="guide-disclosure"><summary>编程</summary><h4 id="coding">编程</h4><p>让 <code>gpt-6-astra</code> 处理编程任务时，遵循以下几条最佳实践效果最好：定义智能体的角色，用示例约束结构化的工具调用，要求充分测试以保证正确性，并设定 Markdown 规范以保持输出整洁。</p><p><strong>明确角色与工作流指引</strong>
+把模型设定为职责明确的软件工程智能体。说明在编程任务中如何使用 <code>functions.run</code> 等工具，并规定何时不应使用某些模式，例如除非必要，否则避免交互式执行。</p><p><strong>测试与验证</strong>
+指示模型用单元测试或 Python 命令验证修改，并仔细校验补丁。因为 <code>apply_patch</code> 之类的工具即使失败也可能返回“Done”。</p><p><strong>工具调用示例</strong>
+给出如何用所提供的函数调用命令的具体示例，可以提高可靠性，并让模型更遵循预期的工作流程。</p><p><strong>Markdown 规范</strong>
+引导模型在合适的地方使用行内代码、代码块、列表和表格，生成整洁、语义正确的 Markdown，并用反引号标注文件路径、函数和类名。</p><p>有关编程任务的详细指导和提示示例，请参阅<a href="https://developers.openai.com/api/docs/guides/latest-model">最新模型提示最佳实践</a>。</p></details>
+<details class="guide-disclosure"><summary>前端工程</summary><a href="https://developers.openai.com/api/docs/models/gpt-6-astra">GPT-6 Astra</a><p>无论是从零搭建前端，还是为大型成熟代码库贡献代码，都表现良好。要得到最佳效果，建议使用以下库：</p><ul>
+<li><strong>样式 / UI：</strong>Tailwind CSS、shadcn/ui、Radix Themes</li>
+<li><strong>图标：</strong>Lucide、Material Symbols、Heroicons</li>
+<li><strong>动画：</strong>Motion</li>
+</ul><p><strong>从零到一的 Web 应用</strong></p><p>GPT-5 只需一条提示就能生成前端 Web 应用，无需示例。下面是一个示例提示：</p><pre class="astro-code astro-code-themes github-light github-dark" data-language="bash" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><span aria-hidden="true" class="platform-code-line-numbers" style="width:1ch"><span class="platform-code-line-number">1</span><span class="platform-code-line-number">2</span><span class="platform-code-line-number">3</span><span class="platform-code-line-number">4</span><span class="platform-code-line-number">5</span><span class="platform-code-line-number">6</span></span><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">You</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> are</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> a</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> world</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> class</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> web</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> developer,</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> capable</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> of</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> producing</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> stunning,</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> interactive,</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> and</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> innovative</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> websites</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> from</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> scratch</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> in</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> a</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> single</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> prompt.</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> You</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> excel</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> at</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> delivering</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> top-tier</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> one-shot</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> solutions.</span></span>
+<span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">Your</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> process</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> is</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> simple</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> and</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> follows</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> these</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> steps:</span></span>
+<span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">Step</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> 1:</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> Create</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> an</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> evaluation</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> rubric</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> and</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> refine</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> it</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> until</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> you</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> are</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> fully</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> confident.</span></span>
+<span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">Step</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> 2:</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> Consider</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> every</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> element</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> that</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> defines</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> a</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> world-class</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> one-shot</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> web</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> app,</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> then</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> use</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> that</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> insight</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> to</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> create</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> a</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> &amp;</span><span style="color:#6F42C1;--shiki-dark:#B392F0">lt</span><span style="color:#24292E;--shiki-dark:#E1E4E8">;</span><span style="color:#6F42C1;--shiki-dark:#B392F0">ONE_SHOT_RUBRIC</span><span style="color:#24292E;--shiki-dark:#E1E4E8">&amp;</span><span style="color:#6F42C1;--shiki-dark:#B392F0">gt</span><span style="color:#24292E;--shiki-dark:#E1E4E8">; </span><span style="color:#6F42C1;--shiki-dark:#B392F0">with</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> 5–7</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> categories.</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> Keep</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> this</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> rubric</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> hidden—it's for internal use only.</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">Step 3: Apply the rubric to iterate on the optimal solution to the given prompt. If it doesn't</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> meet</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> the</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> highest</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> standard</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> across</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> all</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> categories,</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> refine</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> and</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> try</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> again.</span></span>
+<span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">Step</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> 4:</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> Aim</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> for</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> simplicity</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> while</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> fully</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> achieving</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> the</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> goal,</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> and</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> avoid</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> external</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> dependencies</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> such</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> as</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> Next.js</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> or</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> React.</span></span></code></pre><p><strong>大型代码库中的集成</strong></p><p>在较大的代码库中做前端工作时，我们发现，在提示词中加入以下几类指令效果最好：</p><ul>
+<li><strong>原则：</strong>设定视觉质量标准，使用模块化、可复用的组件，并保持设计一致。</li>
+<li><strong>UI/UX：</strong>说明字体排版、颜色、间距与布局、交互状态（悬停、空状态、加载中）以及无障碍要求。</li>
+<li><strong>结构：</strong>定义文件和文件夹布局，以便无缝集成。</li>
+<li><strong>组件：</strong>给出可复用的封装示例，以及前后端调用的分离策略。</li>
+<li><strong>页面：</strong>为常见布局提供模板。</li>
+<li><strong>智能体指令：</strong>要求模型确认设计假设、搭建项目脚手架、执行规范、集成 API、测试各种状态并为代码编写文档。</li>
+</ul><p>有关前端开发的详细指导和提示示例，请参阅<a href="https://developers.openai.com/api/docs/guides/latest-model">最新模型提示最佳实践</a>。</p></details>
+<details class="guide-disclosure"><summary>智能体任务</summary><p>对于使用 <code>gpt-6-astra</code> 的智能体及长时间运行的任务，提示词应聚焦三项核心实践：充分规划任务以确保彻底完成，在做出重要的工具调用决策时给出清晰的前言说明，并使用 TODO 工具有条理地跟踪工作流程和进度。</p><p><strong>规划与坚持</strong>
+指示模型在交还控制权之前彻底解决完整的问题，把问题拆解为子任务，并在每次工具调用后回顾结果以确认完整性。</p><pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>Remember, you are an agent - please keep going until the user's</span></span>
+<span class="line"><span>query is completely resolved, before ending your turn and yielding</span></span>
+<span class="line"><span>back to the user. Decompose the user's query into all required</span></span>
+<span class="line"><span>sub-requests, and confirm that each is completed. Do not stop</span></span>
+<span class="line"><span>after completing only part of the request. Only terminate your</span></span>
+<span class="line"><span>turn when you are sure that the problem is solved. You must be</span></span>
+<span class="line"><span>prepared to answer multiple queries and only finish the call once</span></span>
+<span class="line"><span>the user has confirmed they're done.</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>You must plan extensively in accordance with the workflow</span></span>
+<span class="line"><span>steps before making subsequent function calls, and reflect</span></span>
+<span class="line"><span>extensively on the outcomes each function call made,</span></span>
+<span class="line"><span>ensuring the user's query, and related sub-requests</span></span>
+<span class="line"><span>are completely resolved.</span></span></code></pre><p><strong>用前言提高透明度</strong></p><p>要求模型仅在关键步骤说明它为什么调用某个工具。</p><pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>Before you call a tool explain why you are calling it</span></span></code></pre><p><strong>用评分标准与 TODO 跟踪进度</strong></p><p>使用 TODO 列表工具或评分标准来强制结构化规划，避免遗漏步骤。</p><p>有关构建智能体的详细指导和提示示例，请参阅<a href="https://developers.openai.com/api/docs/guides/latest-model">最新模型提示最佳实践</a>。</p></details>
+<h2 id="prompting-reasoning-models">推理模型的提示方式</h2>
+<p>与提示 GPT 模型相比，提示<a href="/api/docs/guides/reasoning/">推理模型</a>时有一些不同之处需要注意。一般来说，对于只给出高层指导的任务，推理模型通常能给出更好的结果。这与 GPT 模型不同，后者更依赖非常精确的指令。</p>
+<p>可以这样理解推理模型和 GPT 模型的区别：</p>
+<ul>
+<li>推理模型就像一位资深同事。你可以给它一个要达成的目标，并相信它能自行摸清细节。</li>
+<li>GPT 模型就像一位初级同事。给它明确的指令，让它生成特定输出时，效果最好。</li>
+</ul>
+<p>有关使用推理模型的更多最佳实践，请<a href="/api/docs/guides/reasoning-best-practices/">参阅本指南</a>。</p>
+<h2 id="next-steps">后续步骤</h2>
+<p>了解了文本输入和输出的基础知识后，你可以接着查看以下资源。</p>
+<a class="_TextLink_ssta1_1" data-underline="always" href="https://platform.openai.com/chat/edit" rel="noopener noreferrer" target="_blank"><div class="icon-item mt-2"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path clip-rule="evenodd" d="M15.24 3.486v.002l-1.056 4.517h5.823c1.726 0 2.596 2.021 1.518 3.3l-.002.003-9.308 10.965-.002.002c-1.397 1.656-3.922.223-3.454-1.76v-.003l1.057-4.517H3.993c-1.726 0-2.596-2.021-1.519-3.3l.003-.003 9.308-10.965.002-.002c1.397-1.656 3.922-.223 3.454 1.76Zm-1.95-.444-1.34 5.735a.998.998 0 0 0 .973 1.226h7.074a.04.04 0 0 1 .003.01.045.045 0 0 1-.004.005l-9.287 10.94 1.341-5.735a.998.998 0 0 0-.973-1.226H4.003a.041.041 0 0 1-.003-.01l.004-.005 9.287-10.94Z" fill-rule="evenodd"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">在 Playground 中构建提示词</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>在 Playground 中开发和迭代提示词。</p> </div> </div> </div></a>
+<a class="_TextLink_ssta1_1" data-underline="always" href="/api/docs/guides/structured-outputs/"><div class="icon-item mt-2"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path clip-rule="evenodd" d="M12.5 3.444a1 1 0 0 0-1 0l-6.253 3.61 6.768 3.807 6.955-3.682-6.47-3.735Zm7.16 5.632L13 12.602v7.666l6.16-3.556a1 1 0 0 0 .5-.867V9.076ZM11 20.268v-7.683L4.34 8.839v7.006a1 1 0 0 0 .5.867L11 20.268Zm-.5-18.557a3 3 0 0 1 3 0l6.66 3.846a3 3 0 0 1 1.5 2.598v7.69a3 3 0 0 1-1.5 2.598L13.5 22.29a3 3 0 0 1-3 0l-6.66-3.846a3 3 0 0 1-1.5-2.598v-7.69a3 3 0 0 1 1.5-2.598L10.5 1.71Z" fill-rule="evenodd"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">生成 JSON 数据（结构化输出）</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>确保模型输出的 JSON 数据符合 JSON Schema。</p> </div> </div> </div></a>
+<a class="_TextLink_ssta1_1" data-underline="always" href="https://developers.openai.com/api/docs/api-reference/responses"><div class="icon-item mt-2"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path clip-rule="evenodd" d="M14.447 7.106a1 1 0 0 1 .447 1.341l-4 8a1 1 0 1 1-1.788-.894l4-8a1 1 0 0 1 1.341-.447ZM6.6 7.2a1 1 0 0 1 .2 1.4L4.25 12l2.55 3.4a1 1 0 0 1-1.6 1.2l-3-4a1 1 0 0 1 0-1.2l3-4a1 1 0 0 1 1.4-.2Zm10.8 0a1 1 0 0 1 1.4.2l3 4a1 1 0 0 1 0 1.2l-3 4a1 1 0 0 1-1.6-1.2l2.55-3.4-2.55-3.4a1 1 0 0 1 .2-1.4Z" fill-rule="evenodd"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">完整 API 参考</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>在 API 参考中查看文本生成的全部选项。</p> </div> </div> </div></a>
+<h2 id="other-resources">Other resources</h2>
+<p>如需更多灵感，可以访问 <a href="https://developers.openai.com/cookbook">OpenAI Cookbook</a>，其中包含示例代码，也链接了第三方资源，例如：</p>
+<ul>
+<li><a href="https://developers.openai.com/cookbook/related_resources#prompting-libraries--tools">Prompting libraries &amp; tools</a></li>
+<li><a href="https://developers.openai.com/cookbook/related_resources#prompting-guides">Prompting guides</a></li>
+<li><a href="https://developers.openai.com/cookbook/related_resources#video-courses">Video courses</a></li>
+<li><a href="https://developers.openai.com/cookbook/related_resources#papers-on-advanced-prompting-to-improve-reasoning">关于通过高级提示提升推理能力的论文</a></li>
+</ul>

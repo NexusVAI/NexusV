@@ -1,0 +1,76 @@
+---
+title: 实时 API 入门
+description: 用 Realtime API 与 Agents SDK 构建浏览器里的语音智能体。
+tab: models
+lead: false
+css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
+js: /api/assets/model-guide.js
+---
+<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/realtime (reference copy for local review). -->
+<p>用 Realtime API 构建语音到语音的智能体。模型直接处理音频，维护对话状态，并可以调用工具。本指南从浏览器应用的 Agents SDK 开始；如需直接控制连接，请使用更底层的连接指南。</p>
+<p>如需与独立的委托后端配合做全双工对话，请参阅 <a href="https://developers.openai.com/api/docs/guides/live">GPT-Live</a>。如需比较语音架构和串联式流水线，请参阅<a href="/api/docs/guides/voice-agents/">语音智能体</a>。</p>
+<h2 id="build-a-speech-to-speech-voice-agent">构建语音到语音的智能体</h2>
+<p>当交互需要像对话一样即时时，使用 Realtime API。对于需要打断、低首包音频延迟、自然轮替和实时工具调用的语音智能体，这是最合适的起点。</p>
+<p>常见的浏览器流程如下：</p>
+<ol>
+<li>你的应用服务端为 Realtime 会话创建一个临时客户端密钥。</li>
+<li>前端创建一个 <code>RealtimeSession</code>。</li>
+<li>会话在浏览器中通过 WebRTC 连接，在服务端则通过 WebSocket 连接。</li>
+<li>智能体在该会话内处理音频轮次、工具、打断和交接。</li>
+</ol>
+<code-tabs title="Start a realtime voice session">
+<pre data-lang="javascript">import { RealtimeAgent, RealtimeSession } from "@openai/agents/realtime";
+
+const agent = new RealtimeAgent({
+  name: "Assistant",
+  instructions: "You are a helpful voice assistant.",
+});
+
+const session = new RealtimeSession(agent, {
+  model: "gpt-realtime-2.1",
+});
+
+await session.connect({
+  apiKey: "ek_...(ephemeral key from your server)",
+});</pre>
+</code-tabs>
+<p>之后，为 <code>RealtimeAgent</code> 添加工具、交接和护栏的方式与文本智能体相同。音频传输相关的逻辑放在会话层，业务逻辑放在智能体定义中。</p>
+<p>如果需要更底层的控制，请先阅读传输相关文档：</p>
+<ul>
+<li><a href="/api/docs/guides/audio/">音频与语音概览</a></li>
+<li><a href="https://developers.openai.com/api/docs/guides/voice-webrtc?api=realtime">使用 WebRTC 的 Realtime API</a></li>
+<li><a href="https://developers.openai.com/api/docs/guides/voice-websockets?api=realtime">使用 WebSocket 的 Realtime API</a></li>
+</ul>
+<h2 id="safety-identifiers">安全标识符</h2>
+<p>如果你的应用能识别具体的终端用户，请在 Realtime API 请求中附带<a href="https://developers.openai.com/api/docs/guides/safety-best-practices#implement-safety-identifiers">安全标识符</a>。OpenAI 推荐使用安全标识符，但不强制要求。它帮助 OpenAI 发现有害行为，并把处置范围限定到具体用户，而不是整个组织。请使用稳定且保护隐私的值，例如内部用户 ID 的哈希。</p>
+<p>在 Realtime API 请求中，把标识符放在 <code>OpenAI-Safety-Identifier</code> 请求头里。使用临时令牌时，在服务端创建客户端密钥的请求上设置该请求头，把标识符与会话关联起来。从可信服务端通过 WebSocket 或统一的 WebRTC 接口连接时，在连接请求上设置该请求头。</p>
+<p>安全标识符不会从 Responses API 请求或其他会话中继承。如果你在应用的其他地方使用了 Responses API 的 <code>safety_identifier</code> 参数，那么在创建或连接每个 Realtime 会话时，请传入相同的稳定值。</p>
+<h2 id="beta-to-ga-migration">从 Beta 迁移到正式版（GA）</h2>
+<p>如果你的 Realtime 集成仍在使用 Beta 接口，请先迁移到 GA 接口，再开展新的工作。主要变化如下：</p>
+<ul>
+<li>调用 GA 接口时，去掉 <code>OpenAI-Beta: realtime=v1</code> 请求头。</li>
+<li>为浏览器或移动端客户端创建临时凭证时，使用 <a href="https://developers.openai.com/api/docs/api-reference/realtime-sessions/create-realtime-client-secret"><code>POST /v1/realtime/client_secrets</code></a>。</li>
+<li>建立 WebRTC 会话时，使用 <code>/v1/realtime/calls</code>。</li>
+<li>更新会话和事件的结构以适配 GA 接口。具体来说，要设置 <code>session.type</code>，把输出音频配置移到 <code>session.audio.output</code> 下，并使用较新的响应事件名，例如 <code>response.output_text.delta</code>、<code>response.output_audio.delta</code> 和 <code>response.output_audio_transcript.delta</code>。</li>
+<li>如果要推进语音到语音的应用，请从<a href="#build-a-speech-to-speech-voice-agent">浏览器示例</a>开始。如果要推进转写工作流，请使用 <a href="https://developers.openai.com/api/docs/guides/realtime-transcription">Realtime 转写</a>。</li>
+</ul>
+<p>当前的 GA 流程请参阅 <a href="https://developers.openai.com/api/reference/resources/realtime/client-events">Realtime 客户端事件参考</a>、<a href="https://developers.openai.com/api/docs/api-reference/realtime-sessions">Realtime 会话参考</a>和<a href="#build-a-speech-to-speech-voice-agent">浏览器示例</a>。</p>
+<span id="related-guides"></span>
+<h2 id="next-steps">后续步骤</h2>
+<ul>
+<li><a href="https://developers.openai.com/api/docs/guides/realtime-conversations">管理对话</a>：配置会话，处理音频、文本和事件。</li>
+<li><a href="https://developers.openai.com/api/docs/guides/realtime-vad">语音活动检测</a>：配置自动轮次检测。</li>
+<li><a href="https://developers.openai.com/api/docs/guides/realtime-mcp">工具与 MCP</a>：添加函数、MCP 服务器和连接器。</li>
+<li><a href="https://developers.openai.com/api/docs/guides/voice-prompting">语音模型提示词</a>：使用与你的 Realtime 模型对应的指南。</li>
+<li><a href="https://developers.openai.com/api/docs/guides/voice-latency-cost?api=realtime">成本优化</a>：了解 Realtime 的计费和缓存。</li>
+<li><a href="https://developers.openai.com/api/docs/guides/voice-server-controls?api=realtime">服务端控制</a>：把工具执行和会话控制保留在你的服务端。</li>
+</ul>
+<span id="common-use-cases"></span>
+<span id="understand-different-architectures"></span>
+<span id="choose-a-realtime-session"></span>
+<span id="voice-agent-sessions"></span>
+<span id="translation-sessions"></span>
+<span id="transcription-sessions"></span>
+<span id="choose-a-connection-method"></span>
+<h2 id="other-audio-workflows">其他音频工作流</h2>
+<p>工作流选择和通用音频术语现在位于<a href="/api/docs/guides/audio/">音频与语音</a>页面。连续翻译请使用<a href="https://developers.openai.com/api/docs/guides/realtime-translation">实时翻译</a>；实时字幕请使用<a href="https://developers.openai.com/api/docs/guides/realtime-transcription">实时转写</a>；录制好的音频请使用<a href="https://developers.openai.com/api/docs/guides/speech-to-text">文件转写</a>。</p>

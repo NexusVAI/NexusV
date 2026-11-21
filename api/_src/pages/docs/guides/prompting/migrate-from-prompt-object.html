@@ -1,0 +1,459 @@
+---
+title: 从提示词对象迁移
+description: 了解如何把可复用的提示词对象迁移为应用代码中带版本的提示词。
+tab: models
+lead: false
+css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
+js: /api/assets/model-guide.js
+---
+<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/prompting/migrate-from-prompt-object (reference copy for local review). -->
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="warning" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M10.42 2.006a4 4 0 0 1 3.159 0c.674.29 1.188.822 1.667 1.456.474.627 1 1.473 1.653 2.523l3.542 5.696c.72 1.16 1.3 2.09 1.682 2.854.384.766.654 1.517.59 2.292a4 4 0 0 1-1.604 2.886c-.625.463-1.405.63-2.258.709-.85.078-1.945.078-3.311.078H8.46c-1.366 0-2.46 0-3.31-.078-.854-.078-1.634-.246-2.26-.71a4 4 0 0 1-1.603-2.885c-.064-.775.206-1.526.59-2.292.383-.764.961-1.694 1.682-2.854l3.542-5.696c.653-1.05 1.18-1.896 1.653-2.523.48-.634.993-1.166 1.667-1.456Zm2.37 1.838a2 2 0 0 0-1.58 0c-.192.083-.448.28-.86.825-.413.544-.891 1.312-1.577 2.415l-3.488 5.61c-.755 1.214-1.283 2.066-1.62 2.737-.34.678-.402 1.02-.385 1.232a2 2 0 0 0 .802 1.443c.171.127.494.255 1.25.324.748.069 1.75.07 3.18.07h6.976c1.43 0 2.432-.001 3.18-.07.756-.069 1.079-.197 1.25-.324a2 2 0 0 0 .802-1.443c.017-.212-.045-.554-.385-1.232-.337-.671-.865-1.523-1.62-2.737l-3.488-5.61c-.686-1.103-1.164-1.87-1.576-2.415-.413-.546-.67-.742-.861-.825"></path><path d="M12 7.5a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1M10.851 15a1.15 1.15 0 1 1 2.3 0 1.15 1.15 0 0 1-2.3 0"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>OpenAI 正在弃用 API 中可复用的提示词对象。自 2026 年 6 月 3 日起，提示词创建功能将不再被推荐，<code>v1/prompts</code> 计划于 2026 年 11 月 30 日下线。当前时间线请参阅<a href="https://developers.openai.com/api/docs/deprecations#2026-06-03-reusable-prompts">弃用说明页</a>。</p></div></div></div></div></div>
+<p>要摆脱 OpenAI API 平台中的 <strong>Prompts</strong>，请把提示词内容从托管的 <code>prompt</code> 对象中移出，放进你的应用代码。这样你能更好地控制评审、测试、部署和版本管理。</p>
+<h2 id="before-using-a-prompt-object">之前：使用提示词对象</h2>
+<code-tabs title="使用提示词对象">
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const client = new OpenAI();
+
+const response = await client.responses.create({
+  prompt: {
+    id: "pmpt_123",
+    version: "1",
+    variables: {
+      customer_name: "Acme",
+      issue: "billing question",
+    },
+  },
+});</pre>
+<pre data-lang="python"># 把下面示例中的 ID 和 URL 替换为你自己的资源值。
+
+from openai import OpenAI
+
+client = OpenAI()
+prompt_id = "pmpt_123"
+
+response = client.responses.create(
+    prompt={
+        "id": prompt_id,
+        "version": "1",
+        "variables": {
+            "customer_name": "Acme",
+            "issue": "billing question",
+        },
+    }
+)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Prompt: responses.ResponsePromptParam{
+			// 替换为你已发布的提示词 ID。
+			ID:      "pmpt_123",
+			Version: openai.String("1"),
+			Variables: map[string]responses.ResponsePromptVariableUnionParam{
+				"customer_name": {OfString: openai.String("Acme")},
+				"issue":         {OfString: openai.String("billing question")},
+			},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(response.OutputText())
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.core.JsonValue;
+import com.openai.models.responses.ResponseCreateParams;
+import com.openai.models.responses.ResponsePrompt;
+
+String promptId = "pmpt_123";
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder()
+        .prompt(
+            ResponsePrompt.builder()
+                .id(promptId)
+                .version("1")
+                .variables(
+                    ResponsePrompt.Variables.builder()
+                        .putAdditionalProperty("customer_name", JsonValue.from("Acme"))
+                        .putAdditionalProperty("issue", JsonValue.from("billing question"))
+                        .build())
+                .build())
+        .build();
+
+client.responses().create(params).output().stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+
+response = client.responses.create(
+  prompt: {
+    id: "pmpt_123",
+    version: "1",
+    variables: {
+      customer_name: "Acme",
+      issue: "billing question"
+    }
+  }
+)
+
+puts(response.output_text)</pre>
+<pre data-lang="curl">curl https://api.openai.com/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -d '{
+    "prompt": {
+      "prompt_id": "pmpt_123",
+      "version": "1",
+      "variables": {
+        "customer_name": "Acme",
+        "issue": "billing question"
+      }
+    }
+  }'</pre>
+</code-tabs>
+<h2 id="after-inline-the-prompt-in-code">之后：把提示词内联到代码中</h2>
+<code-tabs title="把提示词内联到代码中">
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const client = new OpenAI();
+
+const response = await client.responses.create({
+  model: "gpt-6-astra",
+  input: [
+    {
+      role: "system",
+      content:
+        "You are a helpful support assistant. Be concise, accurate, and friendly.",
+    },
+    {
+      role: "user",
+      content:
+        "Customer name: Acme. Issue: billing question. Write a response to the customer.",
+    },
+  ],
+});
+
+console.log(response.output_text);</pre>
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+response = client.responses.create(
+    model="gpt-6-astra",
+    input=[
+        {
+            "role": "system",
+            "content": "You are a helpful support assistant. Be concise, accurate, and friendly.",
+        },
+        {
+            "role": "user",
+            "content": "Customer name: Acme. Issue: billing question. Write a response to the customer.",
+        },
+    ],
+)
+
+print(response.output_text)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model: "gpt-6-astra",
+		Input: responses.ResponseNewParamsInputUnion{OfInputItemList: responses.ResponseInputParam{
+			responses.ResponseInputItemParamOfMessage("You are a helpful support assistant. Be concise, accurate, and friendly.", responses.EasyInputMessageRoleSystem),
+			responses.ResponseInputItemParamOfMessage("Customer name: Acme. Issue: billing question. Write a response to the customer.", responses.EasyInputMessageRoleUser),
+		}},
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(response.OutputText())
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.responses.EasyInputMessage;
+import com.openai.models.responses.ResponseCreateParams;
+import com.openai.models.responses.ResponseInputItem;
+import java.util.List;
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder()
+        .model("gpt-6-astra")
+        .inputOfResponse(
+            List.of(
+                ResponseInputItem.ofEasyInputMessage(
+                    EasyInputMessage.builder()
+                        .role(EasyInputMessage.Role.SYSTEM)
+                        .content(
+                            "You are a helpful support assistant. Be concise, accurate, and friendly.")
+                        .build()),
+                ResponseInputItem.ofEasyInputMessage(
+                    EasyInputMessage.builder()
+                        .role(EasyInputMessage.Role.USER)
+                        .content(
+                            "Customer name: Acme. Issue: billing question. Write a response to the customer.")
+                        .build())))
+        .build();
+
+client.responses().create(params).output().stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="csharp">using OpenAI.Responses;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+ResponsesClient client = new(key);
+
+ResponseResult response = await client.CreateResponseAsync(
+    "gpt-6-astra",
+    [
+        ResponseItem.CreateSystemMessageItem(
+            "You are a helpful support assistant. Be concise, accurate, and friendly."
+        ),
+        ResponseItem.CreateUserMessageItem(
+            "Customer name: Acme. Issue: billing question. Write a response to the customer."
+        ),
+    ]
+);
+
+Console.WriteLine(response.GetOutputText());</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+
+response = client.responses.create(
+  model: "gpt-6-astra",
+  input: [
+    {
+      role: :system,
+      content: "You are a helpful support assistant. Be concise, accurate, and friendly."
+    },
+    {
+      role: :user,
+      content: "Customer name: Acme. Issue: billing question. Write a response to the customer."
+    }
+  ]
+)
+
+puts(response.output_text)</pre>
+<pre data-lang="curl">curl https://api.openai.com/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -d '{
+    "model": "gpt-6-astra",
+    "input": [
+      {
+        "role": "system",
+        "content": "You are a helpful support assistant. Be concise, accurate, and friendly."
+      },
+      {
+        "role": "user",
+        "content": "Customer name: Acme. Issue: billing question. Write a response to the customer."
+      }
+    ]
+  }'</pre>
+</code-tabs>
+<h2 id="use-codex-to-migrate">使用 Codex 迁移</h2>
+<p>使用 <a href="https://developers.openai.com/learn/developers-codex-plugin">OpenAI Developers 插件</a>和 <a href="https://github.com/openai/skills/tree/main/skills/.curated/openai-docs">OpenAI Docs 技能</a>，可以自动完成迁移，并加快基于 OpenAI API 的开发。</p>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>$openai-docs 更新这个项目，把提示词存放在代码中，不再使用 prompts 对象</span></span></code></pre>
+<h2 id="what-changes">变化内容</h2>
+<p>不再在 API 请求中引用已保存的提示词对象，而是把提示词文本存放在代码库中，并在 Responses API 调用里把生成的消息直接作为 <code>input</code> 传入。</p>
+<ul>
+<li><strong>把提示词内容移入源代码</strong>，让提示词的修改与产品逻辑走同样的评审和发布流程。</li>
+<li><strong>用函数参数替代提示词变量</strong>，让动态值在应用中显式且有类型。</li>
+<li><strong>在 Responses API 调用中通过 <code>input</code> 传入消息</strong>，不再使用 <code>prompt</code> 对象。</li>
+<li><strong>把版本管理交给代码仓库</strong>，使用 git 提交、PR 评审，以及测试或评估。</li>
+<li><strong>静态内容放前面，动态内容放后面</strong>，以保留提示缓存的收益，因为缓存命中依赖于完全相同的前缀。</li>
+</ul>
+<h2 id="example">示例</h2>
+<code-tabs title="用辅助函数构建提示词">
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const client = new OpenAI();
+
+function buildSupportPrompt({ customerName, issue }) {
+  return [
+    {
+      role: "system",
+      content:
+        "You are a helpful support assistant. Be concise, accurate, and friendly. Do not invent policy details.",
+    },
+    {
+      role: "user",
+      content: `Customer name: ${customerName}. Issue: ${issue}. Write a response to the customer.`,
+    },
+  ];
+}
+
+const response = await client.responses.create({
+  model: "gpt-6-astra",
+  input: buildSupportPrompt({
+    customerName: "Acme",
+    issue: "billing question",
+  }),
+});</pre>
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+
+def build_support_prompt(customer_name, issue):
+    return [
+        {
+            "role": "system",
+            "content": "You are a helpful support assistant. Be concise, accurate, and friendly. Do not invent policy details.",
+        },
+        {
+            "role": "user",
+            "content": f"Customer name: {customer_name}. Issue: {issue}. Write a response to the customer.",
+        },
+    ]
+
+
+response = client.responses.create(
+    model="gpt-6-astra",
+    input=build_support_prompt(
+        customer_name="Acme",
+        issue="billing question",
+    ),
+)</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model: "gpt-6-astra",
+		Input: responses.ResponseNewParamsInputUnion{OfInputItemList: buildSupportPrompt("Acme", "billing question")},
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(response.OutputText())
+}
+
+func buildSupportPrompt(customerName string, issue string) responses.ResponseInputParam {
+	return responses.ResponseInputParam{
+		responses.ResponseInputItemParamOfMessage("You are a helpful support assistant. Be concise, accurate, and friendly. Do not invent policy details.", responses.EasyInputMessageRoleSystem),
+		responses.ResponseInputItemParamOfMessage(fmt.Sprintf("Customer name: %s. Issue: %s. Write a response to the customer.", customerName, issue), responses.EasyInputMessageRoleUser),
+	}
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.responses.EasyInputMessage;
+import com.openai.models.responses.ResponseCreateParams;
+import com.openai.models.responses.ResponseInputItem;
+import java.util.List;
+
+private static List<ResponseInputItem> buildSupportPrompt(String customerName, String issue) {
+  return List.of(
+      ResponseInputItem.ofEasyInputMessage(
+          EasyInputMessage.builder()
+              .role(EasyInputMessage.Role.SYSTEM)
+              .content(
+                  "You are a helpful support assistant. Be concise, accurate, and friendly. Do not invent policy details.")
+              .build()),
+      ResponseInputItem.ofEasyInputMessage(
+          EasyInputMessage.builder()
+              .role(EasyInputMessage.Role.USER)
+              .content(
+                  "Customer name: "
+                      + customerName
+                      + ". Issue: "
+                      + issue
+                      + ". Write a response to the customer.")
+              .build()));
+}
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder()
+        .model("gpt-6-astra")
+        .inputOfResponse(buildSupportPrompt("Acme", "billing question"))
+        .build();
+
+client.responses().create(params).output().stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="csharp">using OpenAI.Responses;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+ResponsesClient client = new(key);
+
+static ResponseItem[] BuildSupportPrompt(string customerName, string issue) =>
+[
+    ResponseItem.CreateSystemMessageItem(
+        "You are a helpful support assistant. Be concise, accurate, and friendly. Do not invent policy details."
+    ),
+    ResponseItem.CreateUserMessageItem(
+        $"Customer name: {customerName}. Issue: {issue}. Write a response to the customer."
+    ),
+];
+
+ResponseResult response = await client.CreateResponseAsync(
+    "gpt-6-astra",
+    BuildSupportPrompt("Acme", "billing question")
+);
+Console.WriteLine(response.GetOutputText());</pre>
+<pre data-lang="ruby">require "openai"
+
+def build_support_prompt(customer_name, issue)
+  [
+    {
+      role: :system,
+      content: "You are a helpful support assistant. Be concise, accurate, and friendly. Do not invent policy details."
+    },
+    {
+      role: :user,
+      content: "Customer name: #{customer_name}. Issue: #{issue}. Write a response to the customer."
+    }
+  ]
+end
+
+client = OpenAI::Client.new
+
+response = client.responses.create(
+  model: "gpt-6-astra",
+  input: build_support_prompt("Acme", "billing question")
+)
+
+puts(response.output_text)</pre>
+</code-tabs>
+<h2 id="what-you-gain">收益</h2>
+<p>工程上的控制力更强：提示词与产品代码放在一起，修改经由 PR 评审，测试和评估可以在 CI 中运行，发布或实验可以通过你自己的配置或功能开关管理。</p>
+<p>不要把提示词零散地写在代码库各处。建一个小的 <code>prompts/</code> 模块，把每个提示词保存为一个具名的构建函数，并添加轻量的评估样例，让提示词修改与产品逻辑一样经过评审。</p>

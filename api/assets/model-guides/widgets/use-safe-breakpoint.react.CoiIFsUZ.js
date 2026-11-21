@@ -1,0 +1,1 @@
+import{r as e}from"./rolldown-runtime.hePW80VL.js";import{t}from"./react.CGSMBlYx.js";import{t as n}from"./useBreakpoints.Zvl4IF-k.js";var r=e(t(),1),i=e=>{if(typeof window>`u`||typeof document>`u`)return!0;let t=n(e),[i,a]=(0,r.useState)(!1);return(0,r.useEffect)(()=>{a(!0)},[]),!i||t};export{i as t};

@@ -1,0 +1,701 @@
+---
+title: 内容审核
+description: 了解如何用 OpenAI 审核模型识别文本和图片中的有害内容。
+tab: models
+lead: false
+css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
+js: /api/assets/model-guide.js
+---
+<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/moderation (reference copy for local review). -->
+<p>使用 OpenAI 审核模型检测文本和图片中的有害内容。你可以用<a href="https://developers.openai.com/api/docs/api-reference/moderations">审核接口</a>单独对输入分类，也可以在生成回复的同时请求审核分数。根据结果执行你的应用策略，例如过滤内容、把请求转人工复核，或处理提交了违规内容的账户。</p>
+<p><code>omni-moderation-latest</code> 模型接受文本和图片输入，不对音频分类。审核接口免费使用，图片文件最大 20 MB。</p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="warning" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M10.42 2.006a4 4 0 0 1 3.159 0c.674.29 1.188.822 1.667 1.456.474.627 1 1.473 1.653 2.523l3.542 5.696c.72 1.16 1.3 2.09 1.682 2.854.384.766.654 1.517.59 2.292a4 4 0 0 1-1.604 2.886c-.625.463-1.405.63-2.258.709-.85.078-1.945.078-3.311.078H8.46c-1.366 0-2.46 0-3.31-.078-.854-.078-1.634-.246-2.26-.71a4 4 0 0 1-1.603-2.885c-.064-.775.206-1.526.59-2.292.383-.764.961-1.694 1.682-2.854l3.542-5.696c.653-1.05 1.18-1.896 1.653-2.523.48-.634.993-1.166 1.667-1.456Zm2.37 1.838a2 2 0 0 0-1.58 0c-.192.083-.448.28-.86.825-.413.544-.891 1.312-1.577 2.415l-3.488 5.61c-.755 1.214-1.283 2.066-1.62 2.737-.34.678-.402 1.02-.385 1.232a2 2 0 0 0 .802 1.443c.171.127.494.255 1.25.324.748.069 1.75.07 3.18.07h6.976c1.43 0 2.432-.001 3.18-.07.756-.069 1.079-.197 1.25-.324a2 2 0 0 0 .802-1.443c.017-.212-.045-.554-.385-1.232-.337-.671-.865-1.523-1.62-2.737l-3.488-5.61c-.686-1.103-1.164-1.87-1.576-2.415-.413-.546-.67-.742-.861-.825"></path><path d="M12 7.5a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1M10.851 15a1.15 1.15 0 1 1 2.3 0 1.15 1.15 0 0 1-2.3 0"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><strong>儿童安全：</strong>请勿将已知或疑似的儿童性虐待材料（CSAM）发送给审核 API。该 API 并非为 CSAM 检测或处理而设计，也不能替代专门的儿童安全防护。关于预防、检测、响应和举报 CSAM 的步骤，请参阅我们的 <a href="https://developers.openai.com/api/docs/guides/csam-guidance">CSAM 指南</a>。</p></div></div></div></div></div>
+<h2 id="choose-a-moderation-workflow">选择审核流程</h2>
+<div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
+<thead>
+<tr>
+<th>流程</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#moderate-generated-content">审核生成内容</a></td>
+<td>你的应用通过 Responses API 或 Chat Completions API 生成文本，并需要审核信号。</td>
+</tr>
+<tr>
+<td><a href="#classify-standalone-inputs">对独立输入分类</a></td>
+<td>你的应用需要对文本或图片分类，但不需要生成模型回复。</td>
+</tr>
+<tr>
+<td><a href="#understand-moderation-results">理解审核结果</a></td>
+<td>你的应用需要解读标记、类别、分数或适用的输入类型。</td>
+</tr>
+<tr>
+<td><a href="#review-supported-categories">查看支持的类别</a></td>
+<td>你的应用需要了解哪些有害类别适用于文本、图片或两者。</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="moderate-generated-content">审核生成内容</h2>
+<p>如果你的应用需要同时获得生成文本和审核分数，请在生成请求中传入顶层 <code>moderation</code> 对象。API 会同时返回模型输入和生成输出的审核分数，无需单独发起审核请求。</p>
+<p>模型仍按正常方式生成内容。在把输出展示给用户或执行后续操作前，请先检查审核结果。</p>
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <p>创建回复时设置 <code>moderation.model</code>：</p><code-tabs title="生成带审核分数的回复">
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+response = client.responses.create(
+    model="gpt-6-astra",
+    input=[
+        {
+            "role": "user",
+            "content": (
+                "A user asks for instructions to make a harmful weapon. "
+                "Draft a brief refusal and offer a safer alternative."
+            ),
+        }
+    ],
+    moderation={"model": "omni-moderation-latest"},
+)
+
+input_moderation = response.moderation.input
+output_moderation = response.moderation.output
+if input_moderation.type == "error":
+    raise RuntimeError(input_moderation.message)
+if output_moderation.type == "error":
+    raise RuntimeError(output_moderation.message)
+
+print(input_moderation.flagged)
+print(output_moderation.flagged)</pre>
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const client = new OpenAI();
+
+const response = await client.responses.create({
+  model: "gpt-6-astra",
+  input: [
+    {
+      role: "user",
+      content:
+        "A user asks for instructions to make a harmful weapon. Draft a brief refusal and offer a safer alternative.",
+    },
+  ],
+  moderation: { model: "omni-moderation-latest" },
+});
+
+const inputModeration = response.moderation.input;
+const outputModeration = response.moderation.output;
+if (inputModeration.type === "error") {
+  throw new Error(inputModeration.message);
+}
+if (outputModeration.type === "error") {
+  throw new Error(outputModeration.message);
+}
+
+console.log(inputModeration.flagged);
+console.log(outputModeration.flagged);</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+)
+
+func main() {
+	client := openai.NewClient()
+
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model: "gpt-6-astra",
+		Input: responses.ResponseNewParamsInputUnion{
+			OfString: openai.String("A user asks for instructions to make a harmful weapon. Draft a brief refusal and offer a safer alternative."),
+		},
+		Moderation: responses.ResponseNewParamsModeration{
+			Model: "omni-moderation-latest",
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	switch inputModeration := response.Moderation.Input.AsAny().(type) {
+	case responses.ResponseModerationInputModerationResult:
+		fmt.Println(inputModeration.Flagged)
+	case responses.ResponseModerationInputError:
+		panic(errors.New(inputModeration.Message))
+	default:
+		panic("unexpected input moderation result")
+	}
+	switch outputModeration := response.Moderation.Output.AsAny().(type) {
+	case responses.ResponseModerationOutputModerationResult:
+		fmt.Println(outputModeration.Flagged)
+	case responses.ResponseModerationOutputError:
+		panic(errors.New(outputModeration.Message))
+	default:
+		panic("unexpected output moderation result")
+	}
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.core.JsonValue;
+import com.openai.models.responses.ResponseCreateParams;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder()
+        .model("gpt-6-astra")
+        .input(
+            "A user asks for instructions to make a harmful weapon. Draft a brief refusal and offer a safer alternative.")
+        .putAdditionalBodyProperty(
+            "moderation", JsonValue.from(Map.of("model", "omni-moderation-latest")))
+        .build();
+
+var response = client.responses().create(params);
+var moderation =
+    response
+        .moderation()
+        .orElseThrow(
+            () -> new IllegalStateException("The response did not include moderation results"));
+List<Boolean> flags = new ArrayList<>();
+
+var input = moderation.input();
+if (input.isError()) {
+  throw new IllegalStateException(input.asError().message());
+}
+if (!input.isModerationResult()) {
+  throw new IllegalStateException("Missing input moderation flag");
+}
+flags.add(input.asModerationResult().flagged());
+
+var output = moderation.output();
+if (output.isError()) {
+  throw new IllegalStateException(output.asError().message());
+}
+if (!output.isModerationResult()) {
+  throw new IllegalStateException("Missing output moderation flag");
+}
+flags.add(output.asModerationResult().flagged());
+
+flags.forEach(System.out::println);</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+
+response = client.responses.create(
+  model: "gpt-6-astra",
+  input: "A user asks for instructions to make a harmful weapon. Draft a brief refusal and offer a safer alternative.",
+  moderation: { model: "omni-moderation-latest" }
+)
+
+puts(response.moderation)</pre>
+</code-tabs><p>Responses API 在 <code>response.moderation.input</code> 返回输入的 <code>moderation_result</code> 对象，在 <code>response.moderation.output</code> 返回输出的 <code>moderation_result</code> 对象。</p> </div> 
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <p>创建 Chat Completion 时设置 <code>moderation.model</code>：</p><code-tabs title="生成带审核分数的 Chat Completion">
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+completion = client.chat.completions.create(
+    model="gpt-6-astra",
+    messages=[
+        {
+            "role": "user",
+            "content": (
+                "A user asks for instructions to make a harmful weapon. "
+                "Draft a brief refusal and offer a safer alternative."
+            ),
+        }
+    ],
+    moderation={"model": "omni-moderation-latest"},
+)
+
+input_result = completion.moderation.input
+output_result = completion.moderation.output
+if input_result.type == "error":
+    raise RuntimeError(input_result.message)
+if output_result.type == "error":
+    raise RuntimeError(output_result.message)
+
+input_moderation = input_result.results[0]
+output_moderation = output_result.results[0]
+
+print(input_moderation.flagged)
+print(output_moderation.flagged)</pre>
+<pre data-lang="javascript">import OpenAI from "openai";
+
+const client = new OpenAI();
+
+const completion = await client.chat.completions.create({
+  model: "gpt-6-astra",
+  messages: [
+    {
+      role: "user",
+      content:
+        "A user asks for instructions to make a harmful weapon. Draft a brief refusal and offer a safer alternative.",
+    },
+  ],
+  moderation: { model: "omni-moderation-latest" },
+});
+
+const inputResult = completion.moderation.input;
+const outputResult = completion.moderation.output;
+if (inputResult.type === "error") throw new Error(inputResult.message);
+if (outputResult.type === "error") throw new Error(outputResult.message);
+
+const inputModeration = inputResult.results[0];
+const outputModeration = outputResult.results[0];
+
+console.log(inputModeration.flagged);
+console.log(outputModeration.flagged);</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+)
+
+func main() {
+	client := openai.NewClient()
+
+	completion, err := client.Chat.Completions.New(context.Background(), openai.ChatCompletionNewParams{
+		Model: "gpt-6-astra",
+		Messages: []openai.ChatCompletionMessageParamUnion{
+			openai.UserMessage("A user asks for instructions to make a harmful weapon. Draft a brief refusal and offer a safer alternative."),
+		},
+		Moderation: openai.ChatCompletionNewParamsModeration{
+			Model: "omni-moderation-latest",
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	switch inputResult := completion.Moderation.Input.AsAny().(type) {
+	case openai.ChatCompletionModerationInputModerationResults:
+		if len(inputResult.Results) == 0 {
+			panic("missing input moderation result")
+		}
+		fmt.Println(inputResult.Results[0].Flagged)
+	case openai.ChatCompletionModerationInputError:
+		panic(errors.New(inputResult.Message))
+	default:
+		panic("unexpected input moderation result")
+	}
+	switch outputResult := completion.Moderation.Output.AsAny().(type) {
+	case openai.ChatCompletionModerationOutputModerationResults:
+		if len(outputResult.Results) == 0 {
+			panic("missing output moderation result")
+		}
+		fmt.Println(outputResult.Results[0].Flagged)
+	case openai.ChatCompletionModerationOutputError:
+		panic(errors.New(outputResult.Message))
+	default:
+		panic("unexpected output moderation result")
+	}
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.core.JsonValue;
+import com.openai.models.chat.completions.ChatCompletionCreateParams;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+ChatCompletionCreateParams params =
+    ChatCompletionCreateParams.builder()
+        .model("gpt-6-astra")
+        .addUserMessage(
+            "A user asks for instructions to make a harmful weapon. Draft a brief refusal and offer a safer alternative.")
+        .putAdditionalBodyProperty(
+            "moderation", JsonValue.from(Map.of("model", "omni-moderation-latest")))
+        .build();
+
+var completion = client.chat().completions().create(params);
+var moderation =
+    completion
+        .moderation()
+        .orElseThrow(
+            () ->
+                new IllegalStateException("The completion did not include moderation results"));
+List<Boolean> flags = new ArrayList<>();
+
+var input = moderation.input();
+if (input.isError()) {
+  throw new IllegalStateException(input.asError().message());
+}
+if (!input.isModerationResults() || input.asModerationResults().results().isEmpty()) {
+  throw new IllegalStateException("Missing input moderation flag");
+}
+flags.add(input.asModerationResults().results().get(0).flagged());
+
+var output = moderation.output();
+if (output.isError()) {
+  throw new IllegalStateException(output.asError().message());
+}
+if (!output.isModerationResults() || output.asModerationResults().results().isEmpty()) {
+  throw new IllegalStateException("Missing output moderation flag");
+}
+flags.add(output.asModerationResults().results().get(0).flagged());
+
+flags.forEach(System.out::println);</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+
+completion = client.chat.completions.create(
+  model: "gpt-6-astra",
+  messages: [
+    {
+      role: :user,
+      content: "A user asks for instructions to make a harmful weapon. Draft a brief refusal and offer a safer alternative."
+    }
+  ],
+  moderation: { model: "omni-moderation-latest" }
+)
+
+puts(completion.moderation)</pre>
+</code-tabs><p>Chat Completions 在 <code>completion.moderation.input</code> 和 <code>completion.moderation.output</code> 返回审核结果容器。如果请求只生成一个选项，请读取 <code>results[0]</code> 获取输入和输出的第一条结果。如果请求了多个选项，<code>completion.moderation.output.results[i]</code> 与 <code>completion.choices[i]</code> 一一对应。</p> </div> 
+<p>内嵌的审核结果与独立审核结果使用相同的类别字段。先看 <code>flagged</code> 做初步判断，再用 <code>categories</code> 和 <code>category_scores</code> 做日志记录、分流、审计或人工复核队列。即使是拒绝或其他安全相关的回复，只要讨论了有害内容，仍可能被标记。请把审核分数当作应用策略的信号，而不是自动拦截的依据。</p>
+<p>如果你的应用需要处理审核失败的情况，请先检查审核结果的类型，再读取分数。如果某个审核步骤无法完成，对应的输入或输出审核字段可能包含错误信息，而不是审核分数。</p>
+<p>对于工具调用请求，只要工具调用参数和工具输出出现在对话内容中，审核就会覆盖它们。审核不覆盖工具名称、工具描述、工具 schema 或响应格式 schema。</p>
+<p>如果你以流式方式接收生成的回复，审核分数会在完整输出生成后才返回，不会随部分输出增量一起发送。</p>
+<h2 id="classify-standalone-inputs">对独立输入分类</h2>
+<p>使用<a href="https://developers.openai.com/api/docs/api-reference/moderations">审核接口</a>对文本或图片输入分类，无需生成模型回复。下面的标签页展示了如何使用 <a href="https://developers.openai.com/api/docs/libraries">OpenAI 官方库</a>和 <a href="/api/docs/models/#moderation"><code>omni-moderation-latest</code> 模型</a>：</p>
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="example" data-content-switcher-initial="text" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="text" id="content-switcher-example"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="text">审核文本输入</option><option value="images">审核图片和文本</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="text"><div class="hidden">审核文本输入</div><code-tabs title="获取文本输入的分类信息">
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+response = client.moderations.create(
+    model="omni-moderation-latest",
+    input="...text to classify goes here...",
+)
+
+print(response)</pre>
+<pre data-lang="javascript">import OpenAI from "openai";
+const openai = new OpenAI();
+
+const moderation = await openai.moderations.create({
+  model: "omni-moderation-latest",
+  input: "...text to classify goes here...",
+});
+
+console.log(moderation);</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+)
+
+func main() {
+	client := openai.NewClient()
+
+	moderation, err := client.Moderations.New(context.Background(), openai.ModerationNewParams{
+		Model: openai.ModerationModelOmniModerationLatest,
+		Input: openai.ModerationNewParamsInputUnion{
+			OfString: openai.String("Text to classify goes here."),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(moderation.Results[0].Flagged)
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.moderations.ModerationCreateParams;
+
+var moderation =
+    client
+        .moderations()
+        .create(
+            ModerationCreateParams.builder()
+                .model("omni-moderation-latest")
+                .input("Text to classify goes here.")
+                .build());
+
+System.out.println(moderation.results().get(0).flagged());</pre>
+<pre data-lang="csharp">using OpenAI.Moderations;
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+string model = "omni-moderation-latest";
+ModerationClient client = new(model, key);
+
+ModerationResult result = await client.ClassifyTextAsync(
+    "Text to classify goes here."
+);
+
+Console.WriteLine($"Flagged: {result.Flagged}");
+Console.WriteLine(
+    $"Violence: {result.Violence.Flagged}; score: {result.Violence.Score:F3}"
+);</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+
+moderation = client.moderations.create(
+  model: OpenAI::Models::ModerationModel::OMNI_MODERATION_LATEST,
+  input: "Text to classify goes here."
+)
+
+puts(moderation.results.fetch(0).flagged)</pre>
+<pre data-lang="curl">curl https://api.openai.com/v1/moderations \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -d '{
+    "model": "omni-moderation-latest",
+    "input": "...text to classify goes here..."
+  }'</pre>
+</code-tabs></div><div data-content-switcher-pane="true" data-value="images" hidden=""><div class="hidden">审核图片和文本</div><code-tabs title="获取图文输入的分类信息">
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+response = client.moderations.create(
+    model="omni-moderation-latest",
+    input=[
+        {"type": "text", "text": "...text to classify goes here..."},
+        {
+            "type": "image_url",
+            "image_url": {
+                "url": "https://example.com/image.png",
+                # 也可以使用 Base64 编码的图片 URL。
+                # "url": "data:image/jpeg;base64,abcdefg..."
+            },
+        },
+    ],
+)
+
+print(response)</pre>
+<pre data-lang="javascript">import OpenAI from "openai";
+const openai = new OpenAI();
+
+const moderation = await openai.moderations.create({
+  model: "omni-moderation-latest",
+  input: [
+    { type: "text", text: "...text to classify goes here..." },
+    {
+      type: "image_url",
+      image_url: {
+        url: "https://example.com/image.png",
+        // 也可以使用 Base64 编码的图片 URL。
+        // url: "data:image/jpeg;base64,abcdefg...",
+      },
+    },
+  ],
+});
+
+console.log(moderation);</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+)
+
+func main() {
+	client := openai.NewClient()
+
+	moderation, err := client.Moderations.New(context.Background(), openai.ModerationNewParams{
+		Model: openai.ModerationModelOmniModerationLatest,
+		Input: openai.ModerationNewParamsInputUnion{
+			OfModerationMultiModalArray: []openai.ModerationMultiModalInputUnionParam{
+				openai.ModerationMultiModalInputParamOfText("Text to classify goes here."),
+				openai.ModerationMultiModalInputParamOfImageURL(openai.ModerationImageURLInputImageURLParam{
+					URL: "https://api.nga.gov/iiif/a2e6da57-3cd1-4235-b20e-95dcaefed6c8/full/!800,800/0/default.jpg",
+				}),
+			},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(moderation.Results[0].Flagged)
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.moderations.ModerationCreateParams;
+import com.openai.models.moderations.ModerationImageUrlInput;
+import com.openai.models.moderations.ModerationMultiModalInput;
+import com.openai.models.moderations.ModerationTextInput;
+import java.util.List;
+
+var moderation =
+    client
+        .moderations()
+        .create(
+            ModerationCreateParams.builder()
+                .model("omni-moderation-latest")
+                .inputOfModerationMultiModalArray(
+                    List.of(
+                        ModerationMultiModalInput.ofText(
+                            ModerationTextInput.builder()
+                                .text("Text to classify goes here.")
+                                .build()),
+                        ModerationMultiModalInput.ofImageUrl(
+                            ModerationImageUrlInput.builder()
+                                .imageUrl(
+                                    ModerationImageUrlInput.ImageUrl.builder()
+                                        .url(
+                                            "https://api.nga.gov/iiif/a2e6da57-3cd1-4235-b20e-95dcaefed6c8/full/!800,800/0/default.jpg")
+                                        .build())
+                                .build())))
+                .build());
+
+System.out.println(moderation.results().get(0).flagged());</pre>
+<pre data-lang="csharp">using OpenAI.Moderations;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+string model = "omni-moderation-latest";
+ModerationClient client = new(model, key);
+
+ModerationResult result = await client.ClassifyInputsAsync(
+    [
+        ModerationInputPart.CreateTextPart("Text to classify goes here."),
+        ModerationInputPart.CreateImagePart(
+            new Uri(
+                "https://api.nga.gov/iiif/a2e6da57-3cd1-4235-b20e-95dcaefed6c8/full/!800,800/0/default.jpg"
+            )
+        ),
+    ]
+);
+
+Console.WriteLine($"Flagged: {result.Flagged}");
+Console.WriteLine(
+    $"Violence: {result.Violence.Flagged}; score: {result.Violence.Score:F3}; inputs: {result.Violence.ApplicableInputKinds}"
+);</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+
+moderation = client.moderations.create(
+  model: OpenAI::Models::ModerationModel::OMNI_MODERATION_LATEST,
+  input: [
+    {
+      type: :text,
+      text: "Text to classify goes here."
+    },
+    {
+      type: :image_url,
+      image_url: {
+        url: "https://api.nga.gov/iiif/a2e6da57-3cd1-4235-b20e-95dcaefed6c8/full/!800,800/0/default.jpg"
+      }
+    }
+  ]
+)
+
+puts(moderation.results.fetch(0).flagged)</pre>
+<pre data-lang="curl">curl https://api.openai.com/v1/moderations \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -d '{
+    "model": "omni-moderation-latest",
+    "input": [
+      { "type": "text", "text": "...text to classify goes here..." },
+      {
+        "type": "image_url",
+        "image_url": {
+          "url": "https://example.com/image.png"
+        }
+      }
+    ]
+  }'</pre>
+</code-tabs></div> </div> </div>
+<h2 id="understand-moderation-results">理解审核结果</h2>
+<p>下面是一张图片的完整输出示例，图片取自一部战争电影的单帧画面。模型识别出画面中的暴力迹象，<code>violence</code> 类别分数大于 0.8。</p>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="json" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><span aria-hidden="true" class="platform-code-line-numbers" style="width:2ch"><span class="platform-code-line-number">1</span><span class="platform-code-line-number">2</span><span class="platform-code-line-number">3</span><span class="platform-code-line-number">4</span><span class="platform-code-line-number">5</span><span class="platform-code-line-number">6</span><span class="platform-code-line-number">7</span><span class="platform-code-line-number">8</span><span class="platform-code-line-number">9</span><span class="platform-code-line-number">10</span><span class="platform-code-line-number">11</span><span class="platform-code-line-number">12</span><span class="platform-code-line-number">13</span><span class="platform-code-line-number">14</span><span class="platform-code-line-number">15</span><span class="platform-code-line-number">16</span><span class="platform-code-line-number">17</span><span class="platform-code-line-number">18</span><span class="platform-code-line-number">19</span><span class="platform-code-line-number">20</span><span class="platform-code-line-number">21</span><span class="platform-code-line-number">22</span><span class="platform-code-line-number">23</span><span class="platform-code-line-number">24</span><span class="platform-code-line-number">25</span><span class="platform-code-line-number">26</span><span class="platform-code-line-number">27</span><span class="platform-code-line-number">28</span><span class="platform-code-line-number">29</span><span class="platform-code-line-number">30</span><span class="platform-code-line-number">31</span><span class="platform-code-line-number">32</span><span class="platform-code-line-number">33</span><span class="platform-code-line-number">34</span><span class="platform-code-line-number">35</span><span class="platform-code-line-number">36</span><span class="platform-code-line-number">37</span><span class="platform-code-line-number">38</span><span class="platform-code-line-number">39</span><span class="platform-code-line-number">40</span><span class="platform-code-line-number">41</span><span class="platform-code-line-number">42</span><span class="platform-code-line-number">43</span><span class="platform-code-line-number">44</span><span class="platform-code-line-number">45</span><span class="platform-code-line-number">46</span><span class="platform-code-line-number">47</span><span class="platform-code-line-number">48</span><span class="platform-code-line-number">49</span><span class="platform-code-line-number">50</span><span class="platform-code-line-number">51</span><span class="platform-code-line-number">52</span><span class="platform-code-line-number">53</span><span class="platform-code-line-number">54</span></span><code><span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  "id"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"modr-970d409ef3bef3b70c73d8232df86e7d"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  "model"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"omni-moderation-latest"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  "results"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">      "flagged"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">true</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">      "categories"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "sexual"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">false</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "sexual/minors"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">false</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "harassment"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">false</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "harassment/threatening"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">false</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "hate"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">false</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "hate/threatening"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">false</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "illicit"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">false</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "illicit/violent"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">false</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "self-harm"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">false</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "self-harm/intent"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">false</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "self-harm/instructions"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">false</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "violence"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">true</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "violence/graphic"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">false</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">      },</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">      "category_scores"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "sexual"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">2.34135824776394e-7</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "sexual/minors"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">1.6346470245419304e-7</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "harassment"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">0.0011643905680426018</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "harassment/threatening"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">0.0022121340080906377</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "hate"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">3.1999824407395835e-7</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "hate/threatening"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">2.4923252458203563e-7</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "illicit"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">0.0005227032493135171</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "illicit/violent"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">3.682979260160596e-7</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "self-harm"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">0.0011175734280627694</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "self-harm/intent"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">0.0006264858507989037</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "self-harm/instructions"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">7.368592981140821e-8</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "violence"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">0.8599265510337075</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "violence/graphic"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">0.37701736389561064</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">      },</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">      "category_applied_input_types"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "sexual"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"image"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "sexual/minors"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "harassment"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "harassment/threatening"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "hate"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "hate/threatening"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "illicit"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "illicit/violent"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "self-harm"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"image"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "self-harm/intent"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"image"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "self-harm/instructions"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"image"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "violence"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"image"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">        "violence/graphic"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: [</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"image"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  ]</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">}</span></span></code></pre>
+<p>JSON 响应包含的字段描述了输入中出现了哪些类别，以及模型对每个类别的置信度。</p>
+<div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full"><tr><th>输出字段</th><th>说明</th></tr><tr><td><code>flagged</code></td><td><p>模型判定内容可能有害时设为 <code>true</code>，否则为 <code>false</code>。</p></td></tr><tr><td><code>categories</code></td><td><p>包含每个类别的违规标记字典。对每个类别，模型判定该类别违规时值为 <code>true</code>，否则为 <code>false</code>。</p></td></tr><tr><td><code>category_scores</code></td><td><p>包含每个类别的分数字典。每个分数表示模型对输入包含该类别内容的置信度，取值在 0 到 1 之间，越高表示置信度越高。</p></td></tr><tr><td><code>category_applied_input_types</code></td><td><p>包含该类别分数适用的输入类型。例如，若 <code>violence/graphic</code> 类别同时适用于图片和文本输入，则 <code>violence/graphic</code> 属性为 <code>["image", "text"]</code>。</p></td></tr></table></div>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>我们计划持续升级审核接口的底层模型。因此，依赖 <code>category_scores</code> 的自定义策略可能需要随时间重新校准。</p></div></div></div></div></div>
+<h2 id="review-supported-categories">查看支持的类别</h2>
+<p>下表列出审核接口可以检测的内容类别，以及每个类别支持的输入类型。</p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>标注为“仅文本”的类别不支持图片输入。如果你只向 <code>omni-moderation-latest</code> 模型发送图片（不附带文本），模型会对这些不支持的类别返回 0 分。图片文件最大 20 MB。</p></div></div></div></div></div>
+<div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full"><tr><th><strong>类别</strong></th><th><strong>说明</strong></th><th><strong>输入类型</strong></th></tr><tr><td><code>harassment</code></td><td><p>Content that expresses, incites, or promotes harassing language towards
+any target.</p></td><td>Text only</td></tr><tr><td><code>harassment/threatening</code></td><td><p>Harassment content that also includes violence or serious harm towards any
+target.</p></td><td>Text only</td></tr><tr><td><code>hate</code></td><td><p>Content that expresses, incites, or promotes hate based on race, gender,
+ethnicity, religion, nationality, sexual orientation, disability status,
+or caste. Hateful content aimed at non-protected groups (e.g., chess
+players) is harassment.</p></td><td>Text only</td></tr><tr><td><code>hate/threatening</code></td><td><p>Hateful content that also includes violence or serious harm towards the
+targeted group based on race, gender, ethnicity, religion, nationality,
+sexual orientation, disability status, or caste.</p></td><td>Text only</td></tr><tr><td><code>illicit</code></td><td><p>Content that gives advice or instruction on how to commit illicit acts. A
+phrase like “how to shoplift” would fit this category.</p></td><td>Text only</td></tr><tr><td><code>illicit/violent</code></td><td><p>The same types of content flagged by the <code>illicit</code> category, but also
+includes references to violence or procuring a weapon.</p></td><td>Text only</td></tr><tr><td><code>self-harm</code></td><td><p>Content that promotes, encourages, or depicts acts of self-harm, such as
+suicide, cutting, and eating disorders.</p></td><td>Text and images</td></tr><tr><td><code>self-harm/intent</code></td><td><p>Content where the speaker expresses that they are engaging or intend to
+engage in acts of self-harm, such as suicide, cutting, and eating
+disorders.</p></td><td>Text and images</td></tr><tr><td><code>self-harm/instructions</code></td><td><p>Content that encourages performing acts of self-harm, such as suicide,
+cutting, and eating disorders, or that gives instructions or advice on how
+to commit such acts.</p></td><td>Text and images</td></tr><tr><td><code>sexual</code></td><td><p>Content meant to arouse sexual excitement, such as the description of
+sexual activity, or that promotes sexual services (excluding sex education
+and wellness).</p></td><td>Text and images</td></tr><tr><td><code>sexual/minors</code></td><td><p>Sexual content that includes an individual who is under 18 years old.</p></td><td>Text only</td></tr><tr><td><code>violence</code></td><td>Content that depicts death, violence, or physical injury.</td><td>Text and images</td></tr><tr><td><code>violence/graphic</code></td><td><p>Content that depicts death, violence, or physical injury in graphic
+detail.</p></td><td>Text and images</td></tr></table></div>

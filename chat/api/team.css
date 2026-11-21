@@ -26,26 +26,11 @@
 /* 高度只由 CSS 决定；svg 绝对定位，不反过来撑高容器（否则 resize 后只增不减） */
 .ctu-plot{position:relative;height:clamp(320px,calc(100vh - 380px),560px);outline:none}
 .ctu-plot:focus-visible{box-shadow:inset 0 0 0 2px var(--color-text);border-radius:0 0 var(--radius-xl) var(--radius-xl)}
-.ctu-plot svg{position:absolute;top:8px;left:8px;display:block;overflow:visible}
-.ctu-grid{stroke:var(--color-border);stroke-width:1;shape-rendering:crispEdges}
-.ctu-grid[data-base="true"]{stroke:var(--color-border-strong)}
-.ctu-axis{fill:var(--color-text-tertiary);font-size:11px}
-.ctu-line{fill:none;stroke:#E36E30;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-.ctu-area{fill:#E36E30;fill-opacity:.12}
-.ctu-cross{stroke:var(--color-text-secondary);stroke-width:1;stroke-dasharray:3 3;shape-rendering:crispEdges}
-.ctu-dot{fill:#E36E30;stroke:var(--color-surface);stroke-width:2}
-.ctu-empty[hidden]{display:none}
-.ctu-empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--color-text-tertiary);font-size:13px;pointer-events:none}
-
-/* 悬停卡片 */
-.ctu-tip{position:absolute;top:0;left:0;z-index:5;min-width:180px;padding:10px 12px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-elevated);box-shadow:0 12px 32px rgba(0,0,0,.18);color:var(--color-text);font-size:12px;line-height:18px;pointer-events:none;opacity:0;transition:opacity .12s ease}
-.ctu-tip[data-show="true"]{opacity:1}
-.ctu-tip-date{margin-bottom:6px;color:var(--color-text-secondary)}
-.ctu-tip-who{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-weight:var(--font-weight-semibold);font-size:13px}
-.ctu-tip-who::before{content:"";width:8px;height:8px;border-radius:2px;background:#E36E30;flex:0 0 auto}
-.ctu-tip-row{display:flex;justify-content:space-between;gap:16px;color:var(--color-text-secondary)}
-.ctu-tip-row b{color:var(--color-text);font-weight:var(--font-weight-medium)}
-.ctu-tip-row[data-active="true"],.ctu-tip-row[data-active="true"] b{color:var(--color-text);font-weight:var(--font-weight-semibold)}
+.ctu-plot.ctr {width:calc(100% - 24px);margin:0 12px 10px}
+.ctu-stat:is(button) {text-align:left;color:inherit;background:transparent;border:0;cursor:pointer}
+.ctu-stat[data-active="true"][data-tone="calls"] .ctu-stat-label::before {background:var(--report-calls)}
+.ctu-stat[data-active="true"][data-tone="tokens"] .ctu-stat-label::before {background:var(--report-tokens)}
+.ctu-stat[data-active="true"][data-tone="spend"] .ctu-stat-label::before {background:var(--report-spend)}
 
 /* 右：成员目录 */
 /* height:0 + min-height:100%：目录不参与撑高这一行，高度跟左侧卡片对齐，多出来的成员在内部滚动 */

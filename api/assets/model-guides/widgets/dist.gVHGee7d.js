@@ -1,0 +1,1 @@
+function e(e){return t=>{e.forEach(e=>{typeof e==`function`?e(t):e!=null&&(e.current=t)})}}export{e as t};

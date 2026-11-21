@@ -25,7 +25,7 @@
      不用 --accent-color 那个砖红：输入框聚焦是「系统状态」而不是品牌强调。 */
   --focus-ring: #0285ff;
   --focus-ring-soft: rgba(2, 133, 255, 0.26);
-  --font-main: "OpenAI Sans", ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-main: var(--font-sans-api, system-ui), sans-serif;
   --font-mono: "SF Mono", Consolas, "Liberation Mono", ui-monospace, monospace;
 }
 :root[data-theme="light"] {
@@ -412,6 +412,14 @@
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 12px 16px; border-bottom: 1px solid var(--border-color);
 }
+.api-key-page-content ._4d2eR[hidden], #cnc-keys-list[hidden] {display:none!important}
+#cnc-keys-list .api-key-row {display:grid;grid-template-columns:minmax(120px,1fr) minmax(90px,.4fr) minmax(85px,.4fr) auto}
+.cnc-key-stat {display:grid;gap:3px;font-variant-numeric:tabular-nums}
+.cnc-key-stat span {font-size:13px;color:var(--secondary-text)}
+.cnc-key-stat strong {font-size:16px;font-weight:560;color:var(--text-color)}
+.cs-modal__field #cs-modal-select-label {font-size:14px;font-weight:600;color:var(--text-color)}
+.cs-modal__field .cs-select__value {color:var(--text-color);font-size:14px}
+@media(max-width:760px){#cnc-keys-list .api-key-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px 16px}#cnc-keys-list .cnc-key-main{grid-column:1}#cnc-keys-list .cnc-key-side{grid-row:1;grid-column:2;justify-content:flex-end;flex-wrap:wrap}}
 .cnc-key-main { min-width: 0; }
 .cnc-key-name { font-size: 14px; font-weight: 600; color: var(--text-color); }
 .cnc-key-prefix { margin-top: 2px; font-family: var(--font-mono); font-size: 13px; color: var(--secondary-text); }

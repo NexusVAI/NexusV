@@ -1,6 +1,14 @@
 /* Our layer on top of the vendored OpenAI Developers CSS (api/assets/oai/*). Keep it small:
  * anything that is "theirs" should come from the vendored files, not be re-implemented here. */
 
+[data-guide-switch], [data-guide-switch-mode] { border: 1px solid var(--color-border); border-radius: 8px; padding: 6px 30px 6px 12px; background: var(--color-surface); color: var(--color-text); font: inherit; }
+[data-content-switcher-pane][hidden], [data-content-mode-switch][hidden] { display: none !important; }
+.guide-disclosure { border-block-start: 1px solid var(--color-border); padding: .7em 0; }
+.guide-disclosure summary { cursor: pointer; font-weight: 550; }
+.guide-zoom { margin: auto; padding: 0; border: 0; background: transparent; max-width: 95vw; max-height: 94vh; }
+.guide-zoom img { display: block; max-width: 94vw; max-height: 91vh; object-fit: contain; }
+.guide-zoom::backdrop { background: rgb(0 0 0 / 75%); }
+
 /* Logo: the NexusVAI Developers wordmark is white; flip it for the light header. */
 .api-logo img {
   filter: invert(1);

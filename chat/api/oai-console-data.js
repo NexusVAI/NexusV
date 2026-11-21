@@ -42,15 +42,7 @@
 
   var LABELS = {
     credit: ["Credit remaining", "剩余额度"],
-    requests: ["Total requests", "总请求数"],
-    // dump 已是「总 token 数」小写；locale 曾写「总 Token 数」需兼容两边
-    tokens: ["Total tokens", "总 token 数", "总 Token 数"],
-    spend: ["Total Spend", "总消耗"],
-    responses: [
-      "Responses and Chat Completions",
-      "Responses 与 Chat Completions",
-      "响应与 Chat Completions",
-    ],
+
     balance: ["Current balance", "当前余额", "Wallet Balance", "钱包余额"],
   };
 
@@ -95,29 +87,11 @@
     } catch (e) {}
   })();
 
-  // 首页「推荐模型」四张卡。name/desc 纯展示；id 只喂给「在对话中打开」的
-  // /chat/?models= 参数，目前聊天页还没有消费这个参数的代码，写错不会白屏。
   var FEATURED_MODELS = [
-    {
-      id: "gpt-6-astra",
-      name: "GPT-6 Astra",
-      desc: "OpenAI 新旗舰，编程与专业工作主力",
-    },
-    {
-      id: "gemini-3.8-flash",
-      name: "Gemini-3.8 Flash",
-      desc: "Google 轻量快速，按次计费",
-    },
-    {
-      id: "claude-opus-5-thinking",
-      name: "Claude Opus-5",
-      desc: "Anthropic 旗舰，长上下文与复杂推理",
-    },
-    {
-      id: "grok-4.6",
-      name: "Grok-4.6",
-      desc: "xAI 高速多模态模型",
-    },
+    { id: "gpt-6.2-astra", name: "GPT 6.2 Astra" },
+    { id: "claude-opus-5.5", name: "Claude Opus 5.5" },
+    { id: "gpt-6.2-sol", name: "GPT 6.2 Sol" },
+    { id: "claude-sonnet-5.5", name: "Claude Sonnet 5.5" },
   ];
 
   var I18N = {
@@ -128,10 +102,9 @@
       creating: "Creating…",
       createKeyTitle: "Create new secret key",
       keyNameLabel: "Key name (optional)",
-      keyGroupLabel: "Model group (optional)",
-      keyGroupAny: "All models (no restriction)",
-      keyGroupHint:
-        "Pick a group and this key may only call models in that group; other models return 403. Leave it on \u201CAll models\u201D to skip.",
+      keyGroupLabel: "Allowed model group (optional)",
+      keyGroupAny: "All models (default, unrestricted)",
+      keySpent: "Lifetime spend", keyLast: "Last call", keyNever: "Never", keyNow: "Just now",
       keyGroupTag: "Group: ",
       keyCreatedTitle: "Secret key created",
       keyCreatedHint: "Copy now — you won't see it again.",
@@ -232,10 +205,9 @@
       creating: "创建中…",
       createKeyTitle: "创建新密钥",
       keyNameLabel: "密钥名称（可选）",
-      keyGroupLabel: "指定分组（可选）",
-      keyGroupAny: "全部模型（不限制）",
-      keyGroupHint:
-        "选定分组后，此密钥只能调用该分组内的模型，调其它模型返回 403。保持「全部模型」即跳过此限制。",
+      keyGroupLabel: "可调用的模型分组（可选）",
+      keyGroupAny: "全部模型（默认，不限制）",
+      keySpent: "累计消费", keyLast: "最近调用", keyNever: "从未调用", keyNow: "刚刚",
       keyGroupTag: "分组：",
       keyCreatedTitle: "密钥已创建",
       keyCreatedHint: "请立即复制，关闭后将无法再次查看。",
@@ -487,55 +459,6 @@
     }
   }
 
-  // 只做 Chat/Responses：dump 里其余能力卡是死数据，留着误导用户
-  var USAGE_DEAD_CARDS = [
-    "Images",
-    "Web Searches",
-    "File Searches",
-    "Moderation",
-    "Embeddings",
-    "Audio Speeches",
-    "Audio Transcriptions",
-    "Vector Stores",
-    "Code Interpreter Sessions",
-  ];
-
-  // 用量页仅存的那张能力卡里是 dump 的死 0，用真实聚合值填掉
-  function fillUsageCapabilityCard(agg) {
-    if (PAGE !== "usage" || !agg) return;
-    var card = document.querySelector(
-      ".rounded-lg.border.border-solid.border-default.p-4"
-    );
-    if (!card) return;
-    var walker = document.createTreeWalker(card, NodeFilter.SHOW_TEXT, null);
-    var node;
-    while ((node = walker.nextNode())) {
-      var s = (node.nodeValue || "").trim();
-      if (/^[\d,.]+\s*次请求$/.test(s)) {
-        node.nodeValue = nf(agg.totalRequests) + " 次请求";
-      } else if (/^[\d,.]+\s*输入 Token$/.test(s)) {
-        node.nodeValue = nf(agg.totalTokens) + " Token";
-      }
-    }
-  }
-
-  function stripDeadUsageBlocks() {
-    if (PAGE !== "usage") return;
-    document
-      .querySelectorAll(".rounded-lg.border.border-solid.border-default.p-4")
-      .forEach(function (card) {
-        var head = card.firstElementChild;
-        if (!head) return;
-        var title = (head.textContent || "").replace(/\s+/g, " ").trim();
-        if (USAGE_DEAD_CARDS.indexOf(title) >= 0) card.remove();
-      });
-    // 右侧「按用户/服务/密钥分组」面板后端没有对应数据源，永远是空态
-    document.querySelectorAll(".cmy7W").forEach(function (panel) {
-      if (/There is no usage data|该时间段内没有用量数据/.test(panel.textContent || "")) {
-        panel.style.display = "none";
-      }
-    });
-  }
 
   function trimSidebar() {
     document.querySelectorAll("a.HPtRB.O3ygq").forEach(function (a) {
@@ -629,7 +552,7 @@
     if (document.querySelector('link[href*="console.css"]')) return;
     var l = document.createElement("link");
     l.rel = "stylesheet";
-    l.href = "/chat/api/console.css?v=20260908-logsfilters";
+    l.href = "/chat/api/console.css?v=20261120";
     document.head.appendChild(l);
   }
 
@@ -640,7 +563,7 @@
   function esc(s) {
     var d = document.createElement("div");
     d.textContent = s == null ? "" : String(s);
-    return d.innerHTML;
+    return d.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   function el(tag, cls, html) {
@@ -716,9 +639,6 @@
     return out;
   }
 
-  function setValueNearLabel(label, value) {
-    return setValueNearLabels([label], value);
-  }
 
   function setValueNearLabels(labels, value) {
     var applied = false;
@@ -752,18 +672,6 @@
     return applied;
   }
 
-  function findStatCard(labels) {
-    for (var li = 0; li < labels.length; li++) {
-      var nodes = findTextNodes(labels[li]);
-      for (var i = 0; i < nodes.length; i++) {
-        var root =
-          nodes[i].parentElement &&
-          nodes[i].parentElement.closest(".flex.h-full.flex-col");
-        if (root) return root;
-      }
-    }
-    return null;
-  }
 
   function replaceAllText(oldText, newText) {
     findTextNodes(oldText).forEach(function (n) {
@@ -1009,450 +917,6 @@
     }
   }
 
-  // ─── 概览页时间档（2026-09-07） ──────────────────────────────────
-  //
-  // ⚠️ 没有 90d 这一档，而且**不许加回来**：后端 handleApiMyUsage 把窗口写死成
-  // `now() - 30 days`（api_usage 表里其实存着更久的数据，是端点自己钳的）。
-  // 挂一个只有 30 天数据的「90d」按钮等于骗人。真要 90 天得给那个端点加
-  // window_days 参数并重新部署 cf-gateway（见 模型运维总纲 §6 的部署门禁）。
-  // 「全部」= 端点返回的全部（也就是近 30 天），默认选它。
-  var USAGE_RANGES = [
-    { key: "all", buckets: 30, bucketMs: 86400000, all: true },
-    { key: "24h", buckets: 24, bucketMs: 3600000 },
-    { key: "7d", buckets: 7, bucketMs: 86400000 },
-    { key: "30d", buckets: 30, bucketMs: 86400000 },
-  ];
-
-  function rangeByKey(key) {
-    for (var i = 0; i < USAGE_RANGES.length; i++) {
-      if (USAGE_RANGES[i].key === key) return USAGE_RANGES[i];
-    }
-    return USAGE_RANGES[0];
-  }
-
-  /** 桶的左边界。小时档对齐到整点、天档对齐到本地零点（与旧实现同口径）。 */
-  function rangeBounds(def) {
-    var end = new Date();
-    if (def.bucketMs === 3600000) end.setMinutes(0, 0, 0);
-    else end.setHours(0, 0, 0, 0);
-    var endMs = end.getTime();
-    return { n: def.buckets, step: def.bucketMs, start: endMs - (def.buckets - 1) * def.bucketMs };
-  }
-
-  /** 统计卡的数字与迷你图必须同口径，所以两者共用同一个 start。 */
-  function rowsInRange(rows, def) {
-    if (def.all) return rows || [];
-    var b = rangeBounds(def);
-    return (rows || []).filter(function (r) {
-      var ts = new Date(r.created_at).getTime();
-      return isFinite(ts) && ts >= b.start;
-    });
-  }
-
-  function aggregateSeries(rows, def) {
-    var b = rangeBounds(def);
-    var calls = [];
-    var toks = [];
-    var spend = [];
-    for (var i = 0; i < b.n; i++) {
-      calls.push(0);
-      toks.push(0);
-      spend.push(0);
-    }
-    (rows || []).forEach(function (r) {
-      var ts = new Date(r.created_at).getTime();
-      if (!isFinite(ts)) return;
-      var idx = Math.floor((ts - b.start) / b.step);
-      if (idx < 0 || idx >= b.n) return;
-      calls[idx] += 1;
-      toks[idx] += (Number(r.tokens_in) || 0) + (Number(r.tokens_out) || 0);
-      spend[idx] += Number(r.charged_micro) || 0;
-    });
-    return { calls: calls, tokens: toks, spend: spend };
-  }
-
-  function aggregate(rows) {
-    var totIn = 0;
-    var totOut = 0;
-    var totalRequests = 0;
-    rows.forEach(function (r) {
-      totIn += Number(r.tokens_in) || 0;
-      totOut += Number(r.tokens_out) || 0;
-      totalRequests += 1;
-    });
-    return {
-      totalRequests: totalRequests,
-      totalTokens: totIn + totOut,
-    };
-  }
-
-  function sampleSeries(values, count) {
-    if (!count || count < 1) return [];
-    if (!values || !values.length) return new Array(count).fill(0);
-    if (values.length === count) return values.slice();
-    var out = [];
-    for (var i = 0; i < count; i++) {
-      var idx = Math.floor((i / Math.max(1, count - 1)) * (values.length - 1));
-      out.push(values[idx] || 0);
-    }
-    return out;
-  }
-
-  function buildSparklinePath(values, width, height) {
-    var pad = { l: 6, r: 6, t: 6, b: 6 };
-    var innerW = width - pad.l - pad.r;
-    var innerH = height - pad.t - pad.b;
-    var max = Math.max(1, Math.max.apply(null, values));
-    var n = values.length;
-    var pts = [];
-    for (var i = 0; i < n; i++) {
-      var x = pad.l + (i / Math.max(1, n - 1)) * innerW;
-      var y = pad.t + innerH - (values[i] / max) * innerH;
-      pts.push({ x: x, y: y });
-    }
-    if (!pts.length) return "";
-    var d = "M" + pts[0].x + "," + pts[0].y;
-    for (var j = 1; j < pts.length; j++) {
-      d += "L" + pts[j].x + "," + pts[j].y;
-    }
-    return { d: d, last: pts[pts.length - 1] };
-  }
-
-  function sparkSvgSize(card) {
-    var svg = card && card.querySelector("svg.recharts-surface");
-    if (!svg) return { svg: null, width: 200, height: 44 };
-    var wrap =
-      card.querySelector(".recharts-responsive-container") ||
-      card.querySelector(".wfoF9") ||
-      card;
-    var width = Math.max(
-      40,
-      Math.floor(
-        wrap.clientWidth ||
-          parseFloat(svg.getAttribute("width")) ||
-          200
-      )
-    );
-    var height = Math.max(
-      24,
-      Math.floor(parseFloat(svg.getAttribute("height")) || 44)
-    );
-    svg.setAttribute("width", String(width));
-    svg.setAttribute("height", String(height));
-    svg.setAttribute("viewBox", "0 0 " + width + " " + height);
-    svg.style.overflow = "hidden";
-    // svg 的父级 .recharts-wrapper 又挂在 0 宽测量容器下，设百分比 max-width 会把它压成 0
-    svg.style.removeProperty("max-width");
-    var wrapper = svg.closest && svg.closest(".recharts-wrapper");
-    if (wrapper) {
-      wrapper.style.removeProperty("max-width");
-      wrapper.style.width = width + "px";
-    }
-    // clipPath rect if present
-    var clip = svg.querySelector("clipPath rect");
-    if (clip) {
-      clip.setAttribute("width", String(width));
-      clip.setAttribute("height", String(height));
-    }
-    return { svg: svg, width: width, height: height };
-  }
-
-  function updateLineSparkline(card, values) {
-    if (!card) return;
-    var path = card.querySelector(".recharts-line-curve");
-    var dot = card.querySelector(".recharts-line-dots circle");
-    if (!path) return;
-    var size = sparkSvgSize(card);
-    var built = buildSparklinePath(values, size.width, size.height);
-    path.setAttribute("d", built.d);
-    if (dot && built.last) {
-      dot.setAttribute("cx", String(built.last.x));
-      dot.setAttribute("cy", String(built.last.y));
-    }
-  }
-
-  function updateBarSparkline(card, values) {
-    if (!card) return;
-    var bars = card.querySelectorAll(".recharts-bar-rectangle path");
-    if (!bars.length) return;
-    var size = sparkSvgSize(card);
-    var n = bars.length;
-    var series = sampleSeries(values, n);
-    var max = Math.max(1, Math.max.apply(null, series));
-    var pad = 6;
-    var gap = 2;
-    var barW = Math.max(2, Math.floor((size.width - pad * 2) / n) - gap);
-    for (var i = 0; i < n; i++) {
-      var bar = bars[i];
-      var h = Math.max(2, Math.round((series[i] / max) * (size.height - 12)));
-      var y = size.height - h;
-      var xn = pad + i * (barW + gap);
-      var r = 1;
-      bar.setAttribute("x", String(xn));
-      bar.setAttribute("width", String(barW));
-      bar.setAttribute("height", String(h));
-      bar.setAttribute("y", String(y));
-      bar.setAttribute(
-        "d",
-        "M" +
-          xn +
-          "," +
-          (y + r) +
-          "A " +
-          r +
-          "," +
-          r +
-          ",0,0,1," +
-          (xn + r) +
-          "," +
-          y +
-          "L" +
-          (xn + barW - r) +
-          "," +
-          y +
-          "A " +
-          r +
-          "," +
-          r +
-          ",0,0,1," +
-          (xn + barW) +
-          "," +
-          (y + r) +
-          "L" +
-          (xn + barW) +
-          "," +
-          (y + h) +
-          "L" +
-          xn +
-          "," +
-          (y + h) +
-          "Z"
-      );
-    }
-  }
-
-  function updateSparklineAuto(card, values) {
-    if (!card) return;
-    var hasLine = !!card.querySelector(".recharts-line-curve");
-    var hasBar = !!card.querySelector(".recharts-bar-rectangle path");
-    if (hasLine) updateLineSparkline(card, values);
-    if (hasBar) updateBarSparkline(card, values);
-    if (!hasLine && !hasBar) sparkSvgSize(card);
-  }
-
-  /** 从标签文本往上找到第一个真正含 recharts 画布的祖先（概览与用量页容器类名不同）。 */
-  function findChartHost(labels) {
-    for (var li = 0; li < labels.length; li++) {
-      var nodes = findTextNodes(labels[li]);
-      for (var i = 0; i < nodes.length; i++) {
-        var el = nodes[i].parentElement;
-        while (el && el !== document.body) {
-          if (el.querySelector && el.querySelector(".recharts-surface")) return el;
-          el = el.parentElement;
-        }
-      }
-    }
-    return null;
-  }
-
-  var __lastDaily = null;
-  var __usageRows = [];
-  var __rangeKey = "all";
-  // api_my_usage 自 2026-09-28 起返回 spend{total_micro,month_micro}；
-  // 老响应没有该键 → null → 金额卡回退 "—" 占位，部署间隙不会画出假 ¥0。
-  var __spendMeta = null;
-
-  function drawCharts(rows, spendMeta) {
-    if (PAGE !== "overview" && PAGE !== "usage") return;
-    __usageRows = rows || [];
-    __spendMeta = spendMeta || null;
-    applyUsageRange();
-    // 同上：只裁外层容器，别碰 .recharts-wrapper 和 svg
-    document
-      .querySelectorAll(".wfoF9, .recharts-responsive-container")
-      .forEach(function (el) {
-        el.style.overflow = "hidden";
-        el.style.maxWidth = "100%";
-      });
-  }
-
-  /** 把当前时间档套到统计卡数字 + 三张迷你图上。切档和窗口变化都走这里。 */
-  function applyUsageRange() {
-    var def = rangeByKey(__rangeKey);
-    var rows = rowsInRange(__usageRows, def);
-    __lastDaily = aggregateSeries(rows, def);
-    var agg = aggregate(rows);
-    setValueNearLabels(LABELS.requests, nf(agg.totalRequests));
-    setValueNearLabels(LABELS.tokens, nf(agg.totalTokens));
-    // 只有概览页有这张统计卡；用量页同名的是卡片标题链接，写进去会把标题冲掉
-    if (PAGE === "overview") {
-      setValueNearLabels(LABELS.responses, nf(agg.totalRequests));
-    }
-    applySpendCards(rows);
-    fillUsageCapabilityCard(agg);
-    redrawCharts();
-  }
-
-  /**
-   * 金额两张卡：「总消耗」= 当前时间档内 charged_micro 合计（与相邻统计卡同口径）；
-   * 「本月消耗」= 后端按 Asia/Shanghai 自然月算好的 spend.month_micro，不随时间档变。
-   * charged_micro 来自 api_usage.call_id ↔ chat_model_usage 孪生行；
-   * 无 call_id 的行是 exact-cache 命中（零计费），后端记 0。
-   */
-  function applySpendCards(rows) {
-    if (!__spendMeta) {
-      applySpendPlaceholder();
-      return;
-    }
-    var rangeMicro = 0;
-    (rows || []).forEach(function (r) {
-      var v = Number(r.charged_micro);
-      if (isFinite(v)) rangeMicro += v;
-    });
-    // 写内层 .px-3 而不是 .text-xl.font-semibold 本身，保住卡片缩进
-    findTextNodes("Total Spend")
-      .concat(findTextNodes("总消耗"))
-      .forEach(function (tn) {
-        var wrap = tn.parentElement && tn.parentElement.parentElement;
-        if (!wrap) return;
-        var val = wrap.querySelector(".text-xl.font-semibold div, .text-xl.font-semibold");
-        if (val) val.textContent = fmtMoney(rangeMicro / 1e6);
-      });
-    document
-      .querySelectorAll(
-        '[data-testid="organization-spend-summary-section"] .text-lg.font-semibold'
-      )
-      .forEach(function (el) {
-        el.textContent = fmtMoney(Number(__spendMeta.month_micro || 0) / 1e6);
-      });
-  }
-
-  function redrawCharts() {
-    if (!__lastDaily) return;
-    // 按卡片实际宽度和图表类型重算；dump 里写死的 897 宽会穿到邻格
-    updateSparklineAuto(findChartHost(LABELS.requests), __lastDaily.calls);
-    updateSparklineAuto(findChartHost(LABELS.tokens), __lastDaily.tokens);
-    updateSparklineAuto(findChartHost(LABELS.responses), __lastDaily.calls);
-    // 旧响应没有 spend：全零序列只会画一条贴底的假线，不如留空轴
-    if (__spendMeta)
-      updateSpendChart(findChartHost(LABELS.spend), __lastDaily.spend);
-  }
-
-  /**
-   * 「总消耗」大图：快照里只有空坐标轴，没有数据层。按 clipPath 围出的
-   * 绘图区注入一条消耗折线 + 浅填充。带 .recharts-line-curve 的 sparkline
-   * 形态不归这里管（updateSparklineAuto 已覆盖）。
-   */
-  function updateSpendChart(host, micros) {
-    if (!host || !micros || !micros.length) return;
-    var svg = host.querySelector("svg.recharts-surface");
-    if (!svg || svg.querySelector(".recharts-line-curve")) return;
-    var W = parseFloat(svg.getAttribute("width")) || 0;
-    var H = parseFloat(svg.getAttribute("height")) || 0;
-    if (!W || !H) return;
-    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
-    var clip = svg.querySelector("clipPath rect");
-    var px = clip ? parseFloat(clip.getAttribute("x")) || 10 : 10;
-    var py = clip ? parseFloat(clip.getAttribute("y")) || 20 : 20;
-    var pw = clip ? parseFloat(clip.getAttribute("width")) || W - 20 : W - 20;
-    var ph = clip ? parseFloat(clip.getAttribute("height")) || H - 50 : H - 50;
-    var max = 0;
-    for (var i = 0; i < micros.length; i++) {
-      if (micros[i] > max) max = micros[i];
-    }
-    var n = micros.length;
-    var pts = [];
-    for (i = 0; i < n; i++) {
-      pts.push({
-        x: px + (n <= 1 ? pw / 2 : (i / (n - 1)) * pw),
-        y: py + ph - (max > 0 ? (micros[i] / max) * ph : 0),
-      });
-    }
-    var line = "M" + pts
-      .map(function (p) {
-        return p.x.toFixed(1) + "," + p.y.toFixed(1);
-      })
-      .join("L");
-    var area =
-      line +
-      "L" + pts[pts.length - 1].x.toFixed(1) + "," + (py + ph) +
-      "L" + pts[0].x.toFixed(1) + "," + (py + ph) + "Z";
-    Array.prototype.forEach.call(
-      svg.querySelectorAll("g.cnc-spend-series"),
-      function (g) {
-        g.remove();
-      }
-    );
-    var NS = "http://www.w3.org/2000/svg";
-    var g = document.createElementNS(NS, "g");
-    g.setAttribute("class", "cnc-spend-series");
-    var a = document.createElementNS(NS, "path");
-    a.setAttribute("d", area);
-    a.setAttribute("fill", "#E36E30");
-    a.setAttribute("fill-opacity", "0.12");
-    var l = document.createElementNS(NS, "path");
-    l.setAttribute("d", line);
-    l.setAttribute("fill", "none");
-    l.setAttribute("stroke", "#E36E30");
-    l.setAttribute("stroke-width", "2");
-    g.appendChild(a);
-    g.appendChild(l);
-    svg.appendChild(g);
-  }
-
-  /**
-   * 概览页右上角的 24h / 7d / 30d 时间档。
-   * 快照里这四颗按钮是 Radix 的 SegmentedControl，没有 React 就完全不响应
-   * （工单：「点了没反应」）。这里自己接线，顺带把滑块 .V5HTp 按选中项挪位 ——
-   * 它靠 inline 的 width + translateX 定位，React 原本负责更新这两个值。
-   */
-  function wireUsageRangeControl() {
-    if (PAGE !== "overview") return;
-    var host = null;
-    document.querySelectorAll(".F5Sy7").forEach(function (h) {
-      if (!host && /24h/.test(h.textContent || "")) host = h;
-    });
-    if (!host || host.dataset.cncRangeWired === "1") return;
-    host.dataset.cncRangeWired = "1";
-
-    var btns = Array.prototype.slice.call(host.querySelectorAll("button.VewWL"));
-    // 顺序就是 dump 里的 24h / 7d / 30d / 90d，最后一颗整个摘掉（见 USAGE_RANGES 注释）
-    if (btns.length >= 4) btns.pop().remove();
-    var allBtn = btns[0].cloneNode(true);
-    var allSpan = allBtn.querySelector("span") || allBtn;
-    allSpan.textContent = t("rangeAll");
-    host.insertBefore(allBtn, btns[0]);
-    btns.unshift(allBtn);
-    var keys = ["all", "24h", "7d", "30d"];
-
-    var thumb = host.querySelector(".V5HTp");
-    function select(i) {
-      __rangeKey = keys[i] || "all";
-      btns.forEach(function (b, k) {
-        b.setAttribute("data-state", k === i ? "on" : "off");
-        b.setAttribute("aria-checked", k === i ? "true" : "false");
-        b.tabIndex = k === i ? 0 : -1;
-      });
-      if (thumb) {
-        thumb.style.width = btns[i].offsetWidth + "px";
-        thumb.style.transform = "translateX(" + btns[i].offsetLeft + "px)";
-      }
-      applyUsageRange();
-    }
-    btns.forEach(function (b, i) {
-      b.addEventListener(
-        "click",
-        function (e) {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          select(i);
-        },
-        true
-      );
-    });
-    host.setAttribute("aria-label", "用量时间范围");
-    select(0);
-  }
 
   var CS_CHEV_SVG =
     '<svg class="cs-select__chev" width="12" height="12" viewBox="0 0 10 16" fill="currentColor" aria-hidden="true">' +
@@ -1466,7 +930,7 @@
    * 因为后者是 overflow-y:auto，菜单一超出卡片就被裁掉。
    * 值写回同一个 #cs-modal-select（hidden input），调用方不受影响。
    */
-  function wireCsSelect(card) {
+  function wireCsSelect(card, pending) {
     var root = card.querySelector(".cs-select");
     if (!root || root.dataset.cncWired === "1") return;
     root.dataset.cncWired = "1";
@@ -1538,9 +1002,22 @@
       if (root.dataset.open === "1") close();
       else open();
     });
-    opts.forEach(function (o, i) {
+    function bind(o, i) {
       o.addEventListener("mouseenter", function () { markActive(i); });
       o.addEventListener("click", function (e) { e.stopPropagation(); pick(o); });
+    }
+    opts.forEach(bind);
+    if (pending) pending.then(function (groups) {
+      if (!card.isConnected) return;
+      groups.forEach(function (g) {
+        var option = opts[0].cloneNode(true);
+        option.dataset.value = g.value;
+        option.removeAttribute("data-selected"); option.removeAttribute("data-active");
+        option.setAttribute("aria-selected", "false");
+        option.querySelector("span").textContent = (LANG === "en" ? "Only: " : "仅限：") + g.label;
+        bind(option, opts.length); opts.push(option); menu.appendChild(option);
+      });
+      if (root.dataset.open === "1") place();
     });
     btn.addEventListener("keydown", function (e) {
       if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
@@ -1651,7 +1128,7 @@
     card.innerHTML = head + bodyHtml + inputHtml + foot;
     backdrop.appendChild(card);
     document.body.appendChild(backdrop);
-    if (opts.select) wireCsSelect(card);
+    if (opts.select) wireCsSelect(card, opts.select.pending);
     backdrop.addEventListener("click", function (e) {
       if (e.target === backdrop) closeCsModal();
     });
@@ -1777,10 +1254,7 @@
   // 分组选项异步拉，先用「全部模型」占位 —— 用户在 catalog 回来之前点开弹窗，
   // 也至少能建一把不限分组的 Key，而不是看到空下拉。
   function wireCreateKeyModal() {
-    var groupOptions = [{ value: "", label: t("keyGroupAny") }];
-    loadGroupOptions().then(function (opts) {
-      groupOptions = groupOptions.concat(opts);
-    });
+    var groups = loadGroupOptions();
     wireCreateKeyButton(function () {
       showModal({
         title: t("createKeyTitle"),
@@ -1791,9 +1265,9 @@
         },
         select: {
           label: t("keyGroupLabel"),
-          options: groupOptions,
+          options: [{ value: "", label: t("keyGroupAny") }],
+          pending: groups,
           value: "",
-          hint: t("keyGroupHint"),
         },
         confirmText: t("create"),
         onConfirm: function (name, cardEl, okBtn) {
@@ -1805,7 +1279,7 @@
             .then(function (d) {
               closeCsModal();
               if (d && d.key) showNewKeyModal(d.key);
-              return call("api_my_keys", {});
+              return PAGE === "keys" ? fetchKeys() : null;
             })
             .then(renderKeysList)
             .catch(function (e) {
@@ -1869,6 +1343,15 @@
     calls: "off", // off | most | least
     callsN: 3,
   };
+
+  function lastCall(value) {
+    if (value == null) return t("keyNever");
+    var min = Math.max(0, Math.floor((Date.now() - Date.parse(value)) / 60000));
+    if (!isFinite(min)) return "—";
+    return min < 1 ? t("keyNow") : min < 60 ? min + "m" : min < 1440 ? Math.floor(min / 60) + "h" : Math.floor(min / 1440) + "d";
+  }
+
+  function fetchKeys() { return call("api_my_keys", { include_spend: true }); }
 
   function keyCallCount(k) {
     return Number(k && k.used_request_count) || 0;
@@ -1966,6 +1449,7 @@
           ? new Date(k.created_at).toLocaleDateString("zh-CN")
           : "—";
         var id = k.id || k.key_id || "";
+        var spent = k.spent_micro == null ? "—" : "¥" + (Number(k.spent_micro) / 1e6).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: Number(k.spent_micro) > 0 && Number(k.spent_micro) < 10000 ? 6 : 2 });
         var meta = [];
         // 2026-08-20：建 Key 时选过分组的，列表里要看得见 —— 否则用户过几天忘了
         // 这把 Key 有限制，只会看到莫名其妙的 403。
@@ -1981,8 +1465,10 @@
           '<div class="cnc-key-prefix">' + esc(prefix) + "</div>" +
           '<div class="cnc-key-meta"><span>' + meta.join("</span><span>") + "</span></div>" +
           "</div>" +
+          '<div class="cnc-key-stat"><span>' + esc(t("keySpent")) + '</span><strong>' + esc(spent) + '</strong></div>' +
+          '<div class="cnc-key-stat"><span>' + esc(t("keyLast")) + '</span><strong title="' + esc(k.last_used_at ? new Date(k.last_used_at).toLocaleString() : '') + '">' + esc(lastCall(k.last_used_at)) + '</strong></div>' +
           '<div class="cnc-key-side">' +
-          '<span class="cnc-key-date">' + esc(created) + "</span>" +
+          '<span class="cnc-key-date" title="创建日期">' + esc(created) + "</span>" +
           '<button type="button" class="cnc-key-revoke" data-del-key="' +
           esc(id) + '">' + esc(t("revoke")) + "</button>" +
           "</div></div>"
@@ -2007,7 +1493,7 @@
             call("api_delete_key", { key_id: id, id: id })
               .then(function () {
                 closeCsModal();
-                return call("api_my_keys", {});
+                return fetchKeys();
               })
               .then(renderKeysList)
               .catch(function (e) {
@@ -2738,11 +2224,7 @@
   }
 
   /**
-   * 「今日概览」面板。
-   * ⛔ 这里没有「今日消耗 ¥」这一项，不是漏了：真实扣费流水在 wallet_ledger，
-   * 目前只有 admin_list_credit_ledger 能读，用户侧端点一个都不返回。用 token
-   * 数乘个价折算出来冒充金额是明确禁止的（同 applySpendPlaceholder）。
-   * 要显示金额得先加一个用户可读的钱包流水端点。
+   * 日志页的今日概览来自有限量的明细列表，不以这些样本估算当天实扣金额。
    */
   function renderTodayPanel(orders, wallet) {
     var panel = document.getElementById("cnc-today-panel");
@@ -2920,6 +2402,7 @@
 
   function applyTheme(theme) {
     var root = document.documentElement;
+    root.style.colorScheme = theme === "light" ? "light" : "dark";
     if (theme === "light") {
       root.classList.remove("dark");
       root.setAttribute("data-theme", "light");
@@ -3024,8 +2507,7 @@
       try {
         localStorage.setItem(SIDEBAR_KEY, collapsed ? "collapsed" : "expanded");
       } catch (e) {}
-      // 侧栏宽度变了 → 概览 sparkline 按新宽度重算
-      window.setTimeout(redrawCharts, instant ? 80 : 560);
+
     }
 
     var saved = null;
@@ -3058,7 +2540,7 @@
   function rewriteActionLinks(card, modelId) {
     var links = card.querySelectorAll("a");
     if (links[0]) {
-      links[0].setAttribute("href", "/chat/?models=" + encodeURIComponent(modelId));
+      links[0].setAttribute("href", "/api/docs/models/detail/?model=" + encodeURIComponent(modelId));
       links[0].removeAttribute("target");
       links[0].removeAttribute("rel");
       // keep icon, replace trailing text
@@ -3066,17 +2548,17 @@
       nodes.forEach(function (n) {
         if (n.nodeType === 3) n.nodeValue = "";
       });
-      links[0].appendChild(document.createTextNode(" 在对话中打开"));
+      links[0].appendChild(document.createTextNode(" 模型详情"));
     }
     if (links[1]) {
-      links[1].setAttribute("href", "/api/docs/");
-      links[1].setAttribute("target", "_blank");
-      links[1].setAttribute("rel", "noopener noreferrer");
+      links[1].setAttribute("href", "/api/docs/models/detail/?model=" + encodeURIComponent(modelId) + "#use-in-api");
+      links[1].removeAttribute("target");
+      links[1].removeAttribute("rel");
       var nodes2 = Array.prototype.slice.call(links[1].childNodes);
       nodes2.forEach(function (n) {
         if (n.nodeType === 3) n.nodeValue = "";
       });
-      links[1].appendChild(document.createTextNode(" 了解怎么使用"));
+      links[1].appendChild(document.createTextNode(" 调用示例"));
     }
   }
 
@@ -3097,10 +2579,18 @@
       card.setAttribute("aria-label", m.name);
       card.setAttribute("data-interactive", "true");
       card.setAttribute("role", "group");
+      var icon = card.querySelector(".j5-Lg");
+      if (icon && !icon.querySelector("img")) {
+        var logo = document.createElement("img");
+        logo.alt = ""; logo.width = logo.height = 26;
+        logo.src = m.id.startsWith("gpt-") ? "/chat/openai.svg" : "/chat/claude-color.svg";
+        logo.className = m.id.startsWith("gpt-") ? "cnc-openai-icon" : "";
+        icon.replaceChildren(logo);
+      }
       var title = card.querySelector("h6.Ai6pw");
       var desc = card.querySelector("p.RBw-C");
       if (title) title.textContent = m.name;
-      if (desc) desc.textContent = m.desc;
+      if (desc) desc.remove();
       var groups = card.querySelectorAll(".j4lZ6");
       if (groups[0]) groups[0].setAttribute("aria-label", m.name + " top action");
       if (groups[1]) groups[1].setAttribute("aria-label", m.name + " bottom action");
@@ -3139,23 +2629,6 @@
     });
   }
 
-  /** api_usage 无金额列；Spend 不能伪造。显示 — 并改成 ¥ 口径文案。 */
-  function applySpendPlaceholder() {
-    setValueNearLabels(LABELS.spend, "—");
-    // organization-spend-summary $0.00 → —
-    document.querySelectorAll('[data-testid="organization-spend-summary-section"] .text-lg.font-semibold').forEach(function (el) {
-      if (/^\$/.test((el.textContent || "").trim()) || (el.textContent || "").trim() === "$0.00") {
-        el.textContent = "—";
-      }
-    });
-    // Total Spend big number
-    findTextNodes("Total Spend").concat(findTextNodes("总消耗")).forEach(function (tn) {
-      var wrap = tn.parentElement && tn.parentElement.parentElement;
-      if (!wrap) return;
-      var val = wrap.querySelector(".text-xl.font-semibold div, .text-xl.font-semibold");
-      if (val && /\$/.test(val.textContent || "")) val.textContent = "—";
-    });
-  }
 
   async function boot() {
     ensureConsoleCss();
@@ -3169,7 +2642,6 @@
     clearUpdatesSection();
     patchFeaturedModels();
     // 汉化必须赶在首帧之前，否则英文 dump 会先画一遍（同 model_detail 的 5.5 闪现）
-    stripDeadUsageBlocks();
     applyPageLocale();
     patchBuildWithCards();
     stripQuickStartClose();
@@ -3179,18 +2651,18 @@
       if (!window.PlatformAuth) throw new Error("supabase_not_loaded");
       var session = await PlatformAuth.requireSession({});
       if (!session) return;
+      if (PAGE === "usage" || PAGE === "overview") window.ConsoleUsage.mount(PAGE, call);
       revealL10n();
       updateUserChip(session.user);
 
-      var walletP = call("get_quota_status", {}).catch(function () {
-        return null;
-      });
-      var usageP = call("api_my_usage", {}).catch(function () {
+      var walletP = PAGE === "overview" || PAGE === "billing" || PAGE === "logs"
+        ? call("get_quota_status", {}).catch(function () { return null; }) : Promise.resolve(null);
+      var usageP = PAGE === "logs" ? call("api_my_usage", {}).catch(function () {
         return { usage: [] };
-      });
+      }) : Promise.resolve(null);
       var keysP =
         PAGE === "keys"
-          ? call("api_my_keys", {}).catch(function () {
+          ? fetchKeys().catch(function () {
               return { keys: [] };
             })
           : Promise.resolve(null);
@@ -3210,25 +2682,7 @@
       applyWallet(walletRes && walletRes.wallet);
 
       var usage = (usageRes && usageRes.usage) || [];
-      applySpendPlaceholder();
-      if (PAGE === "overview" || PAGE === "usage") {
-        // 统计卡数字与三张迷你图都由 applyUsageRange 按当前时间档统一填，
-        // drawCharts 内部会调它一次；wireUsageRangeControl 的 select(0) 再刷一遍。
-        drawCharts(usage, usageRes && usageRes.spend);
-        wireUsageRangeControl();
-      } else {
-        var agg = aggregate(usage);
-        setValueNearLabels(LABELS.requests, nf(agg.totalRequests));
-        setValueNearLabels(LABELS.tokens, nf(agg.totalTokens));
-      }
-      if (!window.__cncSparkResizeWired) {
-        window.__cncSparkResizeWired = true;
-        var resizeT = 0;
-        window.addEventListener("resize", function () {
-          window.clearTimeout(resizeT);
-          resizeT = window.setTimeout(redrawCharts, 100);
-        });
-      }
+
 
       // 建 Key 弹窗：密钥页当然要，概览页的「1. Create an API key」上手清单按钮
       // 在 2026-08-20 之前是**没接线的死按钮**（wireCreateKeyButton 只在 keys 页调），

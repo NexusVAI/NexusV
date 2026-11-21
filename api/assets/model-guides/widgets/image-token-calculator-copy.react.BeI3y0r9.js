@@ -1,0 +1,1 @@
+function e(e,t={}){return e.replace(/\{([A-Za-z][A-Za-z0-9_]*)\}/gu,(e,n)=>Object.hasOwn(t,n)?String(t[n]):e)}function t(e,t){return e.split(/\{([A-Za-z][A-Za-z0-9_]*)\}/gu).map((e,n)=>n%2?Object.hasOwn(t,e)?t[e]:`{${e}}`:e)}export{e as n,t};

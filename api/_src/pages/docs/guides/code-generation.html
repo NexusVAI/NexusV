@@ -1,0 +1,172 @@
+---
+title: 代码生成
+description: Learn how to use OpenAI models and Codex to generate code.
+tab: models
+lead: false
+css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
+js: /api/assets/model-guide.js, /api/assets/model-guides/widgets/boot.js
+---
+<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/code-generation (reference copy for local review). -->
+<p>编写、审查、编辑代码并回答代码相关问题，是 OpenAI 模型当前的主要用途之一。本指南介绍使用 <a href="https://developers.openai.com/api/docs/models/gpt-6-astra"><code>gpt-6-astra</code></a> 和 Codex 进行代码生成的几种方式。</p>
+<h2 id="get-started">开始使用</h2>
+<div class="mb-10 w-full max-w-full overflow-hidden"><div class="not-prose grid w-full grid-cols-1 gap-4 md:grid-cols-2"><a class="_DocLink_106al_1" href="#use-codex"><div class="flex flex-col gap-3"><div class="relative max-h-[300px] min-h-[140px] w-full overflow-hidden rounded-lg"><img alt="开箱即用的 Codex 编程智能体" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/10927dd890630ed847ae.png"><div class="absolute top-0 left-0 flex h-full w-full items-center justify-center"><svg fill="currentColor" height="3em" style="color:#fff" viewBox="0 0 24 24" width="3em"><path d="M20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12ZM16 13.5C16.5523 13.5 17 13.9477 17 14.5C17 15.0523 16.5523 15.5 16 15.5H13C12.4477 15.5 12 15.0523 12 14.5C12 13.9477 12.4477 13.5 13 13.5H16ZM7.98535 8.64258C8.42937 8.37617 8.99745 8.49427 9.30078 8.90039L9.35742 8.98535L10.8574 11.4854L10.9199 11.6074C11.0269 11.858 11.0269 12.142 10.9199 12.3926L10.8574 12.5146L9.35742 15.0146C9.07324 15.4881 8.45888 15.6415 7.98535 15.3574C7.51188 15.0732 7.35846 14.4589 7.64258 13.9854L8.83301 12L7.64258 10.0146L7.59473 9.92383C7.37931 9.46516 7.54152 8.90898 7.98535 8.64258ZM22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" fill="currentColor"></path></svg></div></img></div><div class="flex w-full flex-col"><div class="text-sm font-semibold">使用 Codex 获得开箱即用的编程智能体</div><div class="text-xs text-secondary">把代码库接入 Codex，用软件工程智能体加速你的项目。</div></div></div></a><a class="_DocLink_106al_1" href="#integrate-with-coding-models"><div class="flex flex-col gap-3"><div class="relative max-h-[300px] min-h-[140px] w-full overflow-hidden rounded-lg"><img alt="与编程模型集成" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/10927dd890630ed847ae.png"/><div class="absolute top-0 left-0 flex h-full w-full items-center justify-center"><svg fill="currentColor" height="3em" style="color:#fff" viewBox="0 0 24 24" width="3em"><path clip-rule="evenodd" d="M14.447 7.106a1 1 0 0 1 .447 1.341l-4 8a1 1 0 1 1-1.788-.894l4-8a1 1 0 0 1 1.341-.447ZM6.6 7.2a1 1 0 0 1 .2 1.4L4.25 12l2.55 3.4a1 1 0 0 1-1.6 1.2l-3-4a1 1 0 0 1 0-1.2l3-4a1 1 0 0 1 1.4-.2Zm10.8 0a1 1 0 0 1 1.4.2l3 4a1 1 0 0 1 0 1.2l-3 4a1 1 0 0 1-1.6-1.2l2.55-3.4-2.55-3.4a1 1 0 0 1 .2-1.4Z" fill-rule="evenodd"></path></svg></div></div><div class="flex w-full flex-col"><div class="text-sm font-semibold">与编程模型集成</div><div class="text-xs text-secondary">在应用中使用 OpenAI 模型，例如把它们加入模型选择器。</div></div></div></a></div></div>
+<h2 id="use-codex">使用 Codex</h2>
+<p><a href="https://developers.openai.com/codex/overview"><strong>Codex</strong></a> 是 OpenAI 面向软件开发的编程智能体，可以帮助你编写、审查和调试代码。你可以在 IDE、命令行、网页和移动端中使用它，也可以借助 SDK 在 CI/CD 流水线中调用。若想在项目中落地智能体式的软件工程，Codex 是最好的选择。</p>
+<p>Codex 最适合搭配最新的通用模型，例如 <a href="https://developers.openai.com/api/docs/models/gpt-6.1-sol"><code>gpt-6.1-sol</code></a>。</p>
+<p>设置指南、参考资料、价格等更多信息，请参阅 <a href="https://developers.openai.com/codex">ChatGPT 文档</a>。</p>
+<h2 id="integrate-with-coding-models">与编程模型集成</h2>
+<p>大多数基于 API 的代码生成场景，可以从 <strong><code>gpt-6-astra</code></strong> 开始。它兼顾通用任务和编程任务，当你的应用需要编写代码、推理需求、查阅文档，并在一处处理更广泛的工作流时，它是很好的默认选择。</p>
+<p>下面的示例展示如何在代码生成场景中使用 <a href="https://developers.openai.com/api/docs/api-reference/responses">Responses API</a>：</p>
+<code-tabs title="多数编程任务的默认模型">
+<pre data-lang="python">from openai import OpenAI
+
+client = OpenAI()
+
+result = client.responses.create(
+    model="gpt-6-astra",
+    input="""Find the null pointer exception in this code:
+
+def display_name(user):
+    return user.profile.name
+
+print(display_name(None))
+""",
+    reasoning={"effort": "high"},
+)
+
+print(result.output_text)</pre>
+<pre data-lang="javascript">import OpenAI from "openai";
+const openai = new OpenAI();
+
+const result = await openai.responses.create({
+  model: "gpt-6-astra",
+  input: `Find the null pointer exception in this code:
+
+def display_name(user):
+    return user.profile.name
+
+print(display_name(None))
+`,
+  reasoning: { effort: "high" },
+});
+
+console.log(result.output_text);</pre>
+<pre data-lang="go">package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+	"github.com/openai/openai-go/v3/shared"
+)
+
+func main() {
+	client := openai.NewClient()
+	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
+		Model: "gpt-6-astra",
+		Input: responses.ResponseNewParamsInputUnion{OfString: openai.String(`Find the null pointer exception in this code:
+
+def display_name(user):
+    return user.profile.name
+
+print(display_name(None))`)},
+		Reasoning: shared.ReasoningParam{Effort: shared.ReasoningEffortHigh},
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(response.OutputText())
+}</pre>
+<pre data-lang="java">import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.Reasoning;
+import com.openai.models.ReasoningEffort;
+import com.openai.models.responses.ResponseCreateParams;
+
+String code =
+    """
+    def display_name(user):
+        return user.profile.name
+
+    print(display_name(None))
+    """;
+
+ResponseCreateParams params =
+    ResponseCreateParams.builder()
+        .model("gpt-6-astra")
+        .input("Find the null pointer exception in this code:\n\n" + code)
+        .reasoning(Reasoning.builder().effort(ReasoningEffort.HIGH).build())
+        .build();
+
+client.responses().create(params).output().stream()
+    .flatMap(item -> item.message().stream())
+    .flatMap(message -> message.content().stream())
+    .flatMap(content -> content.outputText().stream())
+    .forEach(text -> System.out.println(text.text()));</pre>
+<pre data-lang="csharp">using OpenAI.Responses;
+#pragma warning disable OPENAI001
+
+string key = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!;
+ResponsesClient client = new(key);
+
+CreateResponseOptions options = new()
+{
+    Model = "gpt-6-astra",
+    ReasoningOptions = new ResponseReasoningOptions
+    {
+        ReasoningEffortLevel = ResponseReasoningEffortLevel.High,
+    },
+};
+options.InputItems.Add(
+    ResponseItem.CreateUserMessageItem(
+        """
+        Find the null pointer exception in this code:
+
+        def display_name(user):
+            return user.profile.name
+
+        print(display_name(None))
+        """
+    )
+);
+
+ResponseResult response = await client.CreateResponseAsync(options);
+Console.WriteLine(response.GetOutputText());</pre>
+<pre data-lang="ruby">require "openai"
+
+client = OpenAI::Client.new
+code = <<~PYTHON
+  def display_name(user):
+      return user.profile.name
+
+  print(display_name(None))
+PYTHON
+
+response = client.responses.create(
+  model: "gpt-6-astra",
+  input: "Find the null pointer exception in this code:\n\n#{code}",
+  reasoning: { effort: :high }
+)
+
+puts(response.output_text)</pre>
+<pre data-lang="curl">curl https://api.openai.com/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -d '{
+    "model": "gpt-6-astra",
+    "input": "Find the null pointer exception in this code:\n\ndef display_name(user):\n    return user.profile.name\n\nprint(display_name(None))\n",
+    "reasoning": { "effort": "high" }
+  }'</pre>
+</code-tabs>
+<h2 id="frontend-development">前端开发</h2>
+<p>做前端工作时，可在 Codex 或 Responses API 中从 <code>gpt-6.1-sol</code> 或 <code>gpt-6-astra</code> 开始。</p>
+<p>GPT-5 时期的作品库展示了由单条提示生成的应用。可以把这些提示当作起点，并用你计划部署的模型评估结果。</p>
+<div data-guide-widget="CodeGallery" data-props="{}" prefix="r10" ssr=""><div class="exclude-from-copy not-prose" data-gallery-state="page"><div class="_GalleryContainer_qt4rh_1" data-gallery-type="code" id="gallery-page-container"><button class="_Button_6dmow_1 _PageButton_qt4rh_43 not-prose" data-color="primary" data-pill="" data-size="xl" data-variant="solid" type="button"><span class="_ButtonInner_6dmow_4">探索</span></button><div class="_PageSpacer_qt4rh_70"><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div></div><div class="_Container_134lp_1" id="gallery-fullscreen-container" inert=""><button aria-label="Close gallery" class="_Button_6dmow_1 _Close_134lp_109 not-prose" data-color="primary" data-icon-size="lg" data-pill="" data-size="xl" data-uniform="" data-variant="solid" type="button"><span class="_ButtonInner_6dmow_4"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path clip-rule="evenodd" d="M5.636 5.636a1 1 0 0 1 1.414 0l4.95 4.95 4.95-4.95a1 1 0 0 1 1.414 1.414L13.414 12l4.95 4.95a1 1 0 0 1-1.414 1.414L12 13.414l-4.95 4.95a1 1 0 0 1-1.414-1.414l4.95-4.95-4.95-4.95a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg></span></button><button aria-label="Back to gallery" class="_Button_6dmow_1 _Gallery_134lp_189 not-prose" data-color="primary" data-icon-size="lg" data-pill="" data-size="xl" data-uniform="" data-variant="solid" type="button"><span class="_ButtonInner_6dmow_4"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M6.75 4.5a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM2.5 6.75a4.25 4.25 0 1 1 8.5 0 4.25 4.25 0 0 1-8.5 0ZM17.25 4.5a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM13 6.75a4.25 4.25 0 1 1 8.5 0 4.25 4.25 0 0 1-8.5 0ZM6.75 15a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM2.5 17.25a4.25 4.25 0 1 1 8.5 0 4.25 4.25 0 0 1-8.5 0ZM17.25 15a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM13 17.25a4.25 4.25 0 1 1 8.5 0 4.25 4.25 0 0 1-8.5 0Z"></path></svg></span></button><div class="_Scrollable_134lp_17" id="gallery-grid-container"><div class="_Grid_134lp_55"><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-ocean-wave-simulation-5.2"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/5454b568aba7db5e7d47.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-brutalist-dev-landing-page-5.2"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/0c222d1f36735356bdb2.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-solar-system-explorer-5.2"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/bc98c6a2d416ef0c8f14.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-customer-journey-flow-5.2"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/18145db7e5c89a53b5ff.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-asteroid-game-5.2"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/b674e4c3fda295c15e2a.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-employee-skills-matrix-5.2"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/88624134c380e875e14c.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-virtual-drum-kit-5.2"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/d90609e53a767d66b5f0.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-camping-gear-checklist-5.2"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/0c58ac635b240bfde0f8.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-weather-theatre-5.2"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/d5b10a10abe550c00b76.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-typing-rain-5.2"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/6688fbf7cad2d2adebb8.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-holiday-card-for-kids-5.2"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/ea08e4cb5e4b991c41d9.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-cloud-painter"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/00a1c73e3f303527ce00.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-audio-step-sequencer"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/865895408875795cfc2c.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-farewell-message-board"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/658ea84c546d29ce9bbe.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-csv-to-charts"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/fc031aaca2cfd3c12648.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-espresso"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/598cd8f2a27e196d50a8.png"/></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-openai-fm-inspired"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-case-study-landing-page"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-event-count-down"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-healthy-meal-tracker"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-music-theory-trainer"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-online-whiteboard"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-festival-lights-show"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-company-acronym-list"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-event-feedback"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-tiny-kanban"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-qr-code-generator"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-equation-solver-tool"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-micro-habit-tracker"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-markdown-to-slides"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-artisan-csa"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-pomodoro"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-online-course-landing-page"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-interactive-world-clock"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-online-poll-board"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-product-launch-page"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-falling-object-catcher"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-kinetic-typography-studio"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-esports-tournament-landing-page"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-math-practice-drills"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-language-learning-flashcards"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-webcam-filter-playground"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-nonprofit-impact-report"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-color-match-challenge"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-podcast-homepage"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-regex-lab"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-target-clicker"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-trivia-quiz-game"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_CodeGridItem_134lp_85" data-grid-item="true" href="#" id="gallery-grid-weather-theatre"><span class="_ImageContainer_134lp_215" role="presentation"></span></a></div></div></div><div class="_DetailExitBackdrop_qt4rh_157"></div></div></div><!--astro:end--></div>
+<h2 id="next-steps">后续步骤</h2>
+<ul>
+<li>访问 <a href="https://developers.openai.com/codex">ChatGPT 文档</a>，了解 Codex 能做什么、如何在你选择的界面中设置，或查阅更多细节。</li>
+<li>阅读<a href="https://developers.openai.com/api/docs/guides/latest-model">模型指引</a>，了解模型选择、功能、迁移建议，以及在编程和智能体任务中效果良好的提示模式。</li>
+<li>在模型页面中比较 <a href="https://developers.openai.com/api/docs/models/gpt-6-astra"><code>gpt-6-astra</code></a> 与 <a href="https://developers.openai.com/api/docs/models/gpt-6.1-sol"><code>gpt-6.1-sol</code></a>。</li>
+</ul>
