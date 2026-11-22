@@ -58,6 +58,9 @@
   }
   function priceRows(m, tag) {
     var p = M.priceOf(m);
+    if (M.modelId(m) === M.cancriTitle.id && p.kind === "free") {
+      return row("刊例价", esc(M.cancriTitle.listPrice)) + row("特价", M.badge("FREE", "success"));
+    }
     if (p.kind === "token") {
       return (
         row("输入价格", withTag(tag, M.yen(p.input) + " / 百万 token")) +
@@ -125,8 +128,10 @@
     opts = opts || {};
     var id = M.modelId(card);
     var name = card.displayName || id;
-    var desc = opts.desc != null ? opts.desc : M.description(card);
+    var isTitle = id === M.cancriTitle.id;
+    var desc = isTitle ? "" : opts.desc != null ? opts.desc : M.description(card);
     var mark = M.wordmark(name);
+    var guideLink = isTitle ? '<a class="models-guide-link" href="' + esc(M.cancriTitle.guide) + '" aria-label="Cancri α 0.8B 调用文档" title="调用文档"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 13 4-4M8.5 9.5l-2.8 2.8a4.2 4.2 0 0 0 6 6l2.8-2.8M15.5 14.5l2.8-2.8a4.2 4.2 0 0 0-6-6l-2.8 2.8"/></svg></a>' : "";
     var badges = (section === "free" ? M.badge("免费", "success") : "") + (card.available === false ? M.badge("暂不可用", "warning") : "");
     // The whole top (cover, name, description) opens the model; a stretched link keeps the vendor logo clickable.
     return (
@@ -137,7 +142,7 @@
       '<a href="' + esc(opts.href || M.detailUrl(id)) + '" class="models-stretched" data-card-link aria-label="' + esc(name) + '"></a>' +
       '<div class="h-[180px] w-full"><div aria-hidden="true" class="cancri-thumb flex h-full w-full flex-1 flex-row items-center justify-center gap-4 rounded-lg [container-type:inline-size]" style="' + M.coverStyle(id) + '">' +
       '<span class="models-wordmark w-full px-[9%] text-left leading-none font-semibold tracking-tight whitespace-nowrap text-white text-[clamp(2rem,18cqw,5rem)]"' + M.wordmarkAttrs(mark) + ">" + esc(mark) + "</span></div></div>" +
-      '<div class="mt-5 flex flex-col gap-1"><div class="flex items-center gap-1.5 text-base font-semibold text-emphasis">' + M.brandLogo(card) + "<span>" + esc(name) + "</span>" + badges + "</div>" +
+      '<div class="mt-5 flex flex-col gap-1"><div class="flex items-center gap-1.5 text-base font-semibold text-emphasis">' + M.brandLogo(card) + "<span>" + esc(name) + "</span>" + badges + guideLink + "</div>" +
       (desc ? '<div class="text-sm text-secondary">' + esc(desc) + "</div>" : "") +
       "</div></div>" +
       '<div class="mt-8"><div class="flex flex-col gap-4"><div class="_SectionContent_1tiej_1" data-card-specs>' + (opts.specs || specsHtml(card, section)) + "</div></div></div></div>"

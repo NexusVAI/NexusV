@@ -60,7 +60,9 @@
   ];
   // Free section: these first, then every other free-tier line in catalog order. Never folded,
   // otherwise a free line would turn into its paid group card.
+  var CANCRI_TITLE = { id: "cancri-alpha-0.8b", guide: "/api/docs/guides/cancri-alpha-0-8b/", listPrice: "¥0.01 / 千次" };
   var FREE_ORDER = [
+    CANCRI_TITLE.id,
     // 2026-11-13: devingw 免费 promo 线（Devin 网关 → Windsurf Cascade）。
     "swe-2",
     "swe-2-flash",
@@ -435,6 +437,7 @@
         function add(m) {
           var key = lower(m && m.id);
           if (!m || seen[key] || FREE_BLOCKLIST[key]) return;
+          if (key === CANCRI_TITLE.id && !isFree(m)) return;
           seen[key] = true;
           out.push(m);
         }
@@ -807,7 +810,7 @@
   // "link" = goes to the catalog filtered to that vendor (detail and pricing pages).
   function brandLogo(m, mode) {
     var b = brandOf(m);
-    var src = BRAND_ICON[b];
+    var src = modelId(m) === CANCRI_TITLE.id ? "/favicon.svg" : BRAND_ICON[b];
     if (!src) return "";
     var file = src.slice(src.lastIndexOf("/") + 1);
     var label = "只看 " + brandLabel(b) + " 的模型";
@@ -861,6 +864,7 @@
 
   window.NexusModels = {
     BASE_URL: BASE_URL,
+    cancriTitle: CANCRI_TITLE,
     load: load,
     loadHealth: loadHealth,
     healthRow: healthRow,

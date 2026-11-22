@@ -80,7 +80,7 @@
       (m.available === false && m.unavailableMessage ? '<div class="flex text-sm text-secondary lg:hidden">' + esc(m.unavailableMessage) + "</div>" : "") +
       '<div class="flex flex-row items-center gap-2">' +
       '<a href="/api/docs/pricing/#price-' + encodeURIComponent(m.id) + '" class="_Button_6dmow_1 flex-1" data-color="primary" data-variant="outline" data-pill="" data-size="xl"><span class="_ButtonInner_6dmow_4">比较价格</span></a>' +
-      '<a href="/chat/" class="_Button_6dmow_1 flex-1" data-color="primary" data-variant="solid" data-pill="" data-size="xl"><span class="_ButtonInner_6dmow_4">在对话中试用</span></a>' +
+      '<a href="' + (m.id === M.cancriTitle.id ? M.cancriTitle.guide : m.apiOnly ? '#use-in-api' : '/chat/') + '" class="_Button_6dmow_1 flex-1" data-color="primary" data-variant="solid" data-pill="" data-size="xl"><span class="_ButtonInner_6dmow_4">' + (m.apiOnly ? '查看 API 调用示例' : '在对话中试用') + '</span></a>' +
       "</div></div>"
     );
   }
@@ -165,6 +165,9 @@
   }
   function pricing(m) {
     var p = M.priceOf(m);
+    if (m.id === M.cancriTitle.id && p.kind === "free") {
+      return section("价格", '<div class="flex flex-col gap-2 md:flex-row">' + priceBox("刊例价", M.cancriTitle.listPrice) + priceBox("特价", "FREE") + "</div>", "pricing");
+    }
     var head = function (left, right) {
       return '<div class="flex flex-col justify-between gap-2 md:flex-row"><div>' + left + '</div><div class="flex flex-row gap-2 text-sm text-secondary"><div class="flex flex-row items-center gap-1"><div>' + right + "</div></div></div></div>";
     };
@@ -216,7 +219,7 @@
         ]),
       "endpoints",
     );
-    var features = [capItem(GLYPH.stream, "流式输出", "支持", true)];
+    var features = [capItem(GLYPH.stream, "流式输出", m.apiOnly && m.id === "cancri-alpha-0.8b" ? "标题生成后一次返回" : "支持", true)];
     if (m.enableThinking) features.push(capItem(GLYPH.bulb, "思考模式", "支持", true));
     return html + section("特性", grid(features), "features");
   }
@@ -277,6 +280,9 @@
     var walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
     var node;
     while ((node = walker.nextNode())) {
+      if (m.id === "cancri-alpha-0.8b" && node.nodeValue.includes("用一句话介绍你自己")) {
+        node.nodeValue = node.nodeValue.replace(/用一句话介绍你自己/g, "怎么用 Python 读取 Excel 文件？");
+      }
       if (node.nodeValue.indexOf("__MODEL_") === -1) continue;
       node.nodeValue = node.nodeValue.split("__MODEL_ID__").join(m.id).split("__MODEL_NAME__").join(m.displayName || m.id);
     }

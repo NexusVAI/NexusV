@@ -327,6 +327,24 @@ html.dark .models-brand-logo img[data-mono] {
   filter: invert(1);
 }
 
+.models-guide-link {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  color: var(--link-primary-text-color, #0169cc);
+}
+.models-guide-link:hover, .models-guide-link:focus-visible {
+  color: var(--link-primary-text-color, #0169cc);
+  background: var(--color-background-primary-soft-alpha);
+}
+.models-guide-link:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
 /* 卡片 / 列表行整块可点：一层铺满的链接，logo 叠在它上面单独可点 */
 .models-stretched {
   position: absolute;

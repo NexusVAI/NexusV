@@ -1,0 +1,37 @@
+---
+title: Cancri α 0.8B
+description: 为对话生成一个简短标题。通过公开 API 调用，不用于续写或回答问题。
+tab: models
+nav: /api/docs/models/
+---
+<h2 id="usage">怎么使用</h2>
+<p>把用户的<strong>第一条消息原文</strong>发给 <code>cancri-alpha-0.8b</code>，用返回的标题作为会话列表或历史记录的名称。不需要添加「请生成标题」的提示词。即使传入多轮对话，模型也只使用第一条用户文本。</p>
+<table><thead><tr><th>输入示例</th><th>标题示例</th></tr></thead><tbody><tr><td>怎么用 Python 读取 Excel 文件？</td><td>Python读取Excel方法</td></tr></tbody></table>
+
+<h2 id="call">调用 API</h2>
+<p>先用 <a href="/api/reference/models/"><code>GET /v1/models</code></a> 确认目录中有 <code>cancri-alpha-0.8b</code>。若没有，说明当前网关未开放这个模型；文档页面本身不代表服务已上架。</p>
+<p>使用<a href="/api/docs/guides/authentication/">网关 API Key</a>。Base URL 为 <code>https://cn.nexusvai.xyz/v1</code>，模型 ID 为 <code>cancri-alpha-0.8b</code>。以下示例从本机环境变量 <code>CANCRI_API_KEY</code> 读取密钥，不要把密钥放进浏览器端代码。</p>
+<code-tabs title="生成对话标题">
+<pre data-lang="bash" data-label="cURL">curl --fail-with-body https://cn.nexusvai.xyz/v1/chat/completions \
+  -H "Authorization: Bearer $CANCRI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"cancri-alpha-0.8b","messages":[{"role":"user","content":"怎么用 Python 读取 Excel 文件？"}],"max_tokens":48}'</pre>
+<pre data-lang="python" data-label="Python">import os
+from openai import OpenAI
+
+client = OpenAI(base_url="https://cn.nexusvai.xyz/v1", api_key=os.environ["CANCRI_API_KEY"])
+result = client.chat.completions.create(
+    model="cancri-alpha-0.8b",
+    messages=[{"role": "user", "content": "怎么用 Python 读取 Excel 文件？"}],
+    max_tokens=48,
+)
+print(result.choices[0].message.content)</pre>
+</code-tabs>
+<p>非流式请求从 <code>choices[0].message.content</code> 读取标题。使用 <a href="/api/docs/guides/responses/">Responses</a> 时可用 <code>input</code> 传入字符串；使用 <a href="/api/docs/guides/messages/">Messages</a> 时传入文本 <code>messages</code> 和 <code>max_tokens</code>。</p>
+
+<h2 id="limits">输入、输出与限流</h2>
+<ul><li>首条用户文本须为 1–16,384 个字符。超过 1,024 个正文 token 时，保留前 768 个及后 256 个。</li><li>默认最多生成 48 个 token。可以设置更小的输出上限，但标题可能被截断。<code>stream: true</code> 在生成完成后一次返回标题，不逐字输出。</li><li>仅支持文本，不支持图片、文件、工具调用或结构化输出。收到 <code>429</code> 时按 <code>Retry-After</code> 等待后重试。</li></ul>
+
+<h2 id="pricing">价格</h2>
+<table><thead><tr><th>刊例价</th><th>当前特价</th></tr></thead><tbody><tr><td>¥0.01 / 千次调用</td><td><strong>FREE</strong></td></tr></tbody></table>
+<p>当前特价期间成功调用也不扣余额。刊例价按调用次数计算，不是每千 token 的价格。免费调用仍需要有效 API Key，并受网关限流约束。</p>
