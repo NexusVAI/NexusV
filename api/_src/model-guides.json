@@ -2,7 +2,7 @@
   {"group":"文本与代码","items":[["text","文本生成"],["code-generation","代码生成"],["structured-outputs","结构化输出"]]},
   {"group":"提示词","items":[["prompting","概览"],["prompt-engineering","提示词工程"],["citation-formatting","引用格式"],["prompting/migrate-from-prompt-object","从提示词对象迁移"],["prompt-generation","提示词生成"],["frontend-prompt","前端提示词"]]},
   {"group":"推理","items":[["reasoning","推理模型"],["reasoning-best-practices","推理最佳实践"]]},
-  {"group":"图像","items":[["images-vision","图像与视觉"],["image-cost-calculator","图像输入成本计算器"],["image-generation","图像生成"],["image-prompting","图像提示词"]]},
+  {"group":"图像","items":[["images-vision","图像与视觉"],["image-cost-calculator","模型 Token 费用计算器"],["image-generation","图像生成"],["image-prompting","图像提示词"]]},
   {"group":"实时与音频","items":[["audio","音频与语音"],["realtime","实时 API 入门","realtime-api-intro"],["voice-agents","语音智能体"]]},
   {"group":"专用模型","items":[["embeddings","向量嵌入"],["moderation","内容审核"]]}
 ]

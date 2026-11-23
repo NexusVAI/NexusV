@@ -87,7 +87,7 @@ console.log(response.output_text);</pre>
 }</pre>
 <ul>
 <li>消息项的 <code>content</code> 可以是字符串，也可以是内容块数组。支持 <code>input_text</code>、<code>output_text</code> 和 <code>input_image</code>（<code>image_url</code> 传图片 URL 或 base64 data URL）。</li>
-<li><code>instructions</code> 会作为系统提示放在所有输入之前。</li>
+<li><code>instructions</code> 是本次请求的初始指令。若要在对话中途追加指令，可在 <code>input</code> 中按顺序放入 <code>developer</code> 或 <code>system</code> 消息项，不要将同一条指令再写入顶层。</li>
 <li>工具调用往返使用 <code>function_call</code> 与 <code>function_call_output</code> 项，见<a href="#tools">工具</a>。</li>
 <li>输入里的 <code>reasoning</code> 项会被忽略。</li>
 </ul>

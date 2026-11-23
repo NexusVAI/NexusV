@@ -71,7 +71,7 @@ console.log(response.choices[0].message.content);</pre>
 <h2 id="multi-turn">系统提示与多轮对话</h2>
 <p>接口是无状态的：模型只看到你这一次发送的 <code>messages</code>。要进行多轮对话，把之前的问答按顺序放进列表，再追加新问题：</p>
 <ul>
-<li><code>system</code>：对模型的总体指示，放在最前面。</li>
+<li><code>developer</code> 或 <code>system</code>：提供应用指令，具体支持取决于模型。全程生效的指令通常放在开头；中途追加的指令按生效顺序放入历史，不必挪到最前面。</li>
 <li><code>user</code>：用户的输入。</li>
 <li><code>assistant</code>：模型之前的回答。</li>
 <li><code>tool</code>：工具的执行结果，见<a href="#tool-calling">工具调用</a>。</li>

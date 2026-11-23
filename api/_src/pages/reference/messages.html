@@ -64,11 +64,12 @@ js: /api/assets/reference.js
 <details class="stldocs-expander _disclosure_mjoyi_138">
 <summary class="stldocs-expander-summary _summary_mjoyi_12"><span class="stldocs-expander-summary-icon _icon_mjoyi_143" aria-hidden="true"></span><div class="stldocs-expander-summary-content _summaryContent_mjoyi_12"><div class="stldocs-property-info _info_mjoyi_16" id="body-messages">
 <div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">messages</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-type-array">array of </span><span class="stldocs-type-plain">object</span></span><span class="ref-flag" data-flag="required">必填</span></div>
-<div class="stldocs-property-description _description_mjoyi_68"><p>对话历史，<code>user</code> 与 <code>assistant</code> 交替出现。</p></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>按原顺序提交对话历史。部分 Claude 5.5 模型还支持在用户轮后追加文本 <code>system</code> 指令，见<a href="/api/docs/guides/messages/#mid-system">中途系统消息</a>。</p></div>
 </div></div></summary>
 <div class="stldocs-expander-content _disclosureContent_mjoyi_189"><div class="stldocs-property-children _children_mjoyi_192"><div class="stldocs-properties _properties_mjoyi_119">
 <div class="stldocs-property _property_mjoyi_4"><div class="stldocs-property-info _info_mjoyi_16" id="body-messages-role">
-<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">role</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">"user"</span><span class="stldocs-text-punctuation"> or </span><span class="stldocs-literal-string">"assistant"</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-declaration _declaration_mjoyi_28"><span class="stldocs-type-propertyname"><span class="stldocs-text-identifier">role</span></span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type"><span class="stldocs-literal-string">"user"</span><span class="stldocs-text-punctuation"> or </span><span class="stldocs-literal-string">"assistant"</span><span class="stldocs-text-punctuation"> or </span><span class="stldocs-literal-string">"system"</span></span><span class="ref-flag" data-flag="required">必填</span></div>
+<div class="stldocs-property-description _description_mjoyi_68"><p>初始指令用顶层 <code>system</code>。中途文本指令不能是首条，不能直接跟在普通助手回复后，也不能插在工具调用与结果之间。模型或位置不支持时返回 <code>400</code>。</p></div>
 </div></div>
 <div class="stldocs-property _property_mjoyi_4">
 <details class="stldocs-expander _disclosure_mjoyi_138">

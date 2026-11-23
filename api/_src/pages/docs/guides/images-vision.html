@@ -36,7 +36,7 @@ lead: false
 <p>确保图片 URL 可以被读取，且不要在地址里放密钥。对敏感图片先获得授权；格式、尺寸、细节级别和上下文限制以目标模型为准。识别小字时优先裁剪并保留足够分辨率，而不是盲目扩大整张图片。</p>
 
 <h2 id="calculating-costs">计算成本</h2>
-<p>图片会占用输入预算。<a href="/api/docs/guides/image-cost-calculator/">图像输入成本计算器</a>可以按部分模型的公开规格估算 token；站内单价与实际扣费分别到<a href="/api/docs/pricing/">价格</a>和<a href="/api/docs/guides/usage/">用量</a>核对。</p>
+<p>图片会占用输入预算。知道图片的 token 数后，到<a href="/api/docs/guides/image-cost-calculator/">模型 Token 费用计算器</a>选择模型，把图片 token 计入输入，再填入缓存命中和输出 token。计算器不直接按像素尺寸估价。实际扣费可在<a href="/api/docs/guides/usage/">用量记录</a>核对。</p>
 
 <h2 id="limitations">局限性</h2>
 <p>对精确文字、物体数量、模糊图像和位置关系，模型仍可能出错。将模型输出与原始图片核对，关键场景安排人工复核。</p>

@@ -476,24 +476,37 @@
     };
   }
 
-  function readCache() {
+  function readFrom(storage, ttl) {
     try {
-      var c = JSON.parse(sessionStorage.getItem(CACHE_KEY) || "null");
-      if (c && Date.now() - c.t < CACHE_TTL_MS && c.data && Array.isArray(c.data.models)) return c.data;
+      var c = JSON.parse(storage.getItem(CACHE_KEY) || "null");
+      var age = c ? Date.now() - c.t : -1;
+      if (c && age >= 0 && age < ttl && c.data && Array.isArray(c.data.models)) return c.data;
     } catch (e) {}
     return null;
   }
+  // sessionStorage (this tab, 2 min) first; pages that pass maxAgeMs also accept the copy in
+  // localStorage, which outlives the tab, so repeat visits within that window send no request.
+  function readCache(maxAgeMs) {
+    var hit = readFrom(window.sessionStorage, CACHE_TTL_MS);
+    if (!hit && maxAgeMs > 0) hit = readFrom(window.localStorage, maxAgeMs);
+    return hit;
+  }
   function writeCache(data) {
+    var entry = JSON.stringify({ t: Date.now(), data: data });
     try {
-      sessionStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), data: data }));
+      sessionStorage.setItem(CACHE_KEY, entry);
+    } catch (e) {}
+    try {
+      localStorage.setItem(CACHE_KEY, entry);
     } catch (e) {}
   }
 
   var pending = null;
   // Resolves to a prepared catalog. A copy fetched by another model page in this tab within the last
-  // two minutes is reused; { fresh: true } always goes to the network (retry buttons).
+  // two minutes is reused; { maxAgeMs } also accepts a cross-tab copy up to that age;
+  // { fresh: true } always goes to the network (retry buttons).
   function load(opts) {
-    var cached = !(opts && opts.fresh) && readCache();
+    var cached = !(opts && opts.fresh) && readCache(Number(opts && opts.maxAgeMs) || 0);
     if (cached) return Promise.resolve(withSearch(prepare(cached)));
     if (!window.__SUPABASE_ANON_KEY__) return Promise.reject(new Error("站点配置未就绪，请刷新页面"));
     if (!pending) {

@@ -79,6 +79,21 @@ for (const block of message.content) {
     ],
 )</pre>
 
+<h3 id="mid-system">中途系统消息</h3>
+<p>从对话开始就生效的指令放在顶层 <code>system</code>。只约束后续回复的指令，在生效处追加一条 <code>role: "system"</code> 消息。普通文本不需要 beta 头；字符串和 <code>text</code> 块数组均可。</p>
+<pre data-lang="json" data-title="从这一轮起改变回答语言">{
+  "model": "claude-opus-5-5-aws",
+  "max_tokens": 256,
+  "system": "回答要简短。",
+  "messages": [
+    {"role": "user", "content": "介绍一下月球。"},
+    {"role": "system", "content": [{"type": "text", "text": "从现在起用中文回答。"}]}
+  ]
+}</pre>
+<p>本接口支持此写法的模型为 <code>claude-{opus,sonnet,haiku}-5.5</code> 及各自的 <code>-thinking</code> 版本，以及 <code>claude-opus-5-5-aws</code>、<code>claude-sonnet-5-5-aws</code>。其他模型仍可使用顶层 <code>system</code>。</p>
+<p>一条或连续多条中途系统消息算一组：前面必须是 <code>user</code>（含工具结果），后面必须是 <code>assistant</code> 或数组结束。<code>[user, system]</code> 可以，<code>[user, system, user]</code> 不可以；不能插在工具调用与结果之间。不支持的模型、位置或语义会返回带字段位置的 <code>400</code>，不会把指令挪到顶部。</p>
+<p>这是文本兼容能力，不包括服务端工具结果、动态增减工具、<code>clear_at</code> 或逐消息 <code>output_config</code>。保持顺序不等于启用原生 <code>cache_control</code>。</p>
+
 <h2 id="streaming">流式输出</h2>
 <p>设置 <code>stream: true</code>，响应以 Anthropic 的 SSE 事件返回。Claude Code 默认使用流式输出。</p>
 <code-tabs title="流式输出">
@@ -171,7 +186,7 @@ if response.stop_reason == "tool_use":
 <table>
 <thead><tr><th>位置</th><th>支持的块</th></tr></thead>
 <tbody>
-<tr><td><code>system</code></td><td><code>text</code></td></tr>
+<tr><td>顶层 <code>system</code>、受支持的中途 <code>system</code> 消息</td><td><code>text</code></td></tr>
 <tr><td><code>user</code> 消息</td><td><code>text</code>、<code>image</code>（<code>base64</code> 或 <code>url</code>）、<code>tool_result</code></td></tr>
 <tr><td><code>assistant</code> 消息</td><td><code>text</code>、<code>tool_use</code></td></tr>
 </tbody>
