@@ -4,7 +4,7 @@ import { esc, normUrl } from "./util.mjs";
 import { ICON } from "./icons.mjs";
 import { SITE, TOP_NAV, TABS } from "../nav.mjs";
 
-export const ASSET_VERSION = "20261120a";
+export const ASSET_VERSION = "20261123b";
 const v = (url) => `${url}?v=${ASSET_VERSION}`;
 
 const NAV_CHEVRON =

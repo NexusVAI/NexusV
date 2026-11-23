@@ -1,13 +1,50 @@
 ---
 title: 图像生成
-description: Learn how to generate or edit images with the OpenAI API and image generation models.
+description: 在 NexusV 对话中生成或编辑图像，了解 NexusVAI 公共 API 的图像能力边界。
 tab: models
 lead: false
-css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
-js: /api/assets/model-guide.js, /api/assets/model-guides/widgets/boot.js
+css: /api/assets/oai/markdown.css, /api/assets/model-guides/widgets/gallery.css
+js: /api/assets/model-guides/widgets/boot.js
 ---
-<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/image-generation (reference copy for local review). -->
-<div data-guide-widget="ImageGallery" data-props="{}" prefix="r62" ssr=""><div class="exclude-from-copy not-prose" data-gallery-state="page"><div class="_GalleryContainer_qt4rh_1" data-gallery-type="image" id="gallery-page-container"><button class="_Button_6dmow_1 _PageButton_qt4rh_43 not-prose" data-color="primary" data-pill="" data-size="xl" data-variant="solid" type="button"><span class="_ButtonInner_6dmow_4">Explore</span></button><div class="_PageSpacer_qt4rh_70"><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div></div><div class="_Container_134lp_1" id="gallery-fullscreen-container" inert=""><button aria-label="Close gallery" class="_Button_6dmow_1 _Close_134lp_109 not-prose" data-color="primary" data-icon-size="lg" data-pill="" data-size="xl" data-uniform="" data-variant="solid" type="button"><span class="_ButtonInner_6dmow_4"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path clip-rule="evenodd" d="M5.636 5.636a1 1 0 0 1 1.414 0l4.95 4.95 4.95-4.95a1 1 0 0 1 1.414 1.414L13.414 12l4.95 4.95a1 1 0 0 1-1.414 1.414L12 13.414l-4.95 4.95a1 1 0 0 1-1.414-1.414l4.95-4.95-4.95-4.95a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg></span></button><button aria-label="Back to gallery" class="_Button_6dmow_1 _Gallery_134lp_189 not-prose" data-color="primary" data-icon-size="lg" data-pill="" data-size="xl" data-uniform="" data-variant="solid" type="button"><span class="_ButtonInner_6dmow_4"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M6.75 4.5a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM2.5 6.75a4.25 4.25 0 1 1 8.5 0 4.25 4.25 0 0 1-8.5 0ZM17.25 4.5a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM13 6.75a4.25 4.25 0 1 1 8.5 0 4.25 4.25 0 0 1-8.5 0ZM6.75 15a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM2.5 17.25a4.25 4.25 0 1 1 8.5 0 4.25 4.25 0 0 1-8.5 0ZM17.25 15a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM13 17.25a4.25 4.25 0 1 1 8.5 0 4.25 4.25 0 0 1-8.5 0Z"></path></svg></span></button><div class="_Scrollable_134lp_17" id="gallery-grid-container"><div class="_Grid_134lp_55"><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-sci-fi-hangar"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/sci-fi-hangar.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/sci-fi-hangar.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-mechanical-bouquet"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/mechanical-bouquet.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/mechanical-bouquet.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-mechanical-watch"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/mechanical-watch.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/mechanical-watch.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-botanical-perfume"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/botanical-perfume.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/botanical-perfume.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-lavender-sunrise"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/lavender-sunrise.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/lavender-sunrise.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-moon-control-room-1969"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/moon-control-room-1969.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/moon-control-room-1969.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-mountain-map"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/mountain-map.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/mountain-map.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-shipyard-welding-documentary"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/shipyard-welding-documentary.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/shipyard-welding-documentary.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-coral-reef"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/coral-reef.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/coral-reef.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-smart-home-dashboard"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/smart-home-dashboard.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/smart-home-dashboard.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-abstract-orbit"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/abstract-orbit.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/abstract-orbit.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-airport-departure-kiosk"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/airport-departure-kiosk.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/airport-departure-kiosk.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-icons"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/icons.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/icons.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-3d-city"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/3d-city.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/3d-city.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-ink-wash-temple"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/ink-wash-temple.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/ink-wash-temple.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-cliffside-portrait"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/cliffside-portrait.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/cliffside-portrait.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-chameleon-macro"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-clay-garden"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-paper-cut-forest"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-alien-rock"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-clay-figurine"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-furniture"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-desert-sunrise-portrait"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-ceramic-mug"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-hiking-poster"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-floorplan"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-mountain-bike"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-kitchen-service-rush"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-interior-design"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-ecommerce-product-page"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-paper-sculpture-city"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-colorize"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-game-design"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-sprites"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-cosmic-ballet"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-chocolate"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-winter-wolf-portrait"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-street-cafe"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-watercolor-harbor-map"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-buildings-sprite"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-rooftop-garden"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-thunderstorm"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-roman-forum-rain"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-spacecraft-dashboard"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-daytime"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-camera-manual"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-weeknight-cookbook-layout"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-isometric-icons"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-patterns"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-landscape"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-city-heat-infographic"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-robot-toy"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-bottle"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-school-science-fair-iphone"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-whales-poster"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-neon"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-album-cover"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-sneakers"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-paris-cafe-iphone"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-kyoto-poster"><span class="_ImageContainer_134lp_215" role="presentation"></span></a></div></div></div><div class="_DetailExitBackdrop_qt4rh_157"></div></div></div><!--astro:end--></div>
+<callout type="info"><p><strong>图像生成面向网页版，NexusVAI 公共 API 未开放。</strong>调用 <code>/v1/images/generations</code> 会返回 <code>403 endpoint_disabled</code>；Responses 也不执行图像生成工具。理解已有图片仍可使用<a href="/api/docs/guides/images-vision/">视觉输入</a>。</p></callout>
+
+<h2 id="overview">概览</h2>
+<p>在 <a href="/chat/">NexusV 对话</a>中选择可用的图像功能。以下图库只使用站内素材，示例提示词用于说明如何描述任务，不保证复现同一张图。</p>
+<div data-guide-widget="ImageGallery" data-props="{}" ssr="">
+<figure class="not-prose my-4">
+<img src="/api/assets/model-guides/img/f964ffd18d535bef0131.png" alt="阳光下的室内泳池，池边有藤椅" loading="lazy" class="max-h-72 w-auto rounded-lg">
+<figcaption>图像示例：阳光下的室内泳池。</figcaption>
+</figure>
+</div>
+
+<span id="image-api"></span>
+<span id="responses-api"></span>
+<span id="choosing-the-right-api"></span>
+<h2 id="generate-images">生成图像</h2>
+<p>用一句话写清主体和场景，再补充光线、色调、构图和画面用途。例如：「为旅行杂志生成一张室内泳池的配图，暖米色墙面、藤椅和从高窗照进来的自然光，无人物和文字。」</p>
+
+<h2 id="edit-images">编辑图像</h2>
+<p>如果使用的网页功能支持图片编辑，上传参考图并具体说明改哪一处、保留哪些细节。多次调整时保留原图，用每次的结果与原始需求对照。</p>
+<h3 id="edit-an-image-using-a-mask">限定编辑区域</h3>
+<p>若使用的编辑工具支持蒙版，可将需要改变的局部标注出来。请求中仍需说明对象、改动和区域外必须保留的内容。</p>
+
+<h2 id="customize-image-output">自定义图像输出</h2>
+<h3 id="size-and-quality-options">尺寸与质量选项</h3>
+<p>先确定横版、竖版或方形等构图，再选网页可用的分辨率和质量选项。导出前检查文字、边缘、主体比例和背景；更高分辨率不会自动解决构图或拼写错误。</p>
+
+<h2 id="limitations">局限性</h2>
+<p>模型不保证精确拼写、像素级位置、固定人物特征或同一提示词的复现。重要细节请人工检查，所用参考图应有使用权限。</p>
+
+<h2 id="cost-and-latency">费用与延迟</h2>
+<h3 id="calculating-costs">查看价格</h3>
+<p>网页图像功能和公共 API 分开计费，网页费用以使用界面为准。公共 API 的图片输入可以参考<a href="/api/docs/guides/image-cost-calculator/">图像输入成本计算器</a>估算 token，再核对<a href="/api/docs/pricing/">模型定价</a>。</p>
+
+<h2 id="earlier-gpt-image-models">模型可用性</h2>
+<p>以网页实际提供的选项为准，历史模型名或价格示例不表示当前仍开放。提示词的通用写法见<a href="/api/docs/guides/image-prompting/">图像提示词</a>。</p>
+
+<!-- local-reference -->
+<!-- 原中文参考稿保留供编辑核对，不参与构建。 -->
+<div data-guide-widget="ImageGallery" data-props="{}" prefix="r62" ssr=""><div class="exclude-from-copy not-prose" data-gallery-state="page"><div class="_GalleryContainer_qt4rh_1" data-gallery-type="image" id="gallery-page-container"><button class="_Button_6dmow_1 _PageButton_qt4rh_43 not-prose" data-color="primary" data-pill="" data-size="xl" data-variant="solid" type="button"><span class="_ButtonInner_6dmow_4">浏览示例</span></button><div class="_PageSpacer_qt4rh_70"><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div><div class="_PageSpacerItem_qt4rh_77"></div></div><div class="_Container_134lp_1" id="gallery-fullscreen-container" inert=""><button aria-label="关闭示例库" class="_Button_6dmow_1 _Close_134lp_109 not-prose" data-color="primary" data-icon-size="lg" data-pill="" data-size="xl" data-uniform="" data-variant="solid" type="button"><span class="_ButtonInner_6dmow_4"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path clip-rule="evenodd" d="M5.636 5.636a1 1 0 0 1 1.414 0l4.95 4.95 4.95-4.95a1 1 0 0 1 1.414 1.414L13.414 12l4.95 4.95a1 1 0 0 1-1.414 1.414L12 13.414l-4.95 4.95a1 1 0 0 1-1.414-1.414l4.95-4.95-4.95-4.95a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg></span></button><button aria-label="返回示例库" class="_Button_6dmow_1 _Gallery_134lp_189 not-prose" data-color="primary" data-icon-size="lg" data-pill="" data-size="xl" data-uniform="" data-variant="solid" type="button"><span class="_ButtonInner_6dmow_4"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M6.75 4.5a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM2.5 6.75a4.25 4.25 0 1 1 8.5 0 4.25 4.25 0 0 1-8.5 0ZM17.25 4.5a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM13 6.75a4.25 4.25 0 1 1 8.5 0 4.25 4.25 0 0 1-8.5 0ZM6.75 15a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM2.5 17.25a4.25 4.25 0 1 1 8.5 0 4.25 4.25 0 0 1-8.5 0ZM17.25 15a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM13 17.25a4.25 4.25 0 1 1 8.5 0 4.25 4.25 0 0 1-8.5 0Z"></path></svg></span></button><div class="_Scrollable_134lp_17" id="gallery-grid-container"><div class="_Grid_134lp_55"><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-sci-fi-hangar"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/sci-fi-hangar.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/sci-fi-hangar.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-mechanical-bouquet"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/mechanical-bouquet.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/mechanical-bouquet.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-mechanical-watch"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/mechanical-watch.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/mechanical-watch.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-botanical-perfume"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/botanical-perfume.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/botanical-perfume.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-lavender-sunrise"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/lavender-sunrise.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/lavender-sunrise.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-moon-control-room-1969"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/moon-control-room-1969.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/moon-control-room-1969.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-mountain-map"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/mountain-map.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/mountain-map.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-shipyard-welding-documentary"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/shipyard-welding-documentary.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/shipyard-welding-documentary.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-coral-reef"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/coral-reef.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/coral-reef.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-smart-home-dashboard"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/smart-home-dashboard.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/smart-home-dashboard.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-abstract-orbit"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/abstract-orbit.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/abstract-orbit.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-airport-departure-kiosk"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/airport-departure-kiosk.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/airport-departure-kiosk.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-icons"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/icons.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/icons.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-3d-city"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/3d-city.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/3d-city.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-ink-wash-temple"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/ink-wash-temple.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/ink-wash-temple.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-cliffside-portrait"><span class="_ImageContainer_134lp_215" role="presentation"><img alt="" class="_Image_134lp_61" data-guide-original="https://developers.openai.com/images/image-gallery-sunburst/cliffside-portrait.webp" draggable="false" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-gallery-sunburst/cliffside-portrait.webp"/></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-chameleon-macro"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-clay-garden"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-paper-cut-forest"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-alien-rock"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-clay-figurine"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-furniture"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-desert-sunrise-portrait"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-ceramic-mug"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-hiking-poster"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-floorplan"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-mountain-bike"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-kitchen-service-rush"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-interior-design"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-ecommerce-product-page"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-paper-sculpture-city"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-colorize"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-game-design"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-sprites"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-cosmic-ballet"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-chocolate"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-winter-wolf-portrait"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-street-cafe"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-watercolor-harbor-map"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-buildings-sprite"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-rooftop-garden"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-thunderstorm"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-roman-forum-rain"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-spacecraft-dashboard"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-daytime"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-camera-manual"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-weeknight-cookbook-layout"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-isometric-icons"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-patterns"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-landscape"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-city-heat-infographic"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-robot-toy"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-bottle"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-school-science-fair-iphone"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-whales-poster"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-neon"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-album-cover"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-sneakers"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-paris-cafe-iphone"><span class="_ImageContainer_134lp_215" role="presentation"></span></a><a class="_ImageGridItem_134lp_61" data-grid-item="true" href="#" id="gallery-grid-kyoto-poster"><span class="_ImageContainer_134lp_215" role="presentation"></span></a></div></div></div><div class="_DetailExitBackdrop_qt4rh_157"></div></div></div><!--astro:end--></div>
 <h2 id="overview">概览</h2>
 <p>使用该 API，你可以通过文本提示词使用 <code>gpt-image-2.5-sunburst</code> 和 <code>gpt-image-2.5-flare</code> 生成和编辑图像。对编辑精度要求最高的工作流选择 Sunburst，快速而高质量的日常图像生成选择 Flare。你可以通过两个 API 使用图像生成能力：</p>
 <h3 id="image-api">Image API</h3>
@@ -21,7 +58,7 @@ js: /api/assets/model-guide.js, /api/assets/model-guides/widgets/boot.js
 <p>与 Image API 相比，它额外提供：</p>
 <ul>
 <li><strong>多轮编辑</strong>：通过提示词对图像进行逐步的高保真编辑</li>
-<li><strong>灵活输入</strong>：可以接收图像 <a href="https://developers.openai.com/api/docs/api-reference/files">File</a> ID 作为输入图像，不仅限于二进制数据</li>
+<li><strong>灵活输入</strong>：可以接收图像 <a href="https://developers.openai.com/api/docs/api-reference/files">文件 ID</a> 作为输入图像，不仅限于二进制数据</li>
 </ul>
 <p>对于可以调用图像生成工具的主线模型，请参见<a href="#supported-models">支持的模型</a>。</p>
 <h3 id="choosing-the-right-api">选择合适的 API</h3>
@@ -31,30 +68,16 @@ js: /api/assets/model-guide.js, /api/assets/model-guides/widgets/boot.js
 </ul>
 <p>使用 Image API 时，直接将 <code>model</code> 设为 <code>gpt-image-2.5-sunburst</code> 或 <code>gpt-image-2.5-flare</code>。使用 Responses API 时，在顶层选择一个支持的主线模型，并在图像生成工具的 <code>model</code> 字段中指定 <code>gpt-image-2.5-sunburst</code> 或 <code>gpt-image-2.5-flare</code>。</p>
 <p>两种 API 都可以通过调整质量、尺寸、格式和压缩率来<a href="#customize-image-output">自定义输出</a>。</p>
-<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>To ensure these models are used responsibly, you may need to complete the <a href="https://help.openai.com/en/articles/10910291-api-organization-verification">API
-Organization
-Verification</a>
-from your <a href="https://platform.openai.com/settings/organization/general">developer
-console</a> before
-using GPT Image models.</p></div></div></div></div></div>
-<h3 id="safety-identifiers">Safety identifiers</h3>
-<p>If your application serves individual end users, include a stable,
-privacy-preserving <code>safety_identifier</code> in each <a href="https://developers.openai.com/api/reference/resources/images/methods/generate">image generation</a>
-or <a href="https://developers.openai.com/api/reference/resources/images/methods/edit">image edit</a> request. Hash a
-username or email address instead of sending identifying information, and keep
-the identifier to 128 characters or fewer. Safety identifiers are recommended
-but not required.</p>
-<p>The Images API <code>user</code> parameter is deprecated. Send the same identifier as
-<code>safety_identifier</code> instead. Existing requests using <code>user</code> remain supported. A
-nonempty <code>safety_identifier</code> takes precedence over <code>user</code>; when
-<code>safety_identifier</code> is omitted, <code>null</code>, or an empty string, the API uses <code>user</code>
-when available.</p>
-<div class="not-prose" style="float:right;margin:10px 0 10px 10px"><img alt="A beige coffee mug on a wooden table" data-guide-original="https://developers.openai.com/images/image-25-article/mug.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/mug.png" style="height:180px;width:auto;border-radius:8px"/></div>
-<h2 id="generate-images">Generate Images</h2>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>为确保负责任地使用 GPT Image 模型，你可能需要先在<a href="https://platform.openai.com/settings/organization/general">开发者控制台</a>完成<a href="https://help.openai.com/en/articles/10910291-api-organization-verification">API 组织验证</a>。</p></div></div></div></div></div>
+<h3 id="safety-identifiers">安全标识符</h3>
+<p>如果应用面向个人用户，建议在每次<a href="https://developers.openai.com/api/reference/resources/images/methods/generate">图像生成</a>或<a href="https://developers.openai.com/api/reference/resources/images/methods/edit">图像编辑</a>请求中附上稳定且不暴露隐私的 <code>safety_identifier</code>。请对用户名或电子邮件地址取哈希，不要直接发送身份信息，并将标识符长度控制在 128 个字符以内。此字段建议提供，但不是必填项。</p>
+<p>Images API 的 <code>user</code> 参数已弃用，请改用 <code>safety_identifier</code> 传递同一个标识符。已有的 <code>user</code> 请求仍受支持。非空的 <code>safety_identifier</code> 优先；如果该参数缺省、为 <code>null</code> 或为空字符串，API 会在提供了 <code>user</code> 时使用它。</p>
+<div class="not-prose" style="float:right;margin:10px 0 10px 10px"><img alt="木桌上的米色咖啡杯" data-guide-original="https://developers.openai.com/images/image-25-article/mug.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/mug.png" style="height:180px;width:auto;border-radius:8px"/></div>
+<h2 id="generate-images">生成图像</h2>
 <p>可以使用 Image API 的 <a href="https://developers.openai.com/api/docs/api-reference/images/create">图像生成端点</a>根据文本提示词创建图像，也可以在 Responses API 中使用<a href="https://developers.openai.com/api/docs/guides/tools?api-mode=responses">图像生成工具</a>，在对话中生成图像。</p>
 <p>关于自定义输出（尺寸、质量、格式、压缩）的更多信息，请参见下方<a href="#customize-image-output">自定义图像输出</a>一节。</p>
 <p>你可以设置 <code>n</code> 参数，在一次请求中同时生成多张图像（默认情况下，API 只返回一张）。</p>
-<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="generate-images-api" data-content-switcher-initial="image" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="image" id="content-switcher-generate-images-api"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="image">Image API</option><option value="responses">Responses API</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="image"><div class="hidden">Image API</div><code-tabs title="生成图像">
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="generate-images-api" data-content-switcher-initial="image" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="image" id="content-switcher-generate-images-api"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="选择生成接口" data-guide-switch=""><option selected="" value="image">Image API</option><option value="responses">Responses API</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="image"><div class="hidden">Image API</div><code-tabs title="生成图像">
 <pre data-lang="python">from openai import OpenAI
 import base64
 
@@ -309,7 +332,7 @@ File.binwrite("otter.png", Base64.strict_decode64(encoded_image))</pre>
 <h3 id="multi-turn-image-generation">多轮图像生成</h3>
 <p>使用 Responses API，你可以构建涉及图像生成的多轮对话。具体方式有两种：在上下文中提供图像生成调用的输出（也可以只使用图像 ID），或使用 <a href="https://developers.openai.com/api/docs/guides/conversation-state?api-mode=responses#openai-apis-for-conversation-state"><code>previous_response_id</code> 参数</a>。这样你可以在多轮中反复迭代图像，改进提示词、应用新指令，并随着对话推进不断演进视觉输出。</p>
 <p>使用 Responses API 的图像生成工具时，支持的工具模型可以自行选择是生成新图片，还是编辑对话中已有的图片。可选的 <code>action</code> 参数控制这一行为：保持 <code>action: "auto"</code> 让模型决定；设置 <code>action: "generate"</code> 强制每次生成新图片；设置 <code>action: "edit"</code> 则在上下文中有图片时强制编辑。</p>
-<code-tabs title="Force image creation with action">
+<code-tabs title="通过 action 强制生成图像">
 <pre data-lang="python">from openai import OpenAI
 import base64
 
@@ -448,7 +471,7 @@ File.binwrite(output_path, Base64.decode64(encoded_image))
 puts(output_path)</pre>
 </code-tabs>
 <p>如果在上下文中没有提供图片却强制使用 <code>edit</code>，调用会返回错误。保持 <code>action</code> 为 <code>auto</code>，让模型决定何时生成或编辑。</p>
-<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="multi-turn" data-content-switcher-initial="responseid" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="responseid" id="content-switcher-multi-turn"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="responseid">Using previous response ID</option><option value="imageid">Using image ID</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="responseid"><div class="hidden">Using previous response ID</div><code-tabs title="Multi-turn image generation">
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="multi-turn" data-content-switcher-initial="responseid" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="responseid" id="content-switcher-multi-turn"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="选择多轮生成方式" data-guide-switch=""><option selected="" value="responseid">使用上一轮响应 ID</option><option value="imageid">使用图像 ID</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="responseid"><div class="hidden">使用上一轮响应 ID</div><code-tabs title="多轮图像生成">
 <pre data-lang="python">from openai import OpenAI
 import base64
 
@@ -670,7 +693,7 @@ end
 
 encoded_image = follow_up_image.result or raise "No follow-up image returned"
 File.binwrite("cat_and_otter_realistic.png", Base64.strict_decode64(encoded_image))</pre>
-</code-tabs></div><div data-content-switcher-pane="true" data-value="imageid" hidden=""><div class="hidden">Using image ID</div><code-tabs title="Multi-turn image generation">
+</code-tabs></div><div data-content-switcher-pane="true" data-value="imageid" hidden=""><div class="hidden">使用图像 ID</div><code-tabs title="多轮图像生成">
 <pre data-lang="python">import openai
 import base64
 
@@ -938,8 +961,7 @@ encoded_image = follow_up_image.result or raise "No follow-up image returned"
 File.binwrite("cat_and_otter_realistic.png", Base64.strict_decode64(encoded_image))</pre>
 </code-tabs></div> </div> </div>
 <h4 id="result">结果</h4>
-<div class="not-prose"><table style="width:100%"><tbody><tr><td style="vertical-align:top;padding:0 16px 16px 0"><p>“Generate an image of gray tabby cat hugging an otter with an orange
-scarf”</p></td><td style="text-align:right;vertical-align:top;padding-bottom:16px"><img alt="A cat and an otter" data-guide-original="https://developers.openai.com/images/image-25-article/cat_and_otter.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/cat_and_otter.png" style="width:200px;border-radius:8px"/></td></tr><tr><td style="vertical-align:top;padding:0 16px 0 0"><p>“Now make it look realistic”</p></td><td style="text-align:right;vertical-align:top"><img alt="A cat and an otter" data-guide-original="https://developers.openai.com/images/image-25-article/cat_and_otter_realistic.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/cat_and_otter_realistic.png" style="width:200px;border-radius:8px"/></td></tr></tbody></table></div>
+<div class="not-prose"><table style="width:100%"><tbody><tr><td style="vertical-align:top;padding:0 16px 16px 0"><p>“生成一张灰色虎斑猫抱着一只戴橙色围巾的水獭的图像”</p></td><td style="text-align:right;vertical-align:top;padding-bottom:16px"><img alt="一只猫和一只水獭" data-guide-original="https://developers.openai.com/images/image-25-article/cat_and_otter.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/cat_and_otter.png" style="width:200px;border-radius:8px"/></td></tr><tr><td style="vertical-align:top;padding:0 16px 0 0"><p>“现在让它看起来更逼真”</p></td><td style="text-align:right;vertical-align:top"><img alt="写实风格的猫和水獭" data-guide-original="https://developers.openai.com/images/image-25-article/cat_and_otter_realistic.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/cat_and_otter_realistic.png" style="width:200px;border-radius:8px"/></td></tr></tbody></table></div>
 <h3 id="streaming">流式输出</h3>
 <p>Responses API 和 Image API 都支持流式图像生成。你可以在 API 生成过程中流式接收部分图片，交互体验更好。</p>
 <p>你可以调整 <code>partial_images</code> 参数，接收 0 到 3 张部分图片。</p>
@@ -947,7 +969,7 @@ scarf”</p></td><td style="text-align:right;vertical-align:top;padding-bottom:1
 <li>如果将 <code>partial_images</code> 设为 0，你只会收到最终图片。</li>
 <li>对于大于 0 的值，如果完整图片生成得更快，你可能不会收到请求数量的全部部分图片。</li>
 </ul>
-<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="streaming-api" data-content-switcher-initial="responses" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="responses" id="content-switcher-streaming-api"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="responses">Responses API</option><option value="image">Image API</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="responses"><div class="hidden">Responses API</div><code-tabs title="流式输出图片">
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="streaming-api" data-content-switcher-initial="responses" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="responses" id="content-switcher-streaming-api"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="选择流式生成接口" data-guide-switch=""><option selected="" value="responses">Responses API</option><option value="image">Image API</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="responses"><div class="hidden">Responses API</div><code-tabs title="流式输出图片">
 <pre data-lang="python">from openai import OpenAI
 import base64
 
@@ -1221,29 +1243,28 @@ stream.each do |event|
   File.binwrite("river#{event.partial_image_index}.png", image)
 end</pre>
 </code-tabs></div> </div> </div>
-<h4 id="result-1">Result</h4>
+<h4 id="result-1">结果</h4>
 <div class="images-examples"><div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
 <thead>
 <tr>
-<th>Partial 1</th>
-<th>Partial 2</th>
-<th>Final image</th>
+<th>第 1 张预览图</th>
+<th>第 2 张预览图</th>
+<th>最终图像</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><img alt="1st partial" class="images-example-image" data-guide-original="https://developers.openai.com/images/image-25-article/river-partial-0.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/river-partial-0.png"/></td>
-<td><img alt="2nd partial" class="images-example-image" data-guide-original="https://developers.openai.com/images/image-25-article/river-partial-1.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/river-partial-1.png"/></td>
-<td><img alt="Final image" class="images-example-image" data-guide-original="https://developers.openai.com/images/image-25-article/river-final.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/river-final.png"/></td>
+<td><img alt="第 1 张预览图" class="images-example-image" data-guide-original="https://developers.openai.com/images/image-25-article/river-partial-0.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/river-partial-0.png"/></td>
+<td><img alt="第 2 张预览图" class="images-example-image" data-guide-original="https://developers.openai.com/images/image-25-article/river-partial-1.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/river-partial-1.png"/></td>
+<td><img alt="最终图像" class="images-example-image" data-guide-original="https://developers.openai.com/images/image-25-article/river-final.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/river-final.png"/></td>
 </tr>
 </tbody>
 </table></div></div>
-<div class="images-edit-prompt body-small"><p>Prompt: Draw a gorgeous image of a river made of white owl feathers, snaking
-its way through a serene winter landscape</p></div>
-<h3 id="revised-prompt">Revised prompt</h3>
-<p>When using the image generation tool in the Responses API, the mainline model (for example, <code>gpt-5.5</code>) will automatically revise your prompt for improved performance.</p>
-<p>You can access the revised prompt in the <code>revised_prompt</code> field of the image generation call:</p>
-<code-tabs title="Revised prompt response">
+<div class="images-edit-prompt body-small"><p>提示词：画一条由白色猫头鹰羽毛构成的绚丽河流，蜿蜒穿过静谧的冬日风景。</p></div>
+<h3 id="revised-prompt">改写后的提示词</h3>
+<p>使用 Responses API 的图像生成工具时，主模型（例如 <code>gpt-5.5</code>）会自动改写你的提示词，以改善生成效果。</p>
+<p>你可以在图像生成调用的 <code>revised_prompt</code> 字段中查看改写后的提示词：</p>
+<code-tabs title="包含改写后提示词的响应">
 <pre data-lang="json">{
   "id": "ig_123",
   "type": "image_generation_call",
@@ -1252,25 +1273,25 @@ its way through a serene winter landscape</p></div>
   "result": "..."
 }</pre>
 </code-tabs>
-<h2 id="edit-images">Edit Images</h2>
-<p>The <a href="https://developers.openai.com/api/docs/api-reference/images/createEdit">image edits</a> endpoint lets you:</p>
+<h2 id="edit-images">编辑图像</h2>
+<p><a href="https://developers.openai.com/api/docs/api-reference/images/createEdit">图像编辑</a>端点支持以下操作：</p>
 <ul>
-<li>Edit existing images</li>
-<li>Generate new images using other images as a reference</li>
-<li>Edit parts of an image by uploading an image and mask that identifies the areas to replace</li>
+<li>编辑已有图像</li>
+<li>使用其他图像作为参考，生成新图像</li>
+<li>上传图像和蒙版，编辑图像中的部分区域，蒙版标识出要替换的区域</li>
 </ul>
-<h3 id="create-a-new-image-using-image-references">Create a new image using image references</h3>
-<p>You can use one or more images as a reference to generate a new image.</p>
-<p>In this example, we’ll use 4 input images to generate a new image of a gift basket containing the items in the reference images.</p>
-<div class="flex w-full gap-2"><div class="grid w-1/2 grid-cols-2 gap-2"><a href="/api/assets/model-guides/img/7a2cf6f2232c0b3e7feb.png" rel="noopener noreferrer" target="_blank"><img alt="Body Lotion" class="rounded-lg" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/7a2cf6f2232c0b3e7feb.png"/></a><a href="/api/assets/model-guides/img/1d297019b724b6cf5723.png" rel="noopener noreferrer" target="_blank"><img alt="Soap" class="rounded-lg" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/1d297019b724b6cf5723.png"/></a><a href="/api/assets/model-guides/img/f7a86bc0ddd4730c4781.png" rel="noopener noreferrer" target="_blank"><img alt="Incense Kit" class="rounded-lg" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/f7a86bc0ddd4730c4781.png"/></a><a href="/api/assets/model-guides/img/b553f0dc85050f0bf0b3.png" rel="noopener noreferrer" target="_blank"><img alt="Bath Bomb" class="rounded-lg" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/b553f0dc85050f0bf0b3.png"/></a></div><div class="w-1/2"><img alt="Bath Gift Set" class="rounded-lg" data-guide-original="https://developers.openai.com/images/image-25-article/bath-set-result.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/bath-set-result.png"/></div></div><!--astro:end-->
-<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="reference-images-api" data-content-switcher-initial="responses" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="responses" id="content-switcher-reference-images-api"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="responses">Responses API</option><option value="image">Image API</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="responses"><div class="hidden">Responses API</div><p>With the Responses API, you can provide input images in 3 different ways:</p>
+<h3 id="create-a-new-image-using-image-references">使用图像参考创建新图像</h3>
+<p>你可以使用一张或多张图像作为参考，生成一张新图像。</p>
+<p>在下面的示例中，我们使用 4 张参考图，生成一张装有这些物品的礼品篮图像。</p>
+<div class="flex w-full gap-2"><div class="grid w-1/2 grid-cols-2 gap-2"><a href="/api/assets/model-guides/img/7a2cf6f2232c0b3e7feb.png" rel="noopener noreferrer" target="_blank"><img alt="身体乳" class="rounded-lg" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/7a2cf6f2232c0b3e7feb.png"/></a><a href="/api/assets/model-guides/img/1d297019b724b6cf5723.png" rel="noopener noreferrer" target="_blank"><img alt="香皂" class="rounded-lg" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/1d297019b724b6cf5723.png"/></a><a href="/api/assets/model-guides/img/f7a86bc0ddd4730c4781.png" rel="noopener noreferrer" target="_blank"><img alt="熏香套装" class="rounded-lg" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/f7a86bc0ddd4730c4781.png"/></a><a href="/api/assets/model-guides/img/b553f0dc85050f0bf0b3.png" rel="noopener noreferrer" target="_blank"><img alt="泡澡球" class="rounded-lg" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/b553f0dc85050f0bf0b3.png"/></a></div><div class="w-1/2"><img alt="沐浴礼品套装" class="rounded-lg" data-guide-original="https://developers.openai.com/images/image-25-article/bath-set-result.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/bath-set-result.png"/></div></div><!--astro:end-->
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="reference-images-api" data-content-switcher-initial="responses" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="responses" id="content-switcher-reference-images-api"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="选择参考图编辑接口" data-guide-switch=""><option selected="" value="responses">Responses API</option><option value="image">Image API</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="responses"><div class="hidden">Responses API</div><p>使用 Responses API 时，你可以以 3 种不同方式提供输入图像：</p>
 <ul>
-<li>By providing a fully qualified URL</li>
-<li>By providing an image as a Base64-encoded data URL</li>
-<li>By providing a file ID (created with the <a href="https://developers.openai.com/api/docs/api-reference/files">Files API</a>)</li>
+<li>提供图像的完整 URL</li>
+<li>提供 Base64 编码的 Data URL</li>
+<li>提供通过 <a href="https://developers.openai.com/api/docs/api-reference/files">Files API</a> 创建的文件 ID</li>
 </ul>
-<h4 id="create-a-file">Create a File</h4>
-<code-tabs title="Create a File">
+<h4 id="create-a-file">创建文件</h4>
+<code-tabs title="上传文件">
 <pre data-lang="python">from openai import OpenAI
 
 client = OpenAI()
@@ -1349,8 +1370,8 @@ file = client.files.create(
 )
 puts(file.id)</pre>
 </code-tabs>
-<h4 id="create-a-base64-encoded-image">Create a base64 encoded image</h4>
-<code-tabs title="Create a base64 encoded image">
+<h4 id="create-a-base64-encoded-image">创建 Base64 编码的图像</h4>
+<code-tabs title="将图像编码为 Base64">
 <pre data-lang="python">import base64
 
 
@@ -1398,7 +1419,7 @@ static string EncodeImage(string filePath) => Convert.ToBase64String(File.ReadAl
 image = File.binread("image.png")
 puts(Base64.strict_encode64(image))</pre>
 </code-tabs>
-<code-tabs title="Edit an image">
+<code-tabs title="编辑图像">
 <pre data-lang="python">from openai import OpenAI
 import base64
 
@@ -1668,7 +1689,7 @@ unless image_call.is_a?(OpenAI::Models::Responses::ResponseOutputItem::ImageGene
 end
 
 File.binwrite("gift-basket.png", Base64.strict_decode64(image_call.result))</pre>
-</code-tabs></div><div data-content-switcher-pane="true" data-value="image" hidden=""><div class="hidden">Image API</div><code-tabs title="Edit an image">
+</code-tabs></div><div data-content-switcher-pane="true" data-value="image" hidden=""><div class="hidden">Image API</div><code-tabs title="编辑图像">
 <pre data-lang="python">import base64
 from openai import OpenAI
 
@@ -1883,13 +1904,12 @@ File.binwrite("gift-basket.png", Base64.strict_decode64(generated_image.b64_json
   --raw-output \
   --transform 'data.0.b64_json' | base64 --decode > gift-basket.png</pre>
 </code-tabs></div> </div> </div>
-<h3 id="edit-an-image-using-a-mask">Edit an image using a mask</h3>
-<p>You can provide a mask to indicate which part of the image should be edited.</p>
-<p>When using a mask with GPT Image, additional instructions are sent to the model to help guide the editing process accordingly.</p>
-<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>Masking with GPT Image is entirely prompt-based. The model uses the mask as
-guidance, but may not follow its exact shape with complete precision.</p></div></div></div></div></div>
-<p>If you provide multiple input images, the mask will be applied to the first image.</p>
-<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="mask-edit-api" data-content-switcher-initial="responses" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="responses" id="content-switcher-mask-edit-api"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="responses">Responses API</option><option value="image">Image API</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="responses"><div class="hidden">Responses API</div><code-tabs title="Edit an image with a mask">
+<h3 id="edit-an-image-using-a-mask">使用蒙版编辑图像</h3>
+<p>你可以提供蒙版，指出图像中哪一部分应该被编辑。</p>
+<p>使用 GPT Image 蒙版时，会额外向模型发送指令，帮助它按相应方式引导编辑过程。</p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>GPT Image 的蒙版编辑完全由提示词驱动。模型会参考蒙版，但生成结果可能不会完全贴合蒙版的形状。</p></div></div></div></div></div>
+<p>如果你提供了多张输入图像，蒙版只会应用到第一张图像上。</p>
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="mask-edit-api" data-content-switcher-initial="responses" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="responses" id="content-switcher-mask-edit-api"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="选择蒙版编辑接口" data-guide-switch=""><option selected="" value="responses">Responses API</option><option value="image">Image API</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="responses"><div class="hidden">Responses API</div><code-tabs title="使用蒙版编辑图像">
 <pre data-lang="python">from openai import OpenAI
 import base64
 
@@ -2106,7 +2126,7 @@ unless image_call.is_a?(OpenAI::Models::Responses::ResponseOutputItem::ImageGene
 end
 
 File.binwrite("lounge.png", Base64.strict_decode64(image_call.result))</pre>
-</code-tabs></div><div data-content-switcher-pane="true" data-value="image" hidden=""><div class="hidden">Image API</div><code-tabs title="Edit an image with a mask">
+</code-tabs></div><div data-content-switcher-pane="true" data-value="image" hidden=""><div class="hidden">Image API</div><code-tabs title="使用蒙版编辑图像">
 <pre data-lang="python">from openai import OpenAI
 import base64
 
@@ -2258,25 +2278,25 @@ File.binwrite("lounge.png", Base64.strict_decode64(generated_image.b64_json))</p
 <div class="images-examples"><div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
 <thead>
 <tr>
-<th>Image</th>
-<th>Mask</th>
-<th>Output</th>
+<th>原图</th>
+<th>蒙版</th>
+<th>输出图像</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><img alt="A pink room with a pool" class="images-example-image" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/f964ffd18d535bef0131.png"/></td>
-<td><img alt="A mask in part of the pool" class="images-example-image" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/159cd37bdee558a13fcb.png"/></td>
-<td><img alt="The original pool with an inflatable flamingo replacing the mask" class="images-example-image" data-guide-original="https://developers.openai.com/images/image-25-article/sunlit_lounge_result.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/sunlit_lounge_result.png"/></td>
+<td><img alt="带泳池的粉色房间" class="images-example-image" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/f964ffd18d535bef0131.png"/></td>
+<td><img alt="覆盖泳池一部分的蒙版" class="images-example-image" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/159cd37bdee558a13fcb.png"/></td>
+<td><img alt="原泳池的蒙版区域换成了充气火烈鸟" class="images-example-image" data-guide-original="https://developers.openai.com/images/image-25-article/sunlit_lounge_result.png" loading="lazy" referrerpolicy="no-referrer" src="https://developers.openai.com/images/image-25-article/sunlit_lounge_result.png"/></td>
 </tr>
 </tbody>
 </table></div></div>
-<div class="images-edit-prompt body-small"><p>Prompt: a sunlit indoor lounge area with a pool containing a flamingo</p></div>
-<h4 id="mask-requirements">Mask requirements</h4>
-<p>The image to edit and mask must be of the same format and size (less than 50MB in size).</p>
-<p>The mask image must also contain an alpha channel. If you’re using an image editing tool to create the mask, make sure to save the mask with an alpha channel.</p>
-<p>You can modify a black and white image programmatically to add an alpha channel.</p>
-<code-tabs title="Add an alpha channel to a black and white mask">
+<div class="images-edit-prompt body-small"><p>提示词：阳光充足的室内休息区，泳池里有一只火烈鸟。</p></div>
+<h4 id="mask-requirements">蒙版要求</h4>
+<p>要编辑的图像与蒙版必须格式和尺寸相同，且小于 50MB。</p>
+<p>蒙版图像必须包含 alpha 通道。如果你使用图像编辑工具制作蒙版，请确保保存时带上 alpha 通道。</p>
+<p>你可以通过程序修改黑白图像，为它添加 alpha 通道。</p>
+<code-tabs title="为黑白蒙版添加 Alpha 通道">
 <pre data-lang="python">from PIL import Image
 from io import BytesIO
 
@@ -2339,64 +2359,62 @@ func main() {
 	}
 }</pre>
 </code-tabs>
-<h2 id="customize-image-output">Customize Image Output</h2>
-<p>You can configure the following output options:</p>
+<h2 id="customize-image-output">自定义图像输出</h2>
+<p>你可以配置以下输出选项：</p>
 <ul>
-<li><strong>Size</strong>: Image dimensions (for example, <code>1024x1024</code>, <code>1024x1536</code>)</li>
-<li><strong>Quality</strong>: Rendering quality (for example, <code>low</code>, <code>medium</code>, <code>high</code>)</li>
-<li><strong>Format</strong>: File output format</li>
-<li><strong>Compression</strong>: Compression level (0-100%) for JPEG and WebP formats</li>
-<li><strong>Background</strong>: Transparent, opaque, or automatic</li>
+<li><strong>尺寸</strong>：图像的宽和高（例如 <code>1024x1024</code>、<code>1024x1536</code>）</li>
+<li><strong>质量</strong>：渲染质量（例如 <code>low</code>、<code>medium</code>、<code>high</code>）</li>
+<li><strong>格式</strong>：输出文件的格式</li>
+<li><strong>压缩</strong>：JPEG 和 WebP 格式的压缩程度（0–100%）</li>
+<li><strong>背景</strong>：透明、不透明或自动选择</li>
 </ul>
-<p><code>size</code>, <code>quality</code>, and <code>background</code> support the <code>auto</code> option, where the model will automatically select the best option based on the prompt.</p>
-<h3 id="size-and-quality-options">Size and quality options</h3>
-<p><code>gpt-image-2.5-sunburst</code> and <code>gpt-image-2.5-flare</code> add <code>xhigh</code> and <code>max</code> quality settings. Both default to <code>auto</code>. Earlier GPT Image models support quality settings up to <code>high</code>.</p>
+<p><code>size</code>、<code>quality</code> 和 <code>background</code> 均支持 <code>auto</code>，由模型根据提示词自动选择合适的设置。</p>
+<h3 id="size-and-quality-options">尺寸与质量选项</h3>
+<p><code>gpt-image-2.5-sunburst</code> 和 <code>gpt-image-2.5-flare</code> 新增了 <code>xhigh</code> 和 <code>max</code> 质量档位，默认都使用 <code>auto</code>。早期 GPT Image 模型最高支持 <code>high</code>。</p>
 <div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
 <thead>
 <tr>
-<th>Setting</th>
-<th>Options</th>
+<th>设置</th>
+<th>选项</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Recommended sizes</td>
-<td><code>1024x1024</code> (square), <code>1536x1024</code> (landscape), <code>1024x1536</code> (portrait)</td>
+<td>推荐尺寸</td>
+<td><code>1024x1024</code>（正方形）、<code>1536x1024</code>（横向）、<code>1024x1536</code>（纵向）</td>
 </tr>
 <tr>
-<td>Quality</td>
+<td>质量</td>
 <td><code>low</code>, <code>medium</code>, <code>high</code>, <code>xhigh</code>, <code>max</code>, <code>auto</code></td>
 </tr>
 </tbody>
 </table></div>
-<p>Both models also support custom dimensions as <code>WIDTHxHEIGHT</code> strings, such as <code>1536x864</code>. Width and height must be multiples of 16, the aspect ratio must be between 1:3 and 3:1, and neither edge may exceed 3840 pixels. The total pixel count must be between 655,360 and 8,294,400 (4K). Resolutions above <code>2560x1440</code> are experimental.</p>
-<p>For transparent backgrounds with either model, set <code>background: "transparent"</code> and use <code>output_format: "png"</code> or <code>"webp"</code>.</p>
-<p>Use <code>quality: "low"</code> for quick drafts. For final assets, compare higher quality settings to find the right balance of detail, latency, and cost.</p>
-<h3 id="output-format">Output format</h3>
-<p>The Image API returns base64-encoded image data.
-The default format is <code>png</code>, but you can also request <code>jpeg</code> or <code>webp</code>.</p>
-<p>If using <code>jpeg</code> or <code>webp</code>, you can also specify the <code>output_compression</code> parameter to control the compression level (0-100%). For example, <code>output_compression=50</code> will compress the image by 50%.</p>
-<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>Using <code>jpeg</code> is faster than <code>png</code>, so you should prioritize this format if
-latency is a concern.</p></div></div></div></div></div>
-<h2 id="limitations">Limitations</h2>
-<p>GPT Image models are powerful and versatile image generation models, but they still have some limitations to be aware of:</p>
+<p>两个模型都支持以 <code>WIDTHxHEIGHT</code> 字符串指定自定义尺寸，例如 <code>1536x864</code>。宽和高都必须是 16 的倍数，宽高比须介于 1:3 与 3:1 之间，任一边均不得超过 3840 像素。总像素数须介于 655,360 与 8,294,400（4K）之间。高于 <code>2560x1440</code> 的分辨率仍属于实验功能。</p>
+<p>若需透明背景，请设置 <code>background: "transparent"</code>，并将 <code>output_format</code> 设为 <code>"png"</code> 或 <code>"webp"</code>。</p>
+<p>快速出草稿时可用 <code>quality: "low"</code>。制作最终素材时，可以比较更高的质量档位，在图像细节、延迟和费用之间取舍。</p>
+<h3 id="output-format">输出格式</h3>
+<p>Images API 返回 Base64 编码的图像数据。默认格式为 <code>png</code>，也可指定 <code>jpeg</code> 或 <code>webp</code>。</p>
+<p>使用 <code>jpeg</code> 或 <code>webp</code> 时，还可以用 <code>output_compression</code> 参数设置压缩程度（0–100%）。例如，<code>output_compression=50</code> 表示以 50% 的压缩程度处理图像。</p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>使用 <code>jpeg</code> 比使用 <code>png</code> 更快。对延迟有要求时，可以优先选择 <code>jpeg</code>。</p></div></div></div></div></div>
+<h2 id="limitations">局限性</h2>
+<p>GPT Image 模型功能强大、用途广泛，但仍有一些需要注意的限制：</p>
 <ul>
-<li><strong>Latency:</strong> Complex prompts may take up to 2 minutes to process.</li>
-<li><strong>Text Rendering:</strong> Although significantly improved, the model can still struggle with precise text placement and clarity.</li>
-<li><strong>Consistency:</strong> While capable of producing consistent imagery, the model may occasionally struggle to maintain visual consistency for recurring characters or brand elements across multiple generations.</li>
-<li><strong>Composition Control:</strong> Despite improved instruction following, the model may have difficulty placing elements precisely in structured or layout-sensitive compositions.</li>
+<li><strong>延迟：</strong>复杂提示词可能需要最多 2 分钟才能处理完毕。</li>
+<li><strong>文字渲染：</strong>虽然能力已有明显改善，但模型有时仍难以准确放置文字或保持清晰。</li>
+<li><strong>一致性：</strong>模型可以生成风格一致的图像，但在多次生成中，重复出现的角色或品牌元素偶尔会有视觉差异。</li>
+<li><strong>构图控制：</strong>虽然模型更能遵循指令，但在结构复杂或对布局要求较高的图像中，仍可能无法精准摆放元素。</li>
 </ul>
-<h3 id="content-moderation">Content Moderation</h3>
-<p>All prompts and generated images are filtered in accordance with our <a href="https://openai.com/policies/usage-policies/">content policy</a>.</p>
-<p>For image generation using GPT Image models, you can control moderation strictness with the <code>moderation</code> parameter. This parameter supports two values:</p>
+<h3 id="content-moderation">内容审核</h3>
+<p>所有提示词和生成图像均会依照<a href="https://openai.com/policies/usage-policies/">内容政策</a>进行审核。</p>
+<p>使用 GPT Image 模型生成图像时，可通过 <code>moderation</code> 参数控制审核的严格程度。该参数支持两个值：</p>
 <ul>
-<li><code>auto</code> (default): Standard filtering that seeks to limit creating certain categories of potentially age-inappropriate content.</li>
-<li><code>low</code>: Less restrictive filtering.</li>
+<li><code>auto</code>（默认）：采用标准过滤，限制生成某些可能不适合低龄用户的内容。</li>
+<li><code>low</code>：采用较宽松的过滤。</li>
 </ul>
-<h3 id="handling-blocked-requests-and-other-errors">Handling blocked requests and other errors</h3>
-<p>Handle image generation failures the same way you handle other API errors: check the HTTP status or SDK exception type, log the request ID, and refer to the <a href="https://developers.openai.com/api/docs/guides/error-codes">error codes guide</a> for authentication, quota, rate-limit, and server failures. Retry transient rate-limit and server failures with backoff. Don’t automatically retry quota errors or image generation user errors that require changing the request.</p>
-<p>Some image generation failures are user-correctable and may return <code>error.type = "image_generation_user_error"</code>. Don’t automatically retry these errors without modifying the prompt or input images. For programmatic handling, use <code>error.code</code> as the stable discriminator.</p>
-<p>When <code>error.code = "moderation_blocked"</code>, the error may also include an optional <code>error.moderation_details</code> object:</p>
+<h3 id="handling-blocked-requests-and-other-errors">处理被拦截的请求和其他错误</h3>
+<p>图像生成失败时，按处理其他 API 错误的方式操作：检查 HTTP 状态码或 SDK 异常类型，记录请求 ID，并参阅<a href="https://developers.openai.com/api/docs/guides/error-codes">错误码指南</a>排查认证、配额、限流和服务器错误。对于暂时的限流或服务器错误，可以延长间隔后重试。配额错误或需要修改请求的图像生成错误不应自动重试。</p>
+<p>有些图像生成失败可由用户修正，可能返回 <code>error.type = "image_generation_user_error"</code>。如果没有修改提示词或输入图像，不要自动重试。在程序中应使用稳定的 <code>error.code</code> 识别错误类型。</p>
+<p>当 <code>error.code = "moderation_blocked"</code> 时，错误响应也可能包含可选的 <code>error.moderation_details</code> 对象：</p>
 <pre class="astro-code astro-code-themes github-light github-dark" data-language="json" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><span aria-hidden="true" class="platform-code-line-numbers" style="width:2ch"><span class="platform-code-line-number">1</span><span class="platform-code-line-number">2</span><span class="platform-code-line-number">3</span><span class="platform-code-line-number">4</span><span class="platform-code-line-number">5</span><span class="platform-code-line-number">6</span><span class="platform-code-line-number">7</span><span class="platform-code-line-number">8</span><span class="platform-code-line-number">9</span><span class="platform-code-line-number">10</span></span><code><span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">{</span></span>
 <span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  "error"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: {</span></span>
 <span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "type"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"image_generation_user_error"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
@@ -2407,16 +2425,16 @@ latency is a concern.</p></div></div></div></div></div>
 <span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    }</span></span>
 <span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  }</span></span>
 <span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">}</span></span></code></pre>
-<p>The <code>moderation_details</code> object provides coarse debugging context without exposing internal classifier labels or scores.</p>
-<p><code>moderation_stage</code> can be:</p>
+<p><code>moderation_details</code> 对象提供概括性的调试信息，不会暴露分类器的内部标签或分数。</p>
+<p><code>moderation_stage</code> 可以是：</p>
 <ul>
-<li><code>input</code>: The block came from the prompt or request inputs.</li>
-<li><code>output</code>: The block came from a generated image or downstream output moderation stage.</li>
-<li><code>unknown</code>: A rare fallback when provenance is hard to determine.</li>
+<li><code>input</code>：提示词或其他请求输入触发了拦截。</li>
+<li><code>output</code>：生成图像或后续的输出审核环节触发了拦截。</li>
+<li><code>unknown</code>：少数难以判定来源时使用的备用值。</li>
 </ul>
-<p><code>categories</code> contains coarse public labels. For example, you might see values like <code>harassment</code>, <code>self-harm</code>, <code>sexual</code>, or <code>violence</code>.</p>
-<p>For most apps, keep the primary end-user message generic. Use <code>moderation_details</code> for developer logs, support workflows, analytics, and light remediation hints.</p>
-<code-tabs title="Handle moderation-blocked image generation errors">
+<p><code>categories</code> 包含概括性的公开标签，例如 <code>harassment</code>、<code>self-harm</code>、<code>sexual</code> 或 <code>violence</code>。</p>
+<p>对大多数应用而言，面向用户的主要错误提示宜保持通用。<code>moderation_details</code> 可用于开发日志、客服流程、数据分析和简要的修正提示。</p>
+<code-tabs title="处理图像生成审核拦截错误">
 <pre data-lang="javascript">import OpenAI from "openai";
 
 const openai = new OpenAI();
@@ -2614,77 +2632,60 @@ rescue OpenAI::Errors::BadRequestError => error
   warn("Image generation blocked (#{error.code}): #{hint}")
 end</pre>
 </code-tabs>
-<h3 id="supported-models">Supported models</h3>
-<p>When using image generation in the Responses API, <code>gpt-5</code> and newer models should support the image generation tool. <a href="/api/docs/models/">Check the model detail page for your model</a> to confirm if your desired model can use the image generation tool.</p>
-<h2 id="cost-and-latency">Cost and latency</h2>
-<h3 id="gpt-image-25-costs">GPT Image 2.5 costs</h3>
-<p>Responses API requests include the mainline model’s token usage in addition to image generation costs.</p>
-<p>Both GPT Image 2.5 models use the same token rates: $8 per million image input tokens, $2 per million cached image input tokens, $30 per million image output tokens, $5 per million text input tokens, and $1.25 per million cached text input tokens. See <a href="/api/docs/pricing/#image-generation">pricing</a>.</p>
-<p>Use the response’s <code>usage</code> to measure token consumption for your prompts, sizes, and quality settings. Equal token rates don’t mean equal cost per image: token consumption can differ by model and quality setting. For older-model pricing examples, see <a href="#earlier-gpt-image-models">Earlier GPT Image models</a>.</p>
-<h3 id="cached-input-pricing">Cached input pricing</h3>
-<p>For GPT Image 2 and GPT Image 2.5, cached input pricing applies only to the image generation tool in the Responses API. It doesn’t apply to direct Images API requests, including <code>/v1/images/edits</code>.</p>
-<p>Cached image generation inputs are reflected in billing, but their cached token counts aren’t included in the Responses API output. The response’s <code>usage</code> can’t verify these cache hits.</p>
+<h3 id="supported-models">支持的模型</h3>
+<p>在 Responses API 中，<code>gpt-5</code> 和更新的模型一般支持图像生成工具。请查看<a href="/api/docs/models/">对应模型的详情页</a>，确认所选模型是否支持。</p>
+<h2 id="cost-and-latency">费用与延迟</h2>
+<h3 id="gpt-image-25-costs">GPT Image 2.5 费用</h3>
+<p>Responses API 请求除了计入图像生成费用，还包含主力模型的 token 用量。</p>
+<p>两个 GPT Image 2.5 模型的 token 费率相同。按每百万 token 计：图像输入 8 美元、缓存的图像输入 2 美元、图像输出 30 美元、文本输入 5 美元、缓存的文本输入 1.25 美元。详见<a href="/api/docs/pricing/#image-generation">图像生成定价</a>。</p>
+<p>可通过响应中的 <code>usage</code> 查看不同提示词、尺寸和质量设置的 token 用量。token 单价相同并不意味着单张图像的费用相同：模型和质量档位不同，用量也可能不同。旧模型的定价示例见<a href="#earlier-gpt-image-models">早期 GPT Image 模型</a>。</p>
+<h3 id="cached-input-pricing">缓存输入定价</h3>
+<p>对于 GPT Image 2 和 GPT Image 2.5，缓存输入定价只适用于 Responses API 中的图像生成工具。它不适用于直接调用 Images API 的请求，包括 <code>/v1/images/edits</code>。</p>
+<p>图像生成输入的缓存命中会反映在账单上，但 Responses API 的输出不包含相应的缓存 token 数，无法通过响应中的 <code>usage</code> 验证这些命中。</p>
 <span id="gpt-image-2-output-tokens"></span>
-<h3 id="gpt-image-25-and-gpt-image-2-output-tokens">GPT Image 2.5 and GPT Image 2 output tokens</h3>
-<p>Select a model, quality, and size to estimate output tokens and image output cost.
-For <code>gpt-image-2.5-sunburst</code> and <code>gpt-image-2.5-flare</code>, the quality options are <code>low</code>, <code>medium</code>, <code>high</code>, <code>xhigh</code>, and <code>max</code>.
-For <code>gpt-image-2</code>, the options are <code>low</code>, <code>medium</code>, and <code>high</code>.
-The models can use different token counts for the same quality setting and share the same price per image output token.
-Use explicit quality and size values for this estimate; <code>auto</code> depends on the generated image.</p>
-<div data-guide-widget="GptImageTokenCalculator" data-props='{"outputPricePerMillion":30}' prefix="r77" ssr=""><div class="not-prose my-5 rounded-lg border border-default bg-surface p-4 md:p-5"><div class="grid gap-4 md:grid-cols-[1fr_1fr_1fr]"><div class="block md:col-span-3"><span class="mb-2 block text-sm font-semibold text-emphasis">Model</span><span aria-controls="radix-_r77R_3h_" aria-disabled="false" aria-expanded="false" aria-haspopup="dialog" aria-labelledby="_r77R_fhH1_ _r77R_fh_" class="_SelectControl_x887o_1" data-block="" data-selected="true" data-size="xl" data-state="closed" data-variant="outline" id="select-trigger-_r77R_h_" role="button" tabindex="0" type="button"><span class="_TriggerText_x887o_510"><span class="sr-only w-full h-0 left-0 bottom-0 pointer-events-none" id="_r77R_fhH1_">Model</span><span id="_r77R_fh_">GPT Image 2.5 (Sunburst and Flare)</span></span><div class="_IndicatorWrapper_x887o_520"><svg class="_DropdownIcon_x887o_475 _DropdownIconChevron_x887o_586" fill="currentColor" height="1em" viewBox="0 0 16 9" width="1em"><path clip-rule="evenodd" d="M0.292893 0.292893C0.683418 -0.0976311 1.31658 -0.0976311 1.70711 0.292893L8 6.58579L14.2929 0.292894C14.6834 -0.0976305 15.3166 -0.0976304 15.7071 0.292894C16.0976 0.683418 16.0976 1.31658 15.7071 1.70711L8.70711 8.70711C8.31658 9.09763 7.68342 9.09763 7.29289 8.70711L0.292893 1.70711C-0.0976311 1.31658 -0.0976311 0.683417 0.292893 0.292893Z" fill-rule="evenodd"></path></svg></div></span></div><div class="min-w-0 md:col-span-3"><div class="mb-2 text-sm font-semibold text-emphasis">Quality</div><div aria-label="Quality setting" class="_SegmentedControl_16x8u_1" data-size="sm" dir="ltr" role="group" style="outline:none" tabindex="-1"><div class="_SegmentedControlThumb_16x8u_226"></div><button aria-checked="true" class="_SegmentedControlOption_16x8u_142" data-radix-collection-item="" data-state="on" role="radio" tabindex="-1" type="button"><span class="relative">low</span></button><button aria-checked="false" class="_SegmentedControlOption_16x8u_142" data-radix-collection-item="" data-state="off" role="radio" tabindex="-1" type="button"><span class="relative">medium</span></button><button aria-checked="false" class="_SegmentedControlOption_16x8u_142" data-radix-collection-item="" data-state="off" role="radio" tabindex="-1" type="button"><span class="relative">high</span></button><button aria-checked="false" class="_SegmentedControlOption_16x8u_142" data-radix-collection-item="" data-state="off" role="radio" tabindex="-1" type="button"><span class="relative">xhigh</span></button><button aria-checked="false" class="_SegmentedControlOption_16x8u_142" data-radix-collection-item="" data-state="off" role="radio" tabindex="-1" type="button"><span class="relative">max</span></button></div></div><label class="block"><span class="mb-2 block text-sm font-semibold text-emphasis">Width</span><input class="h-10 w-full rounded-md border border-default bg-surface px-3 text-sm text-emphasis outline-none transition-colors placeholder:text-tertiary focus:border-primary-outline-hover focus:ring-2 focus:ring-primary-soft" inputmode="numeric" min="1" step="1" type="number" value="1024"/></label><label class="block"><span class="mb-2 block text-sm font-semibold text-emphasis">Height</span><input class="h-10 w-full rounded-md border border-default bg-surface px-3 text-sm text-emphasis outline-none transition-colors placeholder:text-tertiary focus:border-primary-outline-hover focus:ring-2 focus:ring-primary-soft" inputmode="numeric" min="1" step="1" type="number" value="1024"/></label><div aria-atomic="true" aria-live="polite" class="rounded-md border border-default bg-surface-secondary px-4 py-3"><div class="text-sm font-semibold text-secondary">Output tokens</div><div class="mt-1 text-2xl font-semibold text-emphasis">196</div></div><div aria-atomic="true" aria-live="polite" class="rounded-md border border-default bg-surface-secondary px-4 py-3 md:col-span-3"><div class="text-sm font-semibold text-secondary">Estimated image output cost</div><div class="mt-1 text-2xl font-semibold text-emphasis">$0.00588</div><p class="mt-2 text-sm text-secondary">Per image at 30 USD per million image output tokens. Excludes text and image input tokens and streaming partial images.</p></div></div></div><!--astro:end--></div>
-<h3 id="partial-images-cost">Partial images cost</h3>
-<p>If you want to <a href="#streaming">stream image generation</a> using the <code>partial_images</code> parameter, each partial image will incur an additional 100 image output tokens.</p>
-<h2 id="earlier-gpt-image-models">Earlier GPT Image models</h2>
-<p>The details below apply to earlier models, not Sunburst or Flare. For new integrations, use one of the GPT Image 2.5 models described above.</p>
-<details><summary>GPT Image 2 settings and input fidelity</summary><p><code>gpt-image-2</code> accepts any resolution in the <code>size</code> parameter when it satisfies the constraints below. Square images are typically fastest to generate.</p><div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full"><tbody><tr><td>Popular sizes</td><td><ul><li><p><code>1024x1024</code> (square)</p></li><li><p><code>1536x1024</code> (landscape)</p></li><li><p><code>1024x1536</code> (portrait)</p></li><li><p><code>2048x2048</code> (2K square)</p></li><li><p><code>2048x1152</code> (2K landscape)</p></li><li><p><code>3840x2160</code> (4K landscape)</p></li><li><p><code>2160x3840</code> (4K portrait)</p></li><li><p><code>auto</code> (default)</p></li></ul></td></tr><tr><td>Size constraints</td><td><ul><li><p>Maximum edge length must be less than or equal to 
-<code>3840px</code></p></li><li><p>Both edges must be multiples of <code>16px</code></p></li><li><p>Long edge to short edge ratio must not exceed <code>3:1</code></p></li><li><p>Total pixels must be at least <code>655,360</code> and no more than 
-<code>8,294,400</code></p></li></ul></td></tr><tr><td>Quality options</td><td><ul><li><code>low</code></li><li><code>medium</code></li><li><code>high</code></li><li><p><code>auto</code> (default)</p></li></ul></td></tr></tbody></table></div><h3 id="image-input-fidelity">Image input fidelity</h3><p>The <code>input_fidelity</code> parameter controls how strongly a model preserves details from input images during edits and reference-image workflows. For <code>gpt-image-2</code>, omit this parameter; the API doesn’t allow changing it because the model processes every image input at high fidelity automatically.</p><div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>Because <code>gpt-image-2</code> always processes image inputs at high fidelity, image
-input tokens can be higher for edit requests that include reference images. To
-understand the cost implications, refer to the <a href="/api/docs/guides/images-vision/?api-mode=responses#calculating-costs">vision
-costs</a>
-section.</p></div></div></div></div></div></details>
-<details><summary>Older-model pricing examples</summary><h3 id="models-prior-to-gpt-image-2">Models prior to gpt-image-2</h3><p>GPT Image models prior to <code>gpt-image-2</code> generate images by first producing specialized image tokens. Both latency and eventual cost are proportional to the number of tokens required to render an image—larger image sizes and higher quality settings result in more tokens.</p><p>The number of tokens generated depends on image dimensions and quality:</p><div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
+<h3 id="gpt-image-25-and-gpt-image-2-output-tokens">GPT Image 2.5 与 GPT Image 2 输出 token</h3>
+<p>选择模型、质量和尺寸，即可估算输出 token 数与图像输出费用。
+<code>gpt-image-2.5-sunburst</code> 和 <code>gpt-image-2.5-flare</code> 的质量选项为 <code>low</code>、<code>medium</code>、<code>high</code>、<code>xhigh</code> 和 <code>max</code>；
+<code>gpt-image-2</code> 的选项为 <code>low</code>、<code>medium</code> 和 <code>high</code>。
+这些模型的图像输出 token 单价相同，但即使选择相同的质量，token 用量也可能不同。估算时请明确指定质量和尺寸；<code>auto</code> 的结果取决于生成的图像。</p>
+<div data-guide-widget="GptImageTokenCalculator" data-props='{"outputPricePerMillion":30}' prefix="r77" ssr=""><div class="not-prose my-5 rounded-lg border border-default bg-surface p-4 md:p-5"><div class="grid gap-4 md:grid-cols-[1fr_1fr_1fr]"><div class="block md:col-span-3"><span class="mb-2 block text-sm font-semibold text-emphasis">模型</span><span aria-controls="radix-_r77R_3h_" aria-disabled="false" aria-expanded="false" aria-haspopup="dialog" aria-labelledby="_r77R_fhH1_ _r77R_fh_" class="_SelectControl_x887o_1" data-block="" data-selected="true" data-size="xl" data-state="closed" data-variant="outline" id="select-trigger-_r77R_h_" role="button" tabindex="0" type="button"><span class="_TriggerText_x887o_510"><span class="sr-only w-full h-0 left-0 bottom-0 pointer-events-none" id="_r77R_fhH1_">模型</span><span id="_r77R_fh_">GPT Image 2.5（Sunburst 和 Flare）</span></span><div class="_IndicatorWrapper_x887o_520"><svg class="_DropdownIcon_x887o_475 _DropdownIconChevron_x887o_586" fill="currentColor" height="1em" viewBox="0 0 16 9" width="1em"><path clip-rule="evenodd" d="M0.292893 0.292893C0.683418 -0.0976311 1.31658 -0.0976311 1.70711 0.292893L8 6.58579L14.2929 0.292894C14.6834 -0.0976305 15.3166 -0.0976304 15.7071 0.292894C16.0976 0.683418 16.0976 1.31658 15.7071 1.70711L8.70711 8.70711C8.31658 9.09763 7.68342 9.09763 7.29289 8.70711L0.292893 1.70711C-0.0976311 1.31658 -0.0976311 0.683417 0.292893 0.292893Z" fill-rule="evenodd"></path></svg></div></span></div><div class="min-w-0 md:col-span-3"><div class="mb-2 text-sm font-semibold text-emphasis">质量</div><div aria-label="质量设置" class="_SegmentedControl_16x8u_1" data-size="sm" dir="ltr" role="group" style="outline:none" tabindex="-1"><div class="_SegmentedControlThumb_16x8u_226"></div><button aria-checked="true" class="_SegmentedControlOption_16x8u_142" data-radix-collection-item="" data-state="on" role="radio" tabindex="-1" type="button"><span class="relative">低</span></button><button aria-checked="false" class="_SegmentedControlOption_16x8u_142" data-radix-collection-item="" data-state="off" role="radio" tabindex="-1" type="button"><span class="relative">中</span></button><button aria-checked="false" class="_SegmentedControlOption_16x8u_142" data-radix-collection-item="" data-state="off" role="radio" tabindex="-1" type="button"><span class="relative">高</span></button><button aria-checked="false" class="_SegmentedControlOption_16x8u_142" data-radix-collection-item="" data-state="off" role="radio" tabindex="-1" type="button"><span class="relative">超高</span></button><button aria-checked="false" class="_SegmentedControlOption_16x8u_142" data-radix-collection-item="" data-state="off" role="radio" tabindex="-1" type="button"><span class="relative">最高</span></button></div></div><label class="block"><span class="mb-2 block text-sm font-semibold text-emphasis">宽度</span><input class="h-10 w-full rounded-md border border-default bg-surface px-3 text-sm text-emphasis outline-none transition-colors placeholder:text-tertiary focus:border-primary-outline-hover focus:ring-2 focus:ring-primary-soft" inputmode="numeric" min="1" step="1" type="number" value="1024"/></label><label class="block"><span class="mb-2 block text-sm font-semibold text-emphasis">高度</span><input class="h-10 w-full rounded-md border border-default bg-surface px-3 text-sm text-emphasis outline-none transition-colors placeholder:text-tertiary focus:border-primary-outline-hover focus:ring-2 focus:ring-primary-soft" inputmode="numeric" min="1" step="1" type="number" value="1024"/></label><div aria-atomic="true" aria-live="polite" class="rounded-md border border-default bg-surface-secondary px-4 py-3"><div class="text-sm font-semibold text-secondary">输出 token</div><div class="mt-1 text-2xl font-semibold text-emphasis">196</div></div><div aria-atomic="true" aria-live="polite" class="rounded-md border border-default bg-surface-secondary px-4 py-3 md:col-span-3"><div class="text-sm font-semibold text-secondary">图像输出估算费用</div><div class="mt-1 text-2xl font-semibold text-emphasis">$0.00588</div><p class="mt-2 text-sm text-secondary">单张图像按每百万图像输出 token 30 美元估算。不含文本和图像输入 token，也不含流式预览图。</p></div></div></div><!--astro:end--></div>
+<h3 id="partial-images-cost">部分图像费用</h3>
+<p>使用 <code>partial_images</code> 参数<a href="#streaming">流式生成图像</a>时，每张预览图会额外消耗 100 个图像输出 token。</p>
+<h2 id="earlier-gpt-image-models">早期 GPT Image 模型</h2>
+<p>以下内容适用于早期模型，不适用于 Sunburst 或 Flare。新接入请使用上面介绍的 GPT Image 2.5 模型。</p>
+<details><summary>GPT Image 2 的设置与输入保真度</summary><p><code>gpt-image-2</code> 的 <code>size</code> 参数接受满足下列条件的任意分辨率。正方形图像通常生成得最快。</p><div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full"><tbody><tr><td>常用尺寸</td><td><ul><li><p><code>1024x1024</code>（正方形）</p></li><li><p><code>1536x1024</code>（横向）</p></li><li><p><code>1024x1536</code>（纵向）</p></li><li><p><code>2048x2048</code>（2K 正方形）</p></li><li><p><code>2048x1152</code>（2K 横向）</p></li><li><p><code>3840x2160</code>（4K 横向）</p></li><li><p><code>2160x3840</code>（4K 纵向）</p></li><li><p><code>auto</code>（默认）</p></li></ul></td></tr><tr><td>尺寸限制</td><td><ul><li><p>最长边不超过 <code>3840px</code></p></li><li><p>两边都必须是 <code>16px</code> 的倍数</p></li><li><p>长边与短边之比不得超过 <code>3:1</code></p></li><li><p>总像素数不得低于 <code>655,360</code> 或高于 <code>8,294,400</code></p></li></ul></td></tr><tr><td>质量选项</td><td><ul><li><code>low</code></li><li><code>medium</code></li><li><code>high</code></li><li><p><code>auto</code>（默认）</p></li></ul></td></tr></tbody></table></div><h3 id="image-input-fidelity">图像输入保真度</h3><p><code>input_fidelity</code> 参数控制编辑或使用参考图时，模型对输入图像细节的保留程度。使用 <code>gpt-image-2</code> 时无需传入该参数：模型会自动以高保真度处理所有输入图像，API 不允许更改此设置。</p><div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><code>gpt-image-2</code> 始终以高保真度处理输入图像，因此包含参考图的编辑请求可能消耗更多图像输入 token。了解对费用的影响，参见<a href="/api/docs/guides/images-vision/?api-mode=responses#calculating-costs">视觉输入费用</a>。</p></div></div></div></div></div></details>
+<details><summary>早期模型价格示例</summary><h3 id="models-prior-to-gpt-image-2">gpt-image-2 之前的模型</h3><p>早于 <code>gpt-image-2</code> 的 GPT Image 模型先生成专用的图像 token，再渲染成图像。延迟和最终成本都与渲染图像所需的 token 数成正比——尺寸越大、质量越高，token 越多。</p><p>生成的 token 数取决于图像尺寸和质量：</p><div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
 <thead>
 <tr>
-<th>Quality</th>
-<th>Square (1024×1024)</th>
-<th>Portrait (1024×1536)</th>
-<th>Landscape (1536×1024)</th>
+<th>质量</th>
+<th>正方形（1024 × 1024）</th>
+<th>纵向（1024 × 1536）</th>
+<th>横向（1536 × 1024）</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Low</td>
-<td>272 tokens</td>
-<td>408 tokens</td>
-<td>400 tokens</td>
+<td>低</td>
+<td>272 个 token</td>
+<td>408 个 token</td>
+<td>400 个 token</td>
 </tr>
 <tr>
-<td>Medium</td>
-<td>1056 tokens</td>
-<td>1584 tokens</td>
-<td>1568 tokens</td>
+<td>中</td>
+<td>1056 个 token</td>
+<td>1584 个 token</td>
+<td>1568 个 token</td>
 </tr>
 <tr>
-<td>High</td>
-<td>4160 tokens</td>
-<td>6240 tokens</td>
-<td>6208 tokens</td>
+<td>高</td>
+<td>4160 个 token</td>
+<td>6240 个 token</td>
+<td>6208 个 token</td>
 </tr>
 </tbody>
-</table></div><p>Note that you will also need to account for <a href="/api/docs/guides/images-vision/?api-mode=responses#calculating-costs">input tokens</a>: text tokens for the prompt and image tokens for the input images if editing images.
-Because <code>gpt-image-2</code> always processes image inputs at high fidelity, edit requests that include reference images can use more input tokens.</p><p>Refer to the <a href="/api/docs/pricing/#image-generation">pricing page</a> for current
-text and image token prices, and use the <a href="#calculating-costs">Calculating costs</a>
-section below to estimate request costs.</p><p>The final cost is the sum of:</p><ul>
-<li>input text tokens</li>
-<li>input image tokens if using the edits endpoint</li>
-<li>image output tokens</li>
-</ul><h3 id="calculating-costs">Calculating costs</h3><p>Use the pricing calculator below to estimate request costs for GPT Image models.
-<code>gpt-image-2</code> supports thousands of valid resolutions; the table below lists the
-same sizes used for previous GPT Image models for comparison. For GPT Image 1.5,
-GPT Image 1, and GPT Image 1 Mini, the legacy per-image output pricing table is
-also listed below. You should still account for text and image input tokens when
-estimating the total cost of a request.</p><p><code>gpt-image-1</code> was shut down on October 23, 2026. Its prices below are retained
-for historical comparisons. See the <a href="https://developers.openai.com/api/docs/deprecations#2026-04-22-legacy-gpt-model-snapshots">deprecation notice</a>
-for replacement models.</p><div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="caution" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M10.42 2.006a4 4 0 0 1 3.159 0c.674.29 1.188.822 1.667 1.456.474.627 1 1.473 1.653 2.523l3.542 5.696c.72 1.16 1.3 2.09 1.682 2.854.384.766.654 1.517.59 2.292a4 4 0 0 1-1.604 2.886c-.625.463-1.405.63-2.258.709-.85.078-1.945.078-3.311.078H8.46c-1.366 0-2.46 0-3.31-.078-.854-.078-1.634-.246-2.26-.71a4 4 0 0 1-1.603-2.885c-.064-.775.206-1.526.59-2.292.383-.764.961-1.694 1.682-2.854l3.542-5.696c.653-1.05 1.18-1.896 1.653-2.523.48-.634.993-1.166 1.667-1.456Zm2.37 1.838a2 2 0 0 0-1.58 0c-.192.083-.448.28-.86.825-.413.544-.891 1.312-1.577 2.415l-3.488 5.61c-.755 1.214-1.283 2.066-1.62 2.737-.34.678-.402 1.02-.385 1.232a2 2 0 0 0 .802 1.443c.171.127.494.255 1.25.324.748.069 1.75.07 3.18.07h6.976c1.43 0 2.432-.001 3.18-.07.756-.069 1.079-.197 1.25-.324a2 2 0 0 0 .802-1.443c.017-.212-.045-.554-.385-1.232-.337-.671-.865-1.523-1.62-2.737l-3.488-5.61c-.686-1.103-1.164-1.87-1.576-2.415-.413-.546-.67-.742-.861-.825"></path><path d="M12 7.5a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1M10.851 15a1.15 1.15 0 1 1 2.3 0 1.15 1.15 0 0 1-2.3 0"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>A larger non-square resolution can sometimes produce fewer output tokens than
-a smaller or square resolution at the same quality setting.</p></div></div></div></div></div><table style="border-collapse:collapse;table-layout:fixed;width:100%"><thead><tr><th style="text-align:left;padding:8px;width:28%">Model</th><th style="text-align:left;padding:8px;width:14%"><p>Quality</p></th><th style="padding:8px;width:19.33%">1024 × 1024</th><th style="padding:8px;width:19.33%">1024 × 1536</th><th style="padding:8px;width:19.34%">1536 × 1024</th></tr></thead><tbody><tr><td rowspan="3" style="padding:8px;width:28%"><p>GPT Image 2</p><br/><span style="font-size:0.875em">Additional sizes available</span></td><td style="padding:8px">Low</td><td style="padding:8px">$0.006</td><td style="padding:8px">$0.005</td><td style="padding:8px">$0.005</td></tr><tr><td style="padding:8px">Medium</td><td style="padding:8px">$0.053</td><td style="padding:8px">$0.041</td><td style="padding:8px">$0.041</td></tr><tr><td style="padding:8px">High</td><td style="padding:8px">$0.211</td><td style="padding:8px">$0.165</td><td style="padding:8px">$0.165</td></tr><tr><td rowspan="3" style="padding:8px;width:28%"><p>GPT Image 1.5</p></td><td style="padding:8px">Low</td><td style="padding:8px">$0.009</td><td style="padding:8px">$0.013</td><td style="padding:8px">$0.013</td></tr><tr><td style="padding:8px">Medium</td><td style="padding:8px">$0.034</td><td style="padding:8px">$0.05</td><td style="padding:8px">$0.05</td></tr><tr><td style="padding:8px">High</td><td style="padding:8px">$0.133</td><td style="padding:8px">$0.2</td><td style="padding:8px">$0.2</td></tr><tr><td rowspan="3" style="padding:8px;width:28%"><p>GPT Image 1</p></td><td style="padding:8px">Low</td><td style="padding:8px">$0.011</td><td style="padding:8px">$0.016</td><td style="padding:8px">$0.016</td></tr><tr><td style="padding:8px">Medium</td><td style="padding:8px">$0.042</td><td style="padding:8px">$0.063</td><td style="padding:8px">$0.063</td></tr><tr><td style="padding:8px">High</td><td style="padding:8px">$0.167</td><td style="padding:8px">$0.25</td><td style="padding:8px">$0.25</td></tr><tr><td rowspan="3" style="padding:8px;width:28%"><p>GPT Image 1 Mini</p></td><td style="padding:8px">Low</td><td style="padding:8px">$0.005</td><td style="padding:8px">$0.006</td><td style="padding:8px">$0.006</td></tr><tr><td style="padding:8px">Medium</td><td style="padding:8px">$0.011</td><td style="padding:8px">$0.015</td><td style="padding:8px">$0.015</td></tr><tr><td style="padding:8px">High</td><td style="padding:8px">$0.036</td><td style="padding:8px">$0.052</td><td style="padding:8px">$0.052</td></tr></tbody></table></details>
+</table></div><p>还需计入<a href="/api/docs/guides/images-vision/?api-mode=responses#calculating-costs">输入 token</a>：提示词的文本 token，以及图像编辑时输入图像的 token。由于 <code>gpt-image-2</code> 始终以高保真度处理输入图像，包含参考图的编辑请求可能使用更多输入 token。</p><p>最新的文本和图像 token 费率见<a href="/api/docs/pricing/#image-generation">定价页</a>，可以按下方的<a href="#calculating-costs">费用计算</a>小节估算请求费用。</p><p>最终费用是以下三项之和：</p><ul>
+<li>输入文本 token</li>
+<li>使用编辑接口时的输入图像 token</li>
+<li>图像输出 token</li>
+</ul><h3 id="calculating-costs">计算费用</h3><p>使用下方的定价计算器，估算 GPT Image 模型的请求费用。
+<code>gpt-image-2</code> 支持数千种分辨率。下表列出了与旧版 GPT Image 模型相同的尺寸，方便比较，并保留 GPT Image 1.5、GPT Image 1 和 GPT Image 1 Mini 的历史单张图像输出价格。估算请求总费用时，仍需计入文本和图像输入 token。</p><p><code>gpt-image-1</code> 已于 2026 年 10 月 23 日下线。下表中的价格仅供历史比较。替代模型见<a href="https://developers.openai.com/api/docs/deprecations#2026-04-22-legacy-gpt-model-snapshots">弃用通知</a>。</p><div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="caution" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M10.42 2.006a4 4 0 0 1 3.159 0c.674.29 1.188.822 1.667 1.456.474.627 1 1.473 1.653 2.523l3.542 5.696c.72 1.16 1.3 2.09 1.682 2.854.384.766.654 1.517.59 2.292a4 4 0 0 1-1.604 2.886c-.625.463-1.405.63-2.258.709-.85.078-1.945.078-3.311.078H8.46c-1.366 0-2.46 0-3.31-.078-.854-.078-1.634-.246-2.26-.71a4 4 0 0 1-1.603-2.885c-.064-.775.206-1.526.59-2.292.383-.764.961-1.694 1.682-2.854l3.542-5.696c.653-1.05 1.18-1.896 1.653-2.523.48-.634.993-1.166 1.667-1.456Zm2.37 1.838a2 2 0 0 0-1.58 0c-.192.083-.448.28-.86.825-.413.544-.891 1.312-1.577 2.415l-3.488 5.61c-.755 1.214-1.283 2.066-1.62 2.737-.34.678-.402 1.02-.385 1.232a2 2 0 0 0 .802 1.443c.171.127.494.255 1.25.324.748.069 1.75.07 3.18.07h6.976c1.43 0 2.432-.001 3.18-.07.756-.069 1.079-.197 1.25-.324a2 2 0 0 0 .802-1.443c.017-.212-.045-.554-.385-1.232-.337-.671-.865-1.523-1.62-2.737l-3.488-5.61c-.686-1.103-1.164-1.87-1.576-2.415-.413-.546-.67-.742-.861-.825"></path><path d="M12 7.5a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1M10.851 15a1.15 1.15 0 1 1 2.3 0 1.15 1.15 0 0 1-2.3 0"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>在相同质量档位下，尺寸较大的非正方形图像有时反而比更小或正方形的图像使用更少输出 token。</p></div></div></div></div></div><table style="border-collapse:collapse;table-layout:fixed;width:100%"><thead><tr><th style="text-align:left;padding:8px;width:28%">模型</th><th style="text-align:left;padding:8px;width:14%"><p>质量</p></th><th style="padding:8px;width:19.33%">1024 × 1024</th><th style="padding:8px;width:19.33%">1024 × 1536</th><th style="padding:8px;width:19.34%">1536 × 1024</th></tr></thead><tbody><tr><td rowspan="3" style="padding:8px;width:28%"><p>GPT Image 2</p><br/><span style="font-size:0.875em">支持更多尺寸</span></td><td style="padding:8px">低</td><td style="padding:8px">$0.006</td><td style="padding:8px">$0.005</td><td style="padding:8px">$0.005</td></tr><tr><td style="padding:8px">中</td><td style="padding:8px">$0.053</td><td style="padding:8px">$0.041</td><td style="padding:8px">$0.041</td></tr><tr><td style="padding:8px">高</td><td style="padding:8px">$0.211</td><td style="padding:8px">$0.165</td><td style="padding:8px">$0.165</td></tr><tr><td rowspan="3" style="padding:8px;width:28%"><p>GPT Image 1.5</p></td><td style="padding:8px">低</td><td style="padding:8px">$0.009</td><td style="padding:8px">$0.013</td><td style="padding:8px">$0.013</td></tr><tr><td style="padding:8px">中</td><td style="padding:8px">$0.034</td><td style="padding:8px">$0.05</td><td style="padding:8px">$0.05</td></tr><tr><td style="padding:8px">高</td><td style="padding:8px">$0.133</td><td style="padding:8px">$0.2</td><td style="padding:8px">$0.2</td></tr><tr><td rowspan="3" style="padding:8px;width:28%"><p>GPT Image 1</p></td><td style="padding:8px">低</td><td style="padding:8px">$0.011</td><td style="padding:8px">$0.016</td><td style="padding:8px">$0.016</td></tr><tr><td style="padding:8px">中</td><td style="padding:8px">$0.042</td><td style="padding:8px">$0.063</td><td style="padding:8px">$0.063</td></tr><tr><td style="padding:8px">高</td><td style="padding:8px">$0.167</td><td style="padding:8px">$0.25</td><td style="padding:8px">$0.25</td></tr><tr><td rowspan="3" style="padding:8px;width:28%"><p>GPT Image 1 Mini</p></td><td style="padding:8px">低</td><td style="padding:8px">$0.005</td><td style="padding:8px">$0.006</td><td style="padding:8px">$0.006</td></tr><tr><td style="padding:8px">中</td><td style="padding:8px">$0.011</td><td style="padding:8px">$0.015</td><td style="padding:8px">$0.015</td></tr><tr><td style="padding:8px">高</td><td style="padding:8px">$0.036</td><td style="padding:8px">$0.052</td><td style="padding:8px">$0.052</td></tr></tbody></table></details>

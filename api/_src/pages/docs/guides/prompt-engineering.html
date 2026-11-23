@@ -1,12 +1,70 @@
 ---
 title: 提示词工程
-description: 了解如何在 OpenAI API 中编写提示词，让大语言模型给出更稳定、更好的结果。
+description: 在 NexusVAI API 中编写清晰的指令、示例与上下文，用可重复的测试改进模型输出。
 tab: models
 lead: false
-css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
-js: /api/assets/model-guide.js
 ---
-<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/prompt-engineering (reference copy for local review). -->
+<p>使用 <strong>NexusVAI API</strong> 时，把任务、约束、输入材料和期望输出写清楚，再用相同样例比较每次修改。下面的写法适用于 <a href="/api/reference/responses/">Responses</a> 和 <a href="/api/reference/chat-completions/">Chat Completions</a>；完整调用见<a href="/api/docs/guides/text/">文本生成</a>。</p>
+
+<h2 id="choosing-a-model">选择模型</h2>
+<p>按准确率、延迟、预算、输入模态和上下文长度选择候选模型。先看<a href="/api/docs/guides/model-selection/">模型选择指南</a>，再用相同任务、输入和评价标准实测；不要把某个模型的提示词直接当成对其他模型有效的规则。</p>
+
+<h2 id="prompt-engineering">提示词工程</h2>
+<p>把模糊要求改成可检查的目标。例如把「帮我摘要」改成「用不超过 100 字总结这段客服记录，保留订单号，不推断未提到的退款状态」。有固定格式时，给出一条典型输入和对应结果。</p>
+
+<h2 id="message-roles-and-instruction-following">消息角色与指令遵循</h2>
+<p>把稳定的应用规则放在 Responses 的 <code>instructions</code> 或 Chat Completions 的 <code>system</code> 消息。用户内容、参考材料和示例属于输入，不应代替应用规则。</p>
+<code-tabs title="区分应用指令和用户输入">
+<pre data-lang="json" data-label="Responses">{
+  "model": "gpt-6-astra",
+  "instructions": "用简体中文输出三条要点；只使用输入中的事实。",
+  "input": "整理以下会议记录：周二发布测试版，周五收集用户反馈。"
+}</pre>
+<pre data-lang="json" data-label="Chat Completions">{
+  "model": "gpt-6-astra",
+  "messages": [
+    {"role": "system", "content": "用简体中文输出三条要点；只使用输入中的事实。"},
+    {"role": "user", "content": "整理以下会议记录：周二发布测试版，周五收集用户反馈。"}
+  ]
+}</pre>
+</code-tabs>
+<p>多轮请求要随请求传回所需消息，见 <a href="/api/docs/guides/responses/#multi-turn">Responses 多轮对话</a>。</p>
+
+<h2 id="version-prompts-in-code">在代码中管理提示词版本</h2>
+<p>把固定指令作为应用配置或代码管理；把输入参数与模板分开。改动提示词、工具定义或模型时，先重跑已知的正常、边界和失败用例。托管提示词 ID 请按<a href="/api/docs/guides/prompting/migrate-from-prompt-object/">迁移指南</a>处理。</p>
+
+<h2 id="message-formatting-with-markdown-and-xml">使用 Markdown 与 XML 设置消息格式</h2>
+<p>使用标题、列表或带标签的片段，把规则、示例和参考资料分开。选一种便于团队维护的格式即可；分隔符本身不是权限边界，应用仍须校验输出和工具参数。</p>
+
+<h2 id="few-shot-learning">少样本学习</h2>
+<p>用少量输入和预期输出示例演示格式和判断规则。例子要覆盖容易混淆的类别；需要严格的机器可读格式时，使用<a href="/api/docs/guides/structured-outputs/">结构化输出</a>并验证结果。</p>
+
+<h2 id="include-relevant-context-information">加入相关的上下文信息</h2>
+<p>先在应用侧检索相关材料，再将最有用的片段放入请求。对材料加编号和来源，要求模型在依据不足时明确说明。NexusVAI 的公共文本 API 不执行托管文件检索；可用自有索引或通过 <a href="/api/docs/guides/responses/#tools">函数工具</a>由应用检索。</p>
+<h4 id="planning-for-the-context-window">规划上下文窗口</h4>
+<p>按模型目录确认上下文容量，为输出留出空间。频繁重复的规则和工具定义放在开头，变化的输入放在后面，详见<a href="/api/docs/guides/billing/#prompt-caching">提示缓存</a>。</p>
+
+<span id="prompting-current-gpt-5-series-models"></span>
+<h2 id="prompting-current-models">当前模型的提示方式</h2>
+<span id="prompting-best-practices-for-the-latest-gpt-5-series-model"></span>
+<h3 id="prompting-best-practices-for-the-latest-model">模型提示最佳实践</h3>
+<details class="guide-disclosure"><summary>编程</summary><h4 id="coding">编程</h4><p>说明允许改动的范围、不可变的行为、测试命令和交付格式。大改动先拆成可验证的小步骤。见<a href="/api/docs/guides/code-generation/">代码生成</a>。</p></details>
+<details class="guide-disclosure"><summary>前端工程</summary><p>给出受众、参考布局、组件约定、加载与错误状态和验收条件。可以从<a href="/api/docs/guides/frontend-prompt/">前端提示词</a>开始。</p></details>
+<details class="guide-disclosure"><summary>工具调用</summary><p>告诉模型何时请求工具、需要哪些参数、结果缺失时如何处理。权限校验、超时和实际操作由应用控制。</p></details>
+
+<h2 id="prompting-reasoning-models">推理模型的提示方式</h2>
+<p>优先提供明确目标、输入和验收条件，不必要求输出内部思考。为困难任务比较适用模型和推理强度，见<a href="/api/docs/guides/reasoning-best-practices/">推理最佳实践</a>。</p>
+
+<h2 id="next-steps">后续步骤</h2>
+<cards>
+<card href="/api/docs/guides/prompt-generation/" title="生成提示词">用任务说明生成可测试的提示词初稿。</card>
+<card href="/api/docs/guides/citation-formatting/" title="引用格式" icon="cube">让模型的回答引用实际提供的材料。</card>
+</cards>
+<h2 id="other-resources">其他资源</h2>
+<p>在<a href="/api/docs/libraries/">SDK 指南</a>中查看客户端配置，或在<a href="/api/reference/">API 参考</a>中确认支持的字段。</p>
+
+<!-- local-reference -->
+<!-- 原中文参考稿保留供编辑核对，不参与构建。 -->
 <p>使用 OpenAI API，你可以像在 <a href="https://chatgpt.com">ChatGPT</a> 中一样，用<a href="/api/docs/models/">大语言模型</a>根据提示生成文本。模型几乎能生成任何类型的文本回复，例如代码、数学公式、结构化的 JSON 数据或接近人类的散文。</p>
 <div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <p>下面是使用 <a href="https://developers.openai.com/api/docs/api-reference/responses">Responses API</a> 的简单示例。</p><code-tabs title="用简单提示生成文本">
 <pre data-lang="javascript">import OpenAI from "openai";
@@ -715,7 +773,7 @@ puts(completion.choices.fetch(0).message.content)</pre>
 <li><strong>上下文：</strong>提供模型生成回复可能需要的任何额外信息，例如训练数据之外的私有或专有数据，或你知道特别相关的其他数据。这部分内容通常最好放在提示词末尾附近，因为不同的生成请求可能需要不同的上下文。</li>
 </ul>
 <p>下面是一个使用 Markdown 和 XML 标签构建 <code>developer</code> 消息的示例，它包含清晰的分节和配套的样例。</p>
-<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="prompt-example" data-content-switcher-initial="prompt" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="prompt" id="content-switcher-prompt-example"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="prompt">示例提示词</option><option value="code">API 请求</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="prompt"><div class="hidden">示例提示词</div><code-tabs title="用于代码生成的 developer 消息">
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="prompt-example" data-content-switcher-initial="prompt" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="prompt" id="content-switcher-prompt-example"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="选择提示词示例格式" data-guide-switch=""><option selected="" value="prompt">示例提示词</option><option value="code">API 请求</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="prompt"><div class="hidden">示例提示词</div><code-tabs title="用于代码生成的 developer 消息">
 <pre data-lang="text">
 # Identity
 
@@ -968,11 +1026,11 @@ curl https://api.openai.com/v1/responses \
 <a class="_TextLink_ssta1_1" data-underline="always" href="https://platform.openai.com/chat/edit" rel="noopener noreferrer" target="_blank"><div class="icon-item mt-2"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path clip-rule="evenodd" d="M15.24 3.486v.002l-1.056 4.517h5.823c1.726 0 2.596 2.021 1.518 3.3l-.002.003-9.308 10.965-.002.002c-1.397 1.656-3.922.223-3.454-1.76v-.003l1.057-4.517H3.993c-1.726 0-2.596-2.021-1.519-3.3l.003-.003 9.308-10.965.002-.002c1.397-1.656 3.922-.223 3.454 1.76Zm-1.95-.444-1.34 5.735a.998.998 0 0 0 .973 1.226h7.074a.04.04 0 0 1 .003.01.045.045 0 0 1-.004.005l-9.287 10.94 1.341-5.735a.998.998 0 0 0-.973-1.226H4.003a.041.041 0 0 1-.003-.01l.004-.005 9.287-10.94Z" fill-rule="evenodd"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">在 Playground 中构建提示词</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>在 Playground 中开发和迭代提示词。</p> </div> </div> </div></a>
 <a class="_TextLink_ssta1_1" data-underline="always" href="/api/docs/guides/structured-outputs/"><div class="icon-item mt-2"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path clip-rule="evenodd" d="M12.5 3.444a1 1 0 0 0-1 0l-6.253 3.61 6.768 3.807 6.955-3.682-6.47-3.735Zm7.16 5.632L13 12.602v7.666l6.16-3.556a1 1 0 0 0 .5-.867V9.076ZM11 20.268v-7.683L4.34 8.839v7.006a1 1 0 0 0 .5.867L11 20.268Zm-.5-18.557a3 3 0 0 1 3 0l6.66 3.846a3 3 0 0 1 1.5 2.598v7.69a3 3 0 0 1-1.5 2.598L13.5 22.29a3 3 0 0 1-3 0l-6.66-3.846a3 3 0 0 1-1.5-2.598v-7.69a3 3 0 0 1 1.5-2.598L10.5 1.71Z" fill-rule="evenodd"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">生成 JSON 数据（结构化输出）</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>确保模型输出的 JSON 数据符合 JSON Schema。</p> </div> </div> </div></a>
 <a class="_TextLink_ssta1_1" data-underline="always" href="https://developers.openai.com/api/docs/api-reference/responses"><div class="icon-item mt-2"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path clip-rule="evenodd" d="M14.447 7.106a1 1 0 0 1 .447 1.341l-4 8a1 1 0 1 1-1.788-.894l4-8a1 1 0 0 1 1.341-.447ZM6.6 7.2a1 1 0 0 1 .2 1.4L4.25 12l2.55 3.4a1 1 0 0 1-1.6 1.2l-3-4a1 1 0 0 1 0-1.2l3-4a1 1 0 0 1 1.4-.2Zm10.8 0a1 1 0 0 1 1.4.2l3 4a1 1 0 0 1 0 1.2l-3 4a1 1 0 0 1-1.6-1.2l2.55-3.4-2.55-3.4a1 1 0 0 1 .2-1.4Z" fill-rule="evenodd"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">完整 API 参考</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>在 API 参考中查看文本生成的全部选项。</p> </div> </div> </div></a>
-<h2 id="other-resources">Other resources</h2>
+<h2 id="other-resources">其他资源</h2>
 <p>如需更多灵感，可以访问 <a href="https://developers.openai.com/cookbook">OpenAI Cookbook</a>，其中包含示例代码，也链接了第三方资源，例如：</p>
 <ul>
-<li><a href="https://developers.openai.com/cookbook/related_resources#prompting-libraries--tools">Prompting libraries &amp; tools</a></li>
-<li><a href="https://developers.openai.com/cookbook/related_resources#prompting-guides">Prompting guides</a></li>
-<li><a href="https://developers.openai.com/cookbook/related_resources#video-courses">Video courses</a></li>
+<li><a href="https://developers.openai.com/cookbook/related_resources#prompting-libraries--tools">提示词库和工具</a></li>
+<li><a href="https://developers.openai.com/cookbook/related_resources#prompting-guides">提示词指南</a></li>
+<li><a href="https://developers.openai.com/cookbook/related_resources#video-courses">视频课程</a></li>
 <li><a href="https://developers.openai.com/cookbook/related_resources#papers-on-advanced-prompting-to-improve-reasoning">关于通过高级提示提升推理能力的论文</a></li>
 </ul>

@@ -1,12 +1,34 @@
 ---
 title: 内容审核
-description: 了解如何用 OpenAI 审核模型识别文本和图片中的有害内容。
+description: 设计应用侧的文本与图像内容审核流程，区分生成结果、审核分数和人工复核。
 tab: models
 lead: false
-css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
-js: /api/assets/model-guide.js
 ---
-<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/moderation (reference copy for local review). -->
+<callout type="info"><p><strong>NexusVAI 公共 API 未开放独立的 <code>/v1/moderations</code> 端点。</strong>不要依赖文本生成请求返回专用的审核分类或分数。可用 API 见<a href="/api/reference/#endpoints">端点列表</a>。</p></callout>
+<p>内容审核是应用在接收输入、显示输出或执行后续动作之前，按自己的规则检查内容的步骤。审核和生成应分别测试；生成模型的拒答不等于应用已经完成审核。</p>
+
+<h2 id="choose-a-moderation-workflow">选择审核流程</h2>
+<ul>
+<li>为文本、图像等输入分别定义判定规则，说明何时允许、拦截或转人工。</li>
+<li>先检查输入，再在展示生成结果或调用工具前检查输出。</li>
+<li>遇到系统超时或结果缺失时执行预先定义的降级策略，不把缺少审核信号当作放行。</li>
+</ul>
+
+<h2 id="moderate-generated-content">审核生成内容</h2>
+<p>将<a href="/api/docs/guides/text/">文本生成</a>与应用的审核决策解耦。使用流式输出时，先区分可暂存的增量和允许显示的结果；涉及高风险动作时，等待审核及人工确认后再继续。</p>
+
+<h2 id="classify-standalone-inputs">对独立输入分类</h2>
+<p>用应用自有的审核规则或专用服务给输入分类。将类别、证据、处理结果及人工复核状态记录在应用中，不把分类阈值仅写在模型提示词里。</p>
+<callout type="warning"><p><strong>儿童安全：</strong>不要将已知或疑似儿童性虐待材料发送给通用生成或审核模型。按适用法规和组织的专门流程处理和报告。</p></callout>
+
+<h2 id="understand-moderation-results">理解审核结果</h2>
+<p>分类分数不等同于事实或违规概率，也通常不能跨模型直接比较。用样例测量误判、漏判及阈值变化，再确定是否自动处理或转人工。</p>
+
+<h2 id="review-supported-categories">查看支持的类别</h2>
+<p>类别由你使用的审核系统定义。按产品受众、输入模态和业务风险制定清单，明确每类对应的处理方式，并确保能够复核和申诉。</p>
+
+<!-- local-reference -->
+<!-- 原中文参考稿保留供编辑核对，不参与构建。 -->
 <p>使用 OpenAI 审核模型检测文本和图片中的有害内容。你可以用<a href="https://developers.openai.com/api/docs/api-reference/moderations">审核接口</a>单独对输入分类，也可以在生成回复的同时请求审核分数。根据结果执行你的应用策略，例如过滤内容、把请求转人工复核，或处理提交了违规内容的账户。</p>
 <p><code>omni-moderation-latest</code> 模型接受文本和图片输入，不对音频分类。审核接口免费使用，图片文件最大 20 MB。</p>
 <div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="warning" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M10.42 2.006a4 4 0 0 1 3.159 0c.674.29 1.188.822 1.667 1.456.474.627 1 1.473 1.653 2.523l3.542 5.696c.72 1.16 1.3 2.09 1.682 2.854.384.766.654 1.517.59 2.292a4 4 0 0 1-1.604 2.886c-.625.463-1.405.63-2.258.709-.85.078-1.945.078-3.311.078H8.46c-1.366 0-2.46 0-3.31-.078-.854-.078-1.634-.246-2.26-.71a4 4 0 0 1-1.603-2.885c-.064-.775.206-1.526.59-2.292.383-.764.961-1.694 1.682-2.854l3.542-5.696c.653-1.05 1.18-1.896 1.653-2.523.48-.634.993-1.166 1.667-1.456Zm2.37 1.838a2 2 0 0 0-1.58 0c-.192.083-.448.28-.86.825-.413.544-.891 1.312-1.577 2.415l-3.488 5.61c-.755 1.214-1.283 2.066-1.62 2.737-.34.678-.402 1.02-.385 1.232a2 2 0 0 0 .802 1.443c.171.127.494.255 1.25.324.748.069 1.75.07 3.18.07h6.976c1.43 0 2.432-.001 3.18-.07.756-.069 1.079-.197 1.25-.324a2 2 0 0 0 .802-1.443c.017-.212-.045-.554-.385-1.232-.337-.671-.865-1.523-1.62-2.737l-3.488-5.61c-.686-1.103-1.164-1.87-1.576-2.415-.413-.546-.67-.742-.861-.825"></path><path d="M12 7.5a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1M10.851 15a1.15 1.15 0 1 1 2.3 0 1.15 1.15 0 0 1-2.3 0"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><strong>儿童安全：</strong>请勿将已知或疑似的儿童性虐待材料（CSAM）发送给审核 API。该 API 并非为 CSAM 检测或处理而设计，也不能替代专门的儿童安全防护。关于预防、检测、响应和举报 CSAM 的步骤，请参阅我们的 <a href="https://developers.openai.com/api/docs/guides/csam-guidance">CSAM 指南</a>。</p></div></div></div></div></div>
@@ -369,7 +391,7 @@ puts(completion.moderation)</pre>
 <p>如果你以流式方式接收生成的回复，审核分数会在完整输出生成后才返回，不会随部分输出增量一起发送。</p>
 <h2 id="classify-standalone-inputs">对独立输入分类</h2>
 <p>使用<a href="https://developers.openai.com/api/docs/api-reference/moderations">审核接口</a>对文本或图片输入分类，无需生成模型回复。下面的标签页展示了如何使用 <a href="https://developers.openai.com/api/docs/libraries">OpenAI 官方库</a>和 <a href="/api/docs/models/#moderation"><code>omni-moderation-latest</code> 模型</a>：</p>
-<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="example" data-content-switcher-initial="text" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="text" id="content-switcher-example"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="text">审核文本输入</option><option value="images">审核图片和文本</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="text"><div class="hidden">审核文本输入</div><code-tabs title="获取文本输入的分类信息">
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="example" data-content-switcher-initial="text" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="text" id="content-switcher-example"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="选择输入类型" data-guide-switch=""><option selected="" value="text">审核文本输入</option><option value="images">审核图片和文本</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="text"><div class="hidden">审核文本输入</div><code-tabs title="获取文本输入的分类信息">
 <pre data-lang="python">from openai import OpenAI
 
 client = OpenAI()
@@ -681,21 +703,4 @@ puts(moderation.results.fetch(0).flagged)</pre>
 <h2 id="review-supported-categories">查看支持的类别</h2>
 <p>下表列出审核接口可以检测的内容类别，以及每个类别支持的输入类型。</p>
 <div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>标注为“仅文本”的类别不支持图片输入。如果你只向 <code>omni-moderation-latest</code> 模型发送图片（不附带文本），模型会对这些不支持的类别返回 0 分。图片文件最大 20 MB。</p></div></div></div></div></div>
-<div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full"><tr><th><strong>类别</strong></th><th><strong>说明</strong></th><th><strong>输入类型</strong></th></tr><tr><td><code>harassment</code></td><td><p>Content that expresses, incites, or promotes harassing language towards
-any target.</p></td><td>Text only</td></tr><tr><td><code>harassment/threatening</code></td><td><p>Harassment content that also includes violence or serious harm towards any
-target.</p></td><td>Text only</td></tr><tr><td><code>hate</code></td><td><p>Content that expresses, incites, or promotes hate based on race, gender,
-ethnicity, religion, nationality, sexual orientation, disability status,
-or caste. Hateful content aimed at non-protected groups (e.g., chess
-players) is harassment.</p></td><td>Text only</td></tr><tr><td><code>hate/threatening</code></td><td><p>Hateful content that also includes violence or serious harm towards the
-targeted group based on race, gender, ethnicity, religion, nationality,
-sexual orientation, disability status, or caste.</p></td><td>Text only</td></tr><tr><td><code>illicit</code></td><td><p>Content that gives advice or instruction on how to commit illicit acts. A
-phrase like “how to shoplift” would fit this category.</p></td><td>Text only</td></tr><tr><td><code>illicit/violent</code></td><td><p>The same types of content flagged by the <code>illicit</code> category, but also
-includes references to violence or procuring a weapon.</p></td><td>Text only</td></tr><tr><td><code>self-harm</code></td><td><p>Content that promotes, encourages, or depicts acts of self-harm, such as
-suicide, cutting, and eating disorders.</p></td><td>Text and images</td></tr><tr><td><code>self-harm/intent</code></td><td><p>Content where the speaker expresses that they are engaging or intend to
-engage in acts of self-harm, such as suicide, cutting, and eating
-disorders.</p></td><td>Text and images</td></tr><tr><td><code>self-harm/instructions</code></td><td><p>Content that encourages performing acts of self-harm, such as suicide,
-cutting, and eating disorders, or that gives instructions or advice on how
-to commit such acts.</p></td><td>Text and images</td></tr><tr><td><code>sexual</code></td><td><p>Content meant to arouse sexual excitement, such as the description of
-sexual activity, or that promotes sexual services (excluding sex education
-and wellness).</p></td><td>Text and images</td></tr><tr><td><code>sexual/minors</code></td><td><p>Sexual content that includes an individual who is under 18 years old.</p></td><td>Text only</td></tr><tr><td><code>violence</code></td><td>Content that depicts death, violence, or physical injury.</td><td>Text and images</td></tr><tr><td><code>violence/graphic</code></td><td><p>Content that depicts death, violence, or physical injury in graphic
-detail.</p></td><td>Text and images</td></tr></table></div>
+<div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full"><tr><th><strong>类别</strong></th><th><strong>说明</strong></th><th><strong>输入类型</strong></th></tr><tr><td><code>harassment</code></td><td><p>表达、煽动或鼓励使用针对任何对象的骚扰性言论。</p></td><td>仅文本</td></tr><tr><td><code>harassment/threatening</code></td><td><p>在骚扰内容中，还包含针对任何对象的暴力或严重伤害。</p></td><td>仅文本</td></tr><tr><td><code>hate</code></td><td><p>基于种族、性别、族裔、宗教、国籍、性取向、残障状况或种姓表达、煽动或宣扬仇恨的内容。针对不受保护群体（例如国际象棋棋手）的仇恨内容归为骚扰。</p></td><td>仅文本</td></tr><tr><td><code>hate/threatening</code></td><td><p>基于种族、性别、族裔、宗教、国籍、性取向、残障状况或种姓的仇恨内容，其中还包含针对目标群体的暴力或严重伤害。</p></td><td>仅文本</td></tr><tr><td><code>illicit</code></td><td><p>提供实施违法行为的建议或指导，例如询问“如何在商店行窃”。</p></td><td>仅文本</td></tr><tr><td><code>illicit/violent</code></td><td><p>属于 <code>illicit</code> 类别，同时还提及暴力或获取武器的内容。</p></td><td>仅文本</td></tr><tr><td><code>self-harm</code></td><td><p>宣扬、鼓励或描绘自杀、割伤自己以及与饮食失调相关的自伤行为。</p></td><td>文本和图片</td></tr><tr><td><code>self-harm/intent</code></td><td><p>发言者表示正在或打算实施自伤行为的内容，例如自杀、割伤自己以及与饮食失调相关的行为。</p></td><td>文本和图片</td></tr><tr><td><code>self-harm/instructions</code></td><td><p>鼓励实施自伤行为，或就如何实施这些行为提供指导或建议的内容。自伤行为包括自杀、割伤自己以及与饮食失调相关的行为。</p></td><td>文本和图片</td></tr><tr><td><code>sexual</code></td><td><p>旨在引起性兴奋（例如描述性活动）或推广性服务的内容，不包括性教育与性健康内容。</p></td><td>文本和图片</td></tr><tr><td><code>sexual/minors</code></td><td><p>涉及 18 岁以下人士的色情内容。</p></td><td>仅文本</td></tr><tr><td><code>violence</code></td><td>描绘死亡、暴力或身体伤害的内容。</td><td>文本和图片</td></tr><tr><td><code>violence/graphic</code></td><td><p>以直观、详尽的方式描绘死亡、暴力或身体伤害的内容。</p></td><td>文本和图片</td></tr></table></div>

@@ -1,12 +1,49 @@
 ---
 title: 从提示词对象迁移
-description: 了解如何把可复用的提示词对象迁移为应用代码中带版本的提示词。
+description: 将托管提示词对象迁移为应用侧的版本化模板，并用 NexusVAI API 发送内联请求。
 tab: models
 lead: false
-css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
-js: /api/assets/model-guide.js
 ---
-<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/prompting/migrate-from-prompt-object (reference copy for local review). -->
+<p>NexusVAI API 不支持托管的 <code>prompt</code> 对象或 <code>prompt_id</code>。从其他服务迁移时，把模板和版本移到你自己的代码中，将渲染结果通过 <code>instructions</code> 和 <code>input</code> 发送给 <a href="/api/reference/responses/">Responses API</a>。</p>
+
+<h2 id="before-using-a-prompt-object">迁移前：记录提示词对象</h2>
+<p>保存当前版本使用的规则、消息角色、模板变量和代表性测试。只拿到旧 ID 时，先从原服务取回模板；不要把旧 ID 当成 NexusVAI 模型 ID。</p>
+
+<h2 id="after-inline-the-prompt-in-code">迁移后：在代码中生成请求</h2>
+<ol>
+<li>把固定指令放在有版本的模块，将任务动态值作为函数参数。</li>
+<li>校验参数类型，把用户提供的数据和应用规则分开。</li>
+<li>使用本地维护的模板生成请求，不在请求体中传旧提示词 ID。</li>
+</ol>
+
+<h2 id="use-codex-to-migrate">使用 Codex 协助迁移</h2>
+<p>可按 <a href="/api/docs/guides/codex-cli/">Codex CLI 接入指南</a>配置工具，再请它找出传递提示词 ID 的调用点。审核生成的补丁，确认变量和消息角色没有变化，并用固定测试集比较输出。</p>
+
+<h2 id="what-changes">变化内容</h2>
+<p>提示词版本随应用发布，而不由 API 管理。更新模板时同时更新测试；功能开关或配置可以用于选择应用侧的模板版本。</p>
+
+<h2 id="example">示例</h2>
+<pre data-lang="python" data-title="内联模板与请求">import os
+from openai import OpenAI
+
+client = OpenAI(base_url="https://cn.nexusvai.xyz/v1", api_key=os.environ["CANCRI_API_KEY"])
+instructions = "你是支持助手。先总结问题，再给出一个建议；不要假定账单已修改。"
+
+def draft_reply(issue: str) -> str:
+    response = client.responses.create(
+        model="gpt-6-astra",
+        instructions=instructions,
+        input=issue,
+    )
+    return response.output_text
+
+print(draft_reply("客户询问如何核对本月账单。"))</pre>
+
+<h2 id="what-you-gain">收益</h2>
+<p>模板、评审和测试放在同一处，更容易定位模型行为的变化。下一步了解<a href="/api/docs/guides/text/#version-prompts-in-code">如何管理提示词版本</a>。</p>
+
+<!-- local-reference -->
+<!-- 原中文参考稿保留供编辑核对，不参与构建。 -->
 <div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="warning" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M10.42 2.006a4 4 0 0 1 3.159 0c.674.29 1.188.822 1.667 1.456.474.627 1 1.473 1.653 2.523l3.542 5.696c.72 1.16 1.3 2.09 1.682 2.854.384.766.654 1.517.59 2.292a4 4 0 0 1-1.604 2.886c-.625.463-1.405.63-2.258.709-.85.078-1.945.078-3.311.078H8.46c-1.366 0-2.46 0-3.31-.078-.854-.078-1.634-.246-2.26-.71a4 4 0 0 1-1.603-2.885c-.064-.775.206-1.526.59-2.292.383-.764.961-1.694 1.682-2.854l3.542-5.696c.653-1.05 1.18-1.896 1.653-2.523.48-.634.993-1.166 1.667-1.456Zm2.37 1.838a2 2 0 0 0-1.58 0c-.192.083-.448.28-.86.825-.413.544-.891 1.312-1.577 2.415l-3.488 5.61c-.755 1.214-1.283 2.066-1.62 2.737-.34.678-.402 1.02-.385 1.232a2 2 0 0 0 .802 1.443c.171.127.494.255 1.25.324.748.069 1.75.07 3.18.07h6.976c1.43 0 2.432-.001 3.18-.07.756-.069 1.079-.197 1.25-.324a2 2 0 0 0 .802-1.443c.017-.212-.045-.554-.385-1.232-.337-.671-.865-1.523-1.62-2.737l-3.488-5.61c-.686-1.103-1.164-1.87-1.576-2.415-.413-.546-.67-.742-.861-.825"></path><path d="M12 7.5a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1M10.851 15a1.15 1.15 0 1 1 2.3 0 1.15 1.15 0 0 1-2.3 0"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>OpenAI 正在弃用 API 中可复用的提示词对象。自 2026 年 6 月 3 日起，提示词创建功能将不再被推荐，<code>v1/prompts</code> 计划于 2026 年 11 月 30 日下线。当前时间线请参阅<a href="https://developers.openai.com/api/docs/deprecations#2026-06-03-reusable-prompts">弃用说明页</a>。</p></div></div></div></div></div>
 <p>要摆脱 OpenAI API 平台中的 <strong>Prompts</strong>，请把提示词内容从托管的 <code>prompt</code> 对象中移出，放进你的应用代码。这样你能更好地控制评审、测试、部署和版本管理。</p>
 <h2 id="before-using-a-prompt-object">之前：使用提示词对象</h2>

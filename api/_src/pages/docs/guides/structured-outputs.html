@@ -1,12 +1,77 @@
 ---
 title: 结构化输出
-description: 了解如何让模型响应严格遵循你定义的 JSON Schema。
+description: 使用 NexusVAI API 请求符合预期的 JSON，并在应用端校验字段、类型和业务约束。
 tab: models
 lead: false
-css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
 js: /api/assets/model-guide.js
 ---
-<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/structured-outputs (reference copy for local review). -->
+<p>用 <strong>NexusVAI API</strong> 提取字段或返回分类结果时，可以在请求中指定 JSON Schema。是否支持该格式、是否严格遵循 Schema 取决于所选模型；应用必须处理拒答、截断、解析失败与业务规则不满足的情况。</p>
+
+<h3 id="supported-models">支持的模型</h3>
+<p>从<a href="/api/docs/models/">模型目录</a>选择模型，用实际输入验证输出结构。不能仅凭模型支持文本生成，就假定它也支持所有 JSON Schema 特性。</p>
+<h3 id="structured-outputs-vs-json-mode">结构化输出与 JSON 模式对比</h3>
+<p><code>json_schema</code> 描述字段、类型和约束；<a href="#json-mode"><code>json_object</code></a> 只要求 JSON 对象，不约束业务结构。两者都需要在应用端检查结果。</p>
+
+<h2 id="examples">示例</h2>
+<p>下面从短句中提取人名和城市。两种协议使用不同的字段，不能把其中一种请求体直接交给另一种端点。</p>
+<div data-content-mode-switch data-group="api-mode" data-id="responses" data-ids='["responses"]'>
+<h2 id="how-to-use">通过 text.format 使用结构化输出</h2>
+<p>在 <a href="/api/reference/responses/#body-text">Responses</a> 的 <code>text.format</code> 中指定 <code>name</code> 与 <code>schema</code>，从响应正文读取 JSON。</p>
+<pre data-lang="json" data-title="POST /v1/responses">{
+  "model": "gpt-6-astra",
+  "input": "提取人名和城市：小王上周去了杭州。",
+  "text": {"format": {
+    "type": "json_schema",
+    "name": "extraction",
+    "strict": true,
+    "schema": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}, "city": {"type": "string"}},
+      "required": ["name", "city"],
+      "additionalProperties": false
+    }
+  }}
+}</pre>
+<h2 id="function-calling-vs-response-format">何时用函数调用，何时用 text.format</h2>
+<p>只需把模型回复交给程序解析时，用 <code>text.format</code>；需要让模型请求由你的应用执行某项操作时，用<a href="/api/docs/guides/responses/#tools">函数工具</a>，并验证参数后再执行。</p>
+</div>
+<div data-content-mode-switch data-group="api-mode" data-id="chat" data-ids='["chat"]' hidden>
+<h2 id="how-to-use-1">通过 response_format 使用结构化输出</h2>
+<p>在 <a href="/api/reference/chat-completions/#body-response_format">Chat Completions</a> 的 <code>response_format.json_schema</code> 下指定同样的 Schema，从助手消息读取结果。</p>
+<pre data-lang="json" data-title="POST /v1/chat/completions">{
+  "model": "gpt-6-astra",
+  "messages": [{"role": "user", "content": "提取人名和城市：小王上周去了杭州。"}],
+  "response_format": {"type": "json_schema", "json_schema": {
+    "name": "extraction",
+    "strict": true,
+    "schema": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}, "city": {"type": "string"}},
+      "required": ["name", "city"],
+      "additionalProperties": false
+    }
+  }}
+}</pre>
+<h2 id="function-calling-vs-response-format-1">何时用函数调用，何时用 response_format</h2>
+<p>结构化回复供应用解析；<a href="/api/docs/guides/chat-completions/#tool-calling">函数调用</a>请求应用使用具体工具。不要把一个结构看似正确的回复直接当成操作授权。</p>
+</div>
+
+<h2 id="streaming">流式输出</h2>
+<p>增量片段可能还不是可解析的 JSON。先累积完整文本并检查结束状态，再解析和校验。有关事件和错误，见 <a href="/api/docs/guides/responses/#streaming">Responses 流式输出</a>或 <a href="/api/docs/guides/chat-completions/#streaming">Chat Completions 流式输出</a>。</p>
+
+<h2 id="supported-schemas">支持的 Schema</h2>
+<p>为可移植性，从一个简单的 <code>object</code>、明确的 <code>properties</code>、<code>required</code> 和 <code>additionalProperties</code> 开始。用代表性输入测试空值、枚举、嵌套以及额外字段。</p>
+<h3 id="some-type-specific-keywords-are-not-yet-supported">模型与关键字限制</h3>
+<p>不是所有模型都实现同样的关键字与限制。额外的业务规则（日期范围、字段之间的关系等）在应用代码中校验，不要依赖网关强制执行所有约束。</p>
+
+<h2 id="json-mode">JSON 模式</h2>
+<p>只需合法 JSON 对象时，在支持的模型上用 <code>{"type":"json_object"}</code>，并在提示词中明确要求输出 JSON。仍需校验字段，异常或不完整的输出不要交给后续操作。</p>
+
+<h2 id="resources">延伸阅读</h2>
+<p>查看 <a href="/api/docs/guides/responses/#structured-output">Responses 结构化输出示例</a>，或了解如何<a href="/api/docs/guides/prompt-generation/#schemas">生成和检查 Schema 初稿</a>。</p>
+
+<!-- local-reference -->
+<!-- 原中文参考稿保留供编辑核对，不参与构建。 -->
 <p>JSON 是全世界应用之间交换数据最常用的格式之一。</p>
 <p>结构化输出（Structured Outputs）是一项确保模型始终按你提供的 <a href="https://json-schema.org/overview/what-is-jsonschema">JSON Schema</a> 生成响应的功能，你不用再担心模型漏掉必填键，或虚构一个不合法的枚举值。</p>
 <p>结构化输出的好处包括：</p>
@@ -17,7 +82,7 @@ js: /api/assets/model-guide.js
 </ol>
 <p>除了 REST API 支持 JSON Schema 外，<a href="https://github.com/openai/openai-python/blob/main/helpers.md#structured-outputs-parsing-helpers">Python</a> 与 <a href="https://github.com/openai/openai-node/blob/master/helpers.md#structured-outputs-parsing-helpers">JavaScript</a> 的 OpenAI 库还允许你分别用 <a href="https://docs.pydantic.dev/latest/"><code>pydantic.BaseModel</code></a> 和 <a href="https://zod.dev/"><code>z.object</code></a> 定义对象 schema。下面演示如何按代码中定义的 schema，从非结构化文本中抽取信息。</p>
 <p>Ruby SDK 支持用 Sorbet <code>T::Struct</code> 定义 schema，并返回带类型的解析结果。</p>
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <code-tabs title="Getting a structured response">
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <code-tabs title="获取结构化响应">
 <pre data-lang="python">from pydantic import BaseModel
 from openai import OpenAI
 
@@ -225,7 +290,7 @@ raise "The model refused the request" if choice.message.refusal
 event = T.cast(choice.message.parsed, CalendarEvent)
 puts(event.name, event.date, event.participants.join(", "))</pre>
 </code-tabs> </div> 
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="Getting a structured response">
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="获取结构化响应">
 <pre data-lang="python">from openai import OpenAI
 from pydantic import BaseModel
 
@@ -485,8 +550,8 @@ puts(event.name, event.date, event.participants.join(", "))</pre>
 <div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <ul>
 <li>如果你要把模型接到系统里的工具、函数、数据等之上，就用 function calling——如果你想规范模型回给用户看的那段输出的结构，就用结构化的 <code>text.format</code></li>
 </ul> </div> 
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>本指南剩余部分聚焦 Chat Completions API 中不经过 function calling 的用法。想了解如何把结构化输出与 function calling 结合，请查看 </p><a class="_TextLink_ssta1_1" data-underline="always" href="https://developers.openai.com/api/docs/guides/function-calling#strict-mode"><p>Function Calling</p></a> <p>指南。</p></div></div></div></div></div> </div> 
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>本指南剩余部分聚焦 Responses API 中不经过 function calling 的用法。想了解如何把结构化输出与 function calling 结合，请查看 </p><a class="_TextLink_ssta1_1" data-underline="always" href="https://developers.openai.com/api/docs/guides/function-calling#strict-mode"><p>Function Calling</p></a> <p>指南。</p></div></div></div></div></div> </div> 
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>本指南剩余部分聚焦 Chat Completions API 中不经过函数调用的用法。想了解如何把结构化输出与函数调用结合，请查看 </p><a class="_TextLink_ssta1_1" data-underline="always" href="https://developers.openai.com/api/docs/guides/function-calling#strict-mode"><p>函数调用</p></a> <p>指南。</p></div></div></div></div></div> </div> 
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>本指南剩余部分聚焦 Responses API 中不经过函数调用的用法。想了解如何把结构化输出与函数调用结合，请查看 </p><a class="_TextLink_ssta1_1" data-underline="always" href="https://developers.openai.com/api/docs/guides/function-calling#strict-mode"><p>函数调用</p></a> <p>指南。</p></div></div></div></div></div> </div> 
 <h3 id="structured-outputs-vs-json-mode">结构化输出与 JSON 模式对比</h3>
 <p>结构化输出是 <a href="#json-mode">JSON 模式</a>的升级版：两者都保证输出是合法 JSON，但只有结构化输出能保证它符合你给的 schema。Responses API、Chat Completions API、Assistants API、Fine-tuning API 和 Batch API 都支持结构化输出与 JSON 模式。</p>
 <p>能用结构化输出时，我们建议始终用它代替 JSON 模式。</p>
@@ -495,8 +560,8 @@ puts(event.name, event.date, event.participants.join(", "))</pre>
 <thead>
 <tr>
 <th></th>
-<th>Structured Outputs</th>
-<th>JSON Mode</th>
+<th>结构化输出</th>
+<th>JSON 模式</th>
 </tr>
 </thead>
 <tbody>
@@ -526,8 +591,8 @@ puts(event.name, event.date, event.participants.join(", "))</pre>
 <thead>
 <tr>
 <th></th>
-<th>Structured Outputs</th>
-<th>JSON Mode</th>
+<th>结构化输出</th>
+<th>JSON 模式</th>
 </tr>
 </thead>
 <tbody>
@@ -554,7 +619,7 @@ puts(event.name, event.date, event.participants.join(", "))</pre>
 </tbody>
 </table></div> </div> 
 <h2 id="examples">示例</h2>
-<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="example" data-content-switcher-initial="chain-of-thought" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="chain-of-thought" id="content-switcher-example"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="chain-of-thought">思维链</option><option value="structured-data">结构化数据抽取</option><option value="ui-generation">UI 生成</option><option value="moderation">内容审核</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="chain-of-thought"><div class="hidden">思维链</div><h3 id="chain-of-thought">思维链</h3>
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="example" data-content-switcher-initial="chain-of-thought" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="chain-of-thought" id="content-switcher-example"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="选择示例" data-guide-switch=""><option selected="" value="chain-of-thought">思维链</option><option value="structured-data">结构化数据抽取</option><option value="ui-generation">UI 生成</option><option value="moderation">内容审核</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="chain-of-thought"><div class="hidden">思维链</div><h3 id="chain-of-thought">思维链</h3>
 <p>你可以让模型按结构化的方式一步步给出答案，引导用户走完解题过程。</p>
 <div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <code-tabs title="用结构化输出做思维链数学辅导">
 <pre data-lang="python">from pydantic import BaseModel
@@ -3369,7 +3434,7 @@ puts(response.output_text)</pre>
 <span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  "category"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">null</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
 <span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  "explanation_if_violating"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">null</span></span>
 <span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">}</span></span></code></pre></div> </div> </div>
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <div class="anchor-heading-wrapper"><h2 id="how-to-use-1">通过 response_format 使用结构化输出</h2></div><p>你可以用 SDK 提供的辅助方法把模型输出解析成目标格式，也可以直接指定 JSON schema。</p><div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><strong>注意：</strong>对微调模型，你用某个 schema 发的第一个请求会因 API 处理 schema 而多出一点延迟，之后用同一 schema 的请求不再有此延迟。其他模型没有这个限制。</p></div></div></div></div></div><div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="format" data-content-switcher-initial="parse" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="parse" id="content-switcher-format"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="parse">SDK 对象</option><option value="without-parse">手写 schema</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="parse"><div class="hidden">SDK 对象</div><details class="guide-disclosure"><summary>第一步：定义对象</summary><p>首先要定义一个对象或数据结构，表示模型必须遵循的 JSON Schema。可参考本指南开头的<a href="/api/docs/guides/structured-outputs/#examples">示例</a>。</p><p>结构化输出支持 JSON Schema 的大部分特性，但有些出于性能或技术原因不可用，详见<a href="/api/docs/guides/structured-outputs/#supported-schemas">这里</a>。</p><p>例如，你可以这样定义对象：</p><code-tabs title="">
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <div class="anchor-heading-wrapper"><h2 id="how-to-use-1">通过 response_format 使用结构化输出</h2></div><p>你可以用 SDK 提供的辅助方法把模型输出解析成目标格式，也可以直接指定 JSON schema。</p><div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><strong>注意：</strong>对微调模型，你用某个 schema 发的第一个请求会因 API 处理 schema 而多出一点延迟，之后用同一 schema 的请求不再有此延迟。其他模型没有这个限制。</p></div></div></div></div></div><div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="format" data-content-switcher-initial="parse" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="parse" id="content-switcher-format"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="选择结构定义方式" data-guide-switch=""><option selected="" value="parse">SDK 对象</option><option value="without-parse">手写 schema</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="parse"><div class="hidden">SDK 对象</div><details class="guide-disclosure"><summary>第一步：定义对象</summary><p>首先要定义一个对象或数据结构，表示模型必须遵循的 JSON Schema。可参考本指南开头的<a href="/api/docs/guides/structured-outputs/#examples">示例</a>。</p><p>结构化输出支持 JSON Schema 的大部分特性，但有些出于性能或技术原因不可用，详见<a href="/api/docs/guides/structured-outputs/#supported-schemas">这里</a>。</p><p>例如，你可以这样定义对象：</p><code-tabs title="">
 <pre data-lang="python">from pydantic import BaseModel
 
 
@@ -8159,7 +8224,7 @@ end</pre>
 <li><code>maxItems</code> — 数组最多包含这么多项。</li>
 </ul>
 <p>下面是这些类型约束的使用示例：</p>
-<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="type-restrictions" data-content-switcher-initial="string-restrictions" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="string-restrictions" id="content-switcher-type-restrictions"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="string-restrictions">字符串约束</option><option value="number-restrictions">数值约束</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="string-restrictions"><div class="hidden">字符串约束</div><code-tabs title="">
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="type-restrictions" data-content-switcher-initial="string-restrictions" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="string-restrictions" id="content-switcher-type-restrictions"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="选择约束类型" data-guide-switch=""><option selected="" value="string-restrictions">字符串约束</option><option value="number-restrictions">数值约束</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="string-restrictions"><div class="hidden">字符串约束</div><code-tabs title="">
 <pre data-lang="json">{
     "name": "user_data",
     "strict": true,

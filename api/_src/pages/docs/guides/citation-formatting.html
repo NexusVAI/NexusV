@@ -6,8 +6,8 @@ lead: false
 css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
 js: /api/assets/model-guide.js
 ---
-<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/citation-formatting (reference copy for local review). -->
-<p>可靠的引用能建立信任，也能帮助读者核实回答的准确性。本指南介绍如何准备可引用的材料，并指导模型按 OpenAI 模型熟悉的格式有效地标注引用。</p>
+<!-- 引用格式示例参考 OpenAI Developers；服务接入说明适配 NexusVAI API。 -->
+<p>可靠的引用能帮助读者核实回答。本指南介绍如何为 NexusVAI API 的文本模型准备可引用的材料、约定引用格式，并在应用中校验结果。</p>
 <h2 id="overview">概述</h2>
 <p>一个引用系统包含多个部分：你要决定哪些内容可以被引用，把这些材料清晰地呈现出来，告诉模型怎样引用，并在结果呈现给用户之前进行校验。</p>
 <p>本指南涵盖模型直接处理的五个核心环节：</p>
@@ -75,7 +75,7 @@ js: /api/assets/model-guide.js
 <div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><strong>来源 ID 与定位器：</strong>来源 ID 是模型生成的稳定标识符，例如 <code>block1</code>。定位器是界面中精确高亮的位置，例如 <code>lines L8-L13</code> 或 <code>Paragraph 21</code>。一般情况下，模型应输出来源 ID，由你的系统解析或渲染定位器。过早混用两者，往往会增加格式错误。</p></div></div></div></div></div>
 <h2 id="define-citation-format">定义引用格式</h2>
 <p>你需要为模型定义它将要生成的引用格式。应使用明确、一致且模型容易稳定复现的格式。</p>
-<p>下面是我们推荐的引用格式和标记。这些引用标记很值得使用，因为它们与我们模型训练时使用的标记高度匹配。如果你选用不同的标记值，请尽量保持整体引用格式与上述一致。</p>
+<p>下面是一种引用标记示例。NexusVAI API 接入多种模型，不保证它们原生识别同一种标记。请在提示词中写明格式并在应用侧验证；如果换用不同标记，保持提示词与解析规则一致。</p>
 <div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
 <thead>
 <tr>
@@ -123,11 +123,11 @@ js: /api/assets/model-guide.js
 <pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>{CITATION_START}cite{CITATION_DELIMITER}turn0file1{CITATION_DELIMITER}L8-L13{CITATION_STOP}</span></span></code></pre>
 <p>如果你的系统不使用定位器，请省略该字段：</p>
 <pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>{CITATION_START}cite{CITATION_DELIMITER}turn0file1{CITATION_STOP}</span></span></code></pre>
-<h2 id="write-effective-citation-instructions">Write effective citation instructions</h2>
-<p>To maintain maximum accuracy, use familiar citation patterns. Custom or unfamiliar formats increase cognitive load on the model, leading to citation errors, especially in:</p>
+<h2 id="write-effective-citation-instructions">编写有效的引用指令</h2>
+<p>要尽量提高引用准确性，请使用模型熟悉的引用格式。自定义或不熟悉的格式会增加模型的处理负担，容易产生引用错误，尤其是在以下情况下：</p>
 <ul>
-<li>low reasoning effort, where the model has less budget to recover from formatting mistakes.</li>
-<li>high-complexity tasks, where most of the reasoning budget is spent on solving the task itself rather than cleaning up citation syntax.</li>
+<li>推理强度较低时，模型用于纠正格式错误的预算较少。</li>
+<li>任务复杂时，大部分推理预算用于解决任务本身，而不是修正引用语法。</li>
 </ul>
 <p>下面推荐一种接近模型熟悉写法的引用格式。你可以直接使用，也可以按自己的系统调整。</p>
 <p>如果你想定义自己的提示词，需要说明：</p>
@@ -156,10 +156,10 @@ js: /api/assets/model-guide.js
 <span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Place citations at the end of the paragraph, or inline if the paragraph is long, unless the user requests specific citation placement.</span></span>
 <span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Citations must be placed after punctuation.</span></span>
 <span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Citations must not be all grouped together at the end of the response.</span></span>
-<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Citations must not be put in a line or paragraph with nothing else but the citations themselves.</span></span></code></pre><p>If you want the model to also output locators such as lines (<code>L1-L22</code>), specify it in the prompt like this:</p><pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>You *must* cite any results you use from this tool using the:</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> Citations must not be put in a line or paragraph with nothing else but the citations themselves.</span></span></code></pre><p>如果你希望模型同时输出行号等定位信息（例如 <code>L1-L22</code>），可在提示词中这样说明：</p><pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>You *must* cite any results you use from this tool using the:</span></span>
 <span class="line"><span>`\ue200cite\ue202turn0file0\ue202L8-L13\ue201` format ONLY if the item has a corresponding citation marker.</span></span></code></pre><ul>
-<li>Do not attempt to cite items without a corresponding citation marker, as they are not meant to be cited.</li>
-<li>You MUST include line ranges in your citations.</li>
+<li>没有对应引用标记的条目不应被引用。</li>
+<li>每条引用都必须包含行号范围。</li>
 </ul></details>
 <details class="guide-disclosure"><summary>提高依据质量的可选指令</summary><p>需要更高质量的依据行为时，通常值得加入以下规则。请根据你的使用场景调整本节。</p><pre class="astro-code astro-code-themes github-light github-dark" data-language="xml" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><span aria-hidden="true" class="platform-code-line-numbers" style="width:2ch"><span class="platform-code-line-number">1</span><span class="platform-code-line-number">2</span><span class="platform-code-line-number">3</span><span class="platform-code-line-number">4</span><span class="platform-code-line-number">5</span><span class="platform-code-line-number">6</span><span class="platform-code-line-number">7</span><span class="platform-code-line-number">8</span><span class="platform-code-line-number">9</span><span class="platform-code-line-number">10</span><span class="platform-code-line-number">11</span><span class="platform-code-line-number">12</span><span class="platform-code-line-number">13</span></span><code><span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">&lt;</span><span style="color:#22863A;--shiki-dark:#85E89D">extra_considerations_for_citations</span><span style="color:#24292E;--shiki-dark:#E1E4E8">&gt;</span></span>
 <span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">- **Relevance:** Include only search results and citations that support the cited response text. Irrelevant sources permanently degrade user trust.</span></span>
@@ -597,8 +597,4 @@ end</pre>
 <span class="line"><span style="color:#E36209;--shiki-dark:#FFAB70">-</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> If the provided blocks conflict, cite the conflicting blocks and describe the conflict accurately.</span></span></code></pre>
 <p>示例输出：</p>
 <pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>The Court held that the District Court lacked personal jurisdiction over the petitioner. \ue200cite\ue202block5\ue201</span></span></code></pre>
-<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><strong>注意：</strong>网页搜索等 OpenAI 托管工具会自动提供行内引用。
-如果你想改用托管工具，请参阅 
-<a href="https://developers.openai.com/api/docs/guides/tools">工具概览</a>、 
-<a href="https://developers.openai.com/api/docs/guides/tools-web-search">网页搜索指南</a> 和 
-<a href="https://developers.openai.com/api/docs/guides/tools-file-search">文件搜索指南</a>。</p></div></div></div></div></div>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><strong>注意：</strong>此格式不依赖服务端托管的网页搜索或文件检索。让应用检索并提供材料，再核对模型返回的引用是否指向实际提供的文档。要让模型请求应用侧检索，可使用 <a href="/api/docs/guides/responses/#tools">自定义函数工具</a>。</p></div></div></div></div></div>

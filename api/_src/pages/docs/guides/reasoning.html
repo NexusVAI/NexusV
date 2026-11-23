@@ -1,12 +1,49 @@
 ---
 title: 推理模型
-description: 了解如何在 Responses API 中使用 OpenAI 推理模型、选择推理强度、管理推理 token，并在多轮对话中保持推理状态。
+description: 在 NexusVAI API 中选择推理模型、调整推理强度，并了解输出与多轮对话处理方式。
 tab: models
 lead: false
-css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
-js: /api/assets/model-guide.js
 ---
-<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/reasoning (reference copy for local review). -->
+<p>推理模型适合多步骤问题，例如复杂代码分析、规划和比较候选方案。用 <strong>NexusVAI API</strong> 试用时，先在<a href="/api/docs/models/">模型目录</a>确认能力与上下文长度，再用代表性问题比较质量、延迟和费用。</p>
+
+<h2 id="get-started-with-reasoning">开始使用推理</h2>
+<p>通过 <a href="/api/reference/responses/">Responses API</a> 发送任务说明。先按照<a href="/api/docs/quickstart/#create-key">快速开始</a>设置 <code>CANCRI_API_KEY</code>，并确认示例模型 ID 在 <a href="/api/reference/models/">GET /v1/models</a> 中可用。</p>
+<pre data-lang="bash" data-label="cURL" data-title="调整推理强度">curl https://cn.nexusvai.xyz/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $CANCRI_API_KEY" \
+  -d '{"model":"gpt-6-astra","reasoning":{"effort":"high"},"input":"比较三种数据备份方案，并说明各自如何验证可恢复。"}'</pre>
+
+<h2 id="reasoning-effort">推理强度</h2>
+<p>Responses 使用 <code>reasoning.effort</code>；Chat Completions 使用 <code>reasoning_effort</code>。这些字段只对支持它的模型生效。各协议的取值和限制见 <a href="/api/docs/guides/responses/#reasoning">Responses 指南</a>与 <a href="/api/docs/guides/chat-completions/#reasoning">Chat Completions 指南</a>。</p>
+
+<h2 id="reasoning-mode">选择推理模式</h2>
+<p>从模型默认行为开始，只有代表性测试显示质量收益时才提高强度。遇到需快速回答的请求，可用较低强度或更快的模型；不要假定其他平台的模式和取值与本站相同。</p>
+
+<h2 id="how-reasoning-works">推理的工作原理</h2>
+<p>模型可能先消耗一部分输出预算完成内部推理，再给出可见答案。不要依赖内部推理文本：应用应以最终答案、可验证的结论和工具结果为准。</p>
+
+<h2 id="controlling-costs">控制成本</h2>
+<p>让输入涵盖必要的规则、约束和相关数据，去掉无关上下文。用 <code>max_output_tokens</code> 限制 Responses 的输出预算，并给复杂任务留出空间；用量和费用在<a href="/api/docs/guides/usage/">用量记录</a>与<a href="/api/docs/pricing/">价格页</a>核对。</p>
+
+<h2 id="preserve-reasoning-across-calls">跨调用管理上下文</h2>
+<p>网关不保存服务端会话。把对话历史以及需要保留的函数调用和函数结果放进下一轮 <code>input</code>；不要用 <code>previous_response_id</code> 代替历史。见<a href="/api/docs/guides/responses/#multi-turn">多轮对话</a>和<a href="/api/docs/guides/responses/#tools">函数调用往返</a>。</p>
+
+<h2 id="change-reasoning-mid-conversation">在对话中调整推理强度</h2>
+<p>下一次请求可以在带上历史的同时选择新的 <code>reasoning.effort</code>。不要依赖未在 API 参考中列出的会话更新字段。</p>
+
+<h2 id="reasoning-summaries">推理摘要</h2>
+<p>模型返回公开的推理文本时，Responses 响应可在 <code>reasoning</code> 输出项中提供摘要；该输出项不一定存在。正文仍从消息中的 <code>output_text</code> 读取。</p>
+
+<span id="phase-parameter"></span>
+<h2 id="advice-on-prompting">提示词编写建议</h2>
+<p>明确目标、已知条件和成功标准；要得到验证材料时，要求列出假设、测试结果或依据，而不是要求展示内部思考。</p>
+
+<h2 id="use-case-examples">应用场景示例</h2>
+<ul><li>为大型变更做规划：要求分步列出依赖、风险和每一步的验证方式。</li><li>分析复杂数据：要求标明数据缺口，并解释结论依据。</li><li>阅读代码：让模型指出可观察的错误和最小回归测试，而不是只给猜测。</li></ul>
+<p>更多例子见<a href="/api/docs/guides/reasoning-best-practices/">推理最佳实践</a>。</p>
+
+<!-- local-reference -->
+<!-- 原中文参考稿保留供编辑核对，不参与构建。 -->
 <p><strong>推理模型</strong>在生成回复前会先使用内部的推理 token。这有助于模型制定计划、有效使用工具、比较不同方案、处理模糊之处，并解决更难的多步骤任务。推理模型尤其适合复杂问题求解、编程、科学推理和多步骤的智能体工作流。它们也是 <a href="https://github.com/openai/codex">Codex CLI</a>（我们的轻量级编程智能体）的最佳模型。</p>
 <p>大多数推理任务建议从 <code>gpt-6-astra</code> 开始。如需更低成本，可以考虑 <a href="https://developers.openai.com/api/docs/models/gpt-5.6-terra"><code>gpt-5.6-terra</code></a>；如需最低成本和延迟，可以选择 <a href="https://developers.openai.com/api/docs/models/gpt-5.6-luna"><code>gpt-5.6-luna</code></a>。如果你使用 GPT-5.6 或 GPT-6 模型，请参阅<a href="#reasoning-mode">推理模式</a>了解其 <code>pro</code> 选项。</p>
 <div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><strong>推理模型配合 <a href="https://developers.openai.com/api/docs/guides/migrate-to-responses">Responses API</a> 效果更好</strong>。Chat Completions API 仍受支持，但使用 Responses 可以获得更好的模型智能与性能。</p></div></div></div></div></div>
@@ -158,56 +195,51 @@ puts(response.output_text)</pre>
     ]
   }'</pre>
 </code-tabs>
-<h2 id="reasoning-effort">Reasoning effort</h2>
-<p>The <code>reasoning.effort</code> parameter guides the model on how much to think when performing a task.</p>
-<p>Supported values are model-dependent and can include <code>none</code>, <code>minimal</code>, <code>low</code>, <code>medium</code>, <code>high</code>, <code>xhigh</code>, and <code>max</code>. Lower effort favors speed and lower token usage, while at higher effort the model thinks more completely to provide higher quality responses. The models also reason adaptively across reasoning efforts, using fewer tokens for simpler tasks and thinking harder for complex tasks.</p>
-<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><a href="https://developers.openai.com/api/docs/models/gpt-6-astra">GPT-6 Astra</a> does not support <code>none</code> reasoning
-effort. Setting <code>reasoning.effort</code> (Responses) or <code>reasoning_effort</code> (Chat
-Completions) to <code>none</code> returns HTTP 400. <a href="https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6-astra#gpt-61-sol">GPT-6.1 Sol</a>
-does not support <code>none</code> or <code>minimal</code> and defaults to <code>medium</code>.</p><p>Use the <a href="https://developers.openai.com/api/docs/guides/migrate-to-responses">Responses API</a> for function
-calling. Chat Completions does not support function calling with GPT-6 Astra or
-GPT-6.1 Sol.</p></div></div></div></div></div>
-<p>Defaults are also model-dependent rather than universal. <code>gpt-5.5</code> defaults to <code>medium</code> reasoning effort. This is the best starting point for <code>gpt-5.5</code>’s full balance of quality, reliability and performance.</p>
+<h2 id="reasoning-effort">推理强度</h2>
+<p><code>reasoning.effort</code> 参数用于调节模型执行任务时的推理强度。</p>
+<p>支持的取值因模型而异，可能包括 <code>none</code>、<code>minimal</code>、<code>low</code>、<code>medium</code>、<code>high</code>、<code>xhigh</code> 和 <code>max</code>。较低的强度偏向速度和更少的 token 用量，较高的强度让模型思考得更充分，以提高回复质量。无论选择哪一档，模型都会根据任务难度调整推理：简单任务使用较少的 token，复杂任务则思考得更深入。</p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><a href="https://developers.openai.com/api/docs/models/gpt-6-astra">GPT-6 Astra</a> 的推理强度不支持 <code>none</code>。将 <code>reasoning.effort</code>（Responses）或 <code>reasoning_effort</code>（Chat Completions）设为 <code>none</code> 会返回 HTTP 400。<a href="https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6-astra#gpt-61-sol">GPT-6.1 Sol</a> 不支持 <code>none</code> 或 <code>minimal</code>，默认使用 <code>medium</code>。</p><p>请使用 <a href="https://developers.openai.com/api/docs/guides/migrate-to-responses">Responses API</a> 进行函数调用。Chat Completions 不支持以 GPT-6 Astra 或 GPT-6.1 Sol 进行函数调用。</p></div></div></div></div></div>
+<p>默认值也因模型而异。<code>gpt-5.5</code> 默认使用 <code>medium</code>。要兼顾这个模型的质量、可靠性和性能，最好从这一档开始。</p>
 <div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
 <thead>
 <tr>
-<th>Effort</th>
-<th>Best for</th>
+<th>推理强度</th>
+<th>适用场景</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>none</code></td>
-<td>Latency-critical tasks that do not benefit from any reasoning or multi-chained tool calls. For latency-sensitive use cases with <code>gpt-5.5</code>, we recommend trying <code>low</code> to begin with and then moving to <code>none</code> if required.<br/><br/>Common use cases include voice, fast information retrieval, and classification.</td>
+<td>适合对延迟要求极高，且不需要推理或多次串联工具调用的任务。在对延迟敏感的场景中使用 <code>gpt-5.5</code> 时，建议先试用 <code>low</code>，必要时再改用 <code>none</code>。<br/><br/>常见场景包括语音、快速信息检索和分类。</td>
 </tr>
 <tr>
 <td><code>low</code></td>
-<td>Efficient reasoning with a modest latency increase. Ideal for use cases requiring tool-use, planning, search, or multi-step decision making, while optimizing for speed and cost.<br/><br/>Common use cases include data analysis, drafting, execution-oriented coding, and customer support / chat assistant workflows.</td>
+<td>延迟略有增加，仍能高效推理。适合需要使用工具、规划、搜索或多步决策，同时又要兼顾速度和成本的场景。<br/><br/>常见场景包括数据分析、起草文稿、以执行为主的编程，以及客服或聊天助手工作流。</td>
 </tr>
 <tr>
 <td><code>medium</code></td>
-<td>When quality and reliability matter, and the task involves planning, complex reasoning, and judgement. Default configuration for most workloads, and a well-balanced point on the pareto curve of latency, performance and cost.<br/><br/>Common use cases include agentic coding, research, working with spreadsheets &amp; slides, and delegating long-horizon work.</td>
+<td>适合重视质量和可靠性，且涉及规划、复杂推理和判断的任务。这是大多数任务的默认配置，在延迟、性能和成本之间较为均衡。<br/><br/>常见场景包括智能体编程、研究、处理电子表格和幻灯片，以及委派长期任务。</td>
 </tr>
 <tr>
 <td><code>high</code></td>
-<td>Hard reasoning, complex debugging, deep planning, and high-value tasks where quality and intelligence matters more than latency. Recommended for complex workflows and agentic tasks.<br/><br/>Common use cases include agentic coding, long-horizon research, and knowledge work. Depending on the complexity of the task, evaluate both <code>medium</code> and <code>high</code>.</td>
+<td>适合高难度推理、复杂调试、深入规划，以及比起延迟更看重质量和模型能力的高价值任务。推荐用于复杂工作流和智能体任务。<br/><br/>常见场景包括智能体编程、长期研究和知识工作。可根据任务复杂程度，评估 <code>medium</code> 和 <code>high</code> 两档。</td>
 </tr>
 <tr>
 <td><code>xhigh</code></td>
-<td>Deep research, asynchronous workflows and agentic tasks that require long runs. Only use when your evals show a clear benefit that justifies the extra latency and cost.<br/><br/>Common use cases include security and code review, enterprise productivity, deeper research tasks, and challenging coding workflows.</td>
+<td>适合深入研究、异步工作流和需要长时间运行的智能体任务。只有评估显示收益值得额外的延迟和成本时，才使用这一档。<br/><br/>常见场景包括安全审查、代码审查、提升企业工作效率、深入研究以及高难度的编程工作流。</td>
 </tr>
 <tr>
 <td><code>max</code></td>
-<td>Maximum reasoning for your most complex tasks. If you are currently using <code>xhigh</code>, evaluate if <code>max</code> results in stronger performance</td>
+<td>为最复杂的任务提供最高推理强度。如果目前使用 <code>xhigh</code>，可以评估 <code>max</code> 是否能带来更好的表现。</td>
 </tr>
 </tbody>
 </table></div>
-<p>For faster time to first visible token in latency-sensitive applications, ask the model to generate a short preamble before continuing with deeper reasoning.</p>
-<p>Some models support only a subset of these values, so check the relevant <a href="/api/docs/models/">model page</a> before choosing a setting.</p>
-<h2 id="reasoning-mode">Reasoning mode</h2>
-<p>GPT-5.6 and GPT-6 models support <code>standard</code> and <code>pro</code> reasoning modes in the Responses API. <code>standard</code> is the default. Set <code>reasoning.mode</code> to <code>pro</code> for difficult tasks that need more model work and can tolerate higher latency and token usage.</p>
-<p>Reasoning mode and reasoning effort are independent. Mode selects standard or pro execution, while <code>reasoning.effort</code> controls how much reasoning the model applies within that mode. If you omit <code>reasoning.effort</code>, GPT-5.6 defaults to <code>medium</code> in both modes. GPT-6.1 Sol, GPT-6 Sol, and GPT-6 Luna also default to <code>medium</code> reasoning effort.</p>
-<div class="code-sample not-prose _root_1czwd_2 light-mode"><div class="_header_1czwd_34"><div class="_title_1czwd_42 body-small">Using pro reasoning mode</div><button aria-label="Copy code" class="_Button_6dmow_1 _copyButton_1czwd_168" data-color="primary" data-gutter-size="xs" data-icon-size="sm" data-size="sm" data-variant="ghost" type="button"><span class="_ButtonInner_6dmow_4"><span class="block relative w-[var(--button-icon-size)] h-[var(--button-icon-size)]" data-transition-position="absolute" style="--tg-will-change:transform, opacity;--tg-enter-opacity:1;--tg-enter-transform:scale(1);--tg-enter-filter:none;--tg-enter-duration:300ms;--tg-enter-delay:150ms;--tg-enter-timing-function:var(--cubic-enter);--tg-exit-opacity:0;--tg-exit-transform:scale(0.6);--tg-exit-filter:none;--tg-exit-duration:150ms;--tg-exit-delay:0ms;--tg-exit-timing-function:var(--cubic-exit);--tg-initial-opacity:0;--tg-initial-transform:scale(0.6);--tg-initial-filter:none"><span class="_TransitionItem_1lpir_1 _TransitionGroupChild_1d6a5_1"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M12.7587 2H16.2413C17.0463 1.99999 17.7106 1.99998 18.2518 2.04419C18.8139 2.09012 19.3306 2.18868 19.816 2.43597C20.5686 2.81947 21.1805 3.43139 21.564 4.18404C21.8113 4.66937 21.9099 5.18608 21.9558 5.74817C22 6.28936 22 6.95372 22 7.75868V11.2413C22 12.0463 22 12.7106 21.9558 13.2518C21.9099 13.8139 21.8113 14.3306 21.564 14.816C21.1805 15.5686 20.5686 16.1805 19.816 16.564C19.3306 16.8113 18.8139 16.9099 18.2518 16.9558C17.8906 16.9853 17.4745 16.9951 16.9984 16.9984C16.9951 17.4745 16.9853 17.8906 16.9558 18.2518C16.9099 18.8139 16.8113 19.3306 16.564 19.816C16.1805 20.5686 15.5686 21.1805 14.816 21.564C14.3306 21.8113 13.8139 21.9099 13.2518 21.9558C12.7106 22 12.0463 22 11.2413 22H7.75868C6.95372 22 6.28936 22 5.74818 21.9558C5.18608 21.9099 4.66937 21.8113 4.18404 21.564C3.43139 21.1805 2.81947 20.5686 2.43597 19.816C2.18868 19.3306 2.09012 18.8139 2.04419 18.2518C1.99998 17.7106 1.99999 17.0463 2 16.2413V12.7587C1.99999 11.9537 1.99998 11.2894 2.04419 10.7482C2.09012 10.1861 2.18868 9.66937 2.43597 9.18404C2.81947 8.43139 3.43139 7.81947 4.18404 7.43598C4.66937 7.18868 5.18608 7.09012 5.74817 7.04419C6.10939 7.01468 6.52548 7.00487 7.00162 7.00162C7.00487 6.52548 7.01468 6.10939 7.04419 5.74817C7.09012 5.18608 7.18868 4.66937 7.43598 4.18404C7.81947 3.43139 8.43139 2.81947 9.18404 2.43597C9.66937 2.18868 10.1861 2.09012 10.7482 2.04419C11.2894 1.99998 11.9537 1.99999 12.7587 2ZM9.00176 7L11.2413 7C12.0463 6.99999 12.7106 6.99998 13.2518 7.04419C13.8139 7.09012 14.3306 7.18868 14.816 7.43598C15.5686 7.81947 16.1805 8.43139 16.564 9.18404C16.8113 9.66937 16.9099 10.1861 16.9558 10.7482C17 11.2894 17 11.9537 17 12.7587V14.9982C17.4455 14.9951 17.7954 14.9864 18.089 14.9624C18.5274 14.9266 18.7516 14.8617 18.908 14.782C19.2843 14.5903 19.5903 14.2843 19.782 13.908C19.8617 13.7516 19.9266 13.5274 19.9624 13.089C19.9992 12.6389 20 12.0566 20 11.2V7.8C20 6.94342 19.9992 6.36113 19.9624 5.91104C19.9266 5.47262 19.8617 5.24842 19.782 5.09202C19.5903 4.7157 19.2843 4.40973 18.908 4.21799C18.7516 4.1383 18.5274 4.07337 18.089 4.03755C17.6389 4.00078 17.0566 4 16.2 4H12.8C11.9434 4 11.3611 4.00078 10.911 4.03755C10.4726 4.07337 10.2484 4.1383 10.092 4.21799C9.7157 4.40973 9.40973 4.7157 9.21799 5.09202C9.1383 5.24842 9.07337 5.47262 9.03755 5.91104C9.01357 6.20463 9.00489 6.55447 9.00176 7ZM5.91104 9.03755C5.47262 9.07337 5.24842 9.1383 5.09202 9.21799C4.7157 9.40973 4.40973 9.7157 4.21799 10.092C4.1383 10.2484 4.07337 10.4726 4.03755 10.911C4.00078 11.3611 4 11.9434 4 12.8V16.2C4 17.0566 4.00078 17.6389 4.03755 18.089C4.07337 18.5274 4.1383 18.7516 4.21799 18.908C4.40973 19.2843 4.7157 19.5903 5.09202 19.782C5.24842 19.8617 5.47262 19.9266 5.91104 19.9624C6.36113 19.9992 6.94342 20 7.8 20H11.2C12.0566 20 12.6389 19.9992 13.089 19.9624C13.5274 19.9266 13.7516 19.8617 13.908 19.782C14.2843 19.5903 14.5903 19.2843 14.782 18.908C14.8617 18.7516 14.9266 18.5274 14.9624 18.089C14.9992 17.6389 15 17.0566 15 16.2V12.8C15 11.9434 14.9992 11.3611 14.9624 10.911C14.9266 10.4726 14.8617 10.2484 14.782 10.092C14.5903 9.7157 14.2843 9.40973 13.908 9.21799C13.7516 9.1383 13.5274 9.07337 13.089 9.03755C12.6389 9.00078 12.0566 9 11.2 9H7.8C6.94342 9 6.36113 9.00078 5.91104 9.03755Z" fill="currentColor"></path></svg></span></span></span></button><span aria-live="polite" class="sr-only"></span></div><div class="_body_1czwd_59 _bodySmall_1czwd_151 _bodyWithHeader_1czwd_139"><pre class="shiki shiki-themes syntax-highlighter light-mode _pre_1czwd_62" data-1p-ignore="true" data-copy-ignore="true" data-syntax-highlighter-id="_r45R_a_" tabindex="0"><code data-1p-ignore="true" data-language="bash" data-wrap-long-lines="false"><span aria-hidden="true" class="syntax-highlighter-line-numbers"><span class="syntax-highlighter-line-number">1<!-- -->
+<p>在对延迟敏感的应用中，可以让模型先给出简短的开场说明，再深入推理，以缩短首个可见 token 的等待时间。</p>
+<p>有些模型只支持上述取值中的一部分。选择前请查阅相应的<a href="/api/docs/models/">模型页面</a>。</p>
+<h2 id="reasoning-mode">推理模式</h2>
+<p>GPT-5.6 和 GPT-6 模型在 Responses API 中支持 <code>standard</code> 和 <code>pro</code> 两种推理模式，默认使用 <code>standard</code>。如果任务较难，需要模型进行更多计算，并能接受更高的延迟和 token 用量，可以将 <code>reasoning.mode</code> 设为 <code>pro</code>。</p>
+<p>推理模式与推理强度相互独立。模式决定用 <code>standard</code> 还是 <code>pro</code> 执行，<code>reasoning.effort</code> 则控制模型在该模式下投入多少推理。如果省略 <code>reasoning.effort</code>，GPT-5.6 在两种模式下都默认使用 <code>medium</code>。GPT-6.1 Sol、GPT-6 Sol 和 GPT-6 Luna 的默认推理强度也为 <code>medium</code>。</p>
+<div class="code-sample not-prose _root_1czwd_2 light-mode"><div class="_header_1czwd_34"><div class="_title_1czwd_42 body-small">使用 pro 推理模式</div><button aria-label="Copy code" class="_Button_6dmow_1 _copyButton_1czwd_168" data-color="primary" data-gutter-size="xs" data-icon-size="sm" data-size="sm" data-variant="ghost" type="button"><span class="_ButtonInner_6dmow_4"><span class="block relative w-[var(--button-icon-size)] h-[var(--button-icon-size)]" data-transition-position="absolute" style="--tg-will-change:transform, opacity;--tg-enter-opacity:1;--tg-enter-transform:scale(1);--tg-enter-filter:none;--tg-enter-duration:300ms;--tg-enter-delay:150ms;--tg-enter-timing-function:var(--cubic-enter);--tg-exit-opacity:0;--tg-exit-transform:scale(0.6);--tg-exit-filter:none;--tg-exit-duration:150ms;--tg-exit-delay:0ms;--tg-exit-timing-function:var(--cubic-exit);--tg-initial-opacity:0;--tg-initial-transform:scale(0.6);--tg-initial-filter:none"><span class="_TransitionItem_1lpir_1 _TransitionGroupChild_1d6a5_1"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M12.7587 2H16.2413C17.0463 1.99999 17.7106 1.99998 18.2518 2.04419C18.8139 2.09012 19.3306 2.18868 19.816 2.43597C20.5686 2.81947 21.1805 3.43139 21.564 4.18404C21.8113 4.66937 21.9099 5.18608 21.9558 5.74817C22 6.28936 22 6.95372 22 7.75868V11.2413C22 12.0463 22 12.7106 21.9558 13.2518C21.9099 13.8139 21.8113 14.3306 21.564 14.816C21.1805 15.5686 20.5686 16.1805 19.816 16.564C19.3306 16.8113 18.8139 16.9099 18.2518 16.9558C17.8906 16.9853 17.4745 16.9951 16.9984 16.9984C16.9951 17.4745 16.9853 17.8906 16.9558 18.2518C16.9099 18.8139 16.8113 19.3306 16.564 19.816C16.1805 20.5686 15.5686 21.1805 14.816 21.564C14.3306 21.8113 13.8139 21.9099 13.2518 21.9558C12.7106 22 12.0463 22 11.2413 22H7.75868C6.95372 22 6.28936 22 5.74818 21.9558C5.18608 21.9099 4.66937 21.8113 4.18404 21.564C3.43139 21.1805 2.81947 20.5686 2.43597 19.816C2.18868 19.3306 2.09012 18.8139 2.04419 18.2518C1.99998 17.7106 1.99999 17.0463 2 16.2413V12.7587C1.99999 11.9537 1.99998 11.2894 2.04419 10.7482C2.09012 10.1861 2.18868 9.66937 2.43597 9.18404C2.81947 8.43139 3.43139 7.81947 4.18404 7.43598C4.66937 7.18868 5.18608 7.09012 5.74817 7.04419C6.10939 7.01468 6.52548 7.00487 7.00162 7.00162C7.00487 6.52548 7.01468 6.10939 7.04419 5.74817C7.09012 5.18608 7.18868 4.66937 7.43598 4.18404C7.81947 3.43139 8.43139 2.81947 9.18404 2.43597C9.66937 2.18868 10.1861 2.09012 10.7482 2.04419C11.2894 1.99998 11.9537 1.99999 12.7587 2ZM9.00176 7L11.2413 7C12.0463 6.99999 12.7106 6.99998 13.2518 7.04419C13.8139 7.09012 14.3306 7.18868 14.816 7.43598C15.5686 7.81947 16.1805 8.43139 16.564 9.18404C16.8113 9.66937 16.9099 10.1861 16.9558 10.7482C17 11.2894 17 11.9537 17 12.7587V14.9982C17.4455 14.9951 17.7954 14.9864 18.089 14.9624C18.5274 14.9266 18.7516 14.8617 18.908 14.782C19.2843 14.5903 19.5903 14.2843 19.782 13.908C19.8617 13.7516 19.9266 13.5274 19.9624 13.089C19.9992 12.6389 20 12.0566 20 11.2V7.8C20 6.94342 19.9992 6.36113 19.9624 5.91104C19.9266 5.47262 19.8617 5.24842 19.782 5.09202C19.5903 4.7157 19.2843 4.40973 18.908 4.21799C18.7516 4.1383 18.5274 4.07337 18.089 4.03755C17.6389 4.00078 17.0566 4 16.2 4H12.8C11.9434 4 11.3611 4.00078 10.911 4.03755C10.4726 4.07337 10.2484 4.1383 10.092 4.21799C9.7157 4.40973 9.40973 4.7157 9.21799 5.09202C9.1383 5.24842 9.07337 5.47262 9.03755 5.91104C9.01357 6.20463 9.00489 6.55447 9.00176 7ZM5.91104 9.03755C5.47262 9.07337 5.24842 9.1383 5.09202 9.21799C4.7157 9.40973 4.40973 9.7157 4.21799 10.092C4.1383 10.2484 4.07337 10.4726 4.03755 10.911C4.00078 11.3611 4 11.9434 4 12.8V16.2C4 17.0566 4.00078 17.6389 4.03755 18.089C4.07337 18.5274 4.1383 18.7516 4.21799 18.908C4.40973 19.2843 4.7157 19.5903 5.09202 19.782C5.24842 19.8617 5.47262 19.9266 5.91104 19.9624C6.36113 19.9992 6.94342 20 7.8 20H11.2C12.0566 20 12.6389 19.9992 13.089 19.9624C13.5274 19.9266 13.7516 19.8617 13.908 19.782C14.2843 19.5903 14.5903 19.2843 14.782 18.908C14.8617 18.7516 14.9266 18.5274 14.9624 18.089C14.9992 17.6389 15 17.0566 15 16.2V12.8C15 11.9434 14.9992 11.3611 14.9624 10.911C14.9266 10.4726 14.8617 10.2484 14.782 10.092C14.5903 9.7157 14.2843 9.40973 13.908 9.21799C13.7516 9.1383 13.5274 9.07337 13.089 9.03755C12.6389 9.00078 12.0566 9 11.2 9H7.8C6.94342 9 6.36113 9.00078 5.91104 9.03755Z" fill="currentColor"></path></svg></span></span></span></button><span aria-live="polite" class="sr-only"></span></div><div class="_body_1czwd_59 _bodySmall_1czwd_151 _bodyWithHeader_1czwd_139"><pre class="shiki shiki-themes syntax-highlighter light-mode _pre_1czwd_62" data-1p-ignore="true" data-copy-ignore="true" data-syntax-highlighter-id="_r45R_a_" tabindex="0"><code data-1p-ignore="true" data-language="bash" data-wrap-long-lines="false"><span aria-hidden="true" class="syntax-highlighter-line-numbers"><span class="syntax-highlighter-line-number">1<!-- -->
 </span><span class="syntax-highlighter-line-number">2<!-- -->
 </span><span class="syntax-highlighter-line-number">3<!-- -->
 </span><span class="syntax-highlighter-line-number">4<!-- -->
@@ -228,22 +260,16 @@ GPT-6.1 Sol.</p></div></div></div></div></div>
 </span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">    },</span>
 </span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">    "input": "Review this database migration plan and identify potential failure modes."</span>
 </span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">  }'</span></span></code></pre></div></div>
-<p>Pro mode aggregates the model work performed to produce the final answer and bills those tokens at the selected model’s standard <a href="/api/docs/pricing/">token rates</a>. Pro mode performs more model work than standard mode, increasing token usage and cost. Existing Pro model IDs keep their current behavior and pricing.</p>
-<h2 id="how-reasoning-works">How reasoning works</h2>
-<p>Reasoning models introduce <strong>reasoning tokens</strong> in addition to input and output tokens. The models use these reasoning tokens to “think,” breaking down the prompt and considering multiple approaches to generating a response. Our reasoning models like <code>gpt-5.5</code> and <code>gpt-5.4</code> support interleaved thinking, where the model is able to generate visible output tokens before and in between thinking, and is able to think in between tool calls.</p>
-<p>For models released before GPT-5.6, the default behavior in a multi-step conversation is to carry over input and output tokens from each step without rendering reasoning from earlier turns into the next sample. GPT-5.6 models instead default to rendering available reasoning from earlier turns. Use <code>reasoning.context</code> to select either behavior on supported models.</p>
-<p><img alt="Reasoning tokens with current-turn context" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/942e76679323c4f9e392.png"/></p>
-<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>While reasoning tokens are not visible via the API, they still occupy space in
-the model’s context window and are billed as <a href="https://openai.com/api/pricing">output
-tokens</a>.</p></div></div></div></div></div>
-<h2 id="controlling-costs">Controlling costs</h2>
-<p>To manage costs with reasoning models, you can limit the total number of tokens the
-model generates, including reasoning tokens, visible output tokens, and non-visible
-formatting tokens, by using the
-<a href="https://developers.openai.com/api/docs/api-reference/responses/create#responses-create-max_output_tokens"><code>max_output_tokens</code></a>
-parameter. See <a href="https://developers.openai.com/api/docs/guides/token-counting#understand-output-token-counts">output token counts</a> for details about how generated tokens are reflected in usage and output limits.</p>
-<h3 id="managing-the-context-window">Managing the context window</h3>
-<p>It’s important to ensure there’s enough space in the context window for reasoning tokens when creating responses. Depending on the problem’s complexity, the models may generate anywhere from a few hundred to tens of thousands of reasoning tokens. The exact number of reasoning tokens used is visible in the <a href="https://developers.openai.com/api/docs/api-reference/responses/object">usage object of the response object</a>, under <code>output_tokens_details</code>:</p>
+<p>Pro 模式汇总模型为生成最终答案所做的计算，并按所选模型的标准 <a href="/api/docs/pricing/">token 费率</a>计费。与标准模式相比，Pro 模式的计算量更大，token 用量和成本也更高。现有 Pro 模型 ID 的行为与定价不变。</p>
+<h2 id="how-reasoning-works">推理的工作原理</h2>
+<p>除了输入和输出 token，推理模型还使用<strong>推理 token</strong>。模型用这些 token 拆解提示词，并考虑多种回答方式。<code>gpt-5.5</code> 和 <code>gpt-5.4</code> 等推理模型支持交错推理：模型可以在开始推理前或各段推理之间生成可见输出，也可以在工具调用之间进行推理。</p>
+<p>在多步对话中，早于 GPT-5.6 发布的模型默认沿用每一步的输入和输出 token，但不会把先前轮次的推理纳入下一次生成的上下文。GPT-5.6 模型默认会纳入先前轮次中可用的推理。对于支持的模型，可通过 <code>reasoning.context</code> 选择其一。</p>
+<p><img alt="当前轮次上下文中的推理 token" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/942e76679323c4f9e392.png"/></p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>API 不显示推理 token，但这些 token 仍会占用模型的上下文窗口，并按<a href="https://openai.com/api/pricing">输出 token</a>计费。</p></div></div></div></div></div>
+<h2 id="controlling-costs">控制成本</h2>
+<p>使用推理模型时，可以通过 <a href="https://developers.openai.com/api/docs/api-reference/responses/create#responses-create-max_output_tokens"><code>max_output_tokens</code></a> 参数限制生成的 token 总数，以控制成本。总数包括推理 token、可见的输出 token 和不可见的格式 token。生成的 token 如何计入用量和输出上限，详见<a href="https://developers.openai.com/api/docs/guides/token-counting#understand-output-token-counts">输出 token 计数</a>。</p>
+<h3 id="managing-the-context-window">管理上下文窗口</h3>
+<p>创建响应时，要确保上下文窗口为推理 token 留出足够空间。视问题而定，模型可能生成几百到几万个推理 token。实际用量可在<a href="https://developers.openai.com/api/docs/api-reference/responses/object">响应对象的 <code>usage</code> 字段</a>中查看，具体位于 <code>output_tokens_details</code> 下：</p>
 <pre class="astro-code astro-code-themes github-light github-dark" data-language="json" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><span aria-hidden="true" class="platform-code-line-numbers" style="width:2ch"><span class="platform-code-line-number">1</span><span class="platform-code-line-number">2</span><span class="platform-code-line-number">3</span><span class="platform-code-line-number">4</span><span class="platform-code-line-number">5</span><span class="platform-code-line-number">6</span><span class="platform-code-line-number">7</span><span class="platform-code-line-number">8</span><span class="platform-code-line-number">9</span><span class="platform-code-line-number">10</span><span class="platform-code-line-number">11</span><span class="platform-code-line-number">12</span><span class="platform-code-line-number">13</span></span><code><span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">{</span></span>
 <span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  "usage"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: {</span></span>
 <span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "input_tokens"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">75</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
@@ -257,11 +283,11 @@ parameter. See <a href="https://developers.openai.com/api/docs/guides/token-coun
 <span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "total_tokens"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">1261</span></span>
 <span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  }</span></span>
 <span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">}</span></span></code></pre>
-<p>Context window lengths are found on the <a href="/api/docs/models/">model reference page</a>, and will differ across model snapshots.</p>
-<h3 id="allocating-space-for-reasoning">Allocating space for reasoning</h3>
-<p>If the generated tokens reach the context window limit or the <code>max_output_tokens</code> value you’ve set, you’ll receive a response with a <code>status</code> of <code>incomplete</code> and <code>incomplete_details</code> with <code>reason</code> set to <code>max_output_tokens</code>. This might occur before any visible output tokens are produced, meaning you could incur costs for input and reasoning tokens without receiving a visible response.</p>
-<p>To prevent this, ensure there’s sufficient space in the context window or adjust the <code>max_output_tokens</code> value to a higher number. OpenAI recommends reserving at least 25,000 tokens for reasoning and outputs when you start experimenting with these models. As you become familiar with the number of reasoning tokens your prompts require, you can adjust this buffer accordingly.</p>
-<code-tabs title="Handling incomplete responses">
+<p>可在<a href="/api/docs/models/">模型参考页</a>查看上下文窗口长度；不同模型快照的长度可能不同。</p>
+<h3 id="allocating-space-for-reasoning">为推理预留空间</h3>
+<p>如果生成的 token 数达到上下文窗口上限，或达到你设置的 <code>max_output_tokens</code>，响应的 <code>status</code> 会为 <code>incomplete</code>，且 <code>incomplete_details</code> 中的 <code>reason</code> 为 <code>max_output_tokens</code>。这可能发生在产生任何可见输出前，因此即使没有收到可见回复，也可能需要为输入和推理 token 付费。</p>
+<p>为避免这一情况，请确保上下文窗口有足够空间，或调高 <code>max_output_tokens</code>。刚开始试用时，OpenAI 建议为推理和输出合计预留至少 25,000 个 token。了解自己的提示词需要多少推理 token 后，可以相应调整预留空间。</p>
+<code-tabs title="处理不完整的响应">
 <pre data-lang="python">from openai import OpenAI
 
 client = OpenAI()
@@ -455,42 +481,38 @@ if response.status == OpenAI::Responses::ResponseStatus::INCOMPLETE
   puts("Partial output: #{response.output_text}") unless response.output_text.empty?
 end</pre>
 </code-tabs>
-<h2 id="preserve-reasoning-across-calls">Preserve reasoning across calls</h2>
-<p>Conversation state and reasoning state serve different purposes. Passing messages across calls gives the model the visible conversation history. On supported models, persisted reasoning also lets the model render compatible reasoning items from earlier turns into its next context.</p>
-<p>Persisted reasoning provides continuity; it does not expose the model’s raw reasoning. The reasoning items remain opaque, and the API does not return their reasoning text. Set <code>reasoning.context</code> to control which available reasoning items the model can use:</p>
-<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>The <a href="https://developers.openai.com/api/docs/guides/latest-model?model=gpt-5.6">GPT-5.6 model family</a>
-supports <code>all_turns</code> and uses it by default. Earlier models default
-to <code>current_turn</code>. <a href="https://developers.openai.com/api/docs/models/gpt-6.1-sol">GPT-6.1 Sol</a> also
-supports <code>all_turns</code>. Omit <code>reasoning.context</code> or set it
-to <code>auto</code> to use the selected model’s default.</p></div></div></div></div></div>
+<h2 id="preserve-reasoning-across-calls">跨调用保留推理状态</h2>
+<p>对话状态和推理状态的用途不同。跨调用传递消息可以让模型获得可见的对话历史。对支持此功能的模型，保留推理状态还能将先前轮次中兼容的推理项纳入下一次生成的上下文。</p>
+<p>保留推理状态可以延续推理，但不会公开模型原始的推理过程。推理项的内容不可见，API 不会返回其中的推理文本。可以通过 <code>reasoning.context</code> 控制模型能使用哪些已有的推理项：</p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p><a href="https://developers.openai.com/api/docs/guides/latest-model?model=gpt-5.6">GPT-5.6 模型系列</a>支持 <code>all_turns</code>，并默认使用此值。更早的模型默认为 <code>current_turn</code>。<a href="https://developers.openai.com/api/docs/models/gpt-6.1-sol">GPT-6.1 Sol</a> 也支持 <code>all_turns</code>。省略 <code>reasoning.context</code> 或设为 <code>auto</code>，即可使用所选模型的默认设置。</p></div></div></div></div></div>
 <div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
 <thead>
 <tr>
-<th>Value</th>
-<th>Behavior</th>
+<th>取值</th>
+<th>行为</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>auto</code></td>
-<td>Uses the selected model’s default. Omitting <code>reasoning.context</code> has the same effect as <code>auto</code>.</td>
+<td>使用所选模型的默认设置。省略 <code>reasoning.context</code> 与设为 <code>auto</code> 效果相同。</td>
 </tr>
 <tr>
 <td><code>current_turn</code></td>
-<td>Makes reasoning from the active turn available, but does not render reasoning from earlier turns into the next sample.</td>
+<td>允许使用当前轮次的推理，但不会将之前轮次的推理纳入下一次生成的上下文。</td>
 </tr>
 <tr>
 <td><code>all_turns</code></td>
-<td>Renders available, compatible reasoning items from earlier turns into the next sample. GPT-5.6 models and GPT-6.1 Sol support this value.</td>
+<td>将先前轮次中可用且兼容的推理项纳入下一次生成的上下文。GPT-5.6 模型和 GPT-6.1 Sol 支持此值。</td>
 </tr>
 </tbody>
 </table></div>
-<p>The response’s <code>reasoning.context</code> field contains the effective mode, either <code>current_turn</code> or <code>all_turns</code>. Check this field on each response to confirm which mode the model used. The setting does not create reasoning items that are not already available.</p>
-<p><code>all_turns</code> has an effect only when the request has access to earlier response items. Use <code>previous_response_id</code>, attach the response to a conversation, or manually replay the complete response history. On the first request, <code>current_turn</code> and <code>all_turns</code> behave the same because no earlier reasoning exists.</p>
-<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>Persisted reasoning can be reused only within the same model family. For example, <code>gpt-5.6-sol</code>, <code>gpt-5.6-terra</code>, and <code>gpt-5.6-luna</code> can reuse each other’s reasoning, but reasoning does not carry between the GPT-5.6 and GPT-5.5 families.</p><p>When you switch model families, the API omits incompatible reasoning from the model’s context, even when <code>reasoning.context</code> is <code>all_turns</code>.</p></div></div></div></div></div>
-<h3 id="continue-reasoning-with-stored-responses">Continue reasoning with stored responses</h3>
-<p>Use <code>previous_response_id</code> for the shortest stateful integration:</p>
-<code-tabs title="Preserve reasoning with a previous response">
+<p>响应的 <code>reasoning.context</code> 字段给出实际生效的模式：<code>current_turn</code> 或 <code>all_turns</code>。检查每个响应的该字段，即可确认模型使用了哪种模式。这项设置只使用已有的推理项，不会创建新项。</p>
+<p>只有当请求能访问先前的响应项时，<code>all_turns</code> 才会生效。可以使用 <code>previous_response_id</code>、将响应关联到对话，或手动重新传入完整的响应历史。首次请求没有先前的推理，因此两种模式的行为相同。</p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>保留的推理只能在同一模型系列内复用。例如，<code>gpt-5.6-sol</code>、<code>gpt-5.6-terra</code> 和 <code>gpt-5.6-luna</code> 可以复用彼此的推理，但 GPT-5.6 与 GPT-5.5 系列之间不能沿用推理。</p><p>切换模型系列时，即使 <code>reasoning.context</code> 为 <code>all_turns</code>，API 也不会将不兼容的推理纳入模型上下文。</p></div></div></div></div></div>
+<h3 id="continue-reasoning-with-stored-responses">利用已存储的响应继续推理</h3>
+<p>使用 <code>previous_response_id</code> 是保留状态最简单的方式：</p>
+<code-tabs title="利用先前的响应保留推理状态">
 <pre data-lang="python">from openai import OpenAI
 
 client = OpenAI()
@@ -627,10 +649,10 @@ second = client.responses.create(
 
 puts(second.output_text)</pre>
 </code-tabs>
-<p>Use <code>current_turn</code> when replaying older response items that the model no longer needs. Those reasoning items can remain in the API payload for continuity, but the service does not render them into the new sample. This can reduce the rendered context for long-running workflows.</p>
-<h3 id="preserve-reasoning-without-stored-responses">Preserve reasoning without stored responses</h3>
-<p>When you create a response in stateless mode, reasoning items in the response’s <code>output</code> array include an <code>encrypted_content</code> property by default. Stateless mode applies when <code>store</code> is <code>false</code> or when your organization uses Zero Data Retention (ZDR). The API still accepts the legacy <code>reasoning.encrypted_content</code> value in <code>include</code> for compatibility, but doesn’t require it.</p>
-<p>The following request returns encrypted reasoning content without specifying <code>include</code>:</p>
+<p>如果重新传入模型已不再需要的旧响应项，请使用 <code>current_turn</code>。这些推理项可以留在请求体中以保持连续性，但不会进入下一次生成的上下文。这能减少长时间运行的工作流实际使用的上下文。</p>
+<h3 id="preserve-reasoning-without-stored-responses">不存储响应时保留推理状态</h3>
+<p>在无状态模式下创建响应时，响应 <code>output</code> 数组中的推理项默认包含 <code>encrypted_content</code> 属性。当 <code>store</code> 为 <code>false</code>，或组织采用零数据保留（ZDR）时，请求使用无状态模式。为兼容旧版，API 仍允许在 <code>include</code> 中指定 <code>reasoning.encrypted_content</code>，但不要求这么做。</p>
+<p>以下请求没有指定 <code>include</code>，仍会返回加密的推理内容：</p>
 <div class="code-sample not-prose _root_1czwd_2 light-mode"><div class="_body_1czwd_59 _bodySmall_1czwd_151 _bodyWithCopyFloat_1czwd_145"><div class="_copyFloat_1czwd_157"><button aria-label="Copy code" class="_Button_6dmow_1 _copyButton_1czwd_168" data-color="primary" data-gutter-size="xs" data-icon-size="sm" data-size="sm" data-variant="ghost" type="button"><span class="_ButtonInner_6dmow_4"><span class="block relative w-[var(--button-icon-size)] h-[var(--button-icon-size)]" data-transition-position="absolute" style="--tg-will-change:transform, opacity;--tg-enter-opacity:1;--tg-enter-transform:scale(1);--tg-enter-filter:none;--tg-enter-duration:300ms;--tg-enter-delay:150ms;--tg-enter-timing-function:var(--cubic-enter);--tg-exit-opacity:0;--tg-exit-transform:scale(0.6);--tg-exit-filter:none;--tg-exit-duration:150ms;--tg-exit-delay:0ms;--tg-exit-timing-function:var(--cubic-exit);--tg-initial-opacity:0;--tg-initial-transform:scale(0.6);--tg-initial-filter:none"><span class="_TransitionItem_1lpir_1 _TransitionGroupChild_1d6a5_1"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M12.7587 2H16.2413C17.0463 1.99999 17.7106 1.99998 18.2518 2.04419C18.8139 2.09012 19.3306 2.18868 19.816 2.43597C20.5686 2.81947 21.1805 3.43139 21.564 4.18404C21.8113 4.66937 21.9099 5.18608 21.9558 5.74817C22 6.28936 22 6.95372 22 7.75868V11.2413C22 12.0463 22 12.7106 21.9558 13.2518C21.9099 13.8139 21.8113 14.3306 21.564 14.816C21.1805 15.5686 20.5686 16.1805 19.816 16.564C19.3306 16.8113 18.8139 16.9099 18.2518 16.9558C17.8906 16.9853 17.4745 16.9951 16.9984 16.9984C16.9951 17.4745 16.9853 17.8906 16.9558 18.2518C16.9099 18.8139 16.8113 19.3306 16.564 19.816C16.1805 20.5686 15.5686 21.1805 14.816 21.564C14.3306 21.8113 13.8139 21.9099 13.2518 21.9558C12.7106 22 12.0463 22 11.2413 22H7.75868C6.95372 22 6.28936 22 5.74818 21.9558C5.18608 21.9099 4.66937 21.8113 4.18404 21.564C3.43139 21.1805 2.81947 20.5686 2.43597 19.816C2.18868 19.3306 2.09012 18.8139 2.04419 18.2518C1.99998 17.7106 1.99999 17.0463 2 16.2413V12.7587C1.99999 11.9537 1.99998 11.2894 2.04419 10.7482C2.09012 10.1861 2.18868 9.66937 2.43597 9.18404C2.81947 8.43139 3.43139 7.81947 4.18404 7.43598C4.66937 7.18868 5.18608 7.09012 5.74817 7.04419C6.10939 7.01468 6.52548 7.00487 7.00162 7.00162C7.00487 6.52548 7.01468 6.10939 7.04419 5.74817C7.09012 5.18608 7.18868 4.66937 7.43598 4.18404C7.81947 3.43139 8.43139 2.81947 9.18404 2.43597C9.66937 2.18868 10.1861 2.09012 10.7482 2.04419C11.2894 1.99998 11.9537 1.99999 12.7587 2ZM9.00176 7L11.2413 7C12.0463 6.99999 12.7106 6.99998 13.2518 7.04419C13.8139 7.09012 14.3306 7.18868 14.816 7.43598C15.5686 7.81947 16.1805 8.43139 16.564 9.18404C16.8113 9.66937 16.9099 10.1861 16.9558 10.7482C17 11.2894 17 11.9537 17 12.7587V14.9982C17.4455 14.9951 17.7954 14.9864 18.089 14.9624C18.5274 14.9266 18.7516 14.8617 18.908 14.782C19.2843 14.5903 19.5903 14.2843 19.782 13.908C19.8617 13.7516 19.9266 13.5274 19.9624 13.089C19.9992 12.6389 20 12.0566 20 11.2V7.8C20 6.94342 19.9992 6.36113 19.9624 5.91104C19.9266 5.47262 19.8617 5.24842 19.782 5.09202C19.5903 4.7157 19.2843 4.40973 18.908 4.21799C18.7516 4.1383 18.5274 4.07337 18.089 4.03755C17.6389 4.00078 17.0566 4 16.2 4H12.8C11.9434 4 11.3611 4.00078 10.911 4.03755C10.4726 4.07337 10.2484 4.1383 10.092 4.21799C9.7157 4.40973 9.40973 4.7157 9.21799 5.09202C9.1383 5.24842 9.07337 5.47262 9.03755 5.91104C9.01357 6.20463 9.00489 6.55447 9.00176 7ZM5.91104 9.03755C5.47262 9.07337 5.24842 9.1383 5.09202 9.21799C4.7157 9.40973 4.40973 9.7157 4.21799 10.092C4.1383 10.2484 4.07337 10.4726 4.03755 10.911C4.00078 11.3611 4 11.9434 4 12.8V16.2C4 17.0566 4.00078 17.6389 4.03755 18.089C4.07337 18.5274 4.1383 18.7516 4.21799 18.908C4.40973 19.2843 4.7157 19.5903 5.09202 19.782C5.24842 19.8617 5.47262 19.9266 5.91104 19.9624C6.36113 19.9992 6.94342 20 7.8 20H11.2C12.0566 20 12.6389 19.9992 13.089 19.9624C13.5274 19.9266 13.7516 19.8617 13.908 19.782C14.2843 19.5903 14.5903 19.2843 14.782 18.908C14.8617 18.7516 14.9266 18.5274 14.9624 18.089C14.9992 17.6389 15 17.0566 15 16.2V12.8C15 11.9434 14.9992 11.3611 14.9624 10.911C14.9266 10.4726 14.8617 10.2484 14.782 10.092C14.5903 9.7157 14.2843 9.40973 13.908 9.21799C13.7516 9.1383 13.5274 9.07337 13.089 9.03755C12.6389 9.00078 12.0566 9 11.2 9H7.8C6.94342 9 6.36113 9.00078 5.91104 9.03755Z" fill="currentColor"></path></svg></span></span></span></button><span aria-live="polite" class="sr-only"></span></div><pre class="shiki shiki-themes syntax-highlighter light-mode _pre_1czwd_62" data-1p-ignore="true" data-copy-ignore="true" data-syntax-highlighter-id="_r48R_a_" tabindex="0"><code data-1p-ignore="true" data-language="bash" data-wrap-long-lines="false"><span aria-hidden="true" class="syntax-highlighter-line-numbers"><span class="syntax-highlighter-line-number">1<!-- -->
 </span><span class="syntax-highlighter-line-number">2<!-- -->
 </span><span class="syntax-highlighter-line-number">3<!-- -->
@@ -650,9 +672,9 @@ puts(second.output_text)</pre>
 </span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">    "input": "What is the weather like today?",</span>
 </span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">    "tools": [ ... function config here ... ]</span>
 </span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">  }'</span></span></code></pre></div></div>
-<p>Reasoning items in the <code>output</code> array will include an <code>encrypted_content</code> property containing encrypted reasoning tokens that you can pass to future calls.</p>
-<p>To use <code>all_turns</code> with <code>store: false</code>, preserve every output item, append the next user message, and replay the complete history:</p>
-<code-tabs title="Preserve reasoning without storing responses">
+<p>在 <code>output</code> 数组中，推理项的 <code>encrypted_content</code> 属性包含加密的推理 token，可以传给后续调用。</p>
+<p>要在 <code>store: false</code> 时使用 <code>all_turns</code>，请保留每个输出项，追加下一条用户消息，再重新传入完整历史：</p>
+<code-tabs title="不存储响应时保留推理状态">
 <pre data-lang="python">from openai import OpenAI
 
 client = OpenAI()
@@ -866,24 +888,23 @@ second = client.responses.create(
 
 puts(second.output_text)</pre>
 </code-tabs>
-<h3 id="keeping-reasoning-items-in-context">Keeping reasoning items in context</h3>
-<p>When doing <a href="https://developers.openai.com/api/docs/guides/function-calling">function calling</a> with a reasoning model in the <a href="https://developers.openai.com/api/docs/api-reference/responses">Responses API</a>, we highly recommend you pass back any reasoning items returned with the last function call (in addition to the output of your function). If the model calls multiple functions consecutively, you should pass back all reasoning items, function call items, and function call output items, since the last <code>user</code> message. This allows the model to continue its reasoning process to produce better results in the most token-efficient manner.</p>
-<p>The simplest way to do this is to pass in all reasoning items from a previous response into the next one. Our systems will smartly ignore any reasoning items that aren’t relevant to your functions, and only retain those in context that are relevant. You can pass reasoning items from previous responses either using the <code>previous_response_id</code> parameter, or by manually passing in all the <a href="https://developers.openai.com/api/docs/api-reference/responses/object#responses/object-output">output</a> items from a past response into the <a href="https://developers.openai.com/api/docs/api-reference/responses/create#responses-create-input">input</a> of a new one.</p>
-<p>For advanced use cases where you might be truncating and optimizing parts of the context window before passing them on to the next response, just ensure all items between the last user message and your function call output are passed into the next response untouched. This will ensure that the model has all the context it needs.</p>
-<p>Check out <a href="https://developers.openai.com/api/docs/guides/conversation-state">this guide</a> to learn more about manual context management.</p>
-<h2 id="change-reasoning-mid-conversation">Change reasoning mid-conversation</h2>
-<p>Use <code>configuration_update</code> to increase reasoning effort for difficult work or reduce it for routine follow-ups. Add the update between responses while leaving the request-level <code>reasoning.effort</code> unchanged. This preserves the original prompt prefix for <a href="https://developers.openai.com/api/docs/guides/prompt-caching">prompt caching</a>.</p>
-<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>On supported GPT-6 and later models, you can update reasoning effort and
-response format in standard, single-agent mode.</p></div></div></div></div></div>
-<p>Add the following item before the next user message in the <code>input</code> array of an HTTP Responses request or a WebSocket <code>response.create</code> request:</p>
+<h3 id="keeping-reasoning-items-in-context">在上下文中保留推理项</h3>
+<p>在 <a href="https://developers.openai.com/api/docs/api-reference/responses">Responses API</a> 中使用推理模型进行<a href="https://developers.openai.com/api/docs/guides/function-calling">函数调用</a>时，除了回传函数输出，强烈建议一并回传最近一次函数调用随附的所有推理项。如果模型连续调用多个函数，应回传自最近一条 <code>user</code> 消息以来的所有推理项、函数调用项和函数调用输出项。这样模型可以延续推理，用更少的 token 取得更好的结果。</p>
+<p>最简单的做法是把上一个响应中的所有推理项传给下一次请求。系统会自动忽略与函数无关的推理项，只在上下文中保留相关项。可以使用 <code>previous_response_id</code> 参数传递先前响应中的推理项，也可以将先前响应的所有 <a href="https://developers.openai.com/api/docs/api-reference/responses/object#responses/object-output"><code>output</code></a> 项放入新请求的 <a href="https://developers.openai.com/api/docs/api-reference/responses/create#responses-create-input"><code>input</code></a> 中。</p>
+<p>如果需要在发起下一次请求前截短并优化部分上下文，请确保最近一条用户消息与函数调用输出之间的所有项都原样传入下一次请求，让模型获得所需的完整上下文。</p>
+<p>如需手动管理上下文，请参阅<a href="https://developers.openai.com/api/docs/guides/conversation-state">对话状态指南</a>。</p>
+<h2 id="change-reasoning-mid-conversation">在对话中途调整推理设置</h2>
+<p>使用 <code>configuration_update</code> 可以在处理困难任务时调高推理强度，在处理常规后续问题时调低强度。在两次响应之间添加更新，同时保持请求级的 <code>reasoning.effort</code> 不变。这样可以保留原始提示词前缀，用于<a href="https://developers.openai.com/api/docs/guides/prompt-caching">提示词缓存</a>。</p>
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>对于支持此功能的 GPT-6 及后续模型，可以在标准的单智能体模式下更新推理强度和响应格式。</p></div></div></div></div></div>
+<p>在 HTTP Responses 请求或 WebSocket <code>response.create</code> 请求的 <code>input</code> 数组中，将下面这项放在下一条用户消息之前：</p>
 <pre class="astro-code astro-code-themes github-light github-dark" data-language="json" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><span aria-hidden="true" class="platform-code-line-numbers" style="width:1ch"><span class="platform-code-line-number">1</span><span class="platform-code-line-number">2</span><span class="platform-code-line-number">3</span><span class="platform-code-line-number">4</span><span class="platform-code-line-number">5</span><span class="platform-code-line-number">6</span></span><code><span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">{</span></span>
 <span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  "type"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"configuration_update"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
 <span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  "reasoning"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: {</span></span>
 <span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "effort"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"high"</span></span>
 <span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  }</span></span>
 <span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">}</span></span></code></pre>
-<p>For example, if the conversation starts with request-level effort <code>low</code>, this update selects <code>high</code> for the next response and subsequent responses until another update overrides it.</p>
-<code-tabs title="Increase reasoning effort for a follow-up">
+<p>例如，如果对话开始时请求级推理强度为 <code>low</code>，此次更新会将下一个响应及后续响应的强度设为 <code>high</code>，直到另一项更新覆盖它。</p>
+<code-tabs title="提高后续请求的推理强度">
 <pre data-lang="python">from openai import OpenAI
 
 client = OpenAI()
@@ -1057,17 +1078,17 @@ response = client.responses.create(
 )
 puts(response.output_text)</pre>
 </code-tabs>
-<p>Preserve updates with <code>previous_response_id</code>, or replay them in their original positions when <a href="https://developers.openai.com/api/docs/guides/conversation-state#manually-manage-conversation-state">managing conversation history manually</a>. The response’s <code>reasoning.effort</code> continues to report the request-level setting, not the effort selected by the update.</p>
-<p>You can set <code>reasoning.effort</code> and <a href="/api/docs/guides/structured-outputs/?api-mode=responses#change-the-response-format-mid-conversation"><code>text.format</code></a> in the same <code>configuration_update</code> item. An update to either setting alone preserves the other.</p>
-<p>Do not combine configuration updates with automatic compaction or automatic truncation. The standalone <code>/responses/compact</code> endpoint also rejects histories containing these updates.</p>
-<p>You can still explicitly compact history by including a <code>compaction_trigger</code> item in a <code>/responses</code> request. After compaction, add a fresh <code>configuration_update</code> before the next user message. Restate each setting you changed, including the format if you changed it.</p>
-<p>Normal prompt caching requirements still apply. To send user instructions while a response is running, use <a href="https://developers.openai.com/api/docs/guides/steering">Mid-turn steering</a>.</p>
-<h2 id="reasoning-summaries">Reasoning summaries</h2>
-<p>While we don’t expose the raw reasoning tokens emitted by the model, you can view a summary of the model’s reasoning using the <code>summary</code> parameter. See our <a href="/api/docs/models/">model documentation</a> to check which reasoning models support summaries.</p>
-<p>Different models support different reasoning summary settings. For example, our computer use model supports the <code>concise</code> summarizer, while o4-mini supports <code>detailed</code>. To access the most detailed summarizer available for a model, set the value of this parameter to <code>auto</code>. <code>auto</code> will be equivalent to <code>detailed</code> for most reasoning models today, but there may be more granular settings in the future.</p>
-<p>Reasoning summary output is part of the <code>summary</code> array in the <code>reasoning</code> <a href="https://developers.openai.com/api/docs/api-reference/responses/object#responses/object-output">output item</a>. This output will not be included unless you explicitly opt in to including reasoning summaries.</p>
-<p>The example below shows how to make an API request that includes a reasoning summary.</p>
-<code-tabs title="Include a reasoning summary with the API response">
+<p>使用 <code>previous_response_id</code> 保留这些更新。如果<a href="https://developers.openai.com/api/docs/guides/conversation-state#manually-manage-conversation-state">手动管理对话历史</a>，请在原来的位置重新传入这些更新。响应的 <code>reasoning.effort</code> 仍然显示请求级的设置，而不是更新选中的推理强度。</p>
+<p>可在同一个 <code>configuration_update</code> 项中同时设置 <code>reasoning.effort</code> 和 <a href="/api/docs/guides/structured-outputs/?api-mode=responses#change-the-response-format-mid-conversation"><code>text.format</code></a>。只更新其中一项时，另一项保持不变。</p>
+<p>不要将配置更新与自动压缩或自动截断结合使用。独立的 <code>/responses/compact</code> 端点也会拒绝包含这些更新的历史记录。</p>
+<p>仍可以在 <code>/responses</code> 请求中加入 <code>compaction_trigger</code>，显式压缩历史记录。压缩后，在下一条用户消息之前添加新的 <code>configuration_update</code>，重新指定每一项修改过的设置，包括改过的响应格式。</p>
+<p>提示词缓存的常规要求仍然适用。要在响应生成过程中发送用户指令，请使用<a href="https://developers.openai.com/api/docs/guides/steering">轮次中途引导</a>。</p>
+<h2 id="reasoning-summaries">推理摘要</h2>
+<p>API 不公开模型生成的原始推理 token，但可以用 <code>summary</code> 参数查看推理摘要。哪些模型支持摘要，详见<a href="/api/docs/models/">模型文档</a>。</p>
+<p>不同模型支持的摘要设置不同。例如，计算机操作模型支持 <code>concise</code>，而 o4-mini 支持 <code>detailed</code>。要获得模型支持的最详细摘要，请将此参数设为 <code>auto</code>。对目前大多数推理模型来说，<code>auto</code> 等同于 <code>detailed</code>，今后可能会有更细的设置。</p>
+<p>推理摘要位于 <code>reasoning</code> <a href="https://developers.openai.com/api/docs/api-reference/responses/object#responses/object-output">输出项</a>的 <code>summary</code> 数组中。只有显式请求推理摘要，响应才会包含它。</p>
+<p>下面的示例演示如何请求包含推理摘要的响应。</p>
+<code-tabs title="在 API 响应中包含推理摘要">
 <pre data-lang="python">from openai import OpenAI
 
 client = OpenAI()
@@ -1191,7 +1212,7 @@ puts(response.output)</pre>
     }
   }'</pre>
 </code-tabs>
-<p>This API request will return an output array with both an assistant message and a summary of the model’s reasoning in generating that response.</p>
+<p>此 API 请求会返回一个输出数组，其中既有助手消息，也有模型生成该响应时的推理摘要。</p>
 <pre class="astro-code astro-code-themes github-light github-dark" data-language="json" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><span aria-hidden="true" class="platform-code-line-numbers" style="width:2ch"><span class="platform-code-line-number">1</span><span class="platform-code-line-number">2</span><span class="platform-code-line-number">3</span><span class="platform-code-line-number">4</span><span class="platform-code-line-number">5</span><span class="platform-code-line-number">6</span><span class="platform-code-line-number">7</span><span class="platform-code-line-number">8</span><span class="platform-code-line-number">9</span><span class="platform-code-line-number">10</span><span class="platform-code-line-number">11</span><span class="platform-code-line-number">12</span><span class="platform-code-line-number">13</span><span class="platform-code-line-number">14</span><span class="platform-code-line-number">15</span><span class="platform-code-line-number">16</span><span class="platform-code-line-number">17</span><span class="platform-code-line-number">18</span><span class="platform-code-line-number">19</span><span class="platform-code-line-number">20</span><span class="platform-code-line-number">21</span><span class="platform-code-line-number">22</span><span class="platform-code-line-number">23</span><span class="platform-code-line-number">24</span><span class="platform-code-line-number">25</span><span class="platform-code-line-number">26</span></span><code><span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">[</span></span>
 <span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  {</span></span>
 <span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "id"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"rs_6876cf02e0bc8192b74af0fb64b715ff06fa2fcced15a5ac"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
@@ -1218,18 +1239,14 @@ puts(response.output)</pre>
 <span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">    "role"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"assistant"</span></span>
 <span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">  }</span></span>
 <span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">]</span></span></code></pre>
-<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>Before using summarizers with our latest reasoning models, you may need to
-complete <a href="https://help.openai.com/en/articles/10910291-api-organization-verification">organization
-verification</a>
-to ensure safe deployment. Get started with verification on the <a href="https://platform.openai.com/settings/organization/general">platform
-settings page</a>.</p></div></div></div></div></div>
-<h2 id="phase-parameter">phase parameter</h2>
-<p>For long-running or tool-heavy flows with GPT-5.5 and GPT-5.4 in the Responses API, use the assistant message <code>phase</code> field to avoid early stopping and other misbehavior.
-<code>phase</code> is optional at the API level, but OpenAI recommends using it. Use <code>phase: "commentary"</code> for intermediate assistant updates, such as preambles before tool calls, and <code>phase: "final_answer"</code> for the completed answer. Don’t add <code>phase</code> to user messages.
-Using <code>previous_response_id</code> is usually the simplest path because prior assistant state is preserved. If you replay assistant history manually, preserve each original <code>phase</code> value.
-Missing or dropped <code>phase</code> can cause preambles to be treated as final answers in those workflows. For model-specific prompt guidance, see <a href="https://developers.openai.com/api/docs/guides/latest-model?model=gpt-5.5#prompting-best-practices">Prompting GPT-5.5</a>.</p>
-<h3 id="round-trip-assistant-phase-values">Round-trip assistant phase values</h3>
-<code-tabs title="Round-trip assistant phase values">
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>使用最新推理模型的摘要功能前，可能需要先完成<a href="https://help.openai.com/en/articles/10910291-api-organization-verification">组织验证</a>，以确保安全部署。可以在<a href="https://platform.openai.com/settings/organization/general">平台设置页面</a>开始验证。</p></div></div></div></div></div>
+<h2 id="phase-parameter">phase 参数</h2>
+<p>通过 Responses API 使用 GPT-5.5 或 GPT-5.4 时，如果工作流运行时间较长或频繁调用工具，请使用助手消息的 <code>phase</code> 字段，避免模型过早停止或出现其他异常。
+API 不强制要求 <code>phase</code>，但 OpenAI 建议使用它。对于助手的中途更新（如调用工具前的简短说明），请使用 <code>phase: "commentary"</code>；最终答案请使用 <code>phase: "final_answer"</code>。不要在用户消息中添加 <code>phase</code>。
+使用 <code>previous_response_id</code> 通常最简单，因为它会保留助手先前的状态。如果手动传回助手的历史消息，请保留每条消息原有的 <code>phase</code> 值。
+如果 <code>phase</code> 缺失或被丢弃，开场说明可能会被当作最终答案。针对特定模型的建议，详见<a href="https://developers.openai.com/api/docs/guides/latest-model?model=gpt-5.5#prompting-best-practices">GPT-5.5 提示词指南</a>。</p>
+<h3 id="round-trip-assistant-phase-values">原样回传助手消息的 phase 值</h3>
+<code-tabs title="原样回传助手消息的 phase 值">
 <pre data-lang="python">from openai import OpenAI
 
 client = OpenAI()
@@ -1378,17 +1395,17 @@ response = client.responses.create(
 
 puts(response.output_text)</pre>
 </code-tabs>
-<h2 id="advice-on-prompting">Advice on prompting</h2>
-<p>Consider these differences when prompting a reasoning model. Reasoning-capable GPT-5 models usually work best when you give them a clear goal, strong constraints, and an explicit output contract without prescribing every intermediate step.</p>
+<h2 id="advice-on-prompting">提示词编写建议</h2>
+<p>为推理模型编写提示词时，给能推理的 GPT-5 模型清晰的目标、明确的约束和输出要求通常最有效，不必规定每个中间步骤。</p>
 <ul>
-<li>Give the model the task, constraints, and desired output format.</li>
-<li>Treat <code>reasoning.effort</code> as a tuning knob, not the primary way to recover quality.</li>
-<li>For agentic or research-heavy workflows, define what counts as done and how the model should verify its work.</li>
+<li>告诉模型任务是什么、有哪些约束，以及应采用什么输出格式。</li>
+<li>把 <code>reasoning.effort</code> 当作调优参数，不要把它当作质量不佳时的主要补救手段。</li>
+<li>对于由智能体执行或需要大量研究的工作流，请明确任务的完成标准，以及模型应如何验证结果。</li>
 </ul>
-<p>For more information on best practices when using reasoning models, <a href="/api/docs/guides/reasoning-best-practices/">refer to this guide</a>.</p>
-<h3 id="prompt-examples">Prompt examples</h3>
-<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="example" data-content-switcher-initial="refactoring" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="refactoring" id="content-switcher-example"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="refactoring">Coding (refactoring)</option><option value="planning">Coding (planning)</option><option value="research">STEM Research</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="refactoring"><div class="hidden">Coding (refactoring)</div><p>Reasoning models can implement complex algorithms and produce code. This prompt asks the model to refactor a React component based on specific criteria.</p>
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <code-tabs title="Refactor code">
+<p>更多建议请参阅<a href="/api/docs/guides/reasoning-best-practices/">推理最佳实践</a>。</p>
+<h3 id="prompt-examples">提示词示例</h3>
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="example" data-content-switcher-initial="refactoring" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="refactoring" id="content-switcher-example"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="选择提示词示例" data-guide-switch=""><option selected="" value="refactoring">编程（重构）</option><option value="planning">编程（规划）</option><option value="research">STEM 研究</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="refactoring"><div class="hidden">编程（重构）</div><p>推理模型能够实现复杂算法并生成代码。这个提示词要求模型按给定标准重构一个 React 组件。</p>
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <code-tabs title="重构代码">
 <pre data-lang="javascript">import OpenAI from "openai";
 
 const openai = new OpenAI();
@@ -1600,7 +1617,7 @@ completion = client.chat.completions.create(
 
 puts(completion.choices.fetch(0).message.content)</pre>
 </code-tabs> </div> 
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="Refactor code">
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="重构代码">
 <pre data-lang="javascript">import OpenAI from "openai";
 
 const openai = new OpenAI();
@@ -1809,8 +1826,8 @@ response = client.responses.create(
 )
 
 puts(response.output_text)</pre>
-</code-tabs> </div> </div><div data-content-switcher-pane="true" data-value="planning" hidden=""><div class="hidden">Coding (planning)</div><p>Reasoning models can also create multi-step plans. This example prompt asks the model to create a filesystem structure for a full solution, along with Python code that implements the desired use case.</p>
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <code-tabs title="Plan and create a Python project">
+</code-tabs> </div> </div><div data-content-switcher-pane="true" data-value="planning" hidden=""><div class="hidden">编程（规划）</div><p>推理模型也能制定多步计划。这个提示词要求模型为完整方案创建文件结构，并编写实现目标功能的 Python 代码。</p>
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <code-tabs title="规划并创建 Python 项目">
 <pre data-lang="javascript">import OpenAI from "openai";
 
 const openai = new OpenAI();
@@ -1953,7 +1970,7 @@ completion = client.chat.completions.create(
 
 puts(completion.choices.fetch(0).message.content)</pre>
 </code-tabs> </div> 
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="Plan and create a Python project">
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="规划并创建 Python 项目">
 <pre data-lang="javascript">import OpenAI from "openai";
 
 const openai = new OpenAI();
@@ -2088,8 +2105,8 @@ response = client.responses.create(
 )
 
 puts(response.output_text)</pre>
-</code-tabs> </div> </div><div data-content-switcher-pane="true" data-value="research" hidden=""><div class="hidden">STEM Research</div><p>OpenAI o-series models have shown excellent performance in STEM research. Prompts asking for support of basic research tasks should show strong results.</p>
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <code-tabs title="Ask questions related to basic scientific research">
+</code-tabs> </div> </div><div data-content-switcher-pane="true" data-value="research" hidden=""><div class="hidden">STEM 研究</div><p>OpenAI 的 o 系列模型在 STEM 研究中表现出色。让模型协助完成基础研究任务，通常能取得较好的效果。</p>
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <code-tabs title="提出基础科学研究问题">
 <pre data-lang="javascript">import OpenAI from "openai";
 
 const openai = new OpenAI();
@@ -2203,7 +2220,7 @@ completion = client.chat.completions.create(
 
 puts(completion.choices.fetch(0).message.content)</pre>
 </code-tabs> </div> 
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="Ask questions related to basic scientific research">
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="提出基础科学研究问题">
 <pre data-lang="javascript">import OpenAI from "openai";
 
 const openai = new OpenAI();
@@ -2317,7 +2334,7 @@ response = client.responses.create(
 
 puts(response.output_text)</pre>
 </code-tabs> </div> </div> </div> </div>
-<h2 id="use-case-examples">Use case examples</h2>
-<p>Some examples of using reasoning models for real-world use cases can be found in <a href="https://developers.openai.com/cookbook">the cookbook</a>.</p>
-<a href="https://cookbook.openai.com/examples/o1/using_reasoning_for_data_validation" rel="noopener noreferrer" target="_blank"><div class="icon-item mt-6"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M6.00633 5.5C6.02321 5.53319 6.07042 5.60366 6.19525 5.70906C6.42458 5.9027 6.81573 6.12215 7.38659 6.32603C8.5196 6.73067 10.1506 7 12 7C13.8494 7 15.4804 6.73067 16.6134 6.32603C17.1843 6.12215 17.5754 5.9027 17.8048 5.70906C17.9296 5.60366 17.9768 5.53319 17.9937 5.5C17.9768 5.46681 17.9296 5.39634 17.8048 5.29094C17.5754 5.0973 17.1843 4.87785 16.6134 4.67397C15.4804 4.26933 13.8494 4 12 4C10.1506 4 8.5196 4.26933 7.38659 4.67397C6.81573 4.87785 6.42458 5.0973 6.19525 5.29094C6.07042 5.39634 6.02321 5.46681 6.00633 5.5ZM18 7.91726C17.7726 8.02403 17.5333 8.12123 17.2861 8.20951C15.8856 8.70968 14.0166 9 12 9C9.98341 9 8.1144 8.70968 6.71392 8.20951C6.46674 8.12123 6.22738 8.02403 6 7.91726V11.986C6.00906 12.0096 6.04856 12.0852 6.19525 12.2091C6.42458 12.4027 6.81573 12.6221 7.38659 12.826C8.5196 13.2307 10.1506 13.5 12 13.5C13.8494 13.5 15.4804 13.2307 16.6134 12.826C17.1843 12.6221 17.5754 12.4027 17.8048 12.2091C17.9514 12.0852 17.9909 12.0096 18 11.986V7.91726ZM18 14.4173C17.7726 14.524 17.5333 14.6212 17.2861 14.7095C15.8856 15.2097 14.0166 15.5 12 15.5C9.98341 15.5 8.1144 15.2097 6.71392 14.7095C6.46674 14.6212 6.22738 14.524 6 14.4173V18.486C6.00906 18.5096 6.04856 18.5852 6.19525 18.7091C6.42458 18.9027 6.81573 19.1221 7.38659 19.326C8.5196 19.7307 10.1506 20 12 20C13.8494 20 15.4804 19.7307 16.6134 19.326C17.1843 19.1221 17.5754 18.9027 17.8048 18.7091C17.9514 18.5852 17.9909 18.5096 18 18.486V14.4173ZM4 5.5C4 4.74631 4.43048 4.16346 4.90494 3.76283C5.38405 3.35829 6.01803 3.03902 6.71392 2.79049C8.1144 2.29032 9.98341 2 12 2C14.0166 2 15.8856 2.29032 17.2861 2.79049C17.982 3.03902 18.616 3.35829 19.0951 3.76283C19.5695 4.16346 20 4.74631 20 5.5V18.5C20 19.2537 19.5695 19.8365 19.0951 20.2372C18.616 20.6417 17.982 20.961 17.2861 21.2095C15.8856 21.7097 14.0166 22 12 22C9.98341 22 8.1144 21.7097 6.71392 21.2095C6.01803 20.961 5.38405 20.6417 4.90494 20.2372C4.43048 19.8365 4 19.2537 4 18.5V5.5Z" fill="currentColor"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">Using reasoning for data validation</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>Evaluate a synthetic medical data set for discrepancies.</p> </div> </div> </div></a>
-<a href="https://cookbook.openai.com/examples/o1/using_reasoning_for_routine_generation" rel="noopener noreferrer" target="_blank"><div class="icon-item mt-6"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path clip-rule="evenodd" d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Z" fill-rule="evenodd"></path><path clip-rule="evenodd" d="M12 9a1 1 0 0 0-.879.522 1 1 0 0 1-1.754-.96A3 3 0 0 1 12 7c1.515 0 2.567 1.006 2.866 2.189.302 1.189-.156 2.574-1.524 3.258A.618.618 0 0 0 13 13a1 1 0 1 1-2 0c0-.992.56-1.898 1.447-2.342.455-.227.572-.618.48-.978C12.836 9.314 12.529 9 12 9Z" fill-rule="evenodd"></path><path d="M13.1 16a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0Z"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">Using reasoning for routine generation</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>Use help center articles to generate actions that an agent could perform.</p> </div> </div> </div></a>
+<h2 id="use-case-examples">应用场景示例</h2>
+<p>推理模型在实际场景中的应用示例，见 <a href="https://developers.openai.com/cookbook">OpenAI Cookbook</a>。</p>
+<a href="https://cookbook.openai.com/examples/o1/using_reasoning_for_data_validation" rel="noopener noreferrer" target="_blank"><div class="icon-item mt-6"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M6.00633 5.5C6.02321 5.53319 6.07042 5.60366 6.19525 5.70906C6.42458 5.9027 6.81573 6.12215 7.38659 6.32603C8.5196 6.73067 10.1506 7 12 7C13.8494 7 15.4804 6.73067 16.6134 6.32603C17.1843 6.12215 17.5754 5.9027 17.8048 5.70906C17.9296 5.60366 17.9768 5.53319 17.9937 5.5C17.9768 5.46681 17.9296 5.39634 17.8048 5.29094C17.5754 5.0973 17.1843 4.87785 16.6134 4.67397C15.4804 4.26933 13.8494 4 12 4C10.1506 4 8.5196 4.26933 7.38659 4.67397C6.81573 4.87785 6.42458 5.0973 6.19525 5.29094C6.07042 5.39634 6.02321 5.46681 6.00633 5.5ZM18 7.91726C17.7726 8.02403 17.5333 8.12123 17.2861 8.20951C15.8856 8.70968 14.0166 9 12 9C9.98341 9 8.1144 8.70968 6.71392 8.20951C6.46674 8.12123 6.22738 8.02403 6 7.91726V11.986C6.00906 12.0096 6.04856 12.0852 6.19525 12.2091C6.42458 12.4027 6.81573 12.6221 7.38659 12.826C8.5196 13.2307 10.1506 13.5 12 13.5C13.8494 13.5 15.4804 13.2307 16.6134 12.826C17.1843 12.6221 17.5754 12.4027 17.8048 12.2091C17.9514 12.0852 17.9909 12.0096 18 11.986V7.91726ZM18 14.4173C17.7726 14.524 17.5333 14.6212 17.2861 14.7095C15.8856 15.2097 14.0166 15.5 12 15.5C9.98341 15.5 8.1144 15.2097 6.71392 14.7095C6.46674 14.6212 6.22738 14.524 6 14.4173V18.486C6.00906 18.5096 6.04856 18.5852 6.19525 18.7091C6.42458 18.9027 6.81573 19.1221 7.38659 19.326C8.5196 19.7307 10.1506 20 12 20C13.8494 20 15.4804 19.7307 16.6134 19.326C17.1843 19.1221 17.5754 18.9027 17.8048 18.7091C17.9514 18.5852 17.9909 18.5096 18 18.486V14.4173ZM4 5.5C4 4.74631 4.43048 4.16346 4.90494 3.76283C5.38405 3.35829 6.01803 3.03902 6.71392 2.79049C8.1144 2.29032 9.98341 2 12 2C14.0166 2 15.8856 2.29032 17.2861 2.79049C17.982 3.03902 18.616 3.35829 19.0951 3.76283C19.5695 4.16346 20 4.74631 20 5.5V18.5C20 19.2537 19.5695 19.8365 19.0951 20.2372C18.616 20.6417 17.982 20.961 17.2861 21.2095C15.8856 21.7097 14.0166 22 12 22C9.98341 22 8.1144 21.7097 6.71392 21.2095C6.01803 20.961 5.38405 20.6417 4.90494 20.2372C4.43048 19.8365 4 19.2537 4 18.5V5.5Z" fill="currentColor"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">使用推理验证数据</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>检查合成医疗数据集中的不一致之处。</p> </div> </div> </div></a>
+<a href="https://cookbook.openai.com/examples/o1/using_reasoning_for_routine_generation" rel="noopener noreferrer" target="_blank"><div class="icon-item mt-6"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path clip-rule="evenodd" d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Z" fill-rule="evenodd"></path><path clip-rule="evenodd" d="M12 9a1 1 0 0 0-.879.522 1 1 0 0 1-1.754-.96A3 3 0 0 1 12 7c1.515 0 2.567 1.006 2.866 2.189.302 1.189-.156 2.574-1.524 3.258A.618.618 0 0 0 13 13a1 1 0 1 1-2 0c0-.992.56-1.898 1.447-2.342.455-.227.572-.618.48-.978C12.836 9.314 12.529 9 12 9Z" fill-rule="evenodd"></path><path d="M13.1 16a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0Z"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">使用推理生成操作流程</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>根据帮助中心的文章，生成智能体可执行的操作。</p> </div> </div> </div></a>

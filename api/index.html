@@ -4,13 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; media-src 'self' https:; connect-src 'self' https://chat.nexusvai.xyz https://cn.nexusvai.xyz; frame-src https://player.vimeo.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self';" />
-<title>NexusVAI Developers — 用前沿模型构建</title>
-<meta name="description" content="NexusVAI API：一个端点、一把密钥，接入前沿模型，兼容 OpenAI 与 Anthropic 协议。" />
+<title>NexusVAI Developers — NexusVAI API</title>
+<meta name="description" content="通过 NexusVAI API，用一个端点和一把密钥调用多家模型，兼容 OpenAI 与 Anthropic 协议。" />
 <link rel="canonical" href="https://www.nexusvai.xyz/api/" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="NexusVAI Developers" />
-<meta property="og:title" content="NexusVAI Developers — 用前沿模型构建" />
-<meta property="og:description" content="NexusVAI API：一个端点、一把密钥，接入前沿模型，兼容 OpenAI 与 Anthropic 协议。" />
+<meta property="og:title" content="NexusVAI Developers — NexusVAI API" />
+<meta property="og:description" content="通过 NexusVAI API，用一个端点和一把密钥调用多家模型，兼容 OpenAI 与 Anthropic 协议。" />
 <meta property="og:url" content="https://www.nexusvai.xyz/api/" />
 <meta property="og:image" content="https://www.nexusvai.xyz/Logo/nexusvai-og.png" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -18,16 +18,16 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <link rel="manifest" href="/site.webmanifest" />
-<script src="/api/assets/theme.js?v=20261120a"></script>
+<script src="/api/assets/theme.js?v=20261123b"></script>
 <style>@layer theme, base, components, utilities;</style>
-<link rel="stylesheet" href="/api/assets/oai/header.css?v=20261120a" />
-<link rel="stylesheet" href="/api/assets/oai/inline.css?v=20261120a" />
-<link rel="stylesheet" href="/api/assets/oai/pages.css?v=20261120a" />
-<link rel="stylesheet" href="/api/assets/home.css?v=20261120a" />
-<link rel="stylesheet" href="/fonts/gf/newsreader-notosanssc.css?v=20261120a" />
-<link rel="stylesheet" href="/api/assets/fonts.css?v=20261120a" />
-<link rel="stylesheet" href="/chat/api/oai-community.css?v=20261120a" />
-<link rel="stylesheet" href="/api/assets/api.css?v=20261120a" />
+<link rel="stylesheet" href="/api/assets/oai/header.css?v=20261123b" />
+<link rel="stylesheet" href="/api/assets/oai/inline.css?v=20261123b" />
+<link rel="stylesheet" href="/api/assets/oai/pages.css?v=20261123b" />
+<link rel="stylesheet" href="/api/assets/home.css?v=20261123b" />
+<link rel="stylesheet" href="/fonts/gf/newsreader-notosanssc.css?v=20261123b" />
+<link rel="stylesheet" href="/api/assets/fonts.css?v=20261123b" />
+<link rel="stylesheet" href="/chat/api/oai-community.css?v=20261123b" />
+<link rel="stylesheet" href="/api/assets/api.css?v=20261123b" />
 </head>
 <body class="overflow-x-hidden" data-api-layout="home">
 <!-- 由 api/_src/build.mjs 从 api/_src/pages/index.html 生成，勿直接修改：改源文件后运行 node api/_src/build.mjs -->
@@ -64,7 +64,7 @@
                 </picture>
               </span>
             </h2>
-            <p class="mt-7 text-base leading-relaxed text-white/80" data-astro-cid-bkecleup="">一个端点、一把密钥，接入前沿模型。兼容 OpenAI 与 Anthropic 协议。</p>
+            <p class="mt-7 text-base leading-relaxed text-white/80" data-astro-cid-bkecleup="">通过 NexusVAI API，用一个端点、一把密钥调用多家模型。兼容 OpenAI 与 Anthropic 协议。</p>
             <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-4" data-astro-cid-bkecleup="">
               <div class="devday-button-frame relative inline-flex" data-astro-cid-bkecleup="">
                 <a
@@ -142,7 +142,7 @@
               <div class="flex min-w-0 flex-1 flex-col pt-0.5 md:h-full md:mr-6" data-astro-cid-6dxqfa7l="">
                 <div data-astro-cid-6dxqfa7l="">
                   <h2 class="text-lg font-semibold leading-snug text-default md:text-xl" data-astro-cid-6dxqfa7l="">GPT-6.2 Astra</h2>
-                  <p class="mt-2 text-base leading-7 text-secondary max-w-none" data-astro-cid-6dxqfa7l="">OpenAI 的旗舰模型，Codex CLI 推荐使用。支持 Responses 与 Chat Completions 协议。</p>
+                  <p class="mt-2 text-base leading-7 text-secondary max-w-none" data-astro-cid-6dxqfa7l="">可通过 NexusVAI API 调用的 GPT 系列模型，适合编程和复杂任务。支持 Responses 与 Chat Completions 协议。</p>
                   <p class="mt-1 text-sm text-tertiary" data-home-model-meta="gpt-6.2-astra" hidden></p>
                 </div>
                 <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3" data-astro-cid-6dxqfa7l="">
@@ -290,7 +290,7 @@
               </span>
               <div class="flex min-w-0 flex-1 flex-col pt-0.5 md:h-full md:mr-6" data-astro-cid-6dxqfa7l="">
                 <div data-astro-cid-6dxqfa7l="">
-                  <h2 class="text-lg font-semibold leading-snug text-default md:text-xl" data-astro-cid-6dxqfa7l="">从 OpenAI 或其他兼容服务迁移</h2>
+                  <h2 class="text-lg font-semibold leading-snug text-default md:text-xl" data-astro-cid-6dxqfa7l="">迁移到 NexusVAI API</h2>
                   <p class="mt-2 text-base leading-7 text-secondary max-w-2xl" data-astro-cid-6dxqfa7l="">通常不需要改业务代码：替换 Base URL、API 密钥和模型 ID，现有的 SDK 与工具就能继续使用。</p>
                 </div>
                 <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3" data-astro-cid-6dxqfa7l="">
@@ -454,10 +454,10 @@
 <div data-page-next-prev=""></div>
 </main></div></div>
 <div data-community-mount data-asset-base="/chat/assets/community/"></div>
-<script src="/chat/api/oai-community.js?v=20261120a" defer></script>
-<script src="/api/assets/shell.js?v=20261120a" defer></script>
-<script src="/api/assets/home.js?v=20261120a" defer></script>
-<script src="/api/assets/home-title.js?v=20261120a" defer></script>
-<script src="/api/assets/cancri-crab.js?v=20261120a" defer></script>
+<script src="/chat/api/oai-community.js?v=20261123b" defer></script>
+<script src="/api/assets/shell.js?v=20261123b" defer></script>
+<script src="/api/assets/home.js?v=20261123b" defer></script>
+<script src="/api/assets/home-title.js?v=20261123b" defer></script>
+<script src="/api/assets/cancri-crab.js?v=20261123b" defer></script>
 </body>
 </html>

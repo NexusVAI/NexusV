@@ -1,43 +1,79 @@
 ---
 title: 图像与视觉
-description: Learn how to understand or generate images with the OpenAI API.
+description: 通过 NexusVAI API 将图片作为视觉输入，让支持视觉的模型分析、读图和回答问题。
 tab: models
 lead: false
-css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
-js: /api/assets/model-guide.js
 ---
-<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/images-vision (reference copy for local review). -->
-<h2 id="overview">Overview</h2>
-<div class="mb-10 w-full max-w-full overflow-hidden"><div class="not-prose grid w-full grid-cols-1 gap-4 md:grid-cols-2"><a class="_DocLink_106al_1" href="/api/docs/guides/image-generation/"><div class="flex flex-col gap-3"><div class="relative max-h-[300px] min-h-[140px] w-full overflow-hidden rounded-lg"><img alt="Create images" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/be830ba5ae24b1a3e109.png"><div class="absolute top-0 left-0 flex h-full w-full items-center justify-center"></div></img></div><div class="flex w-full flex-col"><div class="text-sm font-semibold">Create images</div><div class="text-xs text-secondary">Use GPT Image models to generate or edit images.</div></div></div></a><a class="_DocLink_106al_1" href="#analyze-images"><div class="flex flex-col gap-3"><div class="relative max-h-[300px] min-h-[140px] w-full overflow-hidden rounded-lg"><img alt="Process image inputs" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/bad8d630986add0f1697.png"/><div class="absolute top-0 left-0 flex h-full w-full items-center justify-center"></div></div><div class="flex w-full flex-col"><div class="text-sm font-semibold">Process image inputs</div><div class="text-xs text-secondary">Use our models' vision capabilities to analyze images.</div></div></div></a></div></div>
+<p>用 <strong>NexusVAI API</strong> 向支持视觉的模型发送图片。模型可以根据图片提取文字、解释图表，也可以结合文字问题描述可见内容。先到<a href="/api/docs/models/">模型目录</a>确认视觉能力。</p>
+
+<h2 id="overview">概览</h2>
+<p>Responses 使用 <code>input_image</code>，Chat Completions 使用 <code>image_url</code>。使用已有客户端时，选择它支持的协议；识别效果取决于模型和输入质量。</p>
+
+<h2 id="generate-or-edit-images">生成或编辑图片</h2>
+<p>这里介绍图片输入，不是图片输出。图像生成与编辑请看<a href="/api/docs/guides/image-generation/">网页图像功能</a>；NexusVAI 公共 API 不执行图像生成工具。</p>
+
+<h2 id="analyze-images">分析图片</h2>
+<h3 id="giving-a-model-images-as-input">向模型提供图片输入</h3>
+<p>使用公开 HTTPS 图片 URL 或自带 MIME 类型的 Base64 data URL；不要使用托管 <code>file_id</code>。下面是两种请求格式。示例地址请换成你自己的图片，并把模型替换为目录中的视觉模型 ID。</p>
+<code-tabs title="分析图片内容">
+<pre data-lang="json" data-label="Responses">{
+  "model": "支持视觉的模型 ID",
+  "input": [{"role": "user", "content": [
+    {"type": "input_text", "text": "这张图里有什么？不确定的部分请注明。"},
+    {"type": "input_image", "image_url": "https://example.com/photo.jpg"}
+  ]}]
+}</pre>
+<pre data-lang="json" data-label="Chat Completions">{
+  "model": "支持视觉的模型 ID",
+  "messages": [{"role": "user", "content": [
+    {"type": "text", "text": "这张图里有什么？不确定的部分请注明。"},
+    {"type": "image_url", "image_url": {"url": "https://example.com/photo.jpg"}}
+  ]}]
+}</pre>
+</code-tabs>
+<p>发送请求与读取响应的方法见 <a href="/api/reference/responses/#body-input">Responses 输入</a>或 <a href="/api/docs/guides/chat-completions/#images">Chat Completions 图片输入</a>。</p>
+<h3 id="image-input-requirements">图片输入要求</h3>
+<p>确保图片 URL 可以被读取，且不要在地址里放密钥。对敏感图片先获得授权；格式、尺寸、细节级别和上下文限制以目标模型为准。识别小字时优先裁剪并保留足够分辨率，而不是盲目扩大整张图片。</p>
+
+<h2 id="calculating-costs">计算成本</h2>
+<p>图片会占用输入预算。<a href="/api/docs/guides/image-cost-calculator/">图像输入成本计算器</a>可以按部分模型的公开规格估算 token；站内单价与实际扣费分别到<a href="/api/docs/pricing/">价格</a>和<a href="/api/docs/guides/usage/">用量</a>核对。</p>
+
+<h2 id="limitations">局限性</h2>
+<p>对精确文字、物体数量、模糊图像和位置关系，模型仍可能出错。将模型输出与原始图片核对，关键场景安排人工复核。</p>
+
+<!-- local-reference -->
+<!-- 原中文参考稿保留供编辑核对，不参与构建。 -->
+<h2 id="overview">概览</h2>
+<div class="mb-10 w-full max-w-full overflow-hidden"><div class="not-prose grid w-full grid-cols-1 gap-4 md:grid-cols-2"><a class="_DocLink_106al_1" href="/api/docs/guides/image-generation/"><div class="flex flex-col gap-3"><div class="relative max-h-[300px] min-h-[140px] w-full overflow-hidden rounded-lg"><img alt="生成图片" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/be830ba5ae24b1a3e109.png"><div class="absolute top-0 left-0 flex h-full w-full items-center justify-center"></div></img></div><div class="flex w-full flex-col"><div class="text-sm font-semibold">生成图片</div><div class="text-xs text-secondary">使用 GPT Image 模型生成或编辑图片。</div></div></div></a><a class="_DocLink_106al_1" href="#analyze-images"><div class="flex flex-col gap-3"><div class="relative max-h-[300px] min-h-[140px] w-full overflow-hidden rounded-lg"><img alt="处理图片输入" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" src="/api/assets/model-guides/img/bad8d630986add0f1697.png"/><div class="absolute top-0 left-0 flex h-full w-full items-center justify-center"></div></div><div class="flex w-full flex-col"><div class="text-sm font-semibold">处理图片输入</div><div class="text-xs text-secondary">使用模型的视觉能力分析图片。</div></div></div></a></div></div>
 <a id="a-tour-of-image-related-use-cases"></a>
-<p>Recent language models can process image inputs and analyze them—a capability known as <strong>vision</strong>. GPT Image models can use text and image inputs to create new images or edit existing ones.</p>
-<p>Choose an endpoint based on whether you want to analyze images or generate them:</p>
+<p>近期的语言模型可以处理图片输入并分析图片，这种能力称为<strong>视觉</strong>。GPT Image 模型可以结合文本和图片输入来生成新图片，或编辑已有图片。</p>
+<p>根据你要分析图片还是生成图片，选择对应的接口：</p>
 <div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
 <thead>
 <tr>
-<th>API</th>
-<th>Supported use cases</th>
+<th>接口</th>
+<th>支持的用途</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="https://developers.openai.com/api/docs/api-reference/responses">Responses API</a></td>
-<td>Analyze images, or generate and edit images with the image generation tool</td>
+<td>分析图片，或通过图像生成工具生成和编辑图片</td>
 </tr>
 <tr>
 <td><a href="https://developers.openai.com/api/docs/api-reference/images">Images API</a></td>
-<td>Generate images as output, optionally using images as input</td>
+<td>生成图片作为输出，可选择以图片作为输入</td>
 </tr>
 <tr>
 <td><a href="https://developers.openai.com/api/docs/api-reference/chat">Chat Completions API</a></td>
-<td>Analyze images and generate text responses</td>
+<td>分析图片并生成文本回复</td>
 </tr>
 </tbody>
 </table></div>
-<p>To learn more about the input and output modalities supported by our models, refer to our <a href="/api/docs/models/">models page</a>.</p>
-<h2 id="generate-or-edit-images">Generate or edit images</h2>
-<p>With the Images API, choose <code>gpt-image-2.5-sunburst</code> to generate images from text or edit existing images. With the Responses API, choose a mainline model that supports the image generation tool; the tool handles GPT Image model selection.</p>
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="Generate images with Responses">
+<p>如需了解模型支持的输入和输出模态，请参阅<a href="/api/docs/models/">模型页面</a>。</p>
+<h2 id="generate-or-edit-images">生成或编辑图片</h2>
+<p>使用 Images API 时，选择 <code>gpt-image-2.5-sunburst</code> 即可根据文本生成图片或编辑已有图片。使用 Responses API 时，请选择支持图像生成工具的主力模型；GPT Image 模型的选择由该工具自动处理。</p>
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="使用 Responses 生成图片">
 <pre data-lang="python">from openai import OpenAI
 import base64
 
@@ -45,11 +81,11 @@ client = OpenAI()
 
 response = client.responses.create(
     model="gpt-6-astra",
-    input="Generate an image of gray tabby cat hugging an otter with an orange scarf",
+    input="生成一张灰色虎斑猫抱着一只戴橙色围巾的水獭的图片",
     tools=[{"type": "image_generation"}],
 )
 
-# Save the image to a file
+# 将图片保存到文件
 image_data = [
     output.result
     for output in response.output
@@ -66,11 +102,11 @@ const openai = new OpenAI();
 const response = await openai.responses.create({
   model: "gpt-6-astra",
   input:
-    "Generate an image of gray tabby cat hugging an otter with an orange scarf",
+    "生成一张灰色虎斑猫抱着一只戴橙色围巾的水獭的图片",
   tools: [{ type: "image_generation" }],
 });
 
-// Save the image to a file
+// 将图片保存到文件
 const imageData = response.output
   .filter((output) => output.type === "image_generation_call")
   .map((output) => output.result);
@@ -97,7 +133,7 @@ func main() {
 	response, err := client.Responses.New(context.Background(), responses.ResponseNewParams{
 		Model: "gpt-6-astra",
 		Input: responses.ResponseNewParamsInputUnion{
-			OfString: openai.String("Generate an image of a gray tabby cat hugging an otter with an orange scarf."),
+			OfString: openai.String("生成一张灰色虎斑猫抱着一只戴橙色围巾的水獭的图片。"),
 		},
 		Tools: []responses.ToolUnionParam{{
 			OfImageGeneration: &responses.ToolImageGenerationParam{},
@@ -135,7 +171,7 @@ import java.util.Base64;
 ResponseCreateParams params =
     ResponseCreateParams.builder()
         .model("gpt-6-astra")
-        .input("Generate an image of a gray tabby cat hugging an otter with an orange scarf.")
+        .input("生成一张灰色虎斑猫抱着一只戴橙色围巾的水獭的图片。")
         .addTool(Tool.ImageGeneration.builder().build())
         .build();
 
@@ -158,7 +194,7 @@ CreateResponseOptions options = new()
 };
 options.InputItems.Add(
     ResponseItem.CreateUserMessageItem(
-        "Generate an image of a gray tabby cat hugging an otter with an orange scarf."
+        "生成一张灰色虎斑猫抱着一只戴橙色围巾的水獭的图片。"
     )
 );
 options.Tools.Add(
@@ -180,7 +216,7 @@ require "openai"
 client = OpenAI::Client.new
 response = client.responses.create(
   model: "gpt-6-astra",
-  input: "Generate an image of a gray tabby cat hugging an otter with an orange scarf.",
+  input: "生成一张灰色虎斑猫抱着一只戴橙色围巾的水獭的图片。",
   tools: [{ type: :image_generation }]
 )
 
@@ -201,17 +237,16 @@ File.binwrite(
   --transform 'output.#(type=="image_generation_call").result' <<'YAML' | base64 --decode > cat_and_otter.png
 tools:
   - type: image_generation
-input: Generate an image of a gray tabby cat hugging an otter with an orange scarf.
+input: 生成一张灰色虎斑猫抱着一只戴橙色围巾的水獭的图片。
 YAML</pre>
 </code-tabs> </div> 
-<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>You can learn more about image generation in our <a href="/api/docs/guides/image-generation/">Image
-generation</a> guide.</p></div></div></div></div></div>
-<h3 id="using-world-knowledge-for-image-generation">Using world knowledge for image generation</h3>
-<p>GPT Image models can draw on world knowledge without a reference image. For example, a prompt for a cabinet of semi-precious stones can produce a scene containing recognizable gemstones such as amethyst, rose quartz, and jade.</p>
-<h2 id="analyze-images">Analyze images</h2>
-<p>Use a vision-capable model to describe images, read visible text, and answer questions about objects, shapes, colors, or textures. Account for the model’s <a href="#limitations">limitations</a> when using its answers.</p>
-<h3 id="giving-a-model-images-as-input">Giving a model images as input</h3>
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <p>Provide an image for analysis using either a fully qualified image URL or a Base64-encoded data URL.</p><p>You can provide multiple images as input in a single request by including multiple images in the <code>content</code> array, but keep in mind that <a href="#calculating-costs">images count as tokens</a> and will be billed accordingly.</p><div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="format" data-content-switcher-initial="url" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="url" id="content-switcher-format"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="url">Passing a URL</option><option value="base64-encoded">Passing a Base64 encoded image</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="url"><div class="hidden">Passing a URL</div><code-tabs title="Analyze the content of an image">
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>你可以在我们的<a href="/api/docs/guides/image-generation/">图片生成</a>指南中了解更多。</p></div></div></div></div></div>
+<h3 id="using-world-knowledge-for-image-generation">利用世界知识生成图片</h3>
+<p>GPT Image 模型无需参考图也能利用世界知识。例如，一个描述半宝石陈列柜的提示词，可以生成包含紫水晶、粉水晶、翡翠等可辨认宝石的场景。</p>
+<h2 id="analyze-images">分析图片</h2>
+<p>使用具备视觉能力的模型可以描述图片、读取图中可见的文字，并回答关于物体、形状、颜色或纹理的问题。使用模型的回答时，请考虑模型的<a href="#limitations">局限性</a>。</p>
+<h3 id="giving-a-model-images-as-input">向模型提供图片输入</h3>
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <p>使用完整的图片 URL 或 Base64 编码的 Data URL 提供待分析的图片。</p><p>你可以在一次请求的 <code>content</code> 数组中放入多张图片。但请注意，<a href="#calculating-costs">图片会计为 token</a>，并按此计费。</p><div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="format" data-content-switcher-initial="url" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="url" id="content-switcher-format"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="内容切换" data-guide-switch=""><option selected="" value="url">通过 URL 传入</option><option value="base64-encoded">通过 Base64 编码图片传入</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="url"><div class="hidden">通过 URL 传入</div><code-tabs title="分析图片内容">
 <pre data-lang="python">from openai import OpenAI
 
 client = OpenAI()
@@ -222,7 +257,7 @@ response = client.chat.completions.create(
         {
             "role": "user",
             "content": [
-                {"type": "text", "text": "What's in this image?"},
+                {"type": "text", "text": "这张图片里有什么？"},
                 {
                     "type": "image_url",
                     "image_url": {
@@ -244,7 +279,7 @@ const response = await openai.chat.completions.create({
     {
       role: "user",
       content: [
-        { type: "text", text: "What is in this image?" },
+        { type: "text", text: "这张图片里有什么？" },
         {
           type: "image_url",
           image_url: {
@@ -273,7 +308,7 @@ func main() {
 		Model: "gpt-6-astra",
 		Messages: []openai.ChatCompletionMessageParamUnion{
 			openai.UserMessage([]openai.ChatCompletionContentPartUnionParam{
-				openai.TextContentPart("What's in this image?"),
+				openai.TextContentPart("这张图片里有什么？"),
 				openai.ImageContentPart(openai.ChatCompletionContentPartImageImageURLParam{
 					URL: "https://api.nga.gov/iiif/a2e6da57-3cd1-4235-b20e-95dcaefed6c8/full/!800,800/0/default.jpg",
 				}),
@@ -299,7 +334,7 @@ String imageUrl =
     "https://api.nga.gov/iiif/a2e6da57-3cd1-4235-b20e-95dcaefed6c8/full/!800,800/0/default.jpg";
 ChatCompletionContentPart text =
     ChatCompletionContentPart.ofText(
-        ChatCompletionContentPartText.builder().text("What's in this image?").build());
+        ChatCompletionContentPartText.builder().text("这张图片里有什么？").build());
 ChatCompletionContentPart image =
     ChatCompletionContentPart.ofImageUrl(
         ChatCompletionContentPartImage.builder()
@@ -329,7 +364,7 @@ Uri imageUrl = new(
 );
 UserChatMessage message = new(
     [
-        ChatMessageContentPart.CreateTextPart("What is in this image?"),
+        ChatMessageContentPart.CreateTextPart("这张图片里有什么？"),
         ChatMessageContentPart.CreateImagePart(imageUrl),
     ]
 );
@@ -349,7 +384,7 @@ completion = client.chat.completions.create(
       content: [
         {
           type: :text,
-          text: "What's in this image?"
+          text: "这张图片里有什么？"
         },
         {
           type: :image_url,
@@ -374,7 +409,7 @@ puts(completion.choices.fetch(0).message.content)</pre>
         "content": [
           {
             "type": "text",
-            "text": "What is in this image?"
+            "text": "这张图片里有什么？"
           },
           {
             "type": "image_url",
@@ -387,23 +422,23 @@ puts(completion.choices.fetch(0).message.content)</pre>
     ],
     "max_completion_tokens": 300
   }'</pre>
-</code-tabs></div><div data-content-switcher-pane="true" data-value="base64-encoded" hidden=""><div class="hidden">Passing a Base64 encoded image</div><code-tabs title="Analyze the content of an image">
+</code-tabs></div><div data-content-switcher-pane="true" data-value="base64-encoded" hidden=""><div class="hidden">通过 Base64 编码图片传入</div><code-tabs title="分析图片内容">
 <pre data-lang="python">import base64
 from openai import OpenAI
 
 client = OpenAI()
 
 
-# Function to encode the image
+# 将图片编码为 Base64
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
-# Path to your image
+# 待分析图片的路径
 image_path = "path_to_your_image.jpg"
 
-# Getting the Base64 string
+# 获取 Base64 字符串
 base64_image = encode_image(image_path)
 
 completion = client.chat.completions.create(
@@ -412,7 +447,7 @@ completion = client.chat.completions.create(
         {
             "role": "user",
             "content": [
-                {"type": "text", "text": "what's in this image?"},
+                {"type": "text", "text": "这张图片里有什么？"},
                 {
                     "type": "image_url",
                     "image_url": {
@@ -439,7 +474,7 @@ const completion = await openai.chat.completions.create({
     {
       role: "user",
       content: [
-        { type: "text", text: "what's in this image?" },
+        { type: "text", text: "这张图片里有什么？" },
         {
           type: "image_url",
           image_url: {
@@ -475,7 +510,7 @@ func main() {
 		Model: "gpt-6-astra",
 		Messages: []openai.ChatCompletionMessageParamUnion{
 			openai.UserMessage([]openai.ChatCompletionContentPartUnionParam{
-				openai.TextContentPart("What's in this image?"),
+				openai.TextContentPart("这张图片里有什么？"),
 				openai.ImageContentPart(openai.ChatCompletionContentPartImageImageURLParam{URL: imageURL}),
 			}),
 		},
@@ -506,7 +541,7 @@ String imageUrl =
                 Files.readAllBytes(Path.of(System.getenv("OPENAI_EXAMPLE_IMAGE_PATH"))));
 ChatCompletionContentPart text =
     ChatCompletionContentPart.ofText(
-        ChatCompletionContentPartText.builder().text("What's in this image?").build());
+        ChatCompletionContentPartText.builder().text("这张图片里有什么？").build());
 ChatCompletionContentPart image =
     ChatCompletionContentPart.ofImageUrl(
         ChatCompletionContentPartImage.builder()
@@ -541,7 +576,7 @@ BinaryData image = BinaryData.FromBytes(
 );
 UserChatMessage message = new(
     [
-        ChatMessageContentPart.CreateTextPart("What's in this image?"),
+        ChatMessageContentPart.CreateTextPart("这张图片里有什么？"),
         ChatMessageContentPart.CreateImagePart(image, "image/png"),
     ]
 );
@@ -563,7 +598,7 @@ completion = client.chat.completions.create(
       content: [
         {
           type: :text,
-          text: "What's in this image?"
+          text: "这张图片里有什么？"
         },
         {
           type: :image_url,
@@ -584,7 +619,7 @@ puts(completion.choices.fetch(0).message.content)</pre>
         "content": [
           {
             "type": "text",
-            "text": "What is in this image?"
+            "text": "这张图片里有什么？"
           },
           {
             "type": "image_url",
@@ -599,11 +634,11 @@ puts(completion.choices.fetch(0).message.content)</pre>
   }
 EOF</pre>
 </code-tabs></div> </div> </div> </div> 
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <p>Provide an image for analysis in any of these ways:</p><ul>
-<li>By providing a fully qualified URL to an image file</li>
-<li>By providing an image as a Base64-encoded data URL</li>
-<li>By providing a file ID (created with the <a href="https://developers.openai.com/api/docs/api-reference/files">Files API</a>)</li>
-</ul><p>You can provide multiple images as input in a single request by including multiple images in the <code>content</code> array, but keep in mind that <a href="#calculating-costs">images count as tokens</a> and will be billed accordingly.</p><div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="format" data-content-switcher-initial="url" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="url" id="content-switcher-format"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="url">Passing a URL</option><option value="base64-encoded">Passing a Base64 encoded image</option><option value="file">Passing a file ID</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="url"><div class="hidden">Passing a URL</div><code-tabs title="Analyze the content of an image">
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <p>你可以通过以下任一方式提供待分析的图片：</p><ul>
+<li>提供图片文件的完整 URL</li>
+<li>以 Base64 编码的 Data URL 提供图片</li>
+<li>提供文件 ID（通过 <a href="https://developers.openai.com/api/docs/api-reference/files">Files API</a> 创建）</li>
+</ul><p>你可以在一次请求的 <code>content</code> 数组中放入多张图片。但请注意，<a href="#calculating-costs">图片会计为 token</a>，并按此计费。</p><div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="format" data-content-switcher-initial="url" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="url" id="content-switcher-format"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="内容切换" data-guide-switch=""><option selected="" value="url">通过 URL 传入</option><option value="base64-encoded">通过 Base64 编码图片传入</option><option value="file">通过文件 ID 传入</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="url"><div class="hidden">通过 URL 传入</div><code-tabs title="分析图片内容">
 <pre data-lang="python">from openai import OpenAI
 
 client = OpenAI()
@@ -614,7 +649,7 @@ response = client.responses.create(
         {
             "role": "user",
             "content": [
-                {"type": "input_text", "text": "what's in this image?"},
+                {"type": "input_text", "text": "这张图片里有什么？"},
                 {
                     "type": "input_image",
                     "image_url": "https://api.nga.gov/iiif/a2e6da57-3cd1-4235-b20e-95dcaefed6c8/full/!800,800/0/default.jpg",
@@ -635,7 +670,7 @@ const response = await openai.responses.create({
     {
       role: "user",
       content: [
-        { type: "input_text", text: "what's in this image?" },
+        { type: "input_text", text: "这张图片里有什么？" },
         {
           type: "input_image",
           image_url:
@@ -667,7 +702,7 @@ func main() {
 			OfInputItemList: responses.ResponseInputParam{
 				responses.ResponseInputItemParamOfMessage(
 					responses.ResponseInputMessageContentListParam{
-						responses.ResponseInputContentParamOfInputText("What's in this image?"),
+						responses.ResponseInputContentParamOfInputText("这张图片里有什么？"),
 						{OfInputImage: &responses.ResponseInputImageParam{
 							Detail:   responses.ResponseInputImageDetailAuto,
 							ImageURL: openai.String("https://api.nga.gov/iiif/a2e6da57-3cd1-4235-b20e-95dcaefed6c8/full/!800,800/0/default.jpg"),
@@ -695,7 +730,7 @@ ResponseInputItem imageInput =
     ResponseInputItem.ofMessage(
         ResponseInputItem.Message.builder()
             .role(ResponseInputItem.Message.Role.USER)
-            .addInputTextContent("What's in this image?")
+            .addInputTextContent("这张图片里有什么？")
             .addContent(
                 ResponseInputImage.builder()
                     .detail(ResponseInputImage.Detail.AUTO)
@@ -730,7 +765,7 @@ ResponseResult response = await client.CreateResponseAsync(
     [
         ResponseItem.CreateUserMessageItem(
             [
-                ResponseContentPart.CreateInputTextPart("What is in this image?"),
+                ResponseContentPart.CreateInputTextPart("这张图片里有什么？"),
                 ResponseContentPart.CreateInputImagePart(imageUrl),
             ]
         ),
@@ -750,7 +785,7 @@ response = client.responses.create(
       content: [
         {
           type: :input_text,
-          text: "What's in this image?"
+          text: "这张图片里有什么？"
         },
         {
           type: :input_image,
@@ -772,7 +807,7 @@ puts(response.output_text)</pre>
       {
         "role": "user",
         "content": [
-          {"type": "input_text", "text": "what is in this image?"},
+          {"type": "input_text", "text": "这张图片里有什么？"},
           {
             "type": "input_image",
             "image_url": "https://api.nga.gov/iiif/a2e6da57-3cd1-4235-b20e-95dcaefed6c8/full/!800,800/0/default.jpg"
@@ -789,27 +824,27 @@ input:
   - role: user
     content:
       - type: input_text
-        text: What is in this image?
+        text: 这张图片里有什么？
       - type: input_image
         image_url: https://api.nga.gov/iiif/a2e6da57-3cd1-4235-b20e-95dcaefed6c8/full/!800,800/0/default.jpg
 YAML</pre>
-</code-tabs></div><div data-content-switcher-pane="true" data-value="base64-encoded" hidden=""><div class="hidden">Passing a Base64 encoded image</div><code-tabs title="Analyze the content of an image">
+</code-tabs></div><div data-content-switcher-pane="true" data-value="base64-encoded" hidden=""><div class="hidden">通过 Base64 编码图片传入</div><code-tabs title="分析图片内容">
 <pre data-lang="python">import base64
 from openai import OpenAI
 
 client = OpenAI()
 
 
-# Function to encode the image
+# 将图片编码为 Base64
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
-# Path to your image
+# 待分析图片的路径
 image_path = "path_to_your_image.jpg"
 
-# Getting the Base64 string
+# 获取 Base64 字符串
 base64_image = encode_image(image_path)
 
 
@@ -819,7 +854,7 @@ response = client.responses.create(
         {
             "role": "user",
             "content": [
-                {"type": "input_text", "text": "what's in this image?"},
+                {"type": "input_text", "text": "这张图片里有什么？"},
                 {
                     "type": "input_image",
                     "image_url": f"data:image/jpeg;base64,{base64_image}",
@@ -844,7 +879,7 @@ const response = await openai.responses.create({
     {
       role: "user",
       content: [
-        { type: "input_text", text: "what's in this image?" },
+        { type: "input_text", text: "这张图片里有什么？" },
         {
           type: "input_image",
           image_url: `data:image/jpeg;base64,${base64Image}`,
@@ -882,7 +917,7 @@ func main() {
 			OfInputItemList: responses.ResponseInputParam{
 				responses.ResponseInputItemParamOfMessage(
 					responses.ResponseInputMessageContentListParam{
-						responses.ResponseInputContentParamOfInputText("What's in this image?"),
+						responses.ResponseInputContentParamOfInputText("这张图片里有什么？"),
 						{OfInputImage: &responses.ResponseInputImageParam{
 							Detail:   responses.ResponseInputImageDetailAuto,
 							ImageURL: openai.String(imageURL),
@@ -919,7 +954,7 @@ ResponseInputItem imageInput =
     ResponseInputItem.ofMessage(
         ResponseInputItem.Message.builder()
             .role(ResponseInputItem.Message.Role.USER)
-            .addInputTextContent("What's in this image?")
+            .addInputTextContent("这张图片里有什么？")
             .addContent(
                 ResponseInputImage.builder()
                     .detail(ResponseInputImage.Detail.AUTO)
@@ -950,7 +985,7 @@ Uri imageUrl = new(
 
 using HttpClient http = new();
 
-// Download an image as a stream.
+// 将图片下载为流。
 using Stream stream = await http.GetStreamAsync(imageUrl);
 BinaryData imageData = BinaryData.FromStream(stream, "image/png");
 
@@ -959,16 +994,16 @@ ResponseResult response1 = await client.CreateResponseAsync(
     [
         ResponseItem.CreateUserMessageItem(
             [
-                ResponseContentPart.CreateInputTextPart("What is in this image?"),
+                ResponseContentPart.CreateInputTextPart("这张图片里有什么？"),
                 ResponseContentPart.CreateInputImagePart(imageData),
             ]
         ),
     ]
 );
 
-Console.WriteLine($"From image stream: {response1.GetOutputText()}");
+Console.WriteLine($"图片流分析结果：{response1.GetOutputText()}");
 
-// Download an image as a byte array.
+// 将图片下载为字节数组。
 byte[] bytes = await http.GetByteArrayAsync(imageUrl);
 imageData = BinaryData.FromBytes(bytes, "image/png");
 
@@ -977,14 +1012,14 @@ ResponseResult response2 = await client.CreateResponseAsync(
     [
         ResponseItem.CreateUserMessageItem(
             [
-                ResponseContentPart.CreateInputTextPart("What is in this image?"),
+                ResponseContentPart.CreateInputTextPart("这张图片里有什么？"),
                 ResponseContentPart.CreateInputImagePart(imageData),
             ]
         ),
     ]
 );
 
-Console.WriteLine($"From byte array: {response2.GetOutputText()}");</pre>
+Console.WriteLine($"字节数组分析结果：{response2.GetOutputText()}");</pre>
 <pre data-lang="ruby">require "base64"
 require "openai"
 
@@ -999,7 +1034,7 @@ response = client.responses.create(
       content: [
         {
           type: :input_text,
-          text: "What's in this image?"
+          text: "这张图片里有什么？"
         },
         {
           type: :input_image,
@@ -1012,13 +1047,13 @@ response = client.responses.create(
 )
 
 puts(response.output_text)</pre>
-</code-tabs></div><div data-content-switcher-pane="true" data-value="file" hidden=""><div class="hidden">Passing a file ID</div><code-tabs title="Analyze the content of an image">
+</code-tabs></div><div data-content-switcher-pane="true" data-value="file" hidden=""><div class="hidden">通过文件 ID 传入</div><code-tabs title="分析图片内容">
 <pre data-lang="python">from openai import OpenAI
 
 client = OpenAI()
 
 
-# Function to create a file with the Files API
+# 通过 Files API 上传文件
 def create_file(file_path):
     with open(file_path, "rb") as file_content:
         result = client.files.create(
@@ -1028,7 +1063,7 @@ def create_file(file_path):
         return result.id
 
 
-# Getting the file ID
+# 获取文件 ID
 file_id = create_file("path_to_your_image.jpg")
 
 response = client.responses.create(
@@ -1037,7 +1072,7 @@ response = client.responses.create(
         {
             "role": "user",
             "content": [
-                {"type": "input_text", "text": "what's in this image?"},
+                {"type": "input_text", "text": "这张图片里有什么？"},
                 {
                     "type": "input_image",
                     "file_id": file_id,
@@ -1053,7 +1088,7 @@ import fs from "fs";
 
 const openai = new OpenAI();
 
-// Function to create a file with the Files API
+// 通过 Files API 上传文件
 async function createFile(filePath) {
   const fileContent = fs.createReadStream(filePath);
   const result = await openai.files.create({
@@ -1063,7 +1098,7 @@ async function createFile(filePath) {
   return result.id;
 }
 
-// Getting the file ID
+// 获取文件 ID
 const fileId = await createFile("fixtures/example.jpg");
 
 const response = await openai.responses.create({
@@ -1072,7 +1107,7 @@ const response = await openai.responses.create({
     {
       role: "user",
       content: [
-        { type: "input_text", text: "what's in this image?" },
+        { type: "input_text", text: "这张图片里有什么？" },
         {
           type: "input_image",
           file_id: fileId,
@@ -1117,7 +1152,7 @@ func main() {
 			OfInputItemList: responses.ResponseInputParam{
 				responses.ResponseInputItemParamOfMessage(
 					responses.ResponseInputMessageContentListParam{
-						responses.ResponseInputContentParamOfInputText("What's in this image?"),
+						responses.ResponseInputContentParamOfInputText("这张图片里有什么？"),
 						{OfInputImage: &responses.ResponseInputImageParam{
 							Detail: responses.ResponseInputImageDetailAuto,
 							FileID: openai.String(uploaded.ID),
@@ -1164,7 +1199,7 @@ var response =
                         ResponseInputItem.ofMessage(
                             ResponseInputItem.Message.builder()
                                 .role(ResponseInputItem.Message.Role.USER)
-                                .addInputTextContent("What's in this image?")
+                                .addInputTextContent("这张图片里有什么？")
                                 .addContent(
                                     ResponseInputImage.builder()
                                         .detail(ResponseInputImage.Detail.AUTO)
@@ -1191,7 +1226,7 @@ Uri imageUrl = new(
 
 using HttpClient http = new();
 
-// Download an image as a stream.
+// 将图片下载为流。
 using Stream stream = await http.GetStreamAsync(imageUrl);
 
 OpenAIFileClient files = new(key);
@@ -1207,7 +1242,7 @@ ResponseResult response = await client.CreateResponseAsync(
     [
         ResponseItem.CreateUserMessageItem(
             [
-                ResponseContentPart.CreateInputTextPart("what's in this image?"),
+                ResponseContentPart.CreateInputTextPart("这张图片里有什么？"),
                 ResponseContentPart.CreateInputImagePart(file.Id),
             ]
         ),
@@ -1232,7 +1267,7 @@ response = client.responses.create(
       content: [
         {
           type: :input_text,
-          text: "What's in this image?"
+          text: "这张图片里有什么？"
         },
         {
           type: :input_image,
@@ -1246,136 +1281,103 @@ response = client.responses.create(
 
 puts(response.output_text)</pre>
 </code-tabs></div> </div> </div> </div> 
-<h3 id="image-input-requirements">Image input requirements</h3>
-<p>Use supported image files that are clear enough for the model to analyze.</p>
+<h3 id="image-input-requirements">图片输入要求</h3>
+<p>请使用模型能够清晰分析的受支持图片文件。</p>
 <div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
 <thead>
 <tr>
-<th>Requirement</th>
-<th>Supported inputs</th>
+<th>要求</th>
+<th>支持的输入</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>File types</td>
-<td>PNG (<code>.png</code>), JPEG (<code>.jpeg</code> or <code>.jpg</code>), WEBP (<code>.webp</code>), and non-animated GIF (<code>.gif</code>)</td>
+<td>文件类型</td>
+<td>PNG（<code>.png</code>）、JPEG（<code>.jpeg</code> 或 <code>.jpg</code>）、WEBP（<code>.webp</code>）以及非动图 GIF（<code>.gif</code>）</td>
 </tr>
 <tr>
-<td>Request size</td>
-<td>Up to 512 MB total payload per request</td>
+<td>请求大小</td>
+<td>每次请求的总负载最多 512 MB</td>
 </tr>
 <tr>
-<td>Image count</td>
-<td>Up to 1,500 images per request</td>
+<td>图片数量</td>
+<td>每次请求最多 1,500 张图片</td>
 </tr>
 </tbody>
 </table></div>
-<p>For <a href="#patch-based-image-tokenization">patch-based image inputs</a>, the API supports up to 30,000 patches per image after applying the resizing rules for the selected model and <code>detail</code> level. This limit applies across supported detail levels and to each image separately, not to the combined patch count of the request.</p>
-<p>Lower model- and detail-specific resizing budgets still apply. Images that exceed the 30,000-patch limit after processing are rejected, not automatically resized to meet it. Reduce the image’s dimensions and try again.</p>
-<p>Image tokens and the rest of your prompt must also fit the model’s input and context limits. A token estimate does not guarantee that a request meets every input limit. Image use must comply with our <a href="https://openai.com/policies/usage-policies/">usage policies</a>.</p>
-<h3 id="choose-an-image-detail-level">Choose an image detail level</h3>
-<p>The <code>detail</code> parameter controls image preprocessing. Supported values depend on the model: <code>low</code>, <code>high</code>, <code>original</code>, or <code>auto</code>. If you omit the parameter, it defaults to <code>auto</code> in both the Responses API and the Chat Completions API. The <a href="#model-sizing-behavior">model sizing table</a> shows the corresponding behavior.</p>
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <code-tabs title="">
-<pre data-lang="plain">"image_url": {
+<p>对于<a href="#patch-based-image-tokenization">基于 patch 的图片输入</a>，按所选模型和 <code>detail</code> 级别完成缩放规则处理后，API 支持每张图片最多 30,000 个 patch。该上限适用于所有受支持的细节级别，并且逐张图片计算，而不是按整个请求的 patch 总数计算。</p>
+<p>各模型和细节级别自身的缩放预算仍然适用。处理后超过 30,000 个 patch 上限的图片会被拒绝，而不会自动缩放到满足上限。请缩小图片尺寸后重试。</p>
+<p>图片 token 与提示词的其余部分也必须符合模型的输入和上下文长度限制。token 估算值并不保证请求满足所有输入限制。图片的使用必须遵守我们的<a href="https://openai.com/policies/usage-policies/">使用政策</a>。</p>
+<h3 id="choose-an-image-detail-level">选择图片细节级别</h3>
+<p><code>detail</code> 参数用于控制图片的预处理方式。可选值取决于模型：<code>low</code>、<code>high</code>、<code>original</code> 或 <code>auto</code>。如果省略该参数，Responses API 和 Chat Completions API 都默认使用 <code>auto</code>。对应行为见<a href="#model-sizing-behavior">模型尺寸表</a>。</p>
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="chat" data-ids='["chat"]' data-markdown-ignore="" data-query-param="api-mode" hidden=""> <code-tabs title="设置图片细节级别">
+<pre data-lang="text">"image_url": {
     "url": "https://api.nga.gov/iiif/a2e6da57-3cd1-4235-b20e-95dcaefed6c8/full/!800,800/0/default.jpg",
     "detail": "original"
 },</pre>
 </code-tabs> </div> 
-<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="">
-<pre data-lang="plain">{
+<div class="content-mode-switch" data-choices='["responses","chat"]' data-content-mode-switch="" data-default="responses" data-group="api-mode" data-id="responses" data-ids='["responses"]' data-query-param="api-mode"> <code-tabs title="设置图片细节级别">
+<pre data-lang="text">{
     "type": "input_image",
     "image_url": "https://api.nga.gov/iiif/a2e6da57-3cd1-4235-b20e-95dcaefed6c8/full/!800,800/0/default.jpg",
     "detail": "original"
 }</pre>
 </code-tabs> </div> 
-<p>Use the following guidance to choose a detail level:</p>
+<p>按以下建议选择细节级别：</p>
 <div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
 <thead>
 <tr>
-<th>Detail level</th>
-<th>Best for</th>
+<th>细节级别</th>
+<th>适用场景</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>low</code></td>
-<td>Coarse image understanding. Resizing and token use depend on the model; <code>low</code> does not always use fewer tokens than <code>high</code>.</td>
+<td>粗略的图片理解。缩放和 token 用量取决于模型；<code>low</code> 不一定比 <code>high</code> 消耗更少的 token。</td>
 </tr>
 <tr>
 <td><code>high</code></td>
-<td>Standard high-fidelity image understanding when precise original-image coordinates are not required.</td>
+<td>标准的高保真图片理解，适用于不需要精确原图坐标的场景。</td>
 </tr>
 <tr>
 <td><code>original</code></td>
-<td>Large, dense, spatially sensitive, or computer-use images, when supported by the model.</td>
+<td>大尺寸、高密度、对空间位置敏感的图片，或计算机操作类图片（需模型支持）。</td>
 </tr>
 <tr>
 <td><code>auto</code></td>
-<td>Use the model’s default sizing behavior, shown in the model sizing table.</td>
+<td>使用模型的默认尺寸行为，见模型尺寸表。</td>
 </tr>
 </tbody>
 </table></div>
-<p>For tasks that require fine visual detail or precise coordinates, such as optical character recognition (OCR), small-object detection, or computer use, use <code>"detail": "original"</code> when supported. Original detail can still resize images to meet the model’s pixel-dimension limit or resizing patch budget, but not to meet the separate 30,000-patch rejection limit. For coordinate-sensitive tasks, resize images to fit those limits before sending them and map returned coordinates back to the original image. See the <a href="https://developers.openai.com/api/docs/guides/tools-computer-use">Computer use guide</a> for coordinate handling.</p>
-<h3 id="model-sizing-behavior">Model sizing behavior</h3>
-<p>The following table summarizes sizing behavior for general-purpose vision models. Other models and specialized variants can use different limits. All resizing preserves aspect ratio without enlarging smaller images.</p>
-<div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full"><tr><th>Model family</th><th>Supported detail levels</th><th>Patch and resizing behavior</th></tr><tr><td><code>gpt-6-astra</code></td><td><p><code>low</code>, <code>high</code>, <code>original</code>,
-<code>auto</code></p></td><td><p><code>low</code> fits within 512 × 512 pixels. <code>high</code> allows up
-to 2,500 patches and a 65,535-pixel maximum dimension. Both limits apply. 
-<code>original</code> preserves the image’s dimensions, except that images
-larger than 65,535 pixels on either side are scaled down to fit that
-limit. If the resulting image requires more than 
-<a href="#image-input-requirements">30,000 patches</a>, the API rejects
-the request; the image is not resized to fit the patch limit. 
-<code>auto</code> uses the same sizing behavior as <code>original</code>.</p></td></tr><tr><td><p><code>gpt-5.6-sol</code>, <code>gpt-5.6-terra</code>, 
-<code>gpt-5.6-luna</code></p></td><td><p><code>low</code>, <code>high</code>, <code>original</code>,
-<code>auto</code></p></td><td><p><code>low</code> fits within 512 × 512 pixels. <code>high</code> fits
-within 2048 × 2048 pixels and 2,500 patches. <code>original</code> 
-preserves the image’s dimensions, except that images larger than 65,535
-pixels on either side are scaled down to fit that limit. If the resulting
-image requires more than 
-<a href="#image-input-requirements">30,000 patches</a>, the API rejects
-the request; the image is not resized to fit the patch limit. 
-<code>auto</code> uses the same sizing behavior as <code>original</code>.</p></td></tr><tr><td><code>gpt-5.5</code></td><td><p><code>low</code>, <code>high</code>, <code>original</code>,
-<code>auto</code></p></td><td><p><code>low</code> fits within 512 × 512 pixels. <code>high</code> allows up
-to 2,500 patches and a 2048-pixel maximum dimension. <code>original</code> 
-allows up to 10,000 patches and a 6000-pixel maximum dimension. Both
-limits apply. <code>auto</code> uses the same sizing behavior as 
-<code>original</code>.</p></td></tr><tr><td><p><code>gpt-5.4</code>, <code>gpt-5.4-mini</code>, <code>gpt-5.4-nano</code></p></td><td><p><code>low</code>, <code>high</code>, <code>original</code>,
-<code>auto</code></p></td><td><p><code>low</code> uses a 2048-pixel maximum dimension and a 6,144-patch
-budget, so it can use more tokens than <code>high</code>. 
-<code>high</code> allows up to 2,500 patches and a 2048-pixel maximum
-dimension. <code>original</code> allows up to 10,000 patches and a
-6000-pixel maximum dimension. Both limits apply. <code>auto</code> uses
-the same sizing behavior as <code>high</code>.</p></td></tr><tr><td><p><code>gpt-5.2</code>, <code>gpt-4.1-mini</code></p></td><td><p><code>low</code>, <code>high</code>, <code>auto</code></p></td><td><p>These detail levels use the same sizing limits: a 2048-pixel maximum
-dimension and a 6,144-patch budget. <code>original</code> is not
-supported.</p></td></tr><tr><td><p><code>gpt-5.1</code>, <code>gpt-4.1</code>, <code>gpt-4o</code>,
-<code>gpt-4o-mini</code></p></td><td><p><code>low</code>, <code>high</code>, <code>auto</code></p></td><td><p><code>low</code> uses a fixed token count. <code>high</code> and 
-<code>auto</code> use the 
-<a href="#tile-based-image-tokenization">tile-based sizing rules</a>.</p></td></tr></table></div>
-<h2 id="calculating-costs">Calculating costs</h2>
-<p>Vision models convert image inputs into billable input tokens. The <a href="/api/docs/guides/image-cost-calculator/">image input cost calculator</a> and patch/tile rules in this section cover vision-model inputs, not GPT Image generation or editing. See <a href="#gpt-image-model-inputs">GPT Image model inputs</a> for that separate pricing.</p>
-<p>Image tokens also count toward your <a href="https://developers.openai.com/api/docs/guides/rate-limits">tokens per minute (TPM) limits</a>. The calculator estimates one image at standard input rates; it does not include the rest of your prompt or model output.</p>
-<h3 id="image-input-cost-calculator">Image input cost calculator</h3>
-<p>Use the <a href="/api/docs/guides/image-cost-calculator/">image input cost calculator</a> to estimate input tokens and cost for one image by model, image size, and detail level.</p>
-<h3 id="patch-based-image-tokenization">Patch-based image tokenization</h3>
-<p>Some models tokenize images by covering them with 32px x 32px patches. Many model and detail-level combinations define a resizing patch budget. First, the API fits the image within the selected detail level’s pixel-dimension limit, preserving aspect ratio and rounding to integer pixels without enlarging smaller images. The token cost is then determined as follows:</p>
-<p>A. Compute how many 32px x 32px patches are needed to cover the image after applying the pixel-dimension limit. A patch may extend beyond the image boundary.</p>
+<p>对于需要精细视觉细节或精确坐标的任务，例如光学字符识别（OCR）、小目标检测或计算机操作，在模型支持时请使用 <code>"detail": "original"</code>。原图细节级别仍可能为满足模型的像素尺寸上限或缩放 patch 预算而缩小图片，但不会因此绕过 30,000 个 patch 的拒绝上限。对坐标敏感的任务，应在发送前把图片缩放到这些上限之内，并把返回的坐标映射回原图。坐标处理方式见<a href="https://developers.openai.com/api/docs/guides/tools-computer-use">计算机操作指南</a>。</p>
+<h3 id="model-sizing-behavior">模型尺寸行为</h3>
+<p>下表概括了通用视觉模型的尺寸行为。其他模型和专用变体可能使用不同的限制。所有缩放都保持宽高比，不会放大较小的图片。</p>
+<div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full"><tr><th>模型系列</th><th>支持的细节级别</th><th>patch 与缩放行为</th></tr><tr><td><code>gpt-6-astra</code></td><td><p><code>low</code>、<code>high</code>、<code>original</code>、<code>auto</code></p></td><td><p><code>low</code> 缩放到 512 × 512 像素以内。<code>high</code> 最多允许 2,500 个 patch，且最长边不超过 65,535 像素。两个限制同时生效。<code>original</code> 保持图片原有尺寸，但若任一边超过 65,535 像素，则缩小到该上限以内。若结果图片需要超过 <a href="#image-input-requirements">30,000 个 patch</a>，API 会拒绝该请求，不会为了满足 patch 上限而缩放图片。<code>auto</code> 与 <code>original</code> 的尺寸行为相同。</p></td></tr><tr><td><p><code>gpt-5.6-sol</code>、<code>gpt-5.6-terra</code>、<code>gpt-5.6-luna</code></p></td><td><p><code>low</code>、<code>high</code>、<code>original</code>、<code>auto</code></p></td><td><p><code>low</code> 缩放到 512 × 512 像素以内。<code>high</code> 缩放到 2048 × 2048 像素以内，且不超过 2,500 个 patch。<code>original</code> 保持图片原有尺寸，但若任一边超过 65,535 像素，则缩小到该上限以内。若结果图片需要超过 <a href="#image-input-requirements">30,000 个 patch</a>，API 会拒绝该请求，不会为了满足 patch 上限而缩放图片。<code>auto</code> 与 <code>original</code> 的尺寸行为相同。</p></td></tr><tr><td><code>gpt-5.5</code></td><td><p><code>low</code>、<code>high</code>、<code>original</code>、<code>auto</code></p></td><td><p><code>low</code> 缩放到 512 × 512 像素以内。<code>high</code> 最多允许 2,500 个 patch，且最长边不超过 2048 像素。<code>original</code> 最多允许 10,000 个 patch，且最长边不超过 6000 像素。两个限制同时生效。<code>auto</code> 与 <code>original</code> 的尺寸行为相同。</p></td></tr><tr><td><p><code>gpt-5.4</code>、<code>gpt-5.4-mini</code>、<code>gpt-5.4-nano</code></p></td><td><p><code>low</code>、<code>high</code>、<code>original</code>、<code>auto</code></p></td><td><p><code>low</code> 最长边不超过 2048 像素，patch 预算为 6,144 个，因此可能比 <code>high</code> 消耗更多 token。<code>high</code> 最多允许 2,500 个 patch，且最长边不超过 2048 像素。<code>original</code> 最多允许 10,000 个 patch，且最长边不超过 6000 像素。两个限制同时生效。<code>auto</code> 与 <code>high</code> 的尺寸行为相同。</p></td></tr><tr><td><p><code>gpt-5.2</code>, <code>gpt-4.1-mini</code></p></td><td><p><code>low</code>、<code>high</code>、<code>auto</code></p></td><td><p>这些细节级别采用相同的尺寸限制：最长边不超过 2048 像素，patch 预算为 6,144 个。不支持 <code>original</code>。</p></td></tr><tr><td><p><code>gpt-5.1</code>、<code>gpt-4.1</code>、<code>gpt-4o</code>、<code>gpt-4o-mini</code></p></td><td><p><code>low</code> 使用固定数量的 token。<code>high</code> 和 <code>auto</code> 采用<a href="#tile-based-image-tokenization">基于图块的尺寸规则</a>。</p></td></tr></table></div>
+<h2 id="calculating-costs">计算成本</h2>
+<p>视觉模型会把图片输入转换为可计费的输入 token。本节的<a href="/api/docs/guides/image-cost-calculator/">图片输入成本计算器</a>以及 patch 和 tile 规则只适用于视觉模型输入，不适用于 GPT Image 的生成或编辑。GPT Image 的单独定价见 <a href="#gpt-image-model-inputs">GPT Image 模型输入</a>。</p>
+<p>图片 token 同样计入你的<a href="https://developers.openai.com/api/docs/guides/rate-limits">每分钟 token 数（TPM）限制</a>。计算器按标准输入价格估算单张图片，不包括提示词的其余部分和模型输出。</p>
+<h3 id="image-input-cost-calculator">图片输入成本计算器</h3>
+<p>使用<a href="/api/docs/guides/image-cost-calculator/">图片输入成本计算器</a>，可以按模型、图片尺寸和细节级别估算单张图片的输入 token 和费用。</p>
+<h3 id="patch-based-image-tokenization">基于 patch 的图片 token 化</h3>
+<p>部分模型会把图片切分为 32px × 32px 的 patch。许多模型和细节级别组合都定义了缩放 patch 预算。API 首先把图片缩放到所选细节级别的像素尺寸上限之内，保持宽高比，取整到整数像素，且不放大较小的图片。然后按以下步骤计算 token 成本：</p>
+<p>A. 在应用像素尺寸上限之后，计算覆盖整张图片所需的 32px × 32px patch 数量。patch 可以超出图片边界。</p>
 <pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>patch_count = ceil(width/32)×ceil(height/32)</span></span></code></pre>
-<p>B. When the selected model and detail level specify a resizing patch budget, scale the image down proportionally if it exceeds that budget. Otherwise, skip this step. Adjust the scale to stay within budget after converting to integer pixel dimensions and computing patch coverage. Keep full precision until calculating the final dimensions.</p>
+<p>B. 当所选模型和细节级别规定了缩放 patch 预算时，如果图片超出预算，就等比例缩小。否则跳过这一步。取整到整数像素并计算 patch 覆盖后，需要再调整缩放比例，使结果不超出预算。计算最终尺寸前保持全精度。</p>
 <pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>shrink_factor = sqrt((32^2 * patch_budget) / (width * height))</span></span>
 <span class="line"><span>adjusted_shrink_factor = shrink_factor * min(</span></span>
 <span class="line"><span>  floor(width * shrink_factor / 32) / (width * shrink_factor / 32),</span></span>
 <span class="line"><span>  floor(height * shrink_factor / 32) / (height * shrink_factor / 32)</span></span>
 <span class="line"><span>)</span></span></code></pre>
-<p>C. If step B resized the image, round down the final scaled width and height to integer pixels. Compute the patches needed to cover the resulting image. This is the image-token count before applying the model multiplier. When a patch budget applies, this count stays within that budget.</p>
+<p>C. 如果第 B 步缩放了图片，把最终的宽和高向下取整为整数像素。计算覆盖缩放后图片所需的 patch 数。这就是应用模型倍率之前的图片 token 数。适用 patch 预算时，这个数值不会超出预算。</p>
 <pre class="astro-code astro-code-themes github-light github-dark" data-language="text" data-wrap-long-lines="true" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0"><code><span class="line"><span>resized_patch_count = ceil(resized_width/32)×ceil(resized_height/32)</span></span></code></pre>
-<p>If this count exceeds 30,000 patches, the API rejects the request. Check this limit before applying the token multiplier.</p>
-<p>D. Multiply the patch count by the model’s multiplier and round up to get the billable image input tokens. Apply the model’s input price to those tokens once; the multiplier does not apply to other prompt tokens or to the price again.</p>
+<p>如果这个数值超过 30,000 个 patch，API 会拒绝该请求。请在应用 token 倍率之前检查这一上限。</p>
+<p>D. 将 patch 数乘以模型的倍率，并向上取整，得到可计费的图片输入 token。对这些 token 只按模型的输入价格计费一次；倍率不作用于提示词的其他 token，也不会再次乘到价格上。</p>
 <div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
 <thead>
 <tr>
-<th>Model</th>
-<th>Multiplier</th>
+<th>模型</th>
+<th>倍率</th>
 </tr>
 </thead>
 <tbody>
@@ -1428,7 +1430,7 @@ supported.</p></td></tr><tr><td><p><code>gpt-5.1</code>, <code>gpt-4.1</code>, <
 <td>1.62</td>
 </tr>
 <tr>
-<td><code>gpt-4.1-nano</code>* (2025-04-14 snapshot)</td>
+<td><code>gpt-4.1-nano</code>*（2025-04-14 快照）</td>
 <td>2.46</td>
 </tr>
 <tr>
@@ -1437,25 +1439,25 @@ supported.</p></td></tr><tr><td><p><code>gpt-5.1</code>, <code>gpt-4.1</code>, <
 </tr>
 </tbody>
 </table></div>
-<p><em>For <code>gpt-4.1-mini</code>, this applies to the 2025-04-14 snapshot.</em></p>
-<p>* Deprecated and scheduled for shutdown. See the <a href="https://developers.openai.com/api/docs/deprecations">deprecation schedule</a> for dates and replacements. These models aren’t included in the calculator or the model sizing table above.</p>
-<p><strong>Image token calculation examples for <code>gpt-6-astra</code> with <code>detail: high</code></strong></p>
-<p>This combination uses a 65,535-pixel maximum dimension, a 2,500-patch budget, and a 1.2× multiplier.</p>
+<p><em>对于 <code>gpt-4.1-mini</code>，此倍率适用于 2025-04-14 快照。</em></p>
+<p>* 已弃用，计划下线。日期和替代模型见<a href="https://developers.openai.com/api/docs/deprecations">弃用时间表</a>。这些模型未包含在上方的计算器和模型尺寸表中。</p>
+<p><strong><code>gpt-6-astra</code> 在 <code>detail: high</code> 下的图片 token 计算示例</strong></p>
+<p>该组合的最大边长为 65,535 像素，patch 预算为 2,500，倍率为 1.2×。</p>
 <ul>
-<li>A 1024 × 1024 image needs <code>32 × 32 = 1024</code> patches. No resizing is needed. The billable image input is <code>ceil(1024 × 1.2) = 1229</code> tokens.</li>
-<li>A 2048 × 2048 image initially needs <code>64 × 64 = 4096</code> patches. The patch budget reduces it to 1600 × 1600 pixels, or <code>50 × 50 = 2500</code> patches. The estimate is <code>ceil(2500 × 1.2) = 3000</code> tokens.</li>
-<li>A 4096 × 512 image stays at its original size: <code>128 × 16 = 2048</code> patches and <code>ceil(2048 × 1.2) = 2458</code> tokens.</li>
+<li>1024 × 1024 的图片需要 <code>32 × 32 = 1024</code> 个 patch。无需缩放。可计费的图片输入为 <code>ceil(1024 × 1.2) = 1229</code> 个 token。</li>
+<li>2048 × 2048 的图片最初需要 <code>64 × 64 = 4096</code> 个 patch。patch 预算会将其缩小到 1600 × 1600 像素，即 <code>50 × 50 = 2500</code> 个 patch。估算值为 <code>ceil(2500 × 1.2) = 3000</code> 个 token。</li>
+<li>4096 × 512 的图片保持原始尺寸：<code>128 × 16 = 2048</code> 个 patch，即 <code>ceil(2048 × 1.2) = 2458</code> 个 token。</li>
 </ul>
-<p>Floating-point rounding in billing can make the final count differ from the estimate by one token.</p>
-<h3 id="tile-based-image-tokenization">Tile-based image tokenization</h3>
+<p>计费时的浮点取整可能使最终数量与估算值相差 1 个 token。</p>
+<h3 id="tile-based-image-tokenization">基于 tile 的图片 token 化</h3>
 <a id="gpt-4o-gpt-41-gpt-4o-mini-cua-and-o-series-except-o4-mini"></a>
-<p>The models in this table use a base token count plus tokens for image tiles:</p>
+<p>下表中的模型使用“基础 token 数 + 图片 tile token 数”的方式计算：</p>
 <div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
 <thead>
 <tr>
-<th>Model</th>
-<th>Base tokens</th>
-<th>Tile tokens</th>
+<th>模型</th>
+<th>基础 token</th>
+<th>图块 token</th>
 </tr>
 </thead>
 <tbody>
@@ -1486,38 +1488,37 @@ supported.</p></td></tr><tr><td><p><code>gpt-5.1</code>, <code>gpt-4.1</code>, <
 </tr>
 </tbody>
 </table></div>
-<p>* Deprecated and scheduled for shutdown. See the <a href="https://developers.openai.com/api/docs/deprecations">deprecation schedule</a> for dates and replacements. These models aren’t included in the calculator or the model sizing table above.</p>
-<p>With <code>"detail": "low"</code>, an image costs only the model’s base tokens, regardless of dimensions. With <code>"detail": "high"</code> or <code>"detail": "auto"</code>:</p>
+<p>* 已弃用，计划下线。日期和替代模型见<a href="https://developers.openai.com/api/docs/deprecations">弃用时间表</a>。这些模型未包含在上方的计算器和模型尺寸表中。</p>
+<p>使用 <code>"detail": "low"</code> 时，无论图片尺寸多大，只收取模型的基础 token。使用 <code>"detail": "high"</code> 或 <code>"detail": "auto"</code> 时：</p>
 <ul>
-<li>Scale down to fit in a 2048px x 2048px square, maintaining aspect ratio. Smaller images are not enlarged.</li>
-<li>If the shortest side exceeds 768px, scale it down to 768px and round down the other dimension.</li>
-<li>Count the 512px squares needed to cover the image. Each square uses the model’s tile tokens.</li>
-<li>Add the model’s base tokens to the tile tokens.</li>
+<li>等比例缩小，使图片能放入 2048px × 2048px 的正方形内。较小的图片不会被放大。</li>
+<li>如果短边超过 768px，把短边缩放到 768px，并将另一边向下取整。</li>
+<li>统计覆盖图片所需的 512px 方块数。每个方块消耗模型的 tile token。</li>
+<li>将模型的基础 token 与 tile token 相加。</li>
 </ul>
-<h3 id="gpt-image-model-inputs">GPT Image model inputs</h3>
-<p>GPT Image models use separate image-token pricing for generation and editing. The vision calculator does not estimate their input or output costs. For current rates, see <a href="/api/docs/pricing/#image-generation">image generation pricing</a>; for generation and editing workflows, see the <a href="/api/docs/guides/image-generation/">Image generation guide</a>.</p>
+<h3 id="gpt-image-model-inputs">GPT Image 模型输入</h3>
+<p>GPT Image 模型的生成和编辑使用单独的图片 token 定价。视觉计算器不估算它们的输入或输出成本。当前费率见<a href="/api/docs/pricing/#image-generation">图片生成定价</a>；生成和编辑的流程见<a href="/api/docs/guides/image-generation/">图片生成指南</a>。</p>
 <h4 id="gpt-image-1">GPT Image 1</h4>
-<p><code>gpt-image-1</code> was shut down on October 23, 2026. The following input-token rules are retained for historical cost comparisons. See the <a href="https://developers.openai.com/api/docs/deprecations#2026-04-22-legacy-gpt-model-snapshots">deprecation notice</a> for replacement models.</p>
-<p>For legacy requests, use tile-based image sizing, but scale the shortest side down to 512px instead of 768px. Token use depends on the image dimensions and the <code>input_fidelity</code> parameter in the <a href="https://developers.openai.com/api/reference/resources/images/methods/edit">Images API</a>.</p>
-<p>When input fidelity is set to low, the base cost is 65 image tokens, and each tile costs 129 image tokens.
-When using high input fidelity, we add a set number of tokens based on the image’s aspect ratio in addition to the image tokens described above.</p>
+<p><code>gpt-image-1</code> 已于 2026 年 10 月 23 日下线。以下输入 token 规则仅保留用于历史成本对比。替代模型见<a href="https://developers.openai.com/api/docs/deprecations#2026-04-22-legacy-gpt-model-snapshots">弃用通知</a>。</p>
+<p>对于旧版请求，使用基于 tile 的尺寸规则，但把短边缩放到 512px，而不是 768px。token 用量取决于图片尺寸，以及 <a href="https://developers.openai.com/api/reference/resources/images/methods/edit">Images API</a> 中的 <code>input_fidelity</code> 参数。</p>
+<p>当输入保真度（<code>input_fidelity</code>）设为 <code>low</code> 时，基础用量为 65 个图片 token，每个图块另计 129 个。设为 <code>high</code> 时，还会根据图片的宽高比额外加上固定数量的 token。</p>
 <ul>
-<li>If your image is square, we add 4160 extra input image tokens.</li>
-<li>If it is closer to portrait or landscape, we add 6240 extra tokens.</li>
+<li>如果图片是正方形，额外加 4160 个输入图片 token。</li>
+<li>如果图片接近竖图或横图，额外加 6240 个 token。</li>
 </ul>
-<p>For historical image input-token prices, see the <a href="https://developers.openai.com/api/docs/models/gpt-image-1">GPT Image 1 model page</a>.</p>
-<h2 id="limitations">Limitations</h2>
-<p>Vision models can make mistakes. Account for these limitations when designing your application:</p>
+<p>历史图片输入 token 价格见 <a href="https://developers.openai.com/api/docs/models/gpt-image-1">GPT Image 1 模型页</a>。</p>
+<h2 id="limitations">局限性</h2>
+<p>视觉模型可能出错。设计应用时请考虑以下局限性：</p>
 <ul>
-<li><strong>Medical images</strong>: The model is not suitable for interpreting specialized medical images like CT scans and shouldn’t be used for medical advice.</li>
-<li><strong>Non-English</strong>: The model may not perform optimally when handling images with text of non-Latin alphabets, such as Japanese or Korean.</li>
-<li><strong>Small text</strong>: Enlarge text within the image to improve readability. When available, using <code>"detail": "original"</code> can also help performance.</li>
-<li><strong>Rotation</strong>: The model may misinterpret rotated or upside-down text and images.</li>
-<li><strong>Visual elements</strong>: The model may struggle to understand graphs or text where colors or styles—like solid, dashed, or dotted lines—vary.</li>
-<li><strong>Spatial reasoning</strong>: The model struggles with tasks requiring precise spatial localization, such as identifying chess positions.</li>
-<li><strong>Accuracy</strong>: The model may generate incorrect descriptions or captions in certain scenarios.</li>
-<li><strong>Image shape</strong>: The model struggles with panoramic and fisheye images.</li>
-<li><strong>Metadata and resizing</strong>: The model doesn’t process original file names or metadata. Images may be resized before analysis, including with <code>original</code> detail. See <a href="#model-sizing-behavior">Model sizing behavior</a> for the limits that apply to each model.</li>
-<li><strong>Counting</strong>: The model may give approximate counts for objects in images.</li>
-<li><strong>CAPTCHAs</strong>: For safety reasons, our system blocks the submission of CAPTCHAs.</li>
+<li><strong>医学图像</strong>：该模型不适合解读 CT 等专业医学图像，不应用于提供医疗建议。</li>
+<li><strong>非英语文字</strong>：处理含有日文、韩文等非拉丁字母文字的图片时，模型效果可能不理想。</li>
+<li><strong>小字</strong>：放大图中的文字以提高可读性。可用时，使用 <code>"detail": "original"</code> 也有助于提升效果。</li>
+<li><strong>旋转</strong>：模型可能误读旋转或倒置的文字和图片。</li>
+<li><strong>视觉元素</strong>：当颜色或样式（如实线、虚线、点线）有变化时，模型可能难以理解图表或文字。</li>
+<li><strong>空间推理</strong>：模型在需要精确空间定位的任务上表现欠佳，例如识别国际象棋的棋子位置。</li>
+<li><strong>准确性</strong>：在某些场景下，模型可能生成不正确的描述或标题。</li>
+<li><strong>图片形状</strong>：模型对全景图和鱼眼图的处理效果欠佳。</li>
+<li><strong>元数据与缩放</strong>：模型不处理原始文件名或元数据。分析前图片可能会被缩放，即使使用 <code>original</code> 细节级别也是如此。各模型适用的限制见<a href="#model-sizing-behavior">模型尺寸行为</a>。</li>
+<li><strong>计数</strong>：模型对图中物体数量可能只给出近似值。</li>
+<li><strong>验证码</strong>：出于安全原因，系统会拦截验证码图片的提交。</li>
 </ul>

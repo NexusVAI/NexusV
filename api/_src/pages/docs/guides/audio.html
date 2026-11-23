@@ -1,72 +1,33 @@
 ---
 title: 音频与语音
-description: 对话式语音应用请从 GPT-Live 开始，其他音频任务可以选择对应的 API。
+description: 了解 NexusVAI API 的实时语音接入方式，区分会话转写与独立音频任务。
 tab: models
 lead: false
-css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
-js: /api/assets/model-guide.js
 ---
-<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/audio (reference copy for local review). -->
-<p>如果要开发新的对话式语音应用，请从 <strong><a href="https://developers.openai.com/api/docs/guides/live">GPT-Live</a></strong> 开始。它可以在说话的同时继续聆听，并在后端智能体推理、调用工具或完成任务时保持对话流畅进行。</p>
-<p>先用 <a href="https://developers.openai.com/api/docs/guides/voice-webrtc?api=live">WebRTC 快速开始</a>建立第一段对话，然后编写一条简短的 <a href="https://developers.openai.com/api/docs/guides/live-prompting">Live 提示词</a>。如果你已经有 Realtime 应用或文本智能体，请参阅<a href="https://developers.openai.com/api/docs/guides/live-migration">迁移到 GPT-Live</a>。</p>
-<h2 id="choose-another-audio-workflow">选择其他音频工作流</h2>
+<p>通过 <strong>NexusVAI API</strong> 的 <a href="/api/docs/guides/realtime/">GPT-Live</a>，应用可以在同一个会话里发送麦克风音频、接收模型回复，并获得双方的转写文本。实时语音使用 WebSocket。</p>
+
+<h2 id="choose-another-audio-workflow">选择音频工作流</h2>
 <span id="choose-a-workflow"></span>
 <span id="choose-an-api"></span>
 <span id="audio-modalities"></span>
 <span id="common-speech-tasks"></span>
 <span id="streaming-and-latency"></span>
-<p>需要 Realtime API 的会话和工具模型时，请使用它。如果是不需要对话智能体的转写、翻译或语音生成，请从下表选择专用 API。</p>
 <span id="request-based-apis-and-realtime-sessions"></span>
-<div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
-<thead>
-<tr>
-<th>构建目标</th>
-<th>从这里开始</th>
-<th>你可以控制的内容</th>
-</tr>
-</thead>
+<table>
+<thead><tr><th>要做什么</th><th>如何接入</th></tr></thead>
 <tbody>
-<tr>
-<td>基于 Realtime 会话和工具模型的语音到语音智能体</td>
-<td><a href="/api/docs/guides/realtime-api-intro/">Realtime API</a></td>
-<td>音频轮次、会话状态、工具和打断。</td>
-</tr>
-<tr>
-<td>为现有文本智能体添加语音界面</td>
-<td><a href="/api/docs/guides/voice-agents/#build-a-chained-voice-workflow">语音智能体</a></td>
-<td>语音转文字、文本智能体工作流，然后文字转语音。</td>
-</tr>
-<tr>
-<td>音频文件的转写文本</td>
-<td><a href="https://developers.openai.com/api/docs/guides/speech-to-text">文件转写</a></td>
-<td>文件上传、有界请求，以及支持的转写格式。</td>
-</tr>
-<tr>
-<td>不含助手语音的实时字幕</td>
-<td><a href="https://developers.openai.com/api/docs/guides/realtime-transcription">实时转写</a></td>
-<td>流式音频和增量转写事件。</td>
-</tr>
-<tr>
-<td>连续语音翻译</td>
-<td><a href="https://developers.openai.com/api/docs/guides/realtime-translation">实时翻译</a></td>
-<td>专用的翻译会话，而不是语音智能体的轮次循环。</td>
-</tr>
-<tr>
-<td>旁白或生成语音</td>
-<td><a href="https://developers.openai.com/api/docs/guides/text-to-speech">文字转语音</a></td>
-<td>文本、声音和输出格式。</td>
-</tr>
-<tr>
-<td>在现有聊天应用中输入或输出音频</td>
-<td><a href="https://developers.openai.com/api/docs/guides/audio-chat-completions">Chat Completions 中的音频</a></td>
-<td>有界的多模态聊天请求。</td>
-</tr>
+<tr><td>构建可打断的语音对话</td><td>从<a href="/api/docs/guides/realtime-api-intro/">实时 API 入门</a>开始。</td></tr>
+<tr><td>给现有文本智能体增加语音交互</td><td>使用 <a href="/api/docs/guides/voice-agents/#build-a-full-duplex-voice-agent">GPT-Live 客户端委托</a>，由你的应用处理后端任务。</td></tr>
+<tr><td>从对话中获取字幕或记录</td><td>读取语音会话的<a href="/api/docs/guides/realtime-events/">输入与输出转写事件</a>。这不是独立的文件转写接口。</td></tr>
+<tr><td>独立文件转写、语音翻译或文字转语音</td><td>这些作为独立服务未在 NexusVAI 公共 API 开放。接入前请核对<a href="/api/reference/#endpoints">端点列表</a>。</td></tr>
 </tbody>
-</table></div>
+</table>
+
 <h2 id="build-with-voice">用语音构建</h2>
-<p>使用<a href="/api/docs/guides/voice-agents/">语音智能体</a>比较不同架构。先阅读 <a href="https://developers.openai.com/api/docs/guides/live-prompting">GPT-Live</a> 或 <a href="https://developers.openai.com/api/docs/guides/voice-prompting">Realtime</a> 的提示词指南，再参阅通用指南：<a href="https://developers.openai.com/api/docs/guides/custom-voices">自定义语音</a>、<a href="/api/docs/guides/voice-agents/#evaluate-your-voice-agent">评估</a>和<a href="https://developers.openai.com/api/docs/guides/voice-latency-cost">成本优化</a>。每篇指南都会区分特定模型或 API 的行为。</p>
+<p>先明确用户何时能打断、什么任务需要交给应用后端、双方转写是否需要保存，再从<a href="/api/docs/guides/realtime-connect/#quickstart">连接示例</a>建立一次完整会话。做评估时，分别观察回复延迟、噪声下的转写和后端任务成功率。资源用量和费用见<a href="/api/docs/guides/realtime-billing/">计费与限制</a>。</p>
+
 <h2 id="choose-a-connection">选择连接方式</h2>
-<p>浏览器音频请从 <a href="https://developers.openai.com/api/docs/guides/voice-webrtc">WebRTC</a> 开始。服务端音频管线使用 <a href="https://developers.openai.com/api/docs/guides/voice-websockets">WebSockets</a>。电话呼叫请参阅<a href="https://developers.openai.com/api/docs/guides/voice-sip">电话与 SIP</a>。<a href="https://developers.openai.com/api/docs/guides/voice-server-controls">服务端控制连接</a>可以让可信的后端观察并控制媒体会话。</p>
-<p>请在每个连接页面上选择你使用的 API。两者共用同一种传输方式，并不代表 GPT-Live 与 Realtime 的握手、凭证或事件格式可以互换。请阅读对应的连接指南，了解前提条件和设置步骤。</p>
+<p>用 WebSocket 访问 <code>chat.nexusvai.xyz</code> 的实时语音端点。NexusVAI 不提供 WebRTC 或 SIP 接入。握手方式和音频格式见<a href="/api/docs/guides/realtime-connect/">连接与认证</a>。</p>
+
 <h2 id="add-audio-to-your-existing-application">为现有应用添加音频</h2>
-<p>Chat Completions 的示例现在位于 <a href="https://developers.openai.com/api/docs/guides/audio-chat-completions">Chat Completions 中的音频</a>。如需浏览器语音智能体的入门示例，请使用 <a href="https://developers.openai.com/api/docs/guides/voice-webrtc?api=live">GPT-Live WebRTC 快速开始</a>。</p>
+<p>保留你的文本和工具工作流，通过实时语音会话的客户端委托衔接；不要把音频直接传给文本接口来替代实时语音连接。参数见<a href="/api/docs/guides/realtime-sessions/">会话与后端模式</a>。</p>

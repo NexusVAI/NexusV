@@ -17,6 +17,7 @@
 //   toc: false · lead: false · search: false · transform: true (run the docs transforms on a wide/home body)
 //   ---
 // Docs bodies may use, besides plain HTML:
+//   <!-- local-reference -->   end of public body; the remainder is unpublished editorial reference
 //   <h2 id="slug">…</h2> (h2–h4 need ids; h2s feed the right-hand TOC)
 //   <pre data-lang="bash" data-title="标题" data-label="cURL">raw code — do NOT HTML-escape; only "</pre>" is forbidden</pre>
 //   <code-tabs title="标题"><pre data-lang="python">…</pre><pre data-lang="javascript">…</pre></code-tabs>
@@ -62,7 +63,8 @@ function parseFrontMatter(raw, file) {
     const kv = line.match(/^([A-Za-z][\w-]*)\s*:\s*(.*)$/);
     if (kv) meta[kv[1]] = kv[2].trim();
   }
-  return { meta, body: text.slice(m[0].length) };
+  const body = text.slice(m[0].length).split(/^<!-- local-reference -->\r?$/m, 1)[0];
+  return { meta, body };
 }
 
 const list = (s) => (s ? s.split(",").map((x) => x.trim()).filter(Boolean) : []);

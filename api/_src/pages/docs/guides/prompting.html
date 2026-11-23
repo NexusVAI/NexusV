@@ -1,40 +1,34 @@
 ---
 title: 概览
-description: 了解如何用 OpenAI 模型创建、优化和维护提示词。
+description: 在 NexusVAI API 中创建、优化和维护提示词。
 tab: models
 lead: false
-css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
-js: /api/assets/model-guide.js
 ---
-<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/prompting (reference copy for local review). -->
-<p><strong>提示</strong>是向模型提供输入的过程。输出质量往往取决于你能把提示写到什么程度。</p>
+<p>提示词是你发送给模型的任务说明、示例与上下文。使用 <strong>NexusVAI API</strong> 时，把稳定的规则和每次变化的用户输入分开，便于维护、测试，也便于比较不同模型的效果。</p>
+
 <h2 id="overview">概览</h2>
-<p>提示既是艺术，也是科学。OpenAI 提供了一些策略和 API 设计决策，帮助你构造有效的提示，并稳定地从模型获得好结果。我们鼓励你多做尝试。</p>
+<p>先说明任务目标、输入边界和期望输出。对于不确定的情况，明确模型应该追问、回答「信息不足」，还是返回一个可供程序检查的状态。</p>
+
 <h2 id="prompting-tools-and-techniques">提示工具与技巧</h2>
 <ul>
-<li><strong><a href="https://developers.openai.com/api/docs/guides/prompt-caching">提示缓存</a></strong>：复用稳定的提示前缀，缓存命中时降低延迟和输入 token 费用</li>
-<li><strong><a href="/api/docs/guides/prompt-engineering/">提示词工程</a></strong>：学习构造提示词的策略、技巧和工具</li>
+<li><a href="/api/docs/guides/billing/#prompt-caching">提示缓存</a>：把可复用的固定前缀放在开头，变化的输入放在后面；是否命中取决于模型和请求。</li>
+<li><a href="/api/docs/guides/prompt-engineering/">提示词工程</a>：用任务约束、示例和上下文提高结果的稳定性。</li>
+<li><a href="/api/docs/guides/structured-outputs/">结构化输出</a>：把字段要求写成 JSON Schema，并在应用侧验证。</li>
 </ul>
+
 <h2 id="refine-your-prompt">优化你的提示词</h2>
 <ul>
-<li>把整体语气或角色说明放在 system 消息中；把与任务相关的细节和示例放在 user 消息中。</li>
-<li>把少样本示例合并成简洁的 YAML 风格或列表块，方便团队浏览和更新。</li>
-<li>用清晰的文件夹名映射项目结构，方便同事快速找到提示词。</li>
-<li>每次发布时都运行提示词测试和评估用例；尽早发现问题，比在生产环境中修复便宜得多。</li>
+<li>在 Responses 的 <code>instructions</code> 或 Chat Completions 的 <code>system</code> 消息中写整体规则，在用户输入中提供本轮任务和材料。</li>
+<li>用清楚的标签或分段区分示例、参考资料和指令。</li>
+<li>每次只改一个关键设置，用一组代表性输入比较升级前后的输出。</li>
 </ul>
+
 <h2 id="prompts-in-your-application">在应用中使用提示词</h2>
-<p>把提示词当作应用代码来对待。把提示词内容保存在具名模块中，用有类型的函数参数构建动态部分，并把提示词修改与它所支持的产品行为放在同一个 PR 中评审。</p>
-<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="warning" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M10.42 2.006a4 4 0 0 1 3.159 0c.674.29 1.188.822 1.667 1.456.474.627 1 1.473 1.653 2.523l3.542 5.696c.72 1.16 1.3 2.09 1.682 2.854.384.766.654 1.517.59 2.292a4 4 0 0 1-1.604 2.886c-.625.463-1.405.63-2.258.709-.85.078-1.945.078-3.311.078H8.46c-1.366 0-2.46 0-3.31-.078-.854-.078-1.634-.246-2.26-.71a4 4 0 0 1-1.603-2.885c-.064-.775.206-1.526.59-2.292.383-.764.961-1.694 1.682-2.854l3.542-5.696c.653-1.05 1.18-1.896 1.653-2.523.48-.634.993-1.166 1.667-1.456Zm2.37 1.838a2 2 0 0 0-1.58 0c-.192.083-.448.28-.86.825-.413.544-.891 1.312-1.577 2.415l-3.488 5.61c-.755 1.214-1.283 2.066-1.62 2.737-.34.678-.402 1.02-.385 1.232a2 2 0 0 0 .802 1.443c.171.127.494.255 1.25.324.748.069 1.75.07 3.18.07h6.976c1.43 0 2.432-.001 3.18-.07.756-.069 1.079-.197 1.25-.324a2 2 0 0 0 .802-1.443c.017-.212-.045-.554-.385-1.232-.337-.671-.865-1.523-1.62-2.737l-3.488-5.61c-.686-1.103-1.164-1.87-1.576-2.415-.413-.546-.67-.742-.861-.825"></path><path d="M12 7.5a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1M10.851 15a1.15 1.15 0 1 1 2.3 0 1.15 1.15 0 0 1-2.3 0"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>OpenAI 正在弃用 API 中可复用的提示词对象。自 2026 年 6 月 3 日起，提示词创建功能将不再被推荐，<code>v1/prompts</code> 计划于 2026 年 11 月 30 日下线。当前时间线请参阅<a href="https://developers.openai.com/api/docs/deprecations#2026-06-03-reusable-prompts">弃用说明页</a>。</p></div></div></div></div></div>
-<p>对于新的工作，不要创建可复用的提示词对象。改为：</p>
-<ul>
-<li>把每个生产提示词保存在由代码管理、带版本的辅助模块中，例如 <code>prompts/supportReply.ts</code>。</li>
-<li>用有类型的函数参数或经过校验的输入对象替代提示词变量。</li>
-<li>通过 <code>input</code> 和 <code>instructions</code>，把生成的消息直接传给 <a href="/api/docs/guides/text/?api-mode=responses">Responses API</a>。</li>
-<li>用测试、有代表性的样例和评估检查覆盖提示词修改，并让它们随部署流程一起运行。</li>
-<li>利用 git 历史、PR 评审、发布标签和功能开关来评审、发布、比较和回滚提示词修改。</li>
-</ul>
-<p>如果你的 API 请求已经在使用提示词 ID 或提示词版本，请参阅<a href="/api/docs/guides/prompting/migrate-from-prompt-object/">迁移指南</a>，把这些提示词移入代码。</p>
+<p>NexusVAI API 不支持托管的提示词 ID。把提示词存进应用的版本控制，用函数参数填入动态值，再将结果作为 <code>instructions</code> 和 <code>input</code> 发送给 <a href="/api/docs/guides/responses/#input">Responses API</a>。</p>
+<p>现有集成如果使用提示词对象，可按<a href="/api/docs/guides/prompting/migrate-from-prompt-object/">迁移指南</a>转成内联请求。</p>
+
 <h2 id="next-steps">后续步骤</h2>
-<p>对提示词有了把握之后，你可以看看下面的指南和资源。</p>
-<a class="_TextLink_ssta1_1" data-underline="always" href="/api/docs/guides/text/"><div class="icon-item mt-2"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M12 4.5C7.5271 4.5 4 7.91095 4 12C4 13.6958 4.5996 15.263 5.62036 16.5254C5.80473 16.7534 5.87973 17.0509 5.82551 17.339C5.72928 17.8505 5.60336 18.3503 5.45668 18.8401C6.08722 18.743 6.69878 18.6098 7.2983 18.4395C7.54758 18.3687 7.81461 18.3975 8.04312 18.5197C9.20727 19.1423 10.5566 19.5 12 19.5C16.4729 19.5 20 16.0891 20 12C20 7.91095 16.4729 4.5 12 4.5ZM2 12C2 6.70021 6.53177 2.5 12 2.5C17.4682 2.5 22 6.70021 22 12C22 17.2998 17.4682 21.5 12 21.5C10.3694 21.5 8.82593 21.1286 7.46141 20.4675C6.36717 20.7507 5.2423 20.9253 4.06155 20.9981C3.72191 21.019 3.39493 20.8658 3.19366 20.5915C2.9924 20.3171 2.94448 19.9592 3.06647 19.6415C3.35663 18.8859 3.6004 18.1448 3.77047 17.399C2.65693 15.8695 2 14.0088 2 12Z" fill="currentColor"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">文本生成</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>了解如何通过提示让模型生成文本。</p> </div> </div> </div></a>
-<a class="_TextLink_ssta1_1" data-underline="always" href="/api/docs/guides/prompt-engineering/"><div class="icon-item mt-2"> <div class="icon-item-icon"> <span><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path clip-rule="evenodd" d="M14.447 7.106a1 1 0 0 1 .447 1.341l-4 8a1 1 0 1 1-1.788-.894l4-8a1 1 0 0 1 1.341-.447ZM6.6 7.2a1 1 0 0 1 .2 1.4L4.25 12l2.55 3.4a1 1 0 0 1-1.6 1.2l-3-4a1 1 0 0 1 0-1.2l3-4a1 1 0 0 1 1.4-.2Zm10.8 0a1 1 0 0 1 1.4.2l3 4a1 1 0 0 1 0 1.2l-3 4a1 1 0 0 1-1.6-1.2l2.55-3.4-2.55-3.4a1 1 0 0 1 .2-1.4Z" fill-rule="evenodd"></path></svg></span> </div> <div class="icon-item-right"> <div class="icon-item-title not-prose"> <div class="icon-item-title body-large not-prose">写出更好的提示词</div> <div class="pointer"> <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path clip-rule="evenodd" d="M9.293 7.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L12.586 12 9.293 8.707a1 1 0 0 1 0-1.414Z" fill-rule="evenodd"></path></svg> </div> </div> <div class="icon-item-desc body-small not-prose"> <p>了解 OpenAI 的提示词工程工具与技巧。</p> </div> </div> </div></a>
+<cards>
+<card href="/api/docs/guides/text/" title="文本生成">发出第一条提示词并读取回复。</card>
+<card href="/api/docs/guides/prompt-engineering/" title="提示词工程" icon="cube">为你的任务设计指令和示例。</card>
+</cards>

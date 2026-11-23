@@ -1,25 +1,54 @@
 ---
 title: 提示词生成
-description: Learn how to generate prompts, functions, and schemas in the OpenAI API's Playground.
+description: 用 NexusVAI API 起草提示词、函数参数或 JSON Schema，再通过应用侧测试和评审验证。
 tab: models
 lead: false
-css: /api/assets/oai/markdown.css, /api/assets/oai/select.css, /api/assets/oai/segmented.css, /api/assets/model-guides/widgets/gallery.css
 js: /api/assets/model-guide.js
 ---
-<!-- OpenAI Developers mirror: https://developers.openai.com/api/docs/guides/prompt-generation (reference copy for local review). -->
-<p>The <strong>Generate</strong> button in the <a href="https://platform.openai.com/chat/edit">Playground</a> lets you generate prompts, <a href="https://developers.openai.com/api/docs/guides/function-calling">functions</a>, and <a href="/api/docs/guides/structured-outputs/#supported-schemas">schemas</a> from just a description of your task. This guide will walk through exactly how it works.</p>
-<h2 id="overview">Overview</h2>
-<p>Creating prompts and schemas from scratch can be time-consuming, so generating them can help you get started quickly. The Generate button uses two main approaches:</p>
+<p>可以让 <strong>NexusVAI API</strong> 根据任务说明起草提示词和 JSON Schema，再由你审核、运行样例并修订。下方使用普通文本生成与<a href="/api/docs/guides/structured-outputs/">结构化输出</a>，不需要专门的提示词编辑器。</p>
+
+<h2 id="overview">概览</h2>
+<p>将需求、输入和评价标准写成给模型的元提示词。它生成的是草稿，而非已经通过测试的配置。保留原始需求和典型输入，便于比较不同版本。</p>
+
+<h2 id="prompts">提示词</h2>
+<h3 id="meta-prompts">元提示词</h3>
+<p>说明新提示词的使用对象、输入格式、边界和期望结果。可将下方模板作为 <code>instructions</code>，将实际任务描述放进 <code>input</code>；调用方式见<a href="/api/docs/guides/text/">文本生成</a>。</p>
+<div id="content-switcher-meta-prompt" data-content-switcher-root>
+<label>选择输出类型 <select aria-label="选择输出类型" data-guide-switch><option value="text-out">文本输出</option><option value="audio-out">语音场景</option></select></label>
+<div data-content-switcher-pane data-value="text-out">
+<pre data-lang="text" data-title="文本元提示词">根据用户提供的任务草拟一条系统指令。写明目标、输入约束、输出格式和信息不足时的处理方式。把需要业务方确认的条件列在单独一段，不要补造事实。</pre>
+</div>
+<div data-content-switcher-pane data-value="audio-out" hidden>
+<pre data-lang="text" data-title="音频元提示词">根据给定语音场景，起草简短的对话指令。写明语气、确认关键信息的方式、被打断后的恢复和转交后端的条件。不要假定工具已执行或用户听清了回复。</pre>
+</div>
+</div>
+<h3 id="prompt-edits">编辑提示词</h3>
+<p>提供旧提示词、已观察到的失败样例以及必须保留的规则。让模型标记改动之处，再在同一组样例上比较新旧版本。</p>
+
+<h2 id="schemas">生成 Schema</h2>
+<p>先列出字段的含义、类型和必须出现的条件，让模型起草 Schema。接口中的字段放置位置见<a href="/api/docs/guides/responses/#structured-output">结构化输出示例</a>及<a href="/api/docs/guides/responses/#tools">函数工具示例</a>。</p>
+<h3 id="defining-a-constrained-meta-schema">定义受约束的元 Schema</h3>
+<p>让模型先返回易于检查的字段清单：名称、类型、说明、是否必填。应用再将清单转为它支持的 Schema 表达，避免把生成结果直接投入生产。</p>
+<h3 id="output-cleaning">清理输出</h3>
+<p>检查是否遗漏必填字段、是否允许意外属性，以及枚举和值域是否符合预期。用合法样例和应拒绝的反例分别测试。</p>
+<h3 id="meta-schemas">元 Schema</h3>
+<p>元 Schema 描述 Schema 本身的结构。它能帮助程序先拒绝不合规的初稿，但不能验证字段含义或业务逻辑；这些仍需人工评审和测试。</p>
+
+<!-- local-reference -->
+<!-- 原中文参考稿保留供编辑核对，不参与构建。 -->
+<p>只需描述任务，就可以用 <a href="https://platform.openai.com/chat/edit">Playground</a> 中的<strong>生成</strong>按钮生成提示词、<a href="https://developers.openai.com/api/docs/guides/function-calling">函数</a>和 <a href="/api/docs/guides/structured-outputs/#supported-schemas">schema</a>。本指南将介绍这个按钮的工作原理。</p>
+<h2 id="overview">概览</h2>
+<p>从头编写提示词和 schema 可能很费时，使用生成功能可以更快上手。“生成”按钮主要采用两种方法：</p>
 <ol>
-<li><strong>Prompts:</strong> We use <strong>meta-prompts</strong> that incorporate best practices to generate or improve prompts.</li>
-<li><strong>Schemas:</strong> We use <strong>meta-schemas</strong> that produce valid JSON and function syntax.</li>
+<li><strong>提示词：</strong>我们将最佳实践融入<strong>元提示词</strong>，用它们来生成或改进提示词。</li>
+<li><strong>Schema：</strong>我们使用<strong>元 schema</strong> 生成符合语法要求的 JSON 和函数定义。</li>
 </ol>
-<p>While we currently use meta prompts and schemas, we may integrate more advanced techniques in the future like <a href="https://arxiv.org/abs/2310.03714">DSPy</a> and <a href="https://arxiv.org/abs/2305.03495">“Gradient Descent”</a>.</p>
-<h2 id="prompts">Prompts</h2>
-<p>A <strong>meta-prompt</strong> instructs the model to create a good prompt based on your task description or improve an existing one. The meta-prompts in the Playground draw from our <a href="/api/docs/guides/prompt-engineering/">prompt engineering</a> best practices and real-world experience with users.</p>
-<p>We use specific meta-prompts for different output types, like audio, to ensure the generated prompts meet the expected format.</p>
-<h3 id="meta-prompts">Meta-prompts</h3>
-<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="meta-prompt" data-content-switcher-initial="text-out" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="text-out" id="content-switcher-meta-prompt"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="text-out">Text-out</option><option value="audio-out">Audio-out</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="text-out"><div class="hidden">Text-out</div><code-tabs title="Text meta-prompt">
+<p>目前我们使用元提示词和元 schema，今后可能会引入更先进的技术，例如 <a href="https://arxiv.org/abs/2310.03714">DSPy</a> 和<a href="https://arxiv.org/abs/2305.03495">“梯度下降”</a>。</p>
+<h2 id="prompts">提示词</h2>
+<p><strong>元提示词</strong>指导模型根据任务描述编写高质量的提示词，或改进已有的提示词。Playground 中的元提示词借鉴了<a href="/api/docs/guides/prompt-engineering/">提示词工程</a>的最佳实践，以及与用户合作积累的经验。</p>
+<p>针对音频等不同输出类型，我们使用专门的元提示词，确保生成的提示词符合预期格式。</p>
+<h3 id="meta-prompts">元提示词</h3>
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="meta-prompt" data-content-switcher-initial="text-out" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="text-out" id="content-switcher-meta-prompt"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="选择输出类型" data-guide-switch=""><option selected="" value="text-out">文本输出</option><option value="audio-out">音频输出</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="text-out"><div class="hidden">文本输出</div><code-tabs title="文本元提示词">
 <pre data-lang="javascript">import OpenAI from "openai";
 
 const client = new OpenAI();
@@ -408,7 +437,7 @@ def generate_prompt(client, meta_prompt, task_or_prompt)
 end
 
 puts(generate_prompt(client, meta_prompt, "Write a concise product launch announcement."))</pre>
-</code-tabs></div><div data-content-switcher-pane="true" data-value="audio-out" hidden=""><div class="hidden">Audio-out</div><code-tabs title="Audio meta-prompt">
+</code-tabs></div><div data-content-switcher-pane="true" data-value="audio-out" hidden=""><div class="hidden">音频输出</div><code-tabs title="音频元提示词">
 <pre data-lang="javascript">import OpenAI from "openai";
 
 const client = new OpenAI();
@@ -745,9 +774,9 @@ end
 
 puts(generate_prompt(client, meta_prompt, "Create a friendly voice assistant for a bike shop."))</pre>
 </code-tabs></div> </div> </div>
-<h3 id="prompt-edits">Prompt edits</h3>
-<p>To edit prompts, we use a slightly modified meta-prompt. While direct edits are straightforward to apply, identifying necessary changes for more open-ended revisions can be challenging. To address this, we include a <strong>reasoning section</strong> at the beginning of the response. This section helps guide the model in determining what changes are needed by evaluating the existing prompt’s clarity, chain-of-thought ordering, overall structure, and specificity, among other factors. The reasoning section makes suggestions for improvements and is then parsed out from the final response.</p>
-<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="edit-prompt" data-content-switcher-initial="text-out" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="text-out" id="content-switcher-edit-prompt"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="text-out">Text-out</option><option value="audio-out">Audio-out</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="text-out"><div class="hidden">Text-out</div><code-tabs title="Text meta-prompt for edits">
+<h3 id="prompt-edits">编辑提示词</h3>
+<p>编辑提示词时，我们使用略作调整的元提示词。明确的改动很容易落实，但如果修改要求比较开放，就不容易判断哪些地方需要调整。为此，我们在回复开头加入<strong>推理部分</strong>，引导模型从表述是否清晰、推理步骤顺序、整体结构和具体程度等方面评估已有的提示词，判断需要做哪些改动。这一部分会提出改进建议，随后在解析时被移除，不会出现在最终回复中。</p>
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="edit-prompt" data-content-switcher-initial="text-out" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="text-out" id="content-switcher-edit-prompt"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="选择输出类型" data-guide-switch=""><option selected="" value="text-out">文本输出</option><option value="audio-out">音频输出</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="text-out"><div class="hidden">文本输出</div><code-tabs title="用于编辑的文本元提示词">
 <pre data-lang="javascript">import OpenAI from "openai";
 
 const client = new OpenAI();
@@ -1250,7 +1279,7 @@ def generate_prompt(client, meta_prompt, task_or_prompt)
 end
 
 puts(generate_prompt(client, meta_prompt, "Make this support prompt more concise and empathetic."))</pre>
-</code-tabs></div><div data-content-switcher-pane="true" data-value="audio-out" hidden=""><div class="hidden">Audio-out</div><code-tabs title="Audio meta-prompt for edits">
+</code-tabs></div><div data-content-switcher-pane="true" data-value="audio-out" hidden=""><div class="hidden">音频输出</div><code-tabs title="用于编辑的音频元提示词">
 <pre data-lang="javascript">import OpenAI from "openai";
 
 const client = new OpenAI();
@@ -1702,36 +1731,33 @@ end
 
 puts(generate_prompt(client, meta_prompt, "Make this voice assistant prompt warmer and more direct."))</pre>
 </code-tabs></div> </div> </div>
-<h2 id="schemas">Schemas</h2>
-<p><a href="/api/docs/guides/structured-outputs/">Structured Outputs</a> schemas and function schemas are themselves JSON objects, so we leverage Structured Outputs to generate them.
-This requires defining a schema for the desired output, which in this case is itself a schema. To do this, we use a self-describing schema – a <strong>meta-schema</strong>.</p>
-<p>Because the <code>parameters</code> field in a function schema is itself a schema, we use the same meta-schema to generate functions.</p>
-<h3 id="defining-a-constrained-meta-schema">Defining a constrained meta-schema</h3>
-<p><a href="/api/docs/guides/structured-outputs/">Structured Outputs</a> supports two modes: <code>strict=true</code> and <code>strict=false</code>. Both modes use the same model trained to follow the provided schema, but only “strict mode” guarantees perfect adherence through constrained sampling.</p>
-<p>Our goal is to generate schemas for strict mode using strict mode itself. However, the official meta-schemas provided by the <a href="https://json-schema.org/specification#meta-schemas">JSON Schema Specification</a> rely on features <a href="/api/docs/guides/structured-outputs/#some-type-specific-keywords-are-not-yet-supported">not currently supported</a> in strict mode. This poses challenges that affect both input and output schemas.</p>
+<h2 id="schemas">生成 Schema</h2>
+<p><a href="/api/docs/guides/structured-outputs/">结构化输出</a>的 schema 和函数 schema 本身都是 JSON 对象，因此可以用结构化输出来生成它们。
+这需要先给预期输出定义一个 schema，而这里的输出本身也是 schema。为此，我们使用一种可以描述 schema 的定义，即<strong>元 schema</strong>。</p>
+<p>函数 schema 中的 <code>parameters</code> 字段本身就是 schema，因此我们也用同一个元 schema 来生成函数。</p>
+<h3 id="defining-a-constrained-meta-schema">定义受约束的元 Schema</h3>
+<p><a href="/api/docs/guides/structured-outputs/">结构化输出</a>支持两种工作模式：<code>strict=true</code> 和 <code>strict=false</code>。两者使用同一个经过训练、能够遵循 schema 的模型，但只有严格模式能通过约束采样保证输出完全符合给定的 schema。</p>
+<p>我们的目标是用严格模式自身生成符合严格模式的 schema。然而，<a href="https://json-schema.org/specification#meta-schemas">JSON Schema 规范</a>提供的官方元 schema 依赖严格模式<a href="/api/docs/guides/structured-outputs/#some-type-specific-keywords-are-not-yet-supported">暂不支持的特性</a>。这同时给输入和输出带来了困难：</p>
 <ol>
-<li><strong>Input schema:</strong> We can’t use <a href="/api/docs/guides/structured-outputs/#some-type-specific-keywords-are-not-yet-supported">unsupported features</a> in the input schema to describe the output schema.</li>
-<li><strong>Output schema:</strong> The generated schema must not include <a href="/api/docs/guides/structured-outputs/#some-type-specific-keywords-are-not-yet-supported">unsupported features</a>.</li>
+<li><strong>输入 schema：</strong>不能用严格模式<a href="/api/docs/guides/structured-outputs/#some-type-specific-keywords-are-not-yet-supported">不支持的特性</a>描述输出 schema。</li>
+<li><strong>输出 schema：</strong>生成的 schema 不得包含严格模式<a href="/api/docs/guides/structured-outputs/#some-type-specific-keywords-are-not-yet-supported">不支持的特性</a>。</li>
 </ol>
-<p>Because we need to generate new keys in the output schema, the input meta-schema must use <code>additionalProperties</code>. This means we can’t currently use strict mode to generate schemas. However, we still want the generated schema to conform to strict mode constraints.</p>
-<p>To overcome this limitation, we define a <strong>pseudo-meta-schema</strong> — a meta-schema that uses features not supported in strict mode to describe only the features that are supported in strict mode. Essentially, this approach steps outside strict mode for the meta-schema definition while still ensuring that the generated schemas adhere to strict mode constraints.</p>
-<details class="guide-disclosure"><summary>How we designed the pseudo-meta-schema</summary><p>Constructing a constrained meta-schema is a challenging task, so we leveraged our models to help.</p><p>We began by giving <code>o1-preview</code> and <code>gpt-4o</code> in JSON mode a description of our goal using the Structured Outputs documentation.
-After a few iterations, we developed our first functional meta-schema.</p><p>We then used <code>gpt-4o</code> with Structured Outputs and provided <em>that initial schema</em> along with our task description and documentation, to generate better candidates. With each iteration we used a better schema to generate the next, until we finally reviewed it carefully by hand.</p><p>Finally, after cleaning the output, we validated the schemas against a set of evals for schemas and functions.</p></details>
-<h3 id="output-cleaning">Output cleaning</h3>
-<p>Strict mode guarantees perfect schema adherence. Because we can’t use it during generation, however, we need to validate and transform the output after generating it.</p>
-<p>After generating a schema, we perform the following steps:</p>
+<p>为了在输出 schema 中生成新的键，输入元 schema 必须使用 <code>additionalProperties</code>。因此，目前不能直接用严格模式生成 schema，但我们仍希望生成结果符合严格模式的约束。</p>
+<p>为克服这项限制，我们定义了<strong>伪元 schema</strong>。它使用严格模式不支持的特性，却只描述严格模式支持的特性。这样就可以在严格模式之外定义元 schema，同时确保生成的 schema 符合严格模式的约束。</p>
+<details class="guide-disclosure"><summary>我们如何设计伪元 schema</summary><p>构建受约束的元 schema 并不容易，所以我们借助模型来完成。</p><p>我们先参考结构化输出文档，在 JSON 模式下向 <code>o1-preview</code> 和 <code>gpt-4o</code> 说明目标。经过几轮迭代，得到了第一个可用的元 schema。</p><p>接着，我们使用 <code>gpt-4o</code> 的结构化输出功能，将<em>初始 schema</em> 连同任务描述和文档一起交给模型，生成更好的候选方案。每轮都使用上一轮改进的 schema 生成下一版，最后进行人工审查。</p><p>清理输出后，我们用一组针对 schema 和函数的评测来验证结果。</p></details>
+<h3 id="output-cleaning">清理输出</h3>
+<p>严格模式可以保证输出完全符合给定的 schema。但生成过程中无法使用严格模式，因此需要在生成后验证并转换输出。</p>
+<p>生成 schema 后，执行以下步骤：</p>
 <ol>
-<li><strong>Set <code>additionalProperties</code> to <code>false</code></strong> for all objects.</li>
-<li><strong>Mark all properties as required</strong>.</li>
-<li><strong>For structured output schemas</strong>, wrap them in <a href="/api/docs/guides/structured-outputs/?context=without_parse#how-to-use"><code>json_schema</code></a> object.</li>
-<li><strong>For functions</strong>, wrap them in a <a href="https://developers.openai.com/api/docs/guides/function-calling#defining-functions"><code>function</code></a> object.</li>
+<li>对所有对象，<strong>将 <code>additionalProperties</code> 设为 <code>false</code></strong>。</li>
+<li><strong>将所有属性标记为必填项</strong>。</li>
+<li><strong>对于结构化输出的 schema</strong>，将其封装在 <a href="/api/docs/guides/structured-outputs/?context=without_parse#how-to-use"><code>json_schema</code></a> 对象中。</li>
+<li><strong>对于函数</strong>，将其封装在 <a href="https://developers.openai.com/api/docs/guides/function-calling#defining-functions"><code>function</code></a> 对象中。</li>
 </ol>
-<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>The Realtime API
-<a href="https://developers.openai.com/api/docs/guides/realtime-conversations#function-calling">function</a> object
-differs slightly from the Chat Completions API, but uses the same schema.</p></div></div></div></div></div>
-<h3 id="meta-schemas">Meta-schemas</h3>
-<p>Each meta-schema has a corresponding prompt which includes few-shot examples. When combined with the reliability of Structured Outputs — even without strict mode — we were able to generate schemas.</p>
-<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="meta-schema" data-content-switcher-initial="structured-output" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="structured-output" id="content-switcher-meta-schema"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="Content switcher" data-guide-switch=""><option selected="" value="structured-output">Structured output schema</option><option value="function">Function schema</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="structured-output"><div class="hidden">Structured output schema</div><code-tabs title="Structured output meta-schema">
+<div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-actions-placement="end" data-color="primary" data-variant="outline"><div class="_Indicator_1bpiz_159"><svg fill="currentColor" height="1em" viewBox="0 0 24 24" width="1em"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" fill-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>Realtime API 的 <a href="https://developers.openai.com/api/docs/guides/realtime-conversations#function-calling"><code>function</code></a> 对象与 Chat Completions API 的对应对象略有不同，但两者使用相同的 schema。</p></div></div></div></div></div>
+<h3 id="meta-schemas">元 Schema</h3>
+<p>每个元 schema 都有一条包含少样本示例的提示词。借助这些提示词和结构化输出本身的可靠性，即使不使用严格模式，也能生成 schema。</p>
+<div class="content-switcher-root mt-6" data-astro-cid-65kqsdkt="" data-content-switcher-id="meta-schema" data-content-switcher-initial="structured-output" data-content-switcher-navigation-mode="history" data-content-switcher-preserve-hash="true" data-content-switcher-query-value-aliases="{}" data-content-switcher-root="" data-content-switcher-value="structured-output" id="content-switcher-meta-schema"> <div class="content-switcher-selector mb-6" data-astro-cid-65kqsdkt=""> <select aria-label="选择 schema 类型" data-guide-switch=""><option selected="" value="structured-output">结构化输出 schema</option><option value="function">函数 schema</option></select> </div> <div class="content-switcher-panes" data-astro-cid-65kqsdkt=""> <div data-content-switcher-pane="true" data-value="structured-output"><div class="hidden">结构化输出 schema</div><code-tabs title="结构化输出元 schema">
 <pre data-lang="javascript">import OpenAI from "openai";
 
 const client = new OpenAI();
@@ -3534,7 +3560,7 @@ message = completion.choices.fetch(0).message
 raise "Schema generation refused: #{message.refusal}" if message.refusal
 
 puts(JSON.pretty_generate(JSON.parse(message.content || raise("No schema returned"))))</pre>
-</code-tabs></div><div data-content-switcher-pane="true" data-value="function" hidden=""><div class="hidden">Function schema</div><code-tabs title="Structured output meta-schema">
+</code-tabs></div><div data-content-switcher-pane="true" data-value="function" hidden=""><div class="hidden">函数 schema</div><code-tabs title="结构化输出元 schema">
 <pre data-lang="javascript">import OpenAI from "openai";
 
 const client = new OpenAI();
