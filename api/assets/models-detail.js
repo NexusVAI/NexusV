@@ -174,9 +174,17 @@
     var boxes;
     var notes = [];
     if (p.kind === "token") {
-      boxes = head("文本 token", "每百万 token") + '<div class="flex flex-col gap-2 md:flex-row">' + priceBox("输入", M.yenFixed(p.input)) + priceBox("缓存输入", M.yenFixed(p.cached)) + priceBox("输出", M.yenFixed(p.output)) + "</div>";
-      notes.push("命中缓存的输入 token 按输入价格的 " + Math.round(p.cacheFactor * 100) / 10 + " 折计费。");
-      notes.push("上游返回缓存写入用量（cache write）时，写入部分按输入价格的 1.25 倍计费。");
+      boxes = head("文本 token", "每百万 token") + '<div class="flex flex-col gap-2 md:flex-row">' + priceBox("输入", M.yenFixed(p.input)) + priceBox("缓存命中", M.yenFixed(p.cached)) + priceBox("输出", M.yenFixed(p.output)) + "</div>";
+      notes.push("缓存读取（命中）按输入单价的 " + p.cacheFactor + " 倍计费。");
+      if (M.variantOf(m) === "ccbug") {
+        var writeRate = function (factor) {
+          return factor + " 倍" + (p.input == null ? "" : "（" + M.yenFixed(p.input * factor) + " / 百万 token）");
+        };
+        notes.push("1 小时档写入按输入单价的 " + writeRate(2) + "计费，其余写入（含 5 分钟档）按 " + writeRate(1.25) + "计费。");
+        notes.push("同一写入 token 只按一档计费。1 小时是写入计费档位，不保证缓存保留整小时。");
+      } else {
+        notes.push("常规缓存写入按输入单价的 1.25 倍计费。");
+      }
     } else if (p.kind === "call") {
       boxes = head("按次计费", "每次请求") + '<div class="flex flex-col gap-2 md:flex-row">' + priceBox("每次请求", M.yenFixed(p.call)) + "</div>";
       notes.push("每次成功的请求按固定价格扣费一次，与 token 数量无关。");

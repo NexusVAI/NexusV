@@ -53,7 +53,8 @@ js: /chat/cancri_config.js, /api/assets/models.js, /api/assets/models-pricing.js
         </div>
         <ul>
           <li>按 token 计费的模型分别对输入与输出计价，单位为每百万 token（1M tokens）。</li>
-          <li>命中缓存的输入 token 默认按输入价格的 1 折计费，Claude Opus 5.5（含 Thinking）按 3 折，以价格表中的缓存命中价为准；上游返回缓存写入用量（cache write）时，写入部分按输入价格的 1.25 倍计费。</li>
+          <li>缓存命中价以表中对应的 Model ID 为准：默认为输入单价的 1 折，<code>claude-opus-5.5</code> 与 <code>claude-opus-5.5-thinking</code> 为 3 折。常规缓存写入按输入单价的 1.25 倍计费。</li>
+          <li>Claude Fable 5.2、Opus 5.5、Sonnet 5.5 和 Haiku 5.5 的 <code>ccbug</code> 分组：缓存读取按输入单价的 0.1 倍计费，1 小时档写入按 2 倍计费，其余写入（含 5 分钟档）按 1.25 倍计费。同一写入 token 只按一档计费；1 小时档不保证缓存保留整小时。详见<a href="/api/docs/guides/billing/#prompt-caching">提示缓存</a>。</li>
           <li>按次计费的模型，每次成功的请求按固定价格扣费一次，与 token 数量无关。</li>
           <li>扣费以响应中的 <code>usage</code> 为准。返回 4xx 或 5xx 的失败请求不扣费；未定价的模型不可调用，返回 <code>402 model_not_priced</code>。</li>
           <li>标有「免费」的模型不扣余额，调用计入免费额度，并受速率限制约束，详见<a href="/api/docs/guides/free-tier/">免费模型与免费额度</a>。</li>
