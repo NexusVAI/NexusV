@@ -14698,13 +14698,14 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		} catch (_) {}
 	}
 	async function maybeUpgradeSmartTitle(gen, finalMessages) {
+		const GEN_TITLE_TIMEOUT_MS = 45e3;
 		try {
 			if (gen.authEpoch !== authSessionEpoch || gen.controller?.signal.aborted) return "";
 			if (!gen.isNewConversation) return;
 			if (gen.baseMessages.length > 0) return;
 			if (gen._titleUpgraded) return;
 			gen._titleUpgraded = true;
-			const compact = finalMessages.filter((m) => m && (m.role === "user" || m.role === "assistant")).slice(0, 2).map((m) => ({
+			const compact = finalMessages.filter((m) => m && m.role === "user").slice(0, 1).map((m) => ({
 				role: m.role,
 				content: extractMessageText(m.content).slice(0, 1500)
 			})).filter((m) => m.content);
@@ -14716,7 +14717,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 				headers,
 				signal: gen.controller?.signal,
 				body: JSON.stringify({ messages: compact })
-			}, 8e3, "生成对话标题");
+			}, GEN_TITLE_TIMEOUT_MS, "生成对话标题");
 			if (!response.ok) return;
 			const { title } = await response.json();
 			if (gen.authEpoch !== authSessionEpoch) return "";

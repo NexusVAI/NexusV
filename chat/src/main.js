@@ -17385,18 +17385,22 @@ function lastUserMessageText(messages) {
     try { showToast("对话已完成回复", "success"); } catch (_) {}
   }
 
-  // 新对话首轮：调后端 DeepSeek 端点生成简洁标题，替换掉「取首句」的本地快速标题。
+  // 新对话首轮：调后端标题端点（2026-11-28 起是自家 Cancri α 0.8B）生成简洁标题，
+  // 替换掉「取首句」的本地快速标题。Cancri α 只吃首条用户消息。
   async function maybeUpgradeSmartTitle(gen, finalMessages) {
+    // 超时必须比网关 GEN_TITLE_UPSTREAM_TIMEOUT_MS（40s，创空间冷启动可达 ~24s）长。
+    // 放在函数内：session-resilience.test.js 把本函数单独抽出来跑。
+    const GEN_TITLE_TIMEOUT_MS = 45000;
     try {
       if (gen.authEpoch !== authSessionEpoch || gen.controller?.signal.aborted) return "";
       if (!gen.isNewConversation) return;
       if (gen.baseMessages.length > 0) return;
       if (gen._titleUpgraded) return;
       gen._titleUpgraded = true;
-      // 只挑首条 user + 首条 assistant 的纯文本上传，避免把多模态图片 base64 发给标题端点。
+      // 只挑首条 user 的纯文本上传（避免把多模态图片 base64 发给标题端点）。
       const compact = finalMessages
-        .filter((m) => m && (m.role === "user" || m.role === "assistant"))
-        .slice(0, 2)
+        .filter((m) => m && m.role === "user")
+        .slice(0, 1)
         .map((m) => ({ role: m.role, content: extractMessageText(m.content).slice(0, 1500) }))
         .filter((m) => m.content);
       if (!compact.length) return;
@@ -17407,7 +17411,7 @@ function lastUserMessageText(messages) {
         headers,
         signal: gen.controller?.signal,
         body: JSON.stringify({ messages: compact }),
-      }, 8000, "生成对话标题");
+      }, GEN_TITLE_TIMEOUT_MS, "生成对话标题");
       if (!response.ok) return;
       const { title } = await response.json();
       if (gen.authEpoch !== authSessionEpoch) return "";
