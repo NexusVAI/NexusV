@@ -34,45 +34,23 @@
   // 只能钉在免费区，禁止再放进这张名单（否则会从免费区「掉」到下面的旗舰区）。
   // 禁止非名单补位（曾冒出 gemini-3.1-flash-lite）。
   var FEATURED_ORDER = [
-    // 2026-10-23: Claude Opus 5.5（¥0.8 / ¥4）与 Sonnet 5.5（¥0.4 / ¥2）改挂 codexsss 复活，钉到旗舰区首位。
-    // 两条都是自建单卡组（opus 组里另两条 Kiro 线已下架），钉的就是自己的卡。
-    // 2026-10-24: 改挂 sskiro，站内 id 换成带点号的 claude-*-5.5（-5-5 三条已下架）。
     "claude-opus-5.5",
     "claude-sonnet-5.5",
-    // 2026-10-24: 按运营方要求补入 Kimi K3.1 Pro（mzeapi，¥2 / ¥11）与 Gemini 4 Argon（mzeapi，¥0.58 / ¥2.8），
-    // 同时移出 kimi-k3 与 gemini-3.8-flash-high（只撤出旗舰区，模型本身照常在售）。
-    // 名单只钉 catalog 里存在的 id：gemini-4-argon 未上架前不出卡，上架后自动出现。
     "kimi-k3.1-pro",
     "gemini-4-argon",
-    // 2026-09-30: GPT-6.1 Sol 上架（moyuu，¥0.5 / ¥2），钉到旗舰区首位。它不分组，钉的就是自己的卡。
-    // 同批的 claude-opus-5-5-kiro（Kiro 分组，¥1 / ¥5）与下面已钉的 claude-opus-5-5（Max 分组）
-    // 同 group_id 折叠成一张卡，代表仍是 claude-opus-5-5 —— 不用再钉，钉了也会被 seenTop 去重。
     "gpt-6.1-sol",
-    // 2026-09-05: GPT-6 Astra 上架，钉到旗舰区首位。普通分组与 Pro 分组同 group_id
-    // （DB model_catalog.group_id='gpt-6-astra'）折叠成一张卡，代表是 gpt-6-astra，
-    // 所以这里只钉代表 id —— 再钉 Pro 那条会被 seenTop 去重，属多余。
-    // 2026-11-14: 标准(-astra)/Pro 分组(-pro) 两条 prorisehub 线下架，组内幸存
-    // 最低 rank 的 pro5x 成为折叠卡代表，钉新代表 id，卡名仍是「GPT-6 Astra」。
     "gpt-6-astra-pro5x",
     "gpt-6-sol",
-    // 2026-09-28: 移除 MiMo V2.6 Pro / glm-5.3 —— 两条随 api.tokenrouter.com 上游整体退役。
-    // ⛔ 别把免费线钉进本名单（会从免费区「掉」到旗舰区）。
-    // 2026-10-22: 按运营方要求移出 gpt-5.6-sol 与 minimax-m3（只撤出旗舰区，模型本身照常在售），
-    // 补入 glm-5.3（当日改挂 mzeapi 复活）/ deepseek-v4.1-flash / claude-opus-4-6-thinking。
     "glm-5.3",
     "deepseek-v4.1-flash",
     "claude-opus-4-6-thinking",
     "claude-opus-5",
     // 2026-10-08: 按运营方要求，Kiro 分组在旗舰区单独成卡（见 FEATURED_STANDALONE）。
     "claude-opus-5-5-kiro",
-    // 2026-10-02: Claude Sonnet 5.5 上架（prorisehub，¥1 / ¥5）；2026-10-23 改挂 codexsss，移到本名单首部。
-    // 2026-11-10: Claude Fable 5.2 上架，作为旗舰卡展示。
+
     "claude-fable-5-2",
     "deepseek-v4-pro",
-    // 2026-09-02: gemini-3.7-flash 换成 gemini-3.8-flash-high（prorisehub 新线，
-    // 上游实测 1.98s vs 3.7 的 6.2s）。3.7 只是撤出旗舰区，**没有下架**，
-    // 仍在全量网格和 /v1/models 里，老调用方不受影响。
-    // 2026-10-24: gemini-3.8-flash-high 与 kimi-k3 按运营方要求移出旗舰区（换成上面的 kimi-k3.1-pro / gemini-4-argon）。
+
   ];
   // 旗舰区里**不折叠**、按成员自身单独出卡的 id（只影响旗舰区；全量网格照旧折叠）。
   // 不在这里登记的组成员会被 repId 折算成代表卡，再被 seenTop 去重掉。
@@ -93,18 +71,14 @@
   // （MiniMax-M2.7 属 minimax-m2.7 组，页面上落到代表卡 minimax-m2.7）。
   // 顺序 = 运营方给定顺序。名单外禁止补位（同旗舰区：曾冒出 gemini-3.1-flash-lite）。
   var PARETO_ORDER = [
-    // 2026-10-23: Claude Haiku 5.5 上架（codexsss，阶梯价 ≤100K ¥0.08 / ¥0.09，>100K ¥0.09 / ¥0.45），钉首位。
-    // 2026-10-24: 改挂 sskiro（¥0.09 / ¥0.2，不再分阶梯），站内 id 换成 claude-haiku-5.5。
+
     "claude-haiku-5.5",
     "claude-opus-4-6-thinking",
     "claude-sonnet-4-6-thinking",
     // 2026-10-24: gpt-6-sol 按运营方要求换成 gpt-6.1-sol。
     "gpt-6.1-sol",
     "kimi-k3",
-    // 2026-09-28: glm-5.3 随 tokenrouter 上游退役，从本名单移除（免费线的 glm-5.3-fp8-free 不补位）。
     "composer-2.5-fast",
-    // 2026-10-22: 按运营方要求移出 doubao-seed-2-0-lite / -mini 与 MiniMax-M2.7，
-    // 补入当日上架的 mzeapi 线 + gemini-3.8-flash-high（名单超 12 张时 HTML 的 data-cancri-limit 要跟着调）。
     "deepseek-v4.1-flash",
     "minimax-m3.1-flash",
     "glm-5.3-flash",
@@ -119,37 +93,17 @@
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
-    // 2026-11-13: devingw 免费 promo 线（自建 devin-gateway → Windsurf Cascade），钉免费区首位。
     "swe-2",
     "swe-2-flash",
-    // 2026-09-28: api.gemai.cc [free] 池三条免费线曾钉在免费区首位；2026-10-01 按运营方
-    // 指令全部下架（deepseek-v4-pro-0813-free / qwen-3.8-max / glm-5.3-fp8-free），
-    // DB enabled=false + proxy 墓碑，条目删除。⛔ 免费线也别放进 FEATURED_ORDER。
-    // 2026-10-04: grok-4.7 终止免费（改付费 输入0.5/输出1.5），按运营方指令从免费区下架，条目删除。
-    // 2026-09-28: gpt-6-luna-free / qwen-3.8-27b / mimo-v2.6-flash 三条已随各自上游退役
-    // （tokenrouter 整体下架 / monkeycode 全 502 / tokenrouter），从免费区删除。
-    // 2026-09-14: api.gemai.cc 限时免费 kimi-k3-fp8-block-free（至 09-18），上游 wire=[free]kimi-k3。
     "kimi-k3-fp8-block-free",
-    // 2026-09-12: nb.deepsb.com 限时免费 claude-sonnet-5（至 09-19）。
     "claude-sonnet-5-free",
-    // 2026-08-27: api.b.ai 五条限时免费线（原至 08-31，2026-08-30 延至 09-05），钉到免费区首屏。
-    // 站内 id = 上游 id + "-free"（运营方指定的命名约定）。
-    // mimo-v2.5-free 是同名 id 从 tokenharbor 重挂到 api.b.ai，不是新增卡。
     "glm-5.3-flash-free",
     "hy3-free",
     "qwen3.8-flash-free",
-    // 2026-09-06: tokenflux.dev 限时免费 grok-4.5（至 09-10）。
     "grok-4.5-free",
     "deepseek-v4-flash-vision-exp-free",
     "mimo-v2.5-free",
-    // 2026-09-28: glm-5.3-fp4-free（tokenrouter 限免）随该上游退役，条目删除。
-    // 2026-08-28: 限时免费卡钉在免费区前排。不要放进 FEATURED_ORDER，
-    // 也不要排到 data-cancri-limit=12 之后，否则会从免费区消失、只剩底下旗舰区。
-    // 2026-08-29: qwen-3.8-max 曾硬下架；2026-09-28 改挂 gemai [free] 池重新上架，
-    // 2026-10-01 再随本批下架（条目已删）。
     "grok-4.6-free",
-    // 2026-08-28: 免费区补 DeepSeek V4 Flash 主线（sensenova）。
-    // 0731 / 0813 都是付费快照，禁止再钉进免费区。
     "deepseek-v4-flash",
     // 2026-08-25: glm-5.3-free 限时免费（至 08-28）。nexusvai-free-glm-5.2 已退役。
     // 2026-08-27: glm-5.3-free 与 nexusvai-free-nemotron-3-ultra 一并从免费区移除 ——
@@ -166,8 +120,7 @@
     "glm-5.2-fp8",
   ];
   // 付费快照：即使名单被改回去，免费区渲染也直接丢掉。
-  // 2026-09-28: deepseek-v4-pro-0813-free（gemai [free] 池）是**另一条 id**，不在本表里，
-  // 它就是要出现在免费区的那张卡；这里的付费快照 id 不带 -free，别混。
+
   var FREE_BLOCKLIST = {
     "deepseek-v4-pro-0813": true,
     "deepseek-v4-flash-0731": true,
@@ -180,14 +133,7 @@
 
   // catalog 无 publicDescription 时的卡片兜底（与 kimi / deepseek 限时卡文案对齐）。
   var DESC_FALLBACK = {
-    // 2026-08-27: api.b.ai 五条线免费期原至 08-31。
-    // 2026-08-30: 运营方延期至 09-05。这里只是卡片文案，真正的到期闸门是
-    // cf-gateway/src/shared-catalog.ts 与 cf-modelscope-proxy/src/index.ts 两份
-    // MODEL_ACCESS_END_MS（必须同日）——改日期时三处一起改，否则卡片写着还没到期、
-    // 后端已经把模型摘掉了。
-    // 2026-09-06: hy3 / glm-5.3-flash / qwen3.8-flash 延到 09-10；mimo / vision-exp 不延。
-    // 2026-09-28: mimo-v2.6-flash 随 tokenrouter 退役（条目删除）；
-    // glm-5.3-fp8-free 重新上架且无截止日；2026-10-01 又随本批下架。
+    // This is display copy only. Availability always comes from the catalog.
     "kimi-k3-fp8-block-free": "09-18结束免费期限",
     "glm-5.3-flash-free": "09-10结束免费期限",
     "hy3-free": "09-10结束免费期限",
@@ -196,8 +142,7 @@
     "claude-sonnet-5-free": "09-19结束免费期限",
     "deepseek-v4-flash-vision-exp-free": "09-05结束免费期限",
     "mimo-v2.5-free": "09-05结束免费期限",
-    // 2026-09-28: qwen-3.8-max 改挂 gemai 后重新上架；2026-10-01 再下架；
-    // glm-5.3-fp4-free 随 tokenrouter 退役，文案条目随之删除。
+
     "claude-opus-4.8-free": "08-19结束免费期限",
   };
 

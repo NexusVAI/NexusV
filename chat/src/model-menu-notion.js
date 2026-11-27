@@ -106,7 +106,6 @@ export function buildModelRow(row, { active, free }) {
   item.tabIndex = -1;
   item.dataset.model = row.id;
   item.dataset.canonical = row.canonicalId || row.id;
-  item.dataset.lineLabel = row.lineLabel || "";
   item.dataset.multimodal = row.multimodal ? "true" : "false";
   if (row.brand) item.dataset.brand = row.brand;
   item.title = row.title || "";

@@ -87,8 +87,7 @@ const HIDE_IDS = new Set([
 //
 // 现状：chat-gateway 的 model_public_catalog 端口现在直接返回每条 model 的
 // `gateCostTier: 'free' | 'paid'` + `freeUserBlocked: boolean`（与
-// chat-gateway/modelscope-proxy 的 PAID_MODEL_IDS / FREE_USER_BLOCKED_IDS 同
-// 一权威源）。前端只读这两字段。
+// 服务端使用同一权威源）。前端只读这两字段。
 //
 // 兼容回退：万一 catalog 旧版本没返回 gateCostTier（部署时序错乱），就退回到
 // 原来的本地推断（brand==="anthropic" || PAID_IDS Set）。这套兜底以后逐步
@@ -100,7 +99,7 @@ const FALLBACK_PAID_IDS = new Set([
     "gpt-5.5-high",
     "grok-4.20-0309",
     "grok-4.3",
-    // 2026-07-07: futureppo 线新增。
+
     "grok-4.5",
     "composer-2.5-fast",
     "gpt-image-2-all",
@@ -110,9 +109,9 @@ const FALLBACK_PAID_IDS = new Set([
     "glm-5.1",
     "deepseek-v4-pro",
     "deepseek-v4-pro-0608",
-    // 2026-06-18: gemini-3.5-agent — prorisehub 上游，7× 倍率，PAID。
+
     "gemini-3.5-agent",
-    // 2026-05-23 批次：10 个百炼 PAID 模型
+
     "qwen3.5-omni-plus-2026-03-15",
     "qwen3-coder-480b-a35b-instruct",
     "qwen-plus-2025-12-01",

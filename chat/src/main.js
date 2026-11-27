@@ -313,8 +313,7 @@ function lastUserMessageText(messages) {
     "gpt-image-2-5-sunburst",
     // 2026-11-08: GPT-image-2.6（新画图线，取代 2.5）
     "gpt-image-2.6-web",
-    // 2026-09-14: aiping 四模型 —— 连字符是官方型号名的一部分（DeepSeek-OCR-2 等），
-    // 不让「连字符→空格」规整吃掉。
+    // 连字符是这些型号公开名的一部分，不规整为空格。
     "deepseek-ocr-2",
     "glm-4-9b-0414",
     "deepseek-r1-distill-qwen-14b",
@@ -577,7 +576,7 @@ function lastUserMessageText(messages) {
   const MAX_ATTACHMENT_COUNT = 4;
   // 2026-09-09: 生图线的参考图张数上限。与 composer 的 MAX_ATTACHMENT_COUNT 同值，
   // 但语义不同（这条管的是"发给上游几张参考图"），所以单独一个常量。
-  // 权威上限在 cf-modelscope-proxy 的 PRORISEHUB_IMAGE25_MAX_REFERENCES，两者需一致。
+  // 与服务端参考图上限保持一致。
   const MAX_IMAGE_REFERENCE_COUNT = 4;
   const MAX_ATTACHMENT_SIZE = 8 * 1024 * 1024;
   // 2026-09-13：二进制文档不再当文本读；单份文本附件限长。这两个正则/常量必须与
@@ -2251,7 +2250,6 @@ function lastUserMessageText(messages) {
     "glm-5.1",
     "deepseek-v4-pro",
     "deepseek-v4-pro-0608",
-    // 2026-06-18: gemini-3.5-agent — prorisehub 上游，7× 倍率，PAID。
     "gemini-3.5-agent",
     "qwen3.7-max",
     "qwen3.7-max-2026-05-20",
@@ -3262,7 +3260,7 @@ function lastUserMessageText(messages) {
     "gpt-5.5-c": DEFAULT_MODEL_ID,
     "claude-opus-4-6-thinking-medium": DEFAULT_MODEL_ID,
     // 2026-09-25: claude-opus-4-6-thinking / claude-sonnet-4-6-thinking 已重新上架
-    // （09-24 aipm9527 线），在售 id 不得作迁移来源——否则老用户的有效选择被静默重置。
+    // 在售 id 不得作迁移来源——否则老用户的有效选择被静默重置。
     "image-precise": DEFAULT_MODEL_ID,
     "image-fast": DEFAULT_MODEL_ID,
     "wan2.7-image-pro": DEFAULT_MODEL_ID,
@@ -3279,7 +3277,7 @@ function lastUserMessageText(messages) {
     "claude-sonnet-4-5": DEFAULT_MODEL_ID,
     "gemini-3-flash-alt": DEFAULT_MODEL_ID,
     "glm-4.7-siliconflow": DEFAULT_MODEL_ID,
-    // 2026-08-23: qwen3.6-plus 已重新上架（qwqtao 免费桶），禁止再当迁移来源。
+    // 已重新上架的 id 不得作为迁移来源。
     "qwen3.6-plus-2026-04-02-dashscope": DEFAULT_MODEL_ID,
     "qwen3.5-omni-plus": DEFAULT_MODEL_ID,
     "wan2.7-t2v": DEFAULT_MODEL_ID,
@@ -3302,11 +3300,10 @@ function lastUserMessageText(messages) {
     "mimo-v2-pro": DEFAULT_MODEL_ID,
     // 2026-06-02: gpt-4 下线。
     "gpt-4": DEFAULT_MODEL_ID,
-    // 2026-11-14: codexbps「测试号池」两线 canonical -bps → -codex（老 id 已不在
-    // 公开 catalog，老用户存的选择平移到新线，避免掉回默认免费模型）。
+    // 保留改名之前的用户选择。
     "gpt-6-astra-bps": "gpt-6-astra-codex",
     "gpt-6.1-sol-bps": "gpt-6.1-sol-codex",
-    // 2026-11-14: prorisehub / prorisehub-us 全线下架，老用户存的选择落到默认。
+    // 已下架的用户选择回落到默认。
     "gpt-6-astra": DEFAULT_MODEL_ID,
     "gpt-6.1-terra": DEFAULT_MODEL_ID,
     "grok-4.7": DEFAULT_MODEL_ID,
@@ -3407,7 +3404,7 @@ function lastUserMessageText(messages) {
         typeof serverModel.customMultiplier === "number"
           ? serverModel.customMultiplier
           : local.customMultiplier,
-      lineLabel: serverModel.lineLabel || local.lineLabel || "",
+
       proMaxOnly: serverModel.proMaxOnly === true || local.proMaxOnly === true,
       proPlusOnly: serverModel.proPlusOnly === true || local.proPlusOnly === true,
       creditPerUse: local.creditPerUse,
@@ -3626,7 +3623,6 @@ function lastUserMessageText(messages) {
     "cancriv1-0.1b": "../Logo/Cancri1.jpg",
     "nex-n2-pro-welfare": "./NEX_logo.svg",
     "hunyuan-mt-7b": "./yuanbao-color.svg",
-    // 2026-11-13: devingw 免费 promo 线 → Devin 图标（防品牌字段漂移回落到 OpenAI 默认）。
     "swe-2": "./devin-color.svg",
     "swe-2-flash": "./devin-color.svg",
   };
@@ -3688,7 +3684,7 @@ function lastUserMessageText(messages) {
         canonicalId: entry.id,
         displayName: normalizeModelDisplayName(entry.name, entry.id),
         brand: entry.brand,
-        lineLabel: entry.lineLabel || "",
+
         tags,
         multimodal: !!entry.vision,
         imageOnly: entry.kind === "image",
@@ -3769,7 +3765,7 @@ function lastUserMessageText(messages) {
       canonicalId: modelId,
       displayName: customName || modelId,
       brand: customBrand,
-      lineLabel: "",
+
       tags: [],
       multimodal: false,
       imageOnly: false,
@@ -3900,7 +3896,7 @@ function lastUserMessageText(messages) {
       brand: meta.brand,
       iconPath: meta.iconPath,
       canonicalId: meta.canonicalId,
-      lineLabel: meta.lineLabel,
+
     };
   }
   
@@ -5517,8 +5513,7 @@ function lastUserMessageText(messages) {
   const VIDEO_GENERATION_POLL_TIMEOUT_MS = 15 * 60 * 1000;
   
   function getChatRequestTimeoutMs(modelId) {
-    // Claude Opus / thinking 等模型经 freeapi.dgbmc.top 中转 + Anthropic 思考，
-    // 首字节响应 (TTFB) 经常 30~60 秒，默认 25 秒 TTFB 预算会被触发，
+    // 深度思考时首字节响应 (TTFB) 经常要 30~60 秒，默认 25 秒预算会被触发，
     // 上抛浏览器原生 "The user aborted a request"。给慢思考模型更长预算，
     // 仍小于 chat-gateway 的 UPSTREAM_TIMEOUT_MS=120s。
     if (typeof modelId === "string" && modelId) {
@@ -10635,11 +10630,9 @@ function lastUserMessageText(messages) {
       canonicalMeta.brand ||
       bestLineMeta.brand ||
       getModelBrandName(bestLineModelId);
-    const lineLabel = row.line_label || bestLineMeta.lineLabel || "";
     return {
       displayName,
       brand,
-      lineLabel,
       bestLineModelId,
       canonicalModelId,
     };
@@ -13288,18 +13281,14 @@ function lastUserMessageText(messages) {
     }
 
     // 参考图张数上限。上游对 1/2/4 张的计费完全相同，所以这个上限管的是请求体
-    // 大小与生成耗时，不是钱。⚠️ 这里只是提示，真正的截断在 cf-modelscope-proxy
-    // 的 PRORISEHUB_IMAGE25_MAX_REFERENCES（前端的限制可被绕过）。
+    // 大小与生成耗时，不是钱。真正的截断在服务端。
     const referenceImages = imageAttachments.slice(0, MAX_IMAGE_REFERENCE_COUNT);
     if (imageAttachments.length > MAX_IMAGE_REFERENCE_COUNT) {
       showToast(`参考图最多 ${MAX_IMAGE_REFERENCE_COUNT} 张，已使用前 ${MAX_IMAGE_REFERENCE_COUNT} 张。`);
     }
   
     try {
-      // ⚠️ gpt-image-2 不吃这里的 size / response_format：上游按
-      // `分组 × quality × size` 乘算单价而我们按次固定收费，所以 cf-modelscope-proxy
-      // 的 prorisehub 分支只取 prompt，其余参数一律用服务端常量重建。改这里对它无效，
-      // 要改档位得动 PRORISEHUB_IMAGE_FIXED_SIZE / _QUALITY 并同步改价。
+      // gpt-image-2 的尺寸和质量由服务端固定，不受这里的选项影响。
       // 其它图像线（doubao-seedream-4-5 / z-image-turbo 等）仍照常读这两个字段。
       const requestBody = {
         endpoint: "image",
@@ -13318,8 +13307,7 @@ function lastUserMessageText(messages) {
         // normal viewing size for i2i.
         setImageGenerationBusy(true, "正在压缩上传图片...");
         // Aggressive cap: 896 px long edge, JPEG q=0.78 ≈ 80-180 KB per
-        // image. i2i upstreams (including the current xem8k5 image line) don't need full
-        // 1024 detail from the reference — they synthesize at their own
+        // image. Image edits don't need full reference detail: they synthesize at their own
         // resolution. Smaller refs mean less base64 bulk going through the
         // 2-hop JSON pipeline (frontend → gateway → modelscope-proxy),
         // which was the root cause of "not having enough compute resources"
@@ -13803,9 +13791,7 @@ function lastUserMessageText(messages) {
         }
   
         const taskData = await resultResponse.json();
-        // DashScope 返回 SUCCEEDED/FAILED/RUNNING/PENDING，与历史 ModelScope
-        // 的 SUCCEED 不同。modelscope-proxy 已把 output.{task_status,video_url}
-        // 提到顶层，所以这里直接读 taskData.task_status / taskData.video_url。
+        // 兼容新旧任务状态拼写。任务状态与视频结果均在顶层。
         const status = String(taskData.task_status || "").toUpperCase();
   
         if (status === "SUCCEEDED" || status === "SUCCEED" || status === "SUCCESS") {
@@ -19195,9 +19181,7 @@ function lastUserMessageText(messages) {
             String(b.canonicalId || b.id),
           );
           if (canonical !== 0) return canonical;
-          return String(a.lineLabel || "").localeCompare(
-            String(b.lineLabel || ""),
-          );
+          return String(a.id).localeCompare(String(b.id));
         })
         .forEach((model) => {
           const option = document.createElement("div");
@@ -19205,11 +19189,8 @@ function lastUserMessageText(messages) {
           option.dataset.model = model.id;
           option.dataset.brand = brand;
           option.dataset.canonical = model.canonicalId || model.id;
-          option.dataset.lineLabel = model.lineLabel || "";
           option.dataset.multimodal = model.multimodal ? "true" : "false";
-          option.title = model.lineLabel
-            ? `${model.displayName || model.id} · ${model.lineLabel}`
-            : model.displayName || model.id;
+          option.title = model.displayName || model.id;
   
           const speedDot = document.createElement("span");
           speedDot.className = "model-speed-dot speed-unknown";
@@ -19250,7 +19231,7 @@ function lastUserMessageText(messages) {
           if (model.proMaxOnly && !showPromoTag) {
             subParts.push("Pro Max 专属");
           }
-          if (model.lineLabel) subParts.push(model.lineLabel);
+
           if (model.canonicalId && model.canonicalId !== model.id) {
             subParts.push(model.canonicalId);
           }
@@ -19313,10 +19294,10 @@ function lastUserMessageText(messages) {
           displayName,
           brand: model.brand || getModelBrandName(model.id),
           canonicalId: model.canonicalId,
-          lineLabel: model.lineLabel,
+
           multimodal: model.multimodal,
           iconPath: model.iconPath,
-          title: model.lineLabel ? `${displayName} · ${model.lineLabel}` : displayName,
+          title: displayName,
           available: model.available,
           unavailableMessage: model.unavailableMessage,
         },
@@ -19372,7 +19353,7 @@ function lastUserMessageText(messages) {
       meta.canonicalId,
       meta.displayName,
       meta.brand,
-      meta.lineLabel,
+
       ...(meta.tags || []),
     ]
       .join(" ")
@@ -19386,7 +19367,7 @@ function lastUserMessageText(messages) {
       // canonicalId / tags —— 全是 `gpt-5.1-2025-04-14` 这种带版本号和日期的
       // slug。于是输一个 "1" 就把所有 id 里带 1 的模型（含 GPT 5.5，因为它的
       // canonicalId 里有 "...-1...") 全捞出来，用户看到的就是"模糊搜索没用"。
-      const label = [meta.displayName, meta.brand, meta.lineLabel]
+      const label = [meta.displayName, meta.brand]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();

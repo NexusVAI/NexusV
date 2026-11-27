@@ -8,8 +8,7 @@ export function safeUrl(url) {
   if (/^https?:/i.test(trimmed)) return trimmed;
   if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed;
   // Allow inline image/video data URIs — required so generated images that
-  // come back as `b64_json` (e.g. the current xem8k5 image line) survive a chat
-  // history reload. 2026-05-13 审查：原正则 `data:(image|video)/[a-z0-9.+-]+;`
+  // come back as `b64_json` survive a chat history reload. 2026-05-13 审查：原正则 `data:(image|video)/[a-z0-9.+-]+;`
   // 会放行 `data:image/svg+xml;...`，SVG 可以内嵌 <script> 和 javascript: URI
   // 直接 XSS。这里改用具体 MIME 白名单，只允许真正的位图 / 视频 / 音频容器。
   if (/^data:image\/(png|jpe?g|webp|gif|bmp|x-icon|vnd\.microsoft\.icon)[;,]/i.test(trimmed)) return trimmed;

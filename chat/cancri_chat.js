@@ -491,8 +491,7 @@
 			"vision": false,
 			"thinking": false,
 			"tools": false,
-			"costTier": "normal",
-			"lineLabel": "futureppo"
+			"costTier": "normal"
 		},
 		{
 			"id": "deepseek-v4-flash",
@@ -514,8 +513,7 @@
 			"thinking": true,
 			"tools": true,
 			"costTier": "normal",
-			"customMultiplier": 3,
-			"lineLabel": "fuka"
+			"customMultiplier": 3
 		},
 		{
 			"id": "gemini-3.1-pro",
@@ -782,8 +780,7 @@
 			"vision": false,
 			"thinking": false,
 			"tools": false,
-			"costTier": "free",
-			"lineLabel": "cancriv1_studio"
+			"costTier": "free"
 		},
 		{
 			"id": "deepseek-v3.2",
@@ -794,8 +791,7 @@
 			"thinking": false,
 			"tools": true,
 			"costTier": "normal",
-			"customMultiplier": 2.5,
-			"lineLabel": "jiuyoumao"
+			"customMultiplier": 2.5
 		},
 		{
 			"id": "qwen3.5-4b",
@@ -805,8 +801,7 @@
 			"vision": true,
 			"thinking": true,
 			"tools": true,
-			"costTier": "free",
-			"lineLabel": "aiping"
+			"costTier": "free"
 		},
 		{
 			"id": "qwen3.5-9b",
@@ -868,7 +863,6 @@
 			"thinking": false,
 			"tools": false,
 			"costTier": "normal",
-			"lineLabel": "futureppo",
 			"customMultiplier": 100,
 			"creditPerUse": 10
 		},
@@ -881,9 +875,8 @@
 			"thinking": false,
 			"tools": false,
 			"costTier": "normal",
-			"lineLabel": "futureppo",
-			"proMaxOnly": true,
 			"customMultiplier": 3e3,
+			"proMaxOnly": true,
 			"creditPerUse": 300,
 			"promoLimited": true,
 			"promoTooltip": "2026/06/18-2026/07/18 Pro起步均可用"
@@ -906,8 +899,7 @@
 			"vision": false,
 			"thinking": false,
 			"tools": false,
-			"costTier": "free",
-			"lineLabel": "aiping"
+			"costTier": "free"
 		},
 		{
 			"id": "deepseek-r1-distill-qwen-14b",
@@ -917,8 +909,7 @@
 			"vision": false,
 			"thinking": true,
 			"tools": false,
-			"costTier": "free",
-			"lineLabel": "aiping"
+			"costTier": "free"
 		},
 		{
 			"id": "kimi-k3-fp8-block-free",
@@ -928,8 +919,7 @@
 			"vision": false,
 			"thinking": true,
 			"tools": true,
-			"costTier": "free",
-			"lineLabel": "gemai.cc"
+			"costTier": "free"
 		},
 		{
 			"id": "claude-sonnet-5-5",
@@ -939,8 +929,7 @@
 			"vision": true,
 			"thinking": false,
 			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "prorisehub"
+			"costTier": "normal"
 		},
 		{
 			"id": "swe-2",
@@ -950,8 +939,7 @@
 			"vision": true,
 			"thinking": true,
 			"tools": false,
-			"costTier": "free",
-			"lineLabel": "devingw"
+			"costTier": "free"
 		},
 		{
 			"id": "swe-2-flash",
@@ -961,8 +949,7 @@
 			"vision": false,
 			"thinking": true,
 			"tools": false,
-			"costTier": "free",
-			"lineLabel": "devingw"
+			"costTier": "free"
 		},
 		{
 			"id": "gpt-6-astra-codex",
@@ -972,8 +959,7 @@
 			"vision": false,
 			"thinking": true,
 			"tools": false,
-			"costTier": "normal",
-			"lineLabel": "codexbps"
+			"costTier": "normal"
 		},
 		{
 			"id": "gpt-6.1-sol-codex",
@@ -983,8 +969,7 @@
 			"vision": false,
 			"thinking": true,
 			"tools": false,
-			"costTier": "normal",
-			"lineLabel": "codexbps"
+			"costTier": "normal"
 		}
 	];
 	//#endregion
@@ -2455,7 +2440,6 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		item.tabIndex = -1;
 		item.dataset.model = row.id;
 		item.dataset.canonical = row.canonicalId || row.id;
-		item.dataset.lineLabel = row.lineLabel || "";
 		item.dataset.multimodal = row.multimodal ? "true" : "false";
 		if (row.brand) item.dataset.brand = row.brand;
 		item.title = row.title || "";
@@ -4853,7 +4837,6 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 			tools: local.tools ?? kind === "chat",
 			costTier: serverModel.costTier || local.costTier || "normal",
 			customMultiplier: typeof serverModel.customMultiplier === "number" ? serverModel.customMultiplier : local.customMultiplier,
-			lineLabel: serverModel.lineLabel || local.lineLabel || "",
 			proMaxOnly: serverModel.proMaxOnly === true || local.proMaxOnly === true,
 			proPlusOnly: serverModel.proPlusOnly === true || local.proPlusOnly === true,
 			creditPerUse: local.creditPerUse,
@@ -5066,7 +5049,6 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 				canonicalId: entry.id,
 				displayName: normalizeModelDisplayName(entry.name, entry.id),
 				brand: entry.brand,
-				lineLabel: entry.lineLabel || "",
 				tags,
 				multimodal: !!entry.vision,
 				imageOnly: entry.kind === "image",
@@ -5138,7 +5120,6 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 			canonicalId: modelId,
 			displayName: customName || modelId,
 			brand: customBrand,
-			lineLabel: "",
 			tags: [],
 			multimodal: false,
 			imageOnly: false,
@@ -5225,8 +5206,7 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 			modelName: meta.displayName,
 			brand: meta.brand,
 			iconPath: meta.iconPath,
-			canonicalId: meta.canonicalId,
-			lineLabel: meta.lineLabel
+			canonicalId: meta.canonicalId
 		};
 	}
 	function getModelRequestOptions(modelId) {
@@ -10206,7 +10186,6 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 		return {
 			displayName: row.display_name || canonicalMeta.displayName || bestLineMeta.displayName || canonicalModelId,
 			brand: row.brand || canonicalMeta.brand || bestLineMeta.brand || getModelBrandName(bestLineModelId),
-			lineLabel: row.line_label || bestLineMeta.lineLabel || "",
 			bestLineModelId,
 			canonicalModelId
 		};
@@ -15884,16 +15863,15 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 			models.slice().sort((a, b) => {
 				const canonical = String(a.canonicalId || a.id).localeCompare(String(b.canonicalId || b.id));
 				if (canonical !== 0) return canonical;
-				return String(a.lineLabel || "").localeCompare(String(b.lineLabel || ""));
+				return String(a.id).localeCompare(String(b.id));
 			}).forEach((model) => {
 				const option = document.createElement("div");
 				option.className = "model-option";
 				option.dataset.model = model.id;
 				option.dataset.brand = brand;
 				option.dataset.canonical = model.canonicalId || model.id;
-				option.dataset.lineLabel = model.lineLabel || "";
 				option.dataset.multimodal = model.multimodal ? "true" : "false";
-				option.title = model.lineLabel ? `${model.displayName || model.id} · ${model.lineLabel}` : model.displayName || model.id;
+				option.title = model.displayName || model.id;
 				const speedDot = document.createElement("span");
 				speedDot.className = "model-speed-dot speed-unknown";
 				option.appendChild(speedDot);
@@ -15918,7 +15896,6 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 				const subParts = [];
 				if (model.creditPerUse && quotaState.billingMode !== "wallet_v3") subParts.push(`${model.creditPerUse}积分/次`);
 				if (model.proMaxOnly && !showPromoTag) subParts.push("Pro Max 专属");
-				if (model.lineLabel) subParts.push(model.lineLabel);
 				if (model.canonicalId && model.canonicalId !== model.id) subParts.push(model.canonicalId);
 				subtext.textContent = subParts.filter(Boolean).join(" · ");
 				if (subtext.textContent) textWrap.appendChild(subtext);
@@ -15959,10 +15936,9 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 				displayName,
 				brand: model.brand || getModelBrandName(model.id),
 				canonicalId: model.canonicalId,
-				lineLabel: model.lineLabel,
 				multimodal: model.multimodal,
 				iconPath: model.iconPath,
-				title: model.lineLabel ? `${displayName} · ${model.lineLabel}` : displayName,
+				title: displayName,
 				available: model.available,
 				unavailableMessage: model.unavailableMessage
 			}, {
@@ -16001,16 +15977,11 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 			meta.canonicalId,
 			meta.displayName,
 			meta.brand,
-			meta.lineLabel,
 			...meta.tags || []
 		].join(" ").toLowerCase();
 		const q = String(query || "").trim().toLowerCase();
 		if (q) {
-			const label = [
-				meta.displayName,
-				meta.brand,
-				meta.lineLabel
-			].filter(Boolean).join(" ").toLowerCase();
+			const label = [meta.displayName, meta.brand].filter(Boolean).join(" ").toLowerCase();
 			const loose = (s) => s.replace(/[\s._-]+/g, "");
 			let hit = label.includes(q) || loose(label).includes(loose(q));
 			if (!hit && q.length >= 3) hit = haystack.includes(q);

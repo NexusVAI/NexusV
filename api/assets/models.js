@@ -24,8 +24,7 @@
     "gpt-6.1-sol",
     "gpt-6.2-astra",
     "gpt-6.2-sol",
-    // 2026-11-14: Astra 组标准/Pro 分组两条 prorisehub 线下架，组卡代表变为
-    // pro5x（组内幸存最低 rank）。钉代表 id，卡名仍是「GPT-6 Astra」。
+    // Pin the current group representative, not a retired member.
     "gpt-6-astra-pro5x",
     "glm-5.3",
     "deepseek-v4.1-flash",
@@ -63,7 +62,7 @@
   var CANCRI_TITLE = { id: "cancri-alpha-0.8b", guide: "/api/docs/guides/cancri-alpha-0-8b/", listPrice: "¥0.01 / 千次" };
   var FREE_ORDER = [
     CANCRI_TITLE.id,
-    // 2026-11-13: devingw 免费 promo 线（Devin 网关 → Windsurf Cascade）。
+
     "swe-2",
     "swe-2-flash",
     "kimi-k3-fp8-block-free",

@@ -176,7 +176,7 @@
     if (p.kind === "token") {
       boxes = head("文本 token", "每百万 token") + '<div class="flex flex-col gap-2 md:flex-row">' + priceBox("输入", M.yenFixed(p.input)) + priceBox("缓存命中", M.yenFixed(p.cached)) + priceBox("输出", M.yenFixed(p.output)) + "</div>";
       notes.push("缓存读取（命中）按输入单价的 " + p.cacheFactor + " 倍计费。");
-      if (M.variantOf(m) === "ccbug") {
+      if (m.hourCacheWrite === true) {
         var writeRate = function (factor) {
           return factor + " 倍" + (p.input == null ? "" : "（" + M.yenFixed(p.input * factor) + " / 百万 token）");
         };
