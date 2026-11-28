@@ -673,7 +673,7 @@ function lastUserMessageText(messages) {
     // 2026-10-31 邀请计划 Go 体验版（403）
     trial_model_restricted: "Go 体验版不含该模型（Claude 系列付费线与 GPT Astra），订阅正式套餐后可用。",
     model_quota_exceeded: "该模型当前请求较多，请切换模型或稍后重试。",
-    model_request_invalid: "请求未被模型接受，请调整内容后重试。",
+    model_request_invalid: "请求未被模型接受，原样重发不会成功。可能原因：对话上下文超出该模型上限、内容未通过模型方安全审核，或工具/参数不被支持。请压缩历史或新开对话、调整措辞、减少工具，或换用其他模型。",
     model_temporary_failure: "当前模型服务暂时不可用，请稍后重试。",
     upstream_timeout: "Cancri API 响应超时，请稍后重试或切换模型。",
     upstream_unavailable: "模型服务暂时不可用，请稍后重试。",
