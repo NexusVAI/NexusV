@@ -1021,7 +1021,7 @@ const COST_TIER_EXPLAIN = {
     // 放宽前的旧值。
     // 2026-10-30 限速 v2：只剩 RPM / TPM（并发与 TPD 已删除），免费模型总量改由免费额度管。
     // 权威源 = cf-gateway/src/tier-limits.ts 的 TIER_LIMITS（rpm / tpm 两列）。
-    free: "FREE 档：价格为 0 的模型可免余额调用；受速率限制（Tier 0：60 RPM / 200 万 TPM）与免费额度约束，详见速率限制文档。",
+    free: "FREE 档：价格为 0 的模型可免余额调用；受速率限制（Tier 0：150 RPM / 500 万 TPM）与免费额度约束，详见速率限制文档。",
     cheap: "Cheap：1× 倍率。轻量、低成本模型；价格友好。",
     normal: "Normal：3× 倍率。GPT-4 类标准模型 / Doubao / Kimi / Haiku 等。",
     expensive:

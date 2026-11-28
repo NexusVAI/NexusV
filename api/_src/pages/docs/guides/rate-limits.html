@@ -6,21 +6,21 @@ description: 速率限制按账户计算，只有 RPM 和 TPM 两项，档位由
 <p>限额只有两项：</p>
 <ul>
 <li><strong>RPM</strong>：每分钟请求数。</li>
-<li><strong>TPM</strong>：每分钟 token 数，输入与输出合计。</li>
+<li><strong>TPM</strong>：每分钟 token 数。只计未命中提示缓存的输入（含缓存写入）和输出，命中缓存的输入（cache read）不计入 TPM。</li>
 </ul>
 <p>不限制同时进行的请求数，也没有按小时或按天计的请求数与 token 上限。免费模型的总用量另受<a href="/api/docs/guides/free-tier/">免费额度</a>限制。</p>
 
 <h2 id="tiers">档位</h2>
-<p>档位由累计充值决定：</p>
+<p>档位由累计充值决定。下表自 2026-11-28 起生效：</p>
 <table>
 <thead><tr><th>档位</th><th>累计充值</th><th>RPM</th><th>TPM</th></tr></thead>
 <tbody>
-<tr><td>Tier 0</td><td>¥0</td><td>60</td><td>2,000,000</td></tr>
-<tr><td>Tier 1</td><td>≥ ¥10</td><td>120</td><td>2,000,000</td></tr>
-<tr><td>Tier 2</td><td>≥ ¥30</td><td>500</td><td>3,000,000</td></tr>
-<tr><td>Tier 3</td><td>≥ ¥80</td><td>5,000</td><td>3,000,000</td></tr>
-<tr><td>Tier 4</td><td>≥ ¥300</td><td>5,000</td><td>4,000,000</td></tr>
-<tr><td>Tier 5</td><td>≥ ¥1,000</td><td>10,000</td><td>5,000,000</td></tr>
+<tr><td>Tier 0</td><td>¥0</td><td>150</td><td>5,000,000</td></tr>
+<tr><td>Tier 1</td><td>≥ ¥10</td><td>300</td><td>5,000,000</td></tr>
+<tr><td>Tier 2</td><td>≥ ¥30</td><td>1,200</td><td>8,000,000</td></tr>
+<tr><td>Tier 3</td><td>≥ ¥80</td><td>10,000</td><td>10,000,000</td></tr>
+<tr><td>Tier 4</td><td>≥ ¥300</td><td>12,000</td><td>12,000,000</td></tr>
+<tr><td>Tier 5</td><td>≥ ¥1,000</td><td>20,000</td><td>16,000,000</td></tr>
 </tbody>
 </table>
 <ul>
@@ -37,7 +37,7 @@ description: 速率限制按账户计算，只有 RPM 和 TPM 两项，档位由
 <li><strong>开始时预占。</strong>每个请求开始时消耗 1 个 RPM，并按「预估输入 token + 输出上限」预占 TPM。输出上限就是 <code>max_tokens</code>（Responses 为 <code>max_output_tokens</code>）；没设置时按该模型的最大输出 token 数预占。</li>
 <li><strong>结束后多退少补。</strong>响应结束后按实际用量结算 TPM，多占的部分退回。</li>
 <li><strong>允许短暂超出。</strong>只要账户还有剩余 TPM，请求就会被接受，所以单次大请求可以让余量暂时变成负数，之后由回填补足。</li>
-<li><strong>单次请求过大。</strong>单次请求的预占量超过本档 TPM 的 4 倍时，返回 <code>429 request_too_large</code>。</li>
+<li><strong>单次请求过大。</strong>预占量按原始预估计算，不扣除可能命中缓存的输入。单次请求的预占量超过本档 TPM 的 4 倍时，返回 <code>429 request_too_large</code>。</li>
 <li><strong>失败的请求也计入 RPM。</strong>已经通过限速检查的请求，即使后来失败，也消耗 RPM。</li>
 </ul>
 <callout type="info"><p>给 <code>max_tokens</code> 设一个贴近实际需要的值，能减少 TPM 预占，让同一档位承载更多并发请求。实际扣费只按真实用量计算。</p></callout>
@@ -77,7 +77,7 @@ description: 速率限制按账户计算，只有 RPM 和 TPM 两项，档位由
 <pre data-lang="json" data-title="429 rate_limit_exceeded">{
   "error": {
     "type": "rate_limit_error",
-    "message": "Rate limit reached for requests per minute (RPM): limit 60. Please try again in 1s.",
+    "message": "Rate limit reached for requests per minute (RPM): limit 150. Please try again in 1s.",
     "code": "rate_limit_exceeded",
     "limit": "requests",
     "scope": "account",

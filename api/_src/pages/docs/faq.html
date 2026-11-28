@@ -42,7 +42,7 @@ description: 接入 NexusVAI API 时最常遇到的问题与答案。
 <p>缓存折扣已经计入每次调用的扣费，但出于安全考虑，响应的 <code>usage</code> 不返回缓存命中的 token 数，按其他服务的字段格式检测的工具会显示「无缓存」。你可以用 <code>GET /v1/balance</code> 返回的 <code>cost</code> 或控制台用量页核对实际扣费。另外，缓存只在请求前缀完全一致、长度达到模型的最低要求时命中，且只保留几分钟。见<a href="/api/docs/guides/billing/#prompt-caching">提示缓存</a>。</p>
 
 <h3 id="free-vs-paid">免费账户和已充值账户有什么区别？</h3>
-<p>没有充值也没有套餐的账户是 Tier 0：60 RPM、2,000,000 TPM，免费模型受每 24 小时 1 亿 token 的免费额度限制。累计充值达到 ¥10 或开通套餐后，档位提升，免费模型也不再受免费额度限制。见<a href="/api/docs/guides/rate-limits/">速率限制</a>与<a href="/api/docs/guides/free-tier/">免费模型与免费额度</a>。</p>
+<p>没有充值也没有套餐的账户是 Tier 0：150 RPM、5,000,000 TPM，免费模型受每 24 小时 1 亿 token 的免费额度限制。累计充值达到 ¥10 或开通套餐后，档位提升，免费模型也不再受免费额度限制。见<a href="/api/docs/guides/rate-limits/">速率限制</a>与<a href="/api/docs/guides/free-tier/">免费模型与免费额度</a>。</p>
 
 <h3 id="raise-tier">怎么提升速率限制档位？</h3>
 <p>累计充值达到门槛或开通套餐后，档位自动提升，通常 1 分钟内生效，无需重新创建密钥。档位门槛见<a href="/api/docs/guides/rate-limits/#tiers">速率限制</a>。充值方式：在控制台的<a href="/api/console/billing/">账单</a>页购买充值卡并兑换卡密，兑换后立即到账。</p>

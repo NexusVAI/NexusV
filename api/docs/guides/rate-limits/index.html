@@ -37,21 +37,21 @@
 <p>限额只有两项：</p>
 <ul>
 <li><strong>RPM</strong>：每分钟请求数。</li>
-<li><strong>TPM</strong>：每分钟 token 数，输入与输出合计。</li>
+<li><strong>TPM</strong>：每分钟 token 数。只计未命中提示缓存的输入（含缓存写入）和输出，命中缓存的输入（cache read）不计入 TPM。</li>
 </ul>
 <p>不限制同时进行的请求数，也没有按小时或按天计的请求数与 token 上限。免费模型的总用量另受<a href="/api/docs/guides/free-tier/">免费额度</a>限制。</p>
 
 <h2 id="tiers" class="group flex items-center gap-2 mt-7 mb-2 scroll-mt-[110px]"><span class="min-w-0">档位</span><button type="button" class="shrink-0 self-center inline-flex items-center justify-center rounded-md p-0.5 opacity-0 transition-colors transition-opacity duration-200 ease-out text-info hover:text-info focus-visible:opacity-100 group-focus-within:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-300 group-hover:opacity-100 dark:focus-visible:outline-gray-600 motion-reduce:transition-none relative -top-0.5" data-anchor-id="tiers" aria-label="复制「档位」的链接" title="复制链接"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M18.2929 5.7071C16.4743 3.88849 13.5257 3.88849 11.7071 5.7071L10.7071 6.7071C10.3166 7.09763 9.68341 7.09763 9.29289 6.7071C8.90236 6.31658 8.90236 5.68341 9.29289 5.29289L10.2929 4.29289C12.8926 1.69322 17.1074 1.69322 19.7071 4.29289C22.3068 6.89255 22.3068 11.1074 19.7071 13.7071L18.7071 14.7071C18.3166 15.0976 17.6834 15.0976 17.2929 14.7071C16.9024 14.3166 16.9024 13.6834 17.2929 13.2929L18.2929 12.2929C20.1115 10.4743 20.1115 7.52572 18.2929 5.7071ZM15.7071 8.29289C16.0976 8.68341 16.0976 9.31658 15.7071 9.7071L9.7071 15.7071C9.31658 16.0976 8.68341 16.0976 8.29289 15.7071C7.90236 15.3166 7.90236 14.6834 8.29289 14.2929L14.2929 8.29289C14.6834 7.90236 15.3166 7.90236 15.7071 8.29289ZM6.7071 9.29289C7.09763 9.68341 7.09763 10.3166 6.7071 10.7071L5.7071 11.7071C3.88849 13.5257 3.88849 16.4743 5.7071 18.2929C7.52572 20.1115 10.4743 20.1115 12.2929 18.2929L13.2929 17.2929C13.6834 16.9024 14.3166 16.9024 14.7071 17.2929C15.0976 17.6834 15.0976 18.3166 14.7071 18.7071L13.7071 19.7071C11.1074 22.3068 6.89255 22.3068 4.29289 19.7071C1.69322 17.1074 1.69322 12.8926 4.29289 10.2929L5.29289 9.29289C5.68341 8.90236 6.31658 8.90236 6.7071 9.29289Z" fill="currentColor"></path></svg></button></h2>
-<p>档位由累计充值决定：</p>
+<p>档位由累计充值决定。下表自 2026-11-28 起生效：</p>
 <div class="table-wrapper md:max-w-5xl mx-auto overflow-x-auto"><table class="w-full">
 <thead><tr><th>档位</th><th>累计充值</th><th>RPM</th><th>TPM</th></tr></thead>
 <tbody>
-<tr><td>Tier 0</td><td>¥0</td><td>60</td><td>2,000,000</td></tr>
-<tr><td>Tier 1</td><td>≥ ¥10</td><td>120</td><td>2,000,000</td></tr>
-<tr><td>Tier 2</td><td>≥ ¥30</td><td>500</td><td>3,000,000</td></tr>
-<tr><td>Tier 3</td><td>≥ ¥80</td><td>5,000</td><td>3,000,000</td></tr>
-<tr><td>Tier 4</td><td>≥ ¥300</td><td>5,000</td><td>4,000,000</td></tr>
-<tr><td>Tier 5</td><td>≥ ¥1,000</td><td>10,000</td><td>5,000,000</td></tr>
+<tr><td>Tier 0</td><td>¥0</td><td>150</td><td>5,000,000</td></tr>
+<tr><td>Tier 1</td><td>≥ ¥10</td><td>300</td><td>5,000,000</td></tr>
+<tr><td>Tier 2</td><td>≥ ¥30</td><td>1,200</td><td>8,000,000</td></tr>
+<tr><td>Tier 3</td><td>≥ ¥80</td><td>10,000</td><td>10,000,000</td></tr>
+<tr><td>Tier 4</td><td>≥ ¥300</td><td>12,000</td><td>12,000,000</td></tr>
+<tr><td>Tier 5</td><td>≥ ¥1,000</td><td>20,000</td><td>16,000,000</td></tr>
 </tbody>
 </table></div>
 <ul>
@@ -68,7 +68,7 @@
 <li><strong>开始时预占。</strong>每个请求开始时消耗 1 个 RPM，并按「预估输入 token + 输出上限」预占 TPM。输出上限就是 <code>max_tokens</code>（Responses 为 <code>max_output_tokens</code>）；没设置时按该模型的最大输出 token 数预占。</li>
 <li><strong>结束后多退少补。</strong>响应结束后按实际用量结算 TPM，多占的部分退回。</li>
 <li><strong>允许短暂超出。</strong>只要账户还有剩余 TPM，请求就会被接受，所以单次大请求可以让余量暂时变成负数，之后由回填补足。</li>
-<li><strong>单次请求过大。</strong>单次请求的预占量超过本档 TPM 的 4 倍时，返回 <code>429 request_too_large</code>。</li>
+<li><strong>单次请求过大。</strong>预占量按原始预估计算，不扣除可能命中缓存的输入。单次请求的预占量超过本档 TPM 的 4 倍时，返回 <code>429 request_too_large</code>。</li>
 <li><strong>失败的请求也计入 RPM。</strong>已经通过限速检查的请求，即使后来失败，也消耗 RPM。</li>
 </ul>
 <div class="_Notice_d6ijw_1"><div class="_Alert_1bpiz_1" data-variant="outline" data-color="primary" data-actions-placement="end"><div class="_Indicator_1bpiz_159"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" clip-rule="evenodd"></path></svg></div><div class="_Content_1bpiz_147"><div class="_Message_1bpiz_166"><div class="_Description_1bpiz_176"><p>给 <code>max_tokens</code> 设一个贴近实际需要的值，能减少 TPM 预占，让同一档位承载更多并发请求。实际扣费只按真实用量计算。</p></div></div></div></div></div>
@@ -117,7 +117,7 @@
 </span><span class="syntax-highlighter-line-number">10</span></span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">{</span>
 </span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">  </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">&quot;error&quot;</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">: {</span>
 </span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">    </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">&quot;type&quot;</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">: </span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">&quot;rate_limit_error&quot;</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">,</span>
-</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">    </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">&quot;message&quot;</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">: </span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">&quot;Rate limit reached for requests per minute (RPM): limit 60. Please try again in 1s.&quot;</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">,</span>
+</span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">    </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">&quot;message&quot;</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">: </span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">&quot;Rate limit reached for requests per minute (RPM): limit 150. Please try again in 1s.&quot;</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">,</span>
 </span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">    </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">&quot;code&quot;</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">: </span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">&quot;rate_limit_exceeded&quot;</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">,</span>
 </span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">    </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">&quot;limit&quot;</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">: </span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">&quot;requests&quot;</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">,</span>
 </span><span class="syntax-highlighter-line"><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">    </span><span class="shiki-token" style="--shiki-dark:#79B8FF;--shiki-light:#005CC5">&quot;scope&quot;</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">: </span><span class="shiki-token" style="--shiki-dark:#9ECBFF;--shiki-light:#032F62">&quot;account&quot;</span><span class="shiki-token" style="--shiki-dark:#E1E4E8;--shiki-light:#24292E">,</span>

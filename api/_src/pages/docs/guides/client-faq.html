@@ -46,7 +46,7 @@ tab: coding
 <p>API 暂停服务期间（例如维护），<code>GET /v1/models</code> 仍可读取模型列表，其他接口返回 <code>503 api_paused</code> 并带 <code>Retry-After</code> 头。更换 Key 或客户端都无法解除，请等待恢复。</p>
 
 <h2 id="free-vs-paid">免费账户与已充值账户</h2>
-<p>未充值、也没有套餐的账户处于 Tier 0：60 RPM、2,000,000 TPM，免费模型还受免费额度限制（每个账户每 24 小时滚动窗口 1 亿 token）。累计充值达到 ¥10 或开通套餐后，档位提升，免费模型不再受免费额度限制。详见<a href="/api/docs/guides/rate-limits/">速率限制</a>。</p>
+<p>未充值、也没有套餐的账户处于 Tier 0：150 RPM、5,000,000 TPM，免费模型还受免费额度限制（每个账户每 24 小时滚动窗口 1 亿 token）。累计充值达到 ¥10 或开通套餐后，档位提升，免费模型不再受免费额度限制。详见<a href="/api/docs/guides/rate-limits/">速率限制</a>。</p>
 
 <h2 id="images-videos">图像与视频生成</h2>
 <p>API 不提供图像与视频生成。<code>/v1/images/generations</code> 与 <code>/v1/videos/generations</code> 只对网页版开放，使用 <code>cancri_sk_</code> 开头的 Key 调用会返回 <code>403 endpoint_disabled</code>。</p>

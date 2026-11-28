@@ -8849,49 +8849,49 @@ ${[...ACCS, ...ACTION_STATES].map((a) => `.cc.a-${a} .acc-${a}{display:inline}`)
 				{
 					tier: 0,
 					cumulative_cny: 0,
-					concurrent: 3,
-					rpm: 60,
-					tpm: 2e6,
-					tpd: 2e7
+					concurrent: 12,
+					rpm: 150,
+					tpm: 5e6,
+					tpd: 5e7
 				},
 				{
 					tier: 1,
 					cumulative_cny: 10,
-					concurrent: 10,
-					rpm: 120,
-					tpm: 2e6,
-					tpd: 1e8
+					concurrent: 20,
+					rpm: 300,
+					tpm: 5e6,
+					tpd: 25e7
 				},
 				{
 					tier: 2,
 					cumulative_cny: 30,
-					concurrent: 100,
-					rpm: 500,
-					tpm: 3e6,
+					concurrent: 200,
+					rpm: 1200,
+					tpm: 8e6,
 					tpd: null
 				},
 				{
 					tier: 3,
 					cumulative_cny: 80,
-					concurrent: 200,
-					rpm: 5e3,
-					tpm: 3e6,
+					concurrent: 400,
+					rpm: 1e4,
+					tpm: 1e7,
 					tpd: null
 				},
 				{
 					tier: 4,
 					cumulative_cny: 300,
-					concurrent: 400,
-					rpm: 5e3,
-					tpm: 4e6,
+					concurrent: 800,
+					rpm: 12e3,
+					tpm: 12e6,
 					tpd: null
 				},
 				{
 					tier: 5,
 					cumulative_cny: 1e3,
-					concurrent: 1e3,
-					rpm: 1e4,
-					tpm: 5e6,
+					concurrent: 2e3,
+					rpm: 2e4,
+					tpm: 16e6,
 					tpd: null
 				}
 			],

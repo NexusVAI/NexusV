@@ -8828,15 +8828,13 @@ function lastUserMessageText(messages) {
       {
         note: "账户限速按累计真实充值 Tier0–5：并发 / RPM / TPM / TPD（非旧版 RPH/RPD 请求桶）。门槛 ¥0 / ≥10 / ≥30 / ≥80 / ≥300 / ≥1000。",
         tiers: [
-          // 2026-08-15 修漂移：Tier0 曾写 1/20/500K/1.5M，那是 2026-08-10 放宽**之前**的值。
-          // 运行时权威是 cf-gateway/src/rate-limiter.ts 的 TIER_LIMITS（Durable Object 里
-          // 真正兑现的那份），实测为 3/60/2M/20M。其余 5 档本来就与权威一致。
-          { tier: 0, cumulative_cny: 0, concurrent: 3, rpm: 60, tpm: 2000000, tpd: 20000000 },
-          { tier: 1, cumulative_cny: 10, concurrent: 10, rpm: 120, tpm: 2000000, tpd: 100000000 },
-          { tier: 2, cumulative_cny: 30, concurrent: 100, rpm: 500, tpm: 3000000, tpd: null },
-          { tier: 3, cumulative_cny: 80, concurrent: 200, rpm: 5000, tpm: 3000000, tpd: null },
-          { tier: 4, cumulative_cny: 300, concurrent: 400, rpm: 5000, tpm: 4000000, tpd: null },
-          { tier: 5, cumulative_cny: 1000, concurrent: 1000, rpm: 10000, tpm: 5000000, tpd: null },
+          // 2026-11-28：与 cf-gateway/src/tier-limits.ts 的 TIER_LIMITS 保持一致。
+          { tier: 0, cumulative_cny: 0, concurrent: 12, rpm: 150, tpm: 5000000, tpd: 50000000 },
+          { tier: 1, cumulative_cny: 10, concurrent: 20, rpm: 300, tpm: 5000000, tpd: 250000000 },
+          { tier: 2, cumulative_cny: 30, concurrent: 200, rpm: 1200, tpm: 8000000, tpd: null },
+          { tier: 3, cumulative_cny: 80, concurrent: 400, rpm: 10000, tpm: 10000000, tpd: null },
+          { tier: 4, cumulative_cny: 300, concurrent: 800, rpm: 12000, tpm: 12000000, tpd: null },
+          { tier: 5, cumulative_cny: 1000, concurrent: 2000, rpm: 20000, tpm: 16000000, tpd: null },
         ],
         free_token_windows: {
           rolling_5h_tokens: 100000,
